@@ -1,0 +1,42 @@
+{
+  "name": "@base-ui/actview-utils",
+  "version": "0.1.0",
+  "author": "MUI Team",
+  "description": "A collection of ActView utility functions for Base UI.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mui/base-ui.git",
+    "directory": "packages/actview-utils"
+  },
+  "exports": {
+    "./store": "./src/store/index.ts",
+    "./platform": "./src/platform/index.ts",
+    "./*": "./src/*.ts",
+    "./*.test": null,
+    "./*.spec": null
+  },
+  "imports": {
+    "#formatErrorMessage": "./src/formatErrorMessage.ts"
+  },
+  "scripts": {
+    "test": "cross-env VITEST_ENV=jsdom vitest",
+    "typescript": "tsgo -b tsconfig.json"
+  },
+  "dependencies": {
+    "@actview/core": "link:../../../actview/packages/core",
+    "@actview/jsx": "link:../../../actview/packages/jsx",
+    "@floating-ui/utils": "^0.2.12",
+    "actview": "link:../../../actview/packages/actview",
+    "reselect": "^5.2.0"
+  },
+  "devDependencies": {
+    "@actview/plugin-vite": "link:../../../actview/plugins/vite",
+    "@actview/testing": "link:../../../actview/packages/testing",
+    "@testing-library/jest-dom": "6.9.1"
+  },
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22.22.3"
+  }
+}

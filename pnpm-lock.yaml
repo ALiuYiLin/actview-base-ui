@@ -330,6 +330,80 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
 
+  packages/actview:
+    dependencies:
+      '@actview/core':
+        specifier: link:../../../actview/packages/core
+        version: link:../../../actview/packages/core
+      '@actview/jsx':
+        specifier: link:../../../actview/packages/jsx
+        version: link:../../../actview/packages/jsx
+      '@base-ui/actview-utils':
+        specifier: workspace:*
+        version: link:../actview-utils
+      '@floating-ui/dom':
+        specifier: ^1.7.4
+        version: 1.8.0
+      '@floating-ui/utils':
+        specifier: ^0.2.12
+        version: 0.2.12
+      actview:
+        specifier: link:../../../actview/packages/actview
+        version: link:../../../actview/packages/actview
+      clsx:
+        specifier: 2.1.1
+        version: 2.1.1
+    devDependencies:
+      '@actview/plugin-vite':
+        specifier: link:../../../actview/plugins/vite
+        version: link:../../../actview/plugins/vite
+      '@actview/testing':
+        specifier: link:../../../actview/packages/testing
+        version: link:../../../actview/packages/testing
+      '@date-fns/tz':
+        specifier: 1.4.1
+        version: 1.4.1
+      '@testing-library/jest-dom':
+        specifier: 6.9.1
+        version: 6.9.1
+      '@types/luxon':
+        specifier: 3.7.1
+        version: 3.7.1
+      date-fns:
+        specifier: 4.1.0
+        version: 4.1.0
+      luxon:
+        specifier: 3.7.2
+        version: 3.7.2
+
+  packages/actview-utils:
+    dependencies:
+      '@actview/core':
+        specifier: link:../../../actview/packages/core
+        version: link:../../../actview/packages/core
+      '@actview/jsx':
+        specifier: link:../../../actview/packages/jsx
+        version: link:../../../actview/packages/jsx
+      '@floating-ui/utils':
+        specifier: ^0.2.12
+        version: 0.2.12
+      actview:
+        specifier: link:../../../actview/packages/actview
+        version: link:../../../actview/packages/actview
+      reselect:
+        specifier: ^5.2.0
+        version: 5.2.0
+    devDependencies:
+      '@actview/plugin-vite':
+        specifier: link:../../../actview/plugins/vite
+        version: link:../../../actview/plugins/vite
+      '@actview/testing':
+        specifier: link:../../../actview/packages/testing
+        version: link:../../../actview/packages/testing
+      '@testing-library/jest-dom':
+        specifier: 6.9.1
+        version: 6.9.1
+
   packages/react:
     dependencies:
       '@babel/runtime':
@@ -6081,7 +6155,7 @@ packages:
 
   glob@7.2.3:
     resolution: {integrity: sha512-nFR0zLpU2YCaRxwoCJvL6UvCH2JFyFVIvwTLsIf21AuHlMskA1hhTdk+LlYJtOlYt9v6dvszD2BGRqBL+iQK9Q==}
-    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+    deprecated: Glob versions prior to v9 are no longer supported
 
   global-modules@2.0.0:
     resolution: {integrity: sha512-NGbfmJBp9x8IxyJSd1P+otYK8vonoJactOogrVfFRIAEY1ukil8RSKDz2Yo7wh1oihl51l/r6W4epkeKJHqL8A==}

@@ -1,0 +1,37 @@
+import type { ComputedRef } from '@actview/core';
+import { createContext } from '../../createContext';
+
+export interface CompositeRootContext {
+  highlightedIndex: number;
+  onHighlightedIndexChange: (index: number, shouldScrollIntoView?: boolean) => void;
+  highlightItemOnHover: boolean;
+  /**
+   * Makes it possible to control composite components using events that don't originate from their children.
+   * For example, a Menubar with detached triggers may define its Menu.Root outside of CompositeRoot.
+   * Keyboard events that occur within this menu won't normally be captured by the CompositeRoot,
+   * so they need to be forwarded manually using this function.
+   */
+  relayKeyboardEvent: (event: KeyboardEvent) => void;
+}
+
+export const CompositeRootContext = createContext<CompositeRootContext | undefined>(
+  'base-ui-composite-root-context',
+  undefined,
+);
+
+export function useCompositeRootContext(
+  optional: true,
+): ComputedRef<CompositeRootContext | undefined>;
+export function useCompositeRootContext(optional?: false): ComputedRef<CompositeRootContext>;
+export function useCompositeRootContext(
+  optional = false,
+): ComputedRef<CompositeRootContext | undefined> {
+  const context = CompositeRootContext.use();
+  if (context.value === undefined && !optional) {
+    throw new Error(
+      'Base UI: CompositeRootContext is missing. Composite parts must be placed within <Composite.Root>.',
+    );
+  }
+
+  return context;
+}

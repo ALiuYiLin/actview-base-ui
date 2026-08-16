@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.build.json",
+  "compilerOptions": {
+    "stripInternal": false
+  },
+  "references": [{ "path": "../actview-utils/tsconfig.build.json" }]
+}

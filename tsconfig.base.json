@@ -18,6 +18,9 @@
       "@base-ui/react": ["./packages/react/src"],
       "@base-ui/react/*": ["./packages/react/src/*"],
       "@base-ui/utils/*": ["./packages/utils/src/*"],
+      "@base-ui/actview": ["./packages/actview/src"],
+      "@base-ui/actview/*": ["./packages/actview/src/*"],
+      "@base-ui/actview-utils/*": ["./packages/actview-utils/src/*"],
       "docs/*": ["./docs/*"]
     }
   },
