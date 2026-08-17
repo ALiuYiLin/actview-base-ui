@@ -22,7 +22,10 @@
 ## 进行中（Open）
 
 - [ ] #14 全量：子代理模式已停止（用户决定逐个实现）；已落盘文件作为资产保留，逐个验收/修复并补测试用例
-- [ ] #15 组件：`button`、`input` 从未分派波次（待用户允许后逐个实现）
+- [ ] #15 组件：`button` 已完成（7 测试通过）；`input` 待用户允许后实现
 - [ ] #16 组件：`alert-dialog`、`autocomplete`、`context-menu`、`dialog`、`drawer`、`menubar`、`navigation-menu`、`otp-field`、`preview-card`、`scroll-area`、`tabs`、`tooltip` 未开始（待逐个实现）
 - [ ] #17 部分完成组件（slider/number-field/select/accordion/field/popover/toast/menu/combobox）：已落盘文件需逐个验收、修复、补测试
 - [ ] #18 全局：所有组件缺 actview 版测试用例（参照 react 的 `*.test.tsx` 形式），逐个补齐并在每个组件实现后运行
+- [x] #19 button：组件以 `return getElement()`（调用表达式）结尾不会被 babel 包成 defineComponent（运行时以裸函数进入）→ 一律改 `return <>{getElement()}</>`，并修复 Separator 同病，已修复（2026-08-16）
+- [x] #20 button：actview 渲染器把布尔 true 属性渲染为空串（aria-disabled="" 而非 "true"）→ 框架行为，测试按属性存在性断言，已记录
+- [x] #21 button：actview 组件级 ref 指向**组件实例**而非根 DOM 元素（mountComponent 在 setup 前 delete props.ref）→ 框架语义差异，测试按实例语义断言；DOM 引用可通过 render 元素 ref 或组件内部 ref 获得，已记录

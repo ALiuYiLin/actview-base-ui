@@ -36,7 +36,9 @@ export function Separator(componentProps: Separator.Props) {
     ],
   });
 
-  return getElement();
+  // Must end with a JSX return so the Babel transform wraps this component in
+  // `defineComponent` (a bare `return getElement()` is not recognized).
+  return <>{getElement()}</>;
 }
 
 export interface SeparatorProps extends BaseUIComponentProps<'div', SeparatorState> {
