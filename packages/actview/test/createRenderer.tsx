@@ -1,4 +1,5 @@
 import { nextTick, reactive, shallowRef } from 'actview';
+import { createElement } from '@actview/jsx';
 import { cleanup, render as actviewRender, waitFor } from '@actview/testing';
 import { fireEvent } from './fireEvent';
 
@@ -41,8 +42,9 @@ export type BaseUITestRenderer = {
  *
  * `render` mounts the component through a harness that reads props from a reactive
  * object, so `setProps` re-renders in place — the ActView equivalent of React's
- * `rerender`/`setProps`. The current component is read through the `<component is>` dynamic
- * component so switching it also re-renders.
+ * `rerender`/`setProps`. The current component is switched through a `shallowRef` read inside
+ * the render function, so re-renders pick up the new component (plantform-diff.md PD-24: the
+ * `<component is>` built-in leaves `is` in the props, so `createElement` is used instead).
  */
 export function createRenderer(): BaseUITestRenderer {
   const render = async (Component: any, props: Record<string, unknown> = {}) => {
@@ -50,7 +52,8 @@ export function createRenderer(): BaseUITestRenderer {
     const Current = shallowRef(Component);
 
     function Harness() {
-      return <component is={Current.value} {...state} />;
+      // Must end with a JSX return so the Babel transform wraps the harness (issue #19).
+      return <>{createElement(Current.value, state)}</>;
     }
 
     const result = actviewRender(Harness);

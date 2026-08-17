@@ -29,8 +29,8 @@
 ### ✅ 已完成（25 个）
 `avatar`、`button`（7 测试通过 ✅）、`checkbox`、`checkbox-group`、`collapsible`、`csp-provider`、`direction-provider`、`fieldset`、`form`、`input`（7 测试通过 ✅，依赖 FieldControl 已修）、`internals`、`merge-props`、`meter`、`progress`、`radio`、`radio-group`、`separator`、`switch`、`toggle`、`toggle-group`、`toolbar`、`types`、`unstable-use-media-query`、`use-render`、`utils`
 
-### 🔄 部分完成（9 个，需逐个验收/修复/补测试）
-`slider(26/27)`、`number-field(22/25)`、`select(17/40)`、`accordion(9/16)`、`field(12/18)`、`popover(10/28)`、`toast(12/36)`、`menu(2/51)`、`combobox(4/61)`
+### 🔄 部分完成（10 个，需逐个验收/修复/补测试）
+`slider(26/27)`、`number-field(22/25)`、`select(17/40)`、`accordion(9/16)`、`field(12/18)`、`popover(10/28)`、`toast(12/36)`、`menu(2/51)`、`combobox(4/61)`、**`tabs`（源码已写入，实现暂停 ⏸：依赖框架问题 AI-001/AI-002，见 actview-issue.md，待框架维护者处理）**
 
 ### ⏳ 未开始（15 个）
 | 组件 | 说明 |

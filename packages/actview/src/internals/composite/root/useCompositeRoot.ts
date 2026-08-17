@@ -1,4 +1,4 @@
-import { computed, ref } from 'actview';
+import { computed, ref, unref } from 'actview';
 import { isElementDisabled } from '@base-ui/actview-utils/isElementDisabled';
 import { useMergedRefs } from '@base-ui/actview-utils/useMergedRefs';
 import { useIsoLayoutEffect } from '@base-ui/actview-utils/useIsoLayoutEffect';
@@ -25,7 +25,7 @@ import {
 } from '../composite';
 import { ACTIVE_COMPOSITE_ITEM } from '../constants';
 import type { CompositeMetadata } from '../list/CompositeList';
-import type { HTMLProps, RefValue } from '../../types';
+import type { HTMLProps, MaybeRef, RefValue } from '../../types';
 import type { CompositeGridNavigator } from './gridNavigation';
 
 export interface UseCompositeRootParameters {
@@ -40,7 +40,7 @@ export interface UseCompositeRootParameters {
         elementsRef: { current: Array<HTMLElement | null> },
       ) => number)
     | undefined;
-  highlightedIndex?: number | undefined;
+  highlightedIndex?: MaybeRef<number | undefined> | undefined;
   onHighlightedIndexChange?: ((index: number) => void) | undefined;
   direction: TextDirection;
   rootRef?: RefValue<HTMLElement | null> | undefined;
@@ -60,7 +60,7 @@ export interface UseCompositeRootParameters {
    * Array of item indices to be considered disabled.
    * Used for composite items that are focusable when disabled.
    */
-  disabledIndices?: number[] | undefined;
+  disabledIndices?: MaybeRef<number[] | undefined> | undefined;
   /**
    * Array of [modifier key values](https://developer.mozilla.org/en-US/docs/Web/API/UI_Events/Keyboard_event_key_values#modifier_keys) that should allow normal keyboard actions
    * when pressed. By default, all modifier keys prevent normal actions.
@@ -87,6 +87,7 @@ export function useCompositeRoot(params: UseCompositeRootParameters) {
 
   const internalHighlightedIndex = ref(0);
   const isGrid = grid != null;
+  const disabledIndicesValue = computed(() => unref(disabledIndices));
 
   const rootRef = { current: null as HTMLElement | null };
   const mergedRef = useMergedRefs(rootRef, externalRef);
@@ -96,7 +97,7 @@ export function useCompositeRoot(params: UseCompositeRootParameters) {
   const highlightedElementRef = { current: null as HTMLElement | null };
 
   const highlightedIndex = computed(
-    () => externalHighlightedIndex ?? internalHighlightedIndex.value,
+    () => unref(externalHighlightedIndex) ?? internalHighlightedIndex.value,
   );
 
   const onHighlightedIndexChange = (index: number, shouldScrollIntoView = false) => {
@@ -128,8 +129,8 @@ export function useCompositeRoot(params: UseCompositeRootParameters) {
         // eligible item so a missing, hidden, or disabled replacement does not take the
         // composite out of the tab order.
         const replacement = elements[highlightedIndex.value];
-        if (!replacement || isListIndexDisabled(elements, highlightedIndex.value, disabledIndices)) {
-          onHighlightedIndexChange(getFallbackIndex(elements, disabledIndices));
+        if (!replacement || isListIndexDisabled(elements, highlightedIndex.value, disabledIndicesValue.value)) {
+          onHighlightedIndexChange(getFallbackIndex(elements, disabledIndicesValue.value));
         } else {
           highlightedElementRef.current = replacement;
         }
@@ -153,13 +154,13 @@ export function useCompositeRoot(params: UseCompositeRootParameters) {
 
     if (activeIndex !== -1) {
       onHighlightedIndexChange(activeIndex);
-    } else if (isListIndexDisabled(sortedElements, highlightedIndex.value, disabledIndices)) {
+    } else if (isListIndexDisabled(sortedElements, highlightedIndex.value, disabledIndicesValue.value)) {
       // The default highlighted item is disabled, so it should not hold the single
       // roving tab stop: a natively disabled element is removed from the tab order,
       // and an aria-disabled one should not be the entry point. Move the tab stop
       // to the first enabled item. If every item is disabled, keep the current
       // highlighted index.
-      const firstEnabledIndex = findNonDisabledListIndex(sortedElements, { disabledIndices });
+      const firstEnabledIndex = findNonDisabledListIndex(sortedElements, { disabledIndices: disabledIndicesValue.value });
       if (!isIndexOutOfListBounds(sortedElements, firstEnabledIndex)) {
         onHighlightedIndexChange(firstEnabledIndex);
       }
@@ -176,15 +177,15 @@ export function useCompositeRoot(params: UseCompositeRootParameters) {
     // enabled item. Gated on `disabledIndices` being provided so composites that
     // rely on the DOM disabled fallback keep their existing behavior.
     if (
-      disabledIndices == null ||
+      disabledIndicesValue.value == null ||
       externalHighlightedIndex != null ||
       !hasSetDefaultIndexRef.current
     ) {
       return;
     }
     const elements = elementsRef.current;
-    if (isListIndexDisabled(elements, highlightedIndex.value, disabledIndices)) {
-      const firstEnabledIndex = findNonDisabledListIndex(elements, { disabledIndices });
+    if (isListIndexDisabled(elements, highlightedIndex.value, disabledIndicesValue.value)) {
+      const firstEnabledIndex = findNonDisabledListIndex(elements, { disabledIndices: disabledIndicesValue.value });
       if (!isIndexOutOfListBounds(elements, firstEnabledIndex)) {
         onHighlightedIndexChange(firstEnabledIndex);
       }
@@ -243,12 +244,12 @@ export function useCompositeRoot(params: UseCompositeRootParameters) {
     }
 
     let nextIndex = highlightedIndex.value;
-    const minIndex = getMinListIndex(elementsRef, disabledIndices);
-    const maxIndex = getMaxListIndex(elementsRef, disabledIndices);
+    const minIndex = getMinListIndex(elementsRef, disabledIndicesValue.value);
+    const maxIndex = getMaxListIndex(elementsRef, disabledIndicesValue.value);
 
     if (grid != null) {
       nextIndex = grid({
-        disabledIndices,
+        disabledIndices: disabledIndicesValue.value,
         elementsRef,
         event,
         highlightedIndex: highlightedIndex.value,
@@ -291,7 +292,7 @@ export function useCompositeRoot(params: UseCompositeRootParameters) {
         nextIndex = findNonDisabledListIndex(elementsRef.current, {
           startingIndex: nextIndex,
           decrement: isBackwardKey,
-          disabledIndices,
+          disabledIndices: disabledIndicesValue.value,
         });
       }
     }

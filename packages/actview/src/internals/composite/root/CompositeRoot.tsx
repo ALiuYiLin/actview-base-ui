@@ -6,7 +6,7 @@ import { CompositeList, type CompositeMetadata } from '../list/CompositeList';
 import { useCompositeRoot } from './useCompositeRoot';
 import { CompositeRootContext } from './CompositeRootContext';
 import { useRenderElement } from '../../useRenderElement';
-import type { BaseUIComponentProps, BaseUIEvent, RefValue } from '../../types';
+import type { BaseUIComponentProps, BaseUIEvent, MaybeRef, RefValue } from '../../types';
 import type { ModifierKey } from '../composite';
 import type { CompositeGridNavigator } from './gridNavigation';
 import { useDirection } from '../../direction-context/DirectionContext';
@@ -63,18 +63,18 @@ export function CompositeRoot<Metadata extends {}, State extends Record<string, 
     modifierKeys: componentProps.modifierKeys,
   });
 
-  const getElementProps = () => {
+  const getElementProps = (prev: Record<string, any>) => {
     const rest: Record<string, any> = {};
     for (const key in componentProps) {
       if (!COMPOSITE_ROOT_ELEMENT_PROPS_EXCLUDED.has(key)) {
         rest[key] = (componentProps as Record<string, any>)[key];
       }
     }
-    return rest;
+    return { ...prev, ...rest };
   };
 
   const getElement = useRenderElement(componentProps.tag ?? 'div', componentProps, {
-    state: componentProps.state ?? EMPTY_OBJECT,
+    state: componentProps.state ?? (EMPTY_OBJECT as State),
     ref: (componentProps.refs ?? EMPTY_ARRAY) as RefValue<Element>[],
     props: [defaultProps, ...(componentProps.props ?? EMPTY_ARRAY), getElementProps],
     stateAttributesMapping: componentProps.stateAttributesMapping,
@@ -125,14 +125,14 @@ export interface CompositeRootProps<Metadata, State extends Record<string, any>>
         elementsRef: { current: Array<HTMLElement | null> },
       ) => number)
     | undefined;
-  highlightedIndex?: number | undefined;
+  highlightedIndex?: MaybeRef<number | undefined> | undefined;
   onHighlightedIndexChange?: ((index: number) => void) | undefined;
   enableHomeAndEndKeys?: boolean | undefined;
   onMapChange?: ((newMap: Map<Node, CompositeMetadata<Metadata>>) => void) | undefined;
   onKeyDown?: ((event: BaseUIEvent<KeyboardEvent>) => void) | undefined;
   stopEventPropagation?: boolean | undefined;
   rootRef?: RefValue<HTMLElement | null> | undefined;
-  disabledIndices?: number[] | undefined;
+  disabledIndices?: MaybeRef<number[] | undefined> | undefined;
   modifierKeys?: ModifierKey[] | undefined;
   highlightItemOnHover?: boolean | undefined;
 }

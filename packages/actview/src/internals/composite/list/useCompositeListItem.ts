@@ -1,5 +1,6 @@
-import { computed, ref as createRef } from 'actview';
+import { computed, ref as createRef, unref } from 'actview';
 import type { ComputedRef } from '@actview/core';
+import type { MaybeRef } from '../../types';
 import { useIsoLayoutEffect } from '@base-ui/actview-utils/useIsoLayoutEffect';
 import { useCompositeListContext } from './CompositeListContext';
 
@@ -16,7 +17,7 @@ export interface UseCompositeListItemParameters<Metadata> {
    * Metadata published with the item. Keep object values referentially stable to avoid
    * unnecessarily detaching and reattaching the callback ref.
    */
-  metadata?: Metadata | undefined;
+  metadata?: MaybeRef<Metadata | undefined> | undefined;
   /** Keep the ref object stable to avoid unnecessarily reattaching the item. */
   textRef?: { current?: HTMLElement | null } | undefined;
 }
@@ -70,7 +71,7 @@ export function useCompositeListItem<Metadata>(
 
     if (node) {
       register(node, {
-        metadata: metadata ?? null,
+        metadata: unref(metadata) ?? null,
         index: externalIndex ?? null,
         label,
         textRef,

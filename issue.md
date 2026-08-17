@@ -33,3 +33,4 @@
 - [x] #23 input：actview 把 `defaultValue` 当普通属性（不设 input.value）→ FieldControl 的 ref 回调直接赋值 `node.defaultValue`，已修复（plantform-diff PD-23）
 - [x] #24 internals：PrehydrationScript.tsx import 大小写错误（CSPContext vs CspContext，TS1149）→ 已修复
 - [x] #25 field（部分）：FieldControl 的 2 处 null 未规范化（id/aria-labelledby）+ `return getElement()` 结尾（#19 同类）→ 已修复；field 其余（FieldDescription/FieldError/FieldItem/FieldLabel/FieldValidity/root/useFieldValidation/index 出口）待 field 组件验收（#17）
+- [x] #26 tabs（暂停 ⏸）：composite 挂载时序——ref 回调时 isConnected=false + post-flush watch 不触发，导致 CompositeList.onMapChange 永不收到真实 items、Tabs 自动选中失效 → **框架问题**，已记录 actview-issue.md AI-001/AI-002，tabs 实现暂停等框架处理；期间对 composite 的类型适配（highlightedIndex/disabledIndices/metadata 支持 MaybeRef、getElementProps 合并形式、children 转发）保留
