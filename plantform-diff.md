@@ -202,6 +202,39 @@
 - **渲染后示例**：React `<input>` 显示 defaultValue 值；ActView 仅 DOM 有 `defaultvalue` 属性、input.value 为空
 - **适配**：FieldControl 的 input ref 回调里对非受控 defaultValue 直接赋值 `node.defaultValue = String(v)`
 
+### PD-24 `<component is>` 动态组件残留 `is`
+- **标题**：`<component is={Comp}/>` 会把 `is` 键残留进组件 props（Base UI 无 `is` 语义）
+- **场景**：测试基建里切换当前渲染的组件
+- **代码示例**：
+  ```tsx
+  <component is={Current.value} {...state} />  // props 里会出现 is
+  ```
+- **适配**：createRenderer 改用 `createElement(Current.value, state)`（PD-24 于 createRenderer 注释中引用）
+
+### PD-25 对象 style 渲染丢弃 `--*` 自定义属性键
+- **标题**：actview 渲染对象 style 时过滤 `--*`（CSS 变量）键；字符串 style 可完整保留，但与对象 style 合并（mergeObjects）会破坏
+- **场景**：scroll-area 的 corner/thumb/overflow 尺寸通过 CSS 变量传递（`--scroll-area-corner-height` 等）
+- **代码示例**：
+  ```tsx
+  // 对象形式：--foo 被过滤
+  <div style={{ position: 'relative', '--foo': '3px' }} />
+  // 渲染后：style="position: relative;"
+  // 字符串形式：完整保留（但无法与对象 style 合并）
+  <div style="--foo: 3px; position: relative;" />
+  ```
+- **适配**：scroll-area 用命令式 `element.style.setProperty('--xxx', value)` + `watch`/`onMounted` 应用（Root 的 corner vars、Scrollbar 的 thumb var、Viewport 的 overflow 距离 vars）；消费方以 `var(--xxx)` 作为 style **值**渲染（值字符串不受影响）。相关文件：ScrollAreaRoot/ScrollAreaScrollbar/ScrollAreaViewport
+
+### PD-26 pointerenter / pointerleave 不冒泡
+- **标题**：原生 `pointerenter`/`pointerleave` 不冒泡（React 合成事件模拟为可冒泡），挂在祖先上的处理收不到子元素的 enter/leave
+- **场景**：ScrollArea.Root 把 onPointerEnter/onPointerLeave 挂在 root div，子元素（viewport）进入/离开时 root 收不到事件
+- **代码示例**：
+  ```tsx
+  <div onPointerEnter={fn}>      // root
+    <div />                      // viewport：pointerenter 不冒泡，root 收不到
+  </div>
+  ```
+- **适配**：scroll-area 依赖冒泡的 `onPointerMove`（pointermove 冒泡）更新 hovering 状态；测试用 pointerMove/在 root 上派发 pointerLeave 验证（见 ScrollAreaScrollbar.test.tsx 注释）
+
 ---
 
 ## 第二部分：适配说明（Adaptation Notes）
@@ -241,6 +274,18 @@
 
 ### AD-12 弹层 Portal 层叠
 - **适配**：react 的 `FloatingPortal`（含 tabbable 逻辑）用 `floating-ui-actview` 的 FloatingPortal；轻量场景用 `FloatingPortalLite`（`<Teleport to={portalNode}>`），两者都以 `useFloatingPortalNode` 为内核
+
+### AD-13 watch 的 source 用标量/引用稳定值
+- **适配**：actview 的 `watch` 对 source 按**引用**比较；从 context computed 里取对象字面量（如 `overflowEdgeThreshold`、`thumbSize`）会因 context 每次重算产生新引用而反复触发 → 死循环。watch 一律监听**标量 getter/computed**（`() => root.value.hiddenState.y`）或引用稳定的 ref。相关文件：ScrollAreaViewport/ScrollAreaScrollbar
+
+### AD-14 ref 赋值保护（同引用也触发渲染）
+- **适配**：actview 对 `ref.value = x` 即使 x 与当前值**同一引用**也会调度重渲染。scroll-area 的测量 setter（setThumbSize/setHiddenState/setCornerSize/setOverflowEdges）先 `pickState`（浅比较）再**引用比较**，值不变时不赋值，避免测量微任务触发渲染→watch→再测量的死循环。相关文件：ScrollAreaRoot
+
+### AD-15 getOffset 的 NaN 防御
+- **适配**：jsdom 的 `getComputedStyle` 对未设置的逻辑属性（paddingBlockStart 等）返回空串，`parseFloat('') = NaN` 会污染 thumb 尺寸计算（`NaN !== NaN` 使 pickState 永远判定变化 → 死循环）；`parseFloat(x) || 0` 防御。相关文件：scroll-area/utils/getOffset.ts
+
+### AD-16 布局测量测试的 jsdom 策略
+- **适配**：jsdom 无布局（offsetHeight/clientHeight 等为 0）、无 ResizeObserver、无 `getAnimations`。scroll-area 测试：① `Object.defineProperties` mock viewport 尺寸与 scrollTop/scrollLeft；② 组件内 `typeof ResizeObserver === 'undefined'` 跳过、`viewport.getAnimations?.()` 防御；③ 依赖真实布局的断言（thumb 实际尺寸等）不在 jsdom 覆盖（react 版同场景用 `isJSDOM` 跳过）
 
 ---
 

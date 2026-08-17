@@ -26,8 +26,8 @@
 
 ## 二、组件状态（共 47 个 src 目录，非测试文件口径）
 
-### ✅ 已完成（25 个）
-`avatar`、`button`（7 测试通过 ✅）、`checkbox`、`checkbox-group`、`collapsible`、`csp-provider`、`direction-provider`、`fieldset`、`form`、`input`（7 测试通过 ✅，依赖 FieldControl 已修）、`internals`、`merge-props`、`meter`、`progress`、`radio`、`radio-group`、`separator`、`switch`、`toggle`、`toggle-group`、`toolbar`、`types`、`unstable-use-media-query`、`use-render`、`utils`
+### ✅ 已完成（26 个）
+`avatar`、`button`（7 测试通过 ✅）、`checkbox`、`checkbox-group`、`collapsible`、`csp-provider`、`direction-provider`、`fieldset`、`form`、`input`（7 测试通过 ✅，依赖 FieldControl 已修）、`internals`、`merge-props`、`meter`、`progress`、`radio`、`radio-group`、`scroll-area`（13 测试通过 ✅：root/viewport/scrollbar，jsdom 适配见 plantform-diff.md AD-16）、`separator`、`switch`、`toggle`、`toggle-group`、`toolbar`、`types`、`unstable-use-media-query`、`use-render`、`utils`
 
 ### 🔄 部分完成（10 个，需逐个验收/修复/补测试）
 `slider(26/27)`、`number-field(22/25)`、`select(17/40)`、`accordion(9/16)`、`field(12/18)`、`popover(10/28)`、`toast(12/36)`、`menu(2/51)`、`combobox(4/61)`、**`tabs`（源码已写入，实现暂停 ⏸：依赖框架问题 AI-001/AI-002，见 actview-issue.md，待框架维护者处理）**
@@ -36,7 +36,7 @@
 | 组件 | 说明 |
 |---|---|
 | floating-ui-react | 口径误差：已完整移植为 `floating-ui-actview`（37 文件、类型检查干净） |
-| alert-dialog、autocomplete、context-menu、dialog、drawer、menubar、navigation-menu、otp-field、preview-card、scroll-area、tabs、tooltip | 子代理曾分派但未落盘，待逐个实现 |
+| alert-dialog、autocomplete、context-menu、dialog、drawer、menubar、navigation-menu、otp-field、preview-card、tooltip | 待逐个实现（otp-field 命中框架问题 AI-001/AI-002，与 tabs 一起待框架修复后实现） |
 
 ## 三、逐个实现顺序建议（依赖优先）
 
