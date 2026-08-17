@@ -184,6 +184,24 @@
 - **场景**：渲染期异常
 - **适配**：需要自定义处理时用 ErrorBoundary
 
+### PD-22 JSX 组件标签的 props 校验限制
+- **标题**：用 JSX 组件标签 `<Comp {...props} />` 展开全量 props 时，TS 校验会强制 `className`/`style` 等为原始 DOM 类型，与 Base UI 的函数式 `className`（`(state) => string`）冲突
+- **场景**：包装组件（如 Input 包 FieldControl）直接 spread 用户 props
+- **代码示例**：
+  ```tsx
+  // ❌ TS2322：className 函数类型与 HTMLAttributes 不兼容
+  return <FieldControl {...props} />
+  // ✅ 用 createElement 绕开 JSX 元素校验
+  return <>{createElement(FieldControl, props)}</>
+  ```
+- **适配**：包装类组件统一 `createElement` + Fragment 返回（组件内部不受影响，因为 useRenderElement 走宽松 HTMLProps）
+
+### PD-23 defaultValue 属性行为
+- **标题**：actview 渲染器把 `defaultValue` 当普通属性 setAttribute（不设置 input 的 `.value` 属性）；React 以属性赋值（`.defaultValue`）实现
+- **场景**：受控/非受控 input 的 defaultValue
+- **渲染后示例**：React `<input>` 显示 defaultValue 值；ActView 仅 DOM 有 `defaultvalue` 属性、input.value 为空
+- **适配**：FieldControl 的 input ref 回调里对非受控 defaultValue 直接赋值 `node.defaultValue = String(v)`
+
 ---
 
 ## 第二部分：适配说明（Adaptation Notes）

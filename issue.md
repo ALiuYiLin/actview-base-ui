@@ -29,3 +29,7 @@
 - [x] #19 button：组件以 `return getElement()`（调用表达式）结尾不会被 babel 包成 defineComponent（运行时以裸函数进入）→ 一律改 `return <>{getElement()}</>`，并修复 Separator 同病，已修复（2026-08-16）
 - [x] #20 button：actview 渲染器把布尔 true 属性渲染为空串（aria-disabled="" 而非 "true"）→ 框架行为，测试按属性存在性断言，已记录
 - [x] #21 button：actview 组件级 ref 指向**组件实例**而非根 DOM 元素（mountComponent 在 setup 前 delete props.ref）→ 框架语义差异，测试按实例语义断言；DOM 引用可通过 render 元素 ref 或组件内部 ref 获得，已记录
+- [x] #22 input：JSX 组件标签 `<FieldControl {...props}/>` 的 TS 校验与函数式 className 冲突（TS2322）→ 改用 `createElement(FieldControl, props)` + Fragment 返回，已修复（plantform-diff PD-22）
+- [x] #23 input：actview 把 `defaultValue` 当普通属性（不设 input.value）→ FieldControl 的 ref 回调直接赋值 `node.defaultValue`，已修复（plantform-diff PD-23）
+- [x] #24 internals：PrehydrationScript.tsx import 大小写错误（CSPContext vs CspContext，TS1149）→ 已修复
+- [x] #25 field（部分）：FieldControl 的 2 处 null 未规范化（id/aria-labelledby）+ `return getElement()` 结尾（#19 同类）→ 已修复；field 其余（FieldDescription/FieldError/FieldItem/FieldLabel/FieldValidity/root/useFieldValidation/index 出口）待 field 组件验收（#17）

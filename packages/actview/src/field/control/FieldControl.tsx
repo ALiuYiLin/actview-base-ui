@@ -75,7 +75,7 @@ export function FieldControl(componentProps: FieldControl.Props) {
 
   useRegisterFieldControl(
     validation.inputRef,
-    id,
+    computed(() => id.value ?? undefined),
     serializedValue,
     getValueFromInput,
     computed(() => !disabled.value),
@@ -109,11 +109,19 @@ export function FieldControl(componentProps: FieldControl.Props) {
   });
 
   const getControlProps = () => ({
-    id: id.value,
+    id: id.value ?? undefined,
     disabled: disabled.value,
     name: name.value,
-    ref: validation.inputRef,
-    'aria-labelledby': labelId.value,
+    ref: (node: HTMLInputElement | null) => {
+      validation.inputRef.current = node;
+      // ActView's renderer treats `defaultValue` as a plain attribute (setAttribute),
+      // which does not set the input's `.value` (plantform-diff.md PD-01/PD-19). Mirror
+      // React's behavior by assigning the property directly.
+      if (node && !isControlled.value && componentProps.defaultValue !== undefined) {
+        node.defaultValue = String(componentProps.defaultValue);
+      }
+    },
+    'aria-labelledby': labelId.value ?? undefined,
     autoFocus: componentProps.autoFocus,
     ...(isControlled.value ? { value: value.value } : { defaultValue: componentProps.defaultValue }),
     onInput(event: InputEvent) {
@@ -182,7 +190,9 @@ export function FieldControl(componentProps: FieldControl.Props) {
     stateAttributesMapping: fieldValidityMapping,
   });
 
-  return getElement();
+  // Must end with a JSX return so the Babel transform wraps this component in
+  // `defineComponent` (issue #19).
+  return <>{getElement()}</>;
 }
 
 export interface FieldControlState extends FieldRootState {}
