@@ -63,7 +63,9 @@ export function useTransitionStatus(
   // Clear 'starting' after a frame when the idle state is disabled.
   watch(
     [() => unref(open)],
-    ([isOpen], _old, onCleanup) => {
+    (newVals, _old, onCleanup) => {
+      // Guard against a stale post-unmount callback receiving `undefined` (AD-33).
+      const [isOpen] = Array.isArray(newVals) ? newVals : [];
       if (!isOpen || enableIdleState) {
         return;
       }

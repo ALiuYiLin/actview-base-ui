@@ -14,7 +14,9 @@ export function useOpenChangeComplete(parameters: UseOpenChangeCompleteParameter
 
   watch(
     [() => unref(enabled), () => unref(open)],
-    ([isEnabled], _old, onCleanup) => {
+    (newVals, _old, onCleanup) => {
+      // Guard against a stale post-unmount callback receiving `undefined` (AD-33).
+      const [isEnabled] = Array.isArray(newVals) ? newVals : [];
       if (!isEnabled) {
         return;
       }

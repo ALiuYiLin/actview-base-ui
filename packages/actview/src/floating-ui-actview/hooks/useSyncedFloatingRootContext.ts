@@ -83,7 +83,9 @@ export function useSyncedFloatingRootContext<
 
   watch(
     [open, referenceElement, floatingElement],
-    ([openValue, referenceValue, floatingValue]) => {
+    (newVals) => {
+      // Guard against a stale post-unmount callback receiving `undefined` (AD-33).
+      const [openValue, referenceValue, floatingValue] = Array.isArray(newVals) ? newVals : [];
       const valuesToSync = {
         open: openValue,
         floatingId,
