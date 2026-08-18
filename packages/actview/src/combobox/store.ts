@@ -1,9 +1,11 @@
-import type { ActviewStore } from '@base-ui/actview-utils/store';
+import { ActviewStore } from '@base-ui/actview-utils/store';
+import { EMPTY_OBJECT } from '@base-ui/actview-utils/empty';
+import { NOOP } from '../internals/noop';
 import type { InteractionType } from '@base-ui/actview-utils/useEnhancedClickHandler';
 import type { TransitionStatus } from '../internals/useTransitionStatus';
 import type { HTMLProps, RefObject } from '../internals/types';
 import type { Side } from '../internals/useAnchorPositioning';
-import { compareItemEquality } from '../internals/itemEquality';
+import { compareItemEquality, defaultItemEquality } from '../internals/itemEquality';
 import { hasNullItemLabel } from '../internals/resolveValueLabel';
 import type { AriaCombobox } from './root/AriaCombobox';
 
@@ -89,7 +91,101 @@ export type State = {
   hasInputValue: boolean;
 };
 
-export type ComboboxStore = ActviewStore<State>;
+export type ComboboxStore = ActviewStore<Readonly<State>, Record<string, never>, typeof selectors>;
+
+export class ComboboxStoreImpl extends ActviewStore<
+  Readonly<State>,
+  Record<string, never>,
+  typeof selectors
+> {
+  constructor(initialState?: Partial<State>) {
+    super(createInitialState(initialState), {}, selectors);
+  }
+}
+
+export type ComboboxStoreClass = ComboboxStoreImpl;
+
+function createInitialState(initialState?: Partial<State>): State {
+  return {
+    id: undefined,
+    labelId: undefined,
+
+    items: undefined,
+
+    selectedValue: null,
+
+    open: false,
+    mounted: false,
+    transitionStatus: undefined,
+    forceMounted: false,
+
+    inline: false,
+
+    activeIndex: null,
+    selectedIndex: null,
+
+    popupProps: EMPTY_OBJECT as HTMLProps,
+    listProps: EMPTY_OBJECT as HTMLProps,
+    inputProps: EMPTY_OBJECT as HTMLProps,
+    triggerProps: EMPTY_OBJECT as HTMLProps,
+    itemProps: EMPTY_OBJECT as HTMLProps,
+
+    positionerElement: null,
+    listElement: null,
+    popupId: undefined,
+    triggerElement: null,
+    inputElement: null,
+    inputGroupElement: null,
+    popupSide: null,
+
+    openMethod: null,
+
+    inputInsidePopup: true,
+    inputOwnsFormValue: false,
+
+    selectionMode: 'single',
+
+    listRef: { current: [] as Array<HTMLElement | null> },
+    labelsRef: { current: [] as Array<string | null> },
+    popupRef: { current: null as HTMLDivElement | null },
+    emptyRef: { current: null as HTMLDivElement | null },
+    inputRef: { current: null as HTMLInputElement | null },
+    startDismissRef: { current: null as HTMLSpanElement | null },
+    endDismissRef: { current: null as HTMLSpanElement | null },
+    keyboardActiveRef: { current: true },
+    chipsContainerRef: { current: null as HTMLDivElement | null },
+    clearRef: { current: null as HTMLButtonElement | null },
+    valuesRef: { current: [] as Array<any> },
+    pointerDownItemRef: { current: null as Element | null },
+    selectionEventRef: { current: null as MouseEvent | PointerEvent | KeyboardEvent | null },
+
+    // Placeholder callbacks replaced on first render
+    setOpen: NOOP,
+    setInputValue: NOOP,
+    setSelectedValue: NOOP,
+    setIndices: NOOP,
+    handleSelection: NOOP,
+    forceMount: NOOP,
+    requestSubmit: NOOP,
+
+    name: undefined,
+    form: undefined,
+    disabled: false,
+    readOnly: false,
+    required: false,
+    grid: false,
+    virtualized: false,
+    onOpenChangeComplete: NOOP,
+    openOnInputClick: true,
+    itemToStringLabel: undefined,
+    isItemEqualToValue: defaultItemEquality,
+    modal: false,
+    autoHighlight: false,
+    submitOnItemClick: false,
+    hasInputValue: false,
+    ...initialState,
+  };
+}
 
 export const selectors = {
   id: (state: State) => state.id,
