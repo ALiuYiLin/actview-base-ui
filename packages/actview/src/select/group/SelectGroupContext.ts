@@ -1,9 +1,13 @@
 import type { ComputedRef } from '@actview/core';
 import { createContext } from '../../internals/createContext';
 
+export type SelectGroupLabelId = string | undefined;
+
 export interface SelectGroupContext {
-  labelId: string | undefined;
-  setLabelId: (id: string | undefined) => void;
+  labelId: SelectGroupLabelId;
+  setLabelId: (
+    id: SelectGroupLabelId | ((prev: SelectGroupLabelId) => SelectGroupLabelId),
+  ) => void;
 }
 
 export const SelectGroupContext = createContext<SelectGroupContext | undefined>(

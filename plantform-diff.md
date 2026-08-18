@@ -336,7 +336,13 @@
 - **适配**：`resolveRef` 原实现用 `'current' in x` / `'value' in x` 判断 ref 对象；**DOM 元素（button/input/select）自带 `value` 属性** → 被误判为 ref，返回 `element.value`（字符串）→ markOthers 的 `body.contains(string)` 抛 "parameter 1 is not of type 'Node'"。修复：先判 `nodeType != null`（是 DOM 节点）直接返回原值；对象 ref 同时读 `current ?? value`（兼容 actview 的 `.value` 写入与 Base UI 的 `{ current }` 内部 ref）。
 
 ### AD-33 watch 数组源 immediate 回调首参防御
-- **适配**：actview 的 `watch([refA, refB], cb)` 回调首参应为新值数组，但**个别运行路径**（effect 重入/组件卸载后触发）会传 `undefined`，`([a, b], ...)` 解构即抛 "undefined is not iterable"（异步 unhandled rejection）。共享工具（useDismiss、FloatingFocusManager 的全部数组 watch）统一改为 `(newVals, _old, onCleanup) => { const [a, b] = Array.isArray(newVals) ? newVals : []; ... }` 防御。另：`useDismiss` 的 open 监听 watch 需 `{ immediate: true }`——PopoverInteractions 可能在 open 已为 true 时才挂载（普通 watch 永不触发 → Escape/outside 关闭失效）。
+- **适配**：actview 的 `watch([refA, refB], cb)` 回调首参应为新值数组，但**个别运行路径**（effect 重入/组件卸载后触发）会传 `undefined`，`([a, b], ...)` 解构即抛 "undefined is not iterable"（异步 unhandled rejection）。共享工具（useDismiss、FloatingFocusManager 的全部数组 watch）统一改为 `(newVals, _old, onCleanup) => { const [a, b] = Array.isArray(newVals) ? newVals : []; ... }` 防御。另：`useDismiss` 的 open 监听 watch 需 `{ immediate: true }`——PopoverInteractions 可能在 open 已为 true 时才挂载（普通 watch 永不触发 → Escape/outside 关闭失效）。select 组件复用时发现 `useTransitionStatus` 的三个数组 watch 也有同样问题，已一并加防御。
+
+### AD-34 弹层条件渲染不能 setup 期 return null（SelectPortal 场景）
+- **适配**：actview 组件 setup 只执行一次，`if (!cond.value) return null` 中的 `cond.value` 是**快照**——初始为 false 时永远返回 null，之后 open/mounted 变化不会重新渲染（SelectPortal 的 `mounted || forceMount` 判断失效，弹层打不开）。修复：条件渲染放进返回的 JSX 里求值，如 `return <>{cond.value && createElement(FloatingPortal, props)}</>`（每次渲染重新求值）。同类：SelectArrow 的 `alignItemWithTriggerActive` 分支、SelectItemIndicator/SelectScrollArrow 的 `shouldRender` 分支都改用 JSX 内求值。
+
+### AD-35 依赖响应式值的 props 必须用 getter 求值（不能 setup 期合并）
+- **适配**：`useRenderElement` 的 `props` 若在 setup 期用普通对象一次合并（如 `mergeProps(storeProps.value, {...})`），`storeProps.value`/`open.value` 都是**快照**，后续变化不反映到 DOM（SelectTrigger 的 aria-expanded 永远 false、items 的 data-highlighted 不更新、triggerProps 的交互 handler 绑定不上）。修复：props 数组里用 getter 函数（每次渲染求值）——`props: [(prev: any) => mergeProps(prev, triggerProps.value), (prev: any) => ({ ...prev, ...getDefaultProps() }), elementProps, getButtonProps]`（getter 内部合并 prev 保事件链，AD-20/AD-27）。select 的 Trigger/Item/List/Popup 均按此改造。
 
 ---
 

@@ -1,0 +1,64 @@
+import { computed } from 'actview';
+import type { BaseUIComponentProps } from '../../internals/types';
+import { useRenderElement } from '../../internals/useRenderElement';
+import type { FieldRoot } from '../../field/root/FieldRoot';
+import { useFieldRootContext } from '../../internals/field-root-context/FieldRootContext';
+import { fieldValidityMapping } from '../../internals/field-constants/constants';
+import { useLabel } from '../../internals/labelable-provider/useLabel';
+import { getDefaultLabelId } from '../../utils/resolveAriaLabelledBy';
+import { useSelectRootContext } from '../root/SelectRootContext';
+import { selectors } from '../store';
+
+/**
+ * An accessible label that is automatically associated with the select trigger.
+ * Renders a `<div>` element.
+ *
+ * Documentation: [Base UI Select](https://base-ui.com/react/components/select)
+ */
+export function SelectLabel(componentProps: SelectLabel.Props) {
+  const {
+    render: _render,
+    className: _className,
+    style: _style,
+    ...elementProps
+  } = componentProps;
+
+  // Keep label id derived from the root and ignore runtime `id` overrides from untyped consumers.
+  const elementPropsWithoutId = elementProps as typeof elementProps & { id?: string | undefined };
+  delete elementPropsWithoutId.id;
+
+  const fieldRootContext = useFieldRootContext();
+  const rootContext = useSelectRootContext().value!;
+  const { store } = rootContext;
+
+  const triggerElement = store.useState('triggerElement');
+  const rootId = store.useState('id');
+  const defaultLabelId = computed(() => getDefaultLabelId(rootId.value));
+
+  const labelProps = useLabel({
+    id: defaultLabelId.value,
+    fallbackControlId: triggerElement.value?.id ?? rootId.value,
+    setLabelId(nextLabelId: string | undefined) {
+      store.set('labelId', nextLabelId);
+    },
+  });
+
+  const getElement = useRenderElement('div', componentProps, {
+    ref: componentProps.ref,
+    state: fieldRootContext.value.state,
+    props: [labelProps(), elementPropsWithoutId],
+    stateAttributesMapping: fieldValidityMapping,
+  });
+
+  return <>{getElement()}</>;
+}
+
+export type SelectLabelState = FieldRoot.State;
+
+export interface SelectLabelProps
+  extends Omit<BaseUIComponentProps<'div', SelectLabel.State>, 'id'> {}
+
+export namespace SelectLabel {
+  export type State = SelectLabelState;
+  export type Props = SelectLabelProps;
+}

@@ -25,7 +25,8 @@ export function useTransitionStatus(
   // Render-phase state transitions (React version runs these on every render).
   watch(
     [() => unref(open), mounted, transitionStatus],
-    ([isOpen, isMounted, status]) => {
+    (newVals) => {
+      const [isOpen, isMounted, status] = Array.isArray(newVals) ? newVals : [];
       if (isOpen && !isMounted) {
         mounted.value = true;
         transitionStatus.value = 'starting';
@@ -45,7 +46,8 @@ export function useTransitionStatus(
   // deferEndingState layout effect
   watch(
     [() => unref(open), mounted, transitionStatus],
-    ([isOpen, isMounted, status], _old, onCleanup) => {
+    (newVals, _old, onCleanup) => {
+      const [isOpen, isMounted, status] = Array.isArray(newVals) ? newVals : [];
       if (!isOpen && isMounted && status !== 'ending' && deferEndingState) {
         const frame = AnimationFrame.request(() => {
           transitionStatus.value = 'ending';
@@ -81,7 +83,8 @@ export function useTransitionStatus(
   // Idle-state sequence.
   watch(
     [() => unref(open), mounted, transitionStatus],
-    ([isOpen, isMounted, status], _old, onCleanup) => {
+    (newVals, _old, onCleanup) => {
+      const [isOpen, isMounted, status] = Array.isArray(newVals) ? newVals : [];
       if (!isOpen || !enableIdleState) {
         return;
       }

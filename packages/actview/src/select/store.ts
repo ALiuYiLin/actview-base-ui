@@ -1,10 +1,11 @@
 import type { VNodeChild } from '@actview/jsx';
-import type { ActviewStore } from '@base-ui/actview-utils/store';
+import { ActviewStore } from '@base-ui/actview-utils/store';
+import { EMPTY_OBJECT } from '@base-ui/actview-utils/empty';
 import type { InteractionType } from '@base-ui/actview-utils/useEnhancedClickHandler';
 import type { TransitionStatus } from '../internals/useTransitionStatus';
 import type { HTMLProps } from '../internals/types';
 import type { Side } from '../internals/useAnchorPositioning';
-import { compareItemEquality } from '../internals/itemEquality';
+import { defaultItemEquality, compareItemEquality } from '../internals/itemEquality';
 import { type Group, hasNullItemLabel, stringifyAsValue } from '../internals/resolveValueLabel';
 
 export type State = {
@@ -46,12 +47,11 @@ export type State = {
   hasScrollArrows: boolean;
 };
 
-export type SelectStore = ActviewStore<State>;
-
 export const selectors = {
   id: (state: State) => state.id,
   labelId: (state: State) => state.labelId,
   modal: (state: State) => state.modal,
+  multiple: (state: State) => state.multiple,
 
   items: (state: State) => state.items,
   itemToStringLabel: (state: State) => state.itemToStringLabel,
@@ -117,3 +117,57 @@ export const selectors = {
 
   hasScrollArrows: (state: State) => state.hasScrollArrows,
 };
+
+type Selectors = typeof selectors;
+
+/**
+ * The data store that backs `Select.Root` and its parts. Unlike the popup-family stores,
+ * the select store is a plain `ActviewStore`: the select is a single-trigger component, so
+ * it has no trigger registry, payload, or active-trigger ownership. All refs and callbacks
+ * (`listRef`, `valuesRef`, `setOpen`, …) live on `SelectRootContext` instead.
+ */
+export class SelectStore extends ActviewStore<Readonly<State>, Record<string, never>, Selectors> {
+  constructor(initialState?: Partial<State>) {
+    super(createInitialState(initialState), {}, selectors);
+  }
+}
+
+export type SelectStoreView = SelectStore;
+
+function createInitialState(initialState?: Partial<State>): State {
+  return {
+    id: undefined,
+    labelId: undefined,
+    modal: true,
+    multiple: false,
+
+    items: undefined,
+    itemToStringLabel: undefined,
+    itemToStringValue: undefined,
+    isItemEqualToValue: defaultItemEquality,
+
+    value: null,
+
+    open: false,
+    mounted: false,
+    forceMount: false,
+    transitionStatus: undefined,
+    openMethod: null,
+
+    activeIndex: null,
+    selectedIndex: null,
+
+    popupProps: EMPTY_OBJECT as HTMLProps,
+    triggerProps: EMPTY_OBJECT as HTMLProps,
+    triggerElement: null,
+    positionerElement: null,
+    listElement: null,
+    popupSide: null,
+
+    scrollUpArrowVisible: false,
+    scrollDownArrowVisible: false,
+
+    hasScrollArrows: false,
+    ...initialState,
+  };
+}
