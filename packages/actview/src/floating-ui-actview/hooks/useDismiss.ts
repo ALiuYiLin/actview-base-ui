@@ -275,23 +275,27 @@ export function useDismiss(
     };
   });
 
-  watch([open], ([openValue], _old, onCleanup) => {
-    if (!openValue || !enabled) {
-      // Reset in the effect body, not the cleanup, which also runs when a dependency
-      // changes mid-gesture.
-      if (!openValue) {
-        sawPressWhileOpenRef.current = false;
+  watch(
+    [open],
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    (newVals: any, _old, onCleanup) => {
+      const [openValue] = Array.isArray(newVals) ? newVals : [newVals];
+      if (!openValue || !enabled) {
+        // Reset in the effect body, not the cleanup, which also runs when a dependency
+        // changes mid-gesture.
+        if (!openValue) {
+          sawPressWhileOpenRef.current = false;
+        }
+        onCleanup(clearInsideReactTree);
+        return;
       }
-      onCleanup(clearInsideReactTree);
-      return;
-    }
 
-    dataRef.current.__escapeKeyBubbles = escapeKeyBubbles;
-    dataRef.current.__outsidePressBubbles = outsidePressBubbles;
+      dataRef.current.__escapeKeyBubbles = escapeKeyBubbles;
+      dataRef.current.__outsidePressBubbles = outsidePressBubbles;
 
-    const compositionTimeout = new Timeout();
-    const preventedPressSuppressionTimeout = new Timeout();
-    const doc = ownerDocument(floatingElement.value);
+      const compositionTimeout = new Timeout();
+      const preventedPressSuppressionTimeout = new Timeout();
+      const doc = ownerDocument(floatingElement.value);
 
     function handleCompositionStart() {
       compositionTimeout.clear();
@@ -718,7 +722,9 @@ export function useDismiss(
       suppressNextOutsideClickRef.current = false;
       clearInsideReactTree();
     });
-  });
+    // `immediate`: the hook may mount while already open (e.g. a popup opening in the same
+    // commit as its interactions), in which case the plain watch would never fire.
+  }, { immediate: true });
 
   const reference: ElementProps['reference'] = {
     onKeyDown: closeOnEscapeKeyDown,

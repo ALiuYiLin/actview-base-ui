@@ -7,7 +7,7 @@ import { addEventListener } from '@base-ui/actview-utils/addEventListener';
 import { mergeCleanups } from '@base-ui/actview-utils/mergeCleanups';
 import { useId } from '@base-ui/actview-utils/useId';
 import { EMPTY_OBJECT } from '@base-ui/actview-utils/empty';
-import { FocusGuard } from '../../utils/FocusGuard';
+import { renderFocusGuard } from '../../utils/FocusGuard';
 import {
   enableFocusInside,
   disableFocusInside,
@@ -272,51 +272,55 @@ export function FloatingPortal(componentProps: FloatingPortal.Props<any>) {
     <>
       {portalSubtree.value}
       <PortalContext.Provider value={portalContextValue}>
-        {shouldRenderGuards && portalNode.value && (
-          <FocusGuard
-            data-type="outside"
-            ref={beforeOutsideRef}
-            onFocus={(event) => {
-              if (isOutsideEvent(event, portalNode.value!)) {
-                beforeInsideRef.current?.focus();
-              } else {
-                const domReference = focusManagerState.value
-                  ? focusManagerState.value.domReference
-                  : null;
-                const prevTabbable = getPreviousTabbable(domReference);
-                prevTabbable?.focus();
-              }
-            }}
-          />
-        )}
+        {shouldRenderGuards &&
+          portalNode.value &&
+          renderFocusGuard(
+            {
+              'data-type': 'outside',
+              onFocus: (event: FocusEvent) => {
+                if (isOutsideEvent(event, portalNode.value!)) {
+                  beforeInsideRef.current?.focus();
+                } else {
+                  const domReference = focusManagerState.value
+                    ? focusManagerState.value.domReference
+                    : null;
+                  const prevTabbable = getPreviousTabbable(domReference);
+                  prevTabbable?.focus();
+                }
+              },
+            },
+            beforeOutsideRef,
+          )}
         {shouldRenderGuards && portalNode.value && (
           <span role={portalOwnerRole} aria-owns={portalNodeId.value} style={ownerVisuallyHidden} />
         )}
         {portalNode.value && <Teleport to={portalNode.value}>{children}</Teleport>}
-        {shouldRenderGuards && portalNode.value && (
-          <FocusGuard
-            data-type="outside"
-            ref={afterOutsideRef}
-            onFocus={(event) => {
-              if (isOutsideEvent(event, portalNode.value!)) {
-                afterInsideRef.current?.focus();
-              } else {
-                const domReference = focusManagerState.value
-                  ? focusManagerState.value.domReference
-                  : null;
-                const nextTabbable = getNextTabbable(domReference);
-                nextTabbable?.focus();
+        {shouldRenderGuards &&
+          portalNode.value &&
+          renderFocusGuard(
+            {
+              'data-type': 'outside',
+              onFocus: (event: FocusEvent) => {
+                if (isOutsideEvent(event, portalNode.value!)) {
+                  afterInsideRef.current?.focus();
+                } else {
+                  const domReference = focusManagerState.value
+                    ? focusManagerState.value.domReference
+                    : null;
+                  const nextTabbable = getNextTabbable(domReference);
+                  nextTabbable?.focus();
 
-                if (focusManagerState.value?.closeOnFocusOut) {
-                  focusManagerState.value?.onOpenChange(
-                    false,
-                    createChangeEventDetails(REASONS.focusOut, event),
-                  );
+                  if (focusManagerState.value?.closeOnFocusOut) {
+                    focusManagerState.value?.onOpenChange(
+                      false,
+                      createChangeEventDetails(REASONS.focusOut, event),
+                    );
+                  }
                 }
-              }
-            }}
-          />
-        )}
+              },
+            },
+            afterOutsideRef,
+          )}
       </PortalContext.Provider>
     </>
   );

@@ -33,16 +33,16 @@ export function usePositioner<State extends Record<string, any>>(
     state,
     ref: refs,
     props: [
-      () => {
+      (prev: any) => {
         const style: Record<string, string | number> = { ...unref(styles) };
 
         if (unref(inert)) {
           style.pointerEvents = 'none';
         }
 
-        return { role: 'presentation', hidden: unref(hidden), style };
+        return { ...prev, role: 'presentation', hidden: unref(hidden), style };
       },
-      () => getDisabledMountTransitionStyles(unref(transitionStatus)),
+      (prev: any) => ({ ...prev, ...getDisabledMountTransitionStyles(unref(transitionStatus)) }),
       props,
     ],
     stateAttributesMapping: popupStateMapping,

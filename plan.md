@@ -26,11 +26,11 @@
 
 ## 二、组件状态（共 47 个 src 目录，非测试文件口径）
 
-### ✅ 已完成（31 个）
-`accordion`（11 测试通过 ✅：root/item/header/trigger/panel 全组件 + contexts 补全；依赖 collapsible 子系统；修复 AD-27 getter 链合并 prev 保 id/children、aria-expanded 布尔归一化）、`avatar`、`button`（7 测试通过 ✅）、`checkbox`、`checkbox-group`、`collapsible`、`csp-provider`、`direction-provider`、`field`（12 测试通过 ✅：Error/Label/Item/Validity/Control 补全 + index 导出；修复 Form getter 链丢失 onSubmit（AD-20 变体）、useLabel htmlFor→for（AD-24）、FieldError children 覆盖 + messageIds 替换式注册（AD-25））、`fieldset`、`form`（依赖 Form.tsx 修复 getElementProps 合并）、`input`（7 测试通过 ✅，依赖 FieldControl 已修）、`internals`、`merge-props`、`meter`、`number-field`（13 测试通过 ✅：root/group/input/increment/decrement/scrub-area/scrub-area-cursor 全组件补全；修复 AD-20 getter 整体替换丢属性、AD-21 隐藏 input setup 静态对象、AD-22 Teleport 替代 createPortal、AD-23 测试组件顶层定义，见 plantform-diff.md）、`progress`、`radio`、`radio-group`、`scroll-area`（13 测试通过 ✅：root/viewport/scrollbar，jsdom 适配见 plantform-diff.md AD-16）、`separator`、`slider`（23 测试通过 ✅：root 10 + utils 13；修复 AI-003：组件末尾 `return <>{getElement()}</>` 规避 Babel 转换漏检，见 actview-issue.md）、`switch`、`tabs`（6 测试通过 ✅：AI-001 解决链完成——AI-002 框架修复 + props 静态对象改 getter（AD-17）+ 测试 waitFor flush（AD-18）+ jsdom 键盘模拟（AD-19），见 actview-issue.md AI-001）、`toggle`、`toggle-group`、`toolbar`、`types`、`unstable-use-media-query`、`use-render`、`utils`
+### ✅ 已完成（32 个）
+`accordion`（11 测试通过 ✅：root/item/header/trigger/panel 全组件 + contexts 补全；依赖 collapsible 子系统；修复 AD-27 getter 链合并 prev 保 id/children、aria-expanded 布尔归一化）、`avatar`、`button`（7 测试通过 ✅）、`checkbox`、`checkbox-group`、`collapsible`、`csp-provider`、`direction-provider`、`field`（12 测试通过 ✅：Error/Label/Item/Validity/Control 补全 + index 导出；修复 Form getter 链丢失 onSubmit（AD-20 变体）、useLabel htmlFor→for（AD-24）、FieldError children 覆盖 + messageIds 替换式注册（AD-25））、`fieldset`、`form`（依赖 Form.tsx 修复 getElementProps 合并）、`input`（7 测试通过 ✅，依赖 FieldControl 已修）、`internals`、`merge-props`、`meter`、`number-field`（13 测试通过 ✅：root/group/input/increment/decrement/scrub-area/scrub-area-cursor 全组件补全；修复 AD-20 getter 整体替换丢属性、AD-21 隐藏 input setup 静态对象、AD-22 Teleport 替代 createPortal、AD-23 测试组件顶层定义，见 plantform-diff.md）、`popover`（19 测试通过 ✅：Root/Trigger/Portal/Positioner/Popup/Arrow/Backdrop/Title/Description/Close/Viewport + Store/Handle 全组件补齐；依赖 popups/floating-ui-actview 基建已就绪；修复 AD-28~AD-31 + resolveRef/FFM children/watch 数组源等，见 plantform-diff.md）、`progress`、`radio`、`radio-group`、`scroll-area`（13 测试通过 ✅：root/viewport/scrollbar，jsdom 适配见 plantform-diff.md AD-16）、`separator`、`slider`（23 测试通过 ✅：root 10 + utils 13；修复 AI-003：组件末尾 `return <>{getElement()}</>` 规避 Babel 转换漏检，见 actview-issue.md）、`switch`、`tabs`（6 测试通过 ✅：AI-001 解决链完成——AI-002 框架修复 + props 静态对象改 getter（AD-17）+ 测试 waitFor flush（AD-18）+ jsdom 键盘模拟（AD-19），见 actview-issue.md AI-001）、`toggle`、`toggle-group`、`toolbar`、`types`、`unstable-use-media-query`、`use-render`、`utils`
 
-### 🔄 部分完成（5 个，需逐个验收/修复/补测试）
-`select(17/40)`、`popover(10/28)`、`toast(12/36)`、`menu(2/51)`、`combobox(4/61)`
+### 🔄 部分完成（4 个，需逐个验收/修复/补测试）
+`select(17/40)`、`toast(12/36)`、`menu(2/51)`、`combobox(4/61)`
 
 ### ⏳ 未开始（15 个）
 | 组件 | 说明 |

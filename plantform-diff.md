@@ -320,6 +320,24 @@
 ### AD-27 props 链中每个 getter 都要合并 prev 才能保 id/children
 - **适配**：`useRenderElement` 的 props 数组按序 merge，**每个 getter 返回的对象整体替换**累计值。若链中某 getter 返回不含 `id`/`children`/`data-*` 的新对象（如 panel 的 ARIA/style getter），会**丢弃前面 getter 提供的 id/children**（panel 渲染空 div、丢 id）。必须每个 getter 写 `(prev) => ({ ...prev, ...新属性 })`。已修复：AccordionPanel 的 aria/style getter、style 临时覆盖 getter。另外 `aria-expanded` 等 ARIA 布尔需显式 `'true'/'false'` 字符串（actview 布尔 true 渲染空串，见 PD-01）。排查方法：props 链中 grep 无 `...prev` 的 `() => ({...})` getter。
 
+### AD-28 FloatingFocusManager 的 disabled 不响应 → 条件挂载
+- **适配**：actview 组件 setup 只执行一次，`FloatingFocusManager` 的 `disabled`/`modal` props 是挂载时快照。popover 打开瞬间 `mounted` 尚未为 true，若把 `disabled={!mounted || hover}` 传入会**永久禁用焦点管理**。修复：`PopoverPopup` 用 `shouldRenderFocusManager`（`mounted && openReason !== triggerHover`）**条件渲染** FloatingFocusManager，挂载时 `disabled={false}` 固定；hover 打开时直接渲染 element 不包焦点管理器。
+
+### AD-29 守卫条件渲染导致 trigger DOM 节点重建
+- **适配**：actview 的 vnode patch 对**树结构变化**（单元素 ↔ Fragment 包裹）会重建 DOM 节点。`PopoverTrigger` 打开后在元素前后插入焦点守卫，原写法（三元切换两套结构）使 trigger 节点被重建 → `domReferenceElement` 引用失效 → useClick 把第二次点击误判为"点击非活跃 trigger"而重新打开（永远关不上）。修复：**把 element() 固定在 Fragment 的中间稳定位置**，守卫用 `{cond && renderFocusGuard(...)}` 在两侧条件渲染，element 的树位置不变、DOM 节点复用。
+
+### AD-30 actview 组件 ref 收到组件实例而非 DOM（FocusGuard 改渲染函数）
+- **适配**：actview 的 ref 解析：自定义组件 `<Comp ref={fn}>` → `fn(组件实例)`（mountComponent 处理），且 setup 的 props **删除 `ref`**（不透传）；只有内置 DOM 元素 `ref` 才收到 DOM 节点；对象 ref 写 `.value`（不写 `.current`）。因此 `FocusGuard`（组件）不能作为 ref 目标（beforeGuardRef.current 拿到的是实例对象，传给 markOthers 时 `body.contains(实例)` 抛 "parameter 1 is not of type 'Node'"）。修复：`utils/FocusGuard.tsx` 改为**渲染函数** `renderFocusGuard(props, ref)` 直接返回 `<span ref={ref}>`，调用方（FloatingFocusManager/FloatingPortal/PopoverTrigger）把 DOM ref 直接挂 span。另：actview 的组件 children 是 setup 快照——**FloatingFocusManager 渲染 children 需读 `props.children`**（父组件重渲染产生的新 vnode 才能传播），否则 popup 的 aria-labelledby 等属性更新不生效。
+
+### AD-31 .ts 文件中的组件返回 null 不被 Babel 转换 → DOMException
+- **适配**：actview 的 Babel 插件只转换**返回 JSX** 的组件（.tsx）；`utils/popups/popupStoreUtils.ts`（.ts）里的 `PopupHandleAttachment` 返回 `null`，作为 JSX 组件使用时运行时 `DOMException {}`（组件渲染错误，挂载即抛、后续子树不渲染）。修复：`PopoverRoot` 不再渲染该组件，改为在 setup 中直接 `watch(() => handle, ..., { immediate: true })` 调 `handle.attachStore(store)`（onCleanup 解绑）。
+
+### AD-32 resolveRef 误判 DOM 元素（value 属性）为 ref
+- **适配**：`resolveRef` 原实现用 `'current' in x` / `'value' in x` 判断 ref 对象；**DOM 元素（button/input/select）自带 `value` 属性** → 被误判为 ref，返回 `element.value`（字符串）→ markOthers 的 `body.contains(string)` 抛 "parameter 1 is not of type 'Node'"。修复：先判 `nodeType != null`（是 DOM 节点）直接返回原值；对象 ref 同时读 `current ?? value`（兼容 actview 的 `.value` 写入与 Base UI 的 `{ current }` 内部 ref）。
+
+### AD-33 watch 数组源 immediate 回调首参防御
+- **适配**：actview 的 `watch([refA, refB], cb)` 回调首参应为新值数组，但**个别运行路径**（effect 重入/组件卸载后触发）会传 `undefined`，`([a, b], ...)` 解构即抛 "undefined is not iterable"（异步 unhandled rejection）。共享工具（useDismiss、FloatingFocusManager 的全部数组 watch）统一改为 `(newVals, _old, onCleanup) => { const [a, b] = Array.isArray(newVals) ? newVals : []; ... }` 防御。另：`useDismiss` 的 open 监听 watch 需 `{ immediate: true }`——PopoverInteractions 可能在 open 已为 true 时才挂载（普通 watch 永不触发 → Escape/outside 关闭失效）。
+
 ---
 
 > 维护说明：新增差异/适配时在对应部分追加，编号递增；修改后同步更新 plan.md 与 issue.md 的关联条目。

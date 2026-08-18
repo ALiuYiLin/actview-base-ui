@@ -1,33 +1,26 @@
-import { ref } from 'actview';
-import { useIsoLayoutEffect } from '@base-ui/actview-utils/useIsoLayoutEffect';
-import { platform } from '@base-ui/actview-utils/platform';
 import { visuallyHidden } from '@base-ui/actview-utils/visuallyHidden';
-import type { HTMLProps } from '../internals/types';
+import type { HTMLProps, RefValue } from '../internals/types';
 
 /**
+ * Renders an invisible focus guard `<span>`.
+ *
+ * This is a plain render function rather than a component: ActView component refs resolve to the
+ * component instance, not the DOM element (mountComponent deletes `props.ref`), so a component
+ * cannot forward a ref to its inner element. Callers pass a DOM ref directly.
+ *
  * @internal
  */
-export function FocusGuard(props: HTMLProps) {
-  const role = ref<'button' | undefined>(undefined);
-
-  useIsoLayoutEffect(() => {
-    // Unlike NVDA and JAWS, VoiceOver's virtual cursor triggers `onFocus` as
-    // it moves — but only on focusable/role-button elements through WebKit's
-    // NSAccessibility path. Setting `role="button"` lets the focus trap catch
-    // the cursor.
-    if (platform.screenReader.voiceOver && platform.engine.webkit) {
-      role.value = 'button';
-    }
-  });
-
+export function renderFocusGuard(
+  props: HTMLProps,
+  ref: RefValue<HTMLSpanElement> | undefined,
+) {
   return (
     <span
       {...props}
+      ref={ref}
       style={visuallyHidden}
-      aria-hidden={role.value ? undefined : true}
+      aria-hidden={true}
       tabIndex={0}
-      // Role is only for VoiceOver
-      role={role.value}
       data-base-ui-focus-guard=""
     />
   );

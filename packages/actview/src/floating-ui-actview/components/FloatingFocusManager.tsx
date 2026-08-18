@@ -10,7 +10,7 @@ import { platform } from '@base-ui/actview-utils/platform';
 import type { InteractionType } from '@base-ui/actview-utils/useEnhancedClickHandler';
 import { useAnimationFrame } from '@base-ui/actview-utils/useAnimationFrame';
 import { ownerDocument, ownerWindow } from '@base-ui/actview-utils/owner';
-import { FocusGuard } from '../../utils/FocusGuard';
+import { renderFocusGuard } from '../../utils/FocusGuard';
 import {
   activeElement,
   contains,
@@ -302,7 +302,8 @@ export function FloatingFocusManager(props: FloatingFocusManagerProps) {
     getInsideElements?.().filter((element): element is Element => element != null) ?? [];
 
   // Prevent Tab from escaping the modal when there are no tabbable elements.
-  watch([floatingFocusElement, isUntrappedTypeableCombobox], ([focusElement, untrapped]) => {
+  watch([floatingFocusElement, isUntrappedTypeableCombobox], (newVals: any) => {
+    const [focusElement, untrapped] = Array.isArray(newVals) ? newVals : [];
     if (disabled || !modal) {
       return;
     }
@@ -327,7 +328,10 @@ export function FloatingFocusManager(props: FloatingFocusManagerProps) {
   // Track pointer/keyboard interactions to disambiguate focus and outside presses.
   watch(
     [open, floating, domReference, floatingFocusElement],
-    ([openValue, floatingValue, domReferenceValue, focusElement], _old, onCleanup) => {
+    (newVals: any, _old, onCleanup) => {
+      const [openValue, floatingValue, domReferenceValue, focusElement] = Array.isArray(newVals)
+        ? newVals
+        : [];
       if (disabled || !openValue) {
         return;
       }
@@ -380,15 +384,10 @@ export function FloatingFocusManager(props: FloatingFocusManagerProps) {
   // Close on focus out and restore focus within the floating tree when needed.
   watch(
     [floating, domReference, floatingFocusElement],
-    (
-      [floatingValue, domReferenceValue, focusElement]: [
-        HTMLElement | null,
-        Element | null,
-        HTMLElement | null,
-      ],
-      _old,
-      onCleanup,
-    ) => {
+    (newVals: any, _old, onCleanup) => {
+      const [floatingValue, domReferenceValue, focusElement] = (
+        Array.isArray(newVals) ? newVals : []
+      ) as [HTMLElement | null, Element | null, HTMLElement | null];
       if (disabled || !closeOnFocusOut) {
         return;
       }
@@ -562,7 +561,10 @@ export function FloatingFocusManager(props: FloatingFocusManagerProps) {
   // Hide everything outside the floating tree from assistive tech while open.
   watch(
     [open, floating, domReference, isUntrappedTypeableCombobox],
-    ([openValue, floatingValue, domReferenceValue, untrapped], _old, onCleanup) => {
+    (newVals: any, _old, onCleanup) => {
+      const [openValue, floatingValue, domReferenceValue, untrapped] = Array.isArray(newVals)
+        ? newVals
+        : [];
       if (disabled || !floatingValue || !openValue) {
         return;
       }
@@ -612,7 +614,8 @@ export function FloatingFocusManager(props: FloatingFocusManagerProps) {
   );
 
   // Focus the initial element when the floating element opens.
-  watch([open, floatingFocusElement], ([openValue, focusElement]) => {
+  watch([open, floatingFocusElement], (newVals: any) => {
+    const [openValue, focusElement] = Array.isArray(newVals) ? newVals : [];
     if (!openValue || disabled || !isHTMLElement(focusElement)) {
       return;
     }
@@ -689,7 +692,8 @@ export function FloatingFocusManager(props: FloatingFocusManagerProps) {
   // Track return focus targets and restore focus on unmount/close.
   watch(
     [floating, floatingFocusElement],
-    ([floatingValue, focusElement], _old, onCleanup) => {
+    (newVals: any, _old, onCleanup) => {
+      const [floatingValue, focusElement] = Array.isArray(newVals) ? newVals : [];
       if (disabled || !focusElement) {
         return;
       }
@@ -834,7 +838,8 @@ export function FloatingFocusManager(props: FloatingFocusManagerProps) {
   // Safari may randomly scroll to the bottom of the page if an input inside a popup has focus
   // when the popup unmounts from the DOM.
   // By blurring it before the popup unmounts, we can prevent this behavior.
-  watch([open, floating], ([openValue, floatingValue]) => {
+  watch([open, floating], (newVals: any) => {
+    const [openValue, floatingValue] = Array.isArray(newVals) ? newVals : [];
     if (!platform.engine.webkit || openValue || !floatingValue) {
       return;
     }
@@ -851,7 +856,8 @@ export function FloatingFocusManager(props: FloatingFocusManagerProps) {
 
   // Synchronize the focus manager state (modal, closeOnFocusOut, open, etc.) to the
   // FloatingPortal context, which uses it to decide whether to render its own guards.
-  watch([open, domReference], ([openValue, domReferenceValue], _old, onCleanup) => {
+  watch([open, domReference], (newVals: any, _old, onCleanup) => {
+    const [openValue, domReferenceValue] = Array.isArray(newVals) ? newVals : [];
     if (disabled || !portalContext) {
       return;
     }
@@ -870,7 +876,8 @@ export function FloatingFocusManager(props: FloatingFocusManagerProps) {
   });
 
   // Keep the floating element tabIndex in sync and clear stale focus records.
-  watch([floatingFocusElement], ([focusElement], _old, onCleanup) => {
+  watch([floatingFocusElement], (newVals: any, _old, onCleanup) => {
+    const [focusElement] = Array.isArray(newVals) ? newVals : [];
     if (disabled || !focusElement) {
       return;
     }
@@ -887,51 +894,55 @@ export function FloatingFocusManager(props: FloatingFocusManagerProps) {
 
   return (
     <>
-      {shouldRenderGuards && (
-        <FocusGuard
-          data-type="inside"
-          ref={mergedBeforeGuardRef}
-          onFocus={(event) => {
-            if (modal) {
-              const els = getTabbableContent();
-              // enqueueFocus returns a rAF-cancel function we don't need here.
-              void enqueueFocus(els[els.length - 1]);
-            } else if (portalContext?.portalNode) {
-              preventReturnFocusRef.current = false;
-              if (isOutsideEvent(event, portalContext.portalNode)) {
-                const nextTabbable = getNextTabbable(domReference.value);
-                nextTabbable?.focus();
-              } else {
-                resolveRef(previousFocusableElement ?? portalContext.beforeOutsideRef)?.focus();
+      {shouldRenderGuards &&
+        renderFocusGuard(
+          {
+            'data-type': 'inside',
+            onFocus: (event: FocusEvent) => {
+              if (modal) {
+                const els = getTabbableContent();
+                // enqueueFocus returns a rAF-cancel function we don't need here.
+                void enqueueFocus(els[els.length - 1]);
+              } else if (portalContext?.portalNode) {
+                preventReturnFocusRef.current = false;
+                if (isOutsideEvent(event, portalContext.portalNode)) {
+                  const nextTabbable = getNextTabbable(domReference.value);
+                  nextTabbable?.focus();
+                } else {
+                  resolveRef(previousFocusableElement ?? portalContext.beforeOutsideRef)?.focus();
+                }
               }
-            }
-          }}
-        />
-      )}
-      {children}
-      {shouldRenderGuards && (
-        <FocusGuard
-          data-type="inside"
-          ref={mergedAfterGuardRef}
-          onFocus={(event) => {
-            if (modal) {
-              // enqueueFocus returns a rAF-cancel function we don't need here.
-              void enqueueFocus(getTabbableContent()[0]);
-            } else if (portalContext?.portalNode) {
-              if (closeOnFocusOut) {
-                preventReturnFocusRef.current = true;
-              }
+            },
+          },
+          mergedBeforeGuardRef,
+        )}
+      {/* Read through the props proxy so parent re-renders propagate new children (setup
+          destructuring would snapshot the initial vnode). */}
+      {props.children}
+      {shouldRenderGuards &&
+        renderFocusGuard(
+          {
+            'data-type': 'inside',
+            onFocus: (event: FocusEvent) => {
+              if (modal) {
+                // enqueueFocus returns a rAF-cancel function we don't need here.
+                void enqueueFocus(getTabbableContent()[0]);
+              } else if (portalContext?.portalNode) {
+                if (closeOnFocusOut) {
+                  preventReturnFocusRef.current = true;
+                }
 
-              if (isOutsideEvent(event, portalContext.portalNode)) {
-                const prevTabbable = getPreviousTabbable(domReference.value);
-                prevTabbable?.focus();
-              } else {
-                resolveRef(nextFocusableElement ?? portalContext.afterOutsideRef)?.focus();
+                if (isOutsideEvent(event, portalContext.portalNode)) {
+                  const prevTabbable = getPreviousTabbable(domReference.value);
+                  prevTabbable?.focus();
+                } else {
+                  resolveRef(nextFocusableElement ?? portalContext.afterOutsideRef)?.focus();
+                }
               }
-            }
-          }}
-        />
-      )}
+            },
+          },
+          mergedAfterGuardRef,
+        )}
     </>
   );
 }
