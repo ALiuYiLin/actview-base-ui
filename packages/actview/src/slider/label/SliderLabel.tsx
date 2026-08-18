@@ -2,7 +2,7 @@ import { computed } from 'actview';
 import { isHTMLElement } from '@floating-ui/utils/dom';
 import { ownerDocument } from '@base-ui/actview-utils/owner';
 import { focusElementWithVisible, useLabel } from '../../internals/labelable-provider/useLabel';
-import type { BaseUIComponentProps } from '../../internals/types';
+import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
 import { useRenderElement } from '../../internals/useRenderElement';
 import type { SliderRoot } from '../root/SliderRoot';
 import { useSliderRootContext } from '../root/SliderRootContext';
@@ -46,7 +46,7 @@ export function SliderLabel(componentProps: SliderLabel.Props) {
     focusControl,
   });
 
-  const getElementProps = () => {
+  const getElementProps = (prev: HTMLProps): HTMLProps => {
     const {
       render: _render,
       className: _className,
@@ -55,7 +55,7 @@ export function SliderLabel(componentProps: SliderLabel.Props) {
     } = componentProps;
     // Keep label id derived from the root and ignore runtime `id` overrides from untyped consumers.
     delete (elementProps as typeof elementProps & { id?: string | undefined }).id;
-    return elementProps;
+    return { ...prev, ...elementProps };
   };
 
   const getElement = useRenderElement('div', componentProps, {
@@ -65,7 +65,9 @@ export function SliderLabel(componentProps: SliderLabel.Props) {
     stateAttributesMapping: sliderStateAttributesMapping,
   });
 
-  return getElement();
+  // Wrap in a Fragment so the ActView Babel transform recognizes this as a JSX
+  // return and converts the component to a `{ __setup }` VNode type (AI-003).
+  return <>{getElement()}</>;
 }
 
 export type SliderLabelState = SliderRoot.State;

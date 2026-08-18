@@ -1,6 +1,6 @@
 import { unref } from 'actview';
 import type { Ref } from '@actview/core';
-import { createElement, type ComponentType, type VNode } from '@actview/jsx';
+import { jsx, createElement, type ComponentType, type VNode } from '@actview/jsx';
 import { mergeRefsN } from '@base-ui/actview-utils/useMergedRefs';
 import { mergeObjects } from '@base-ui/actview-utils/mergeObjects';
 import { warn } from '@base-ui/actview-utils/warn';
@@ -186,13 +186,11 @@ function warnIfRenderPropLooksLikeComponent(renderFn: { name: string }) {
 }
 
 function renderTag(Tag: string, props: Record<string, any>) {
-  if (Tag === 'button') {
-    return <button type="button" {...props} key={props.key} />;
-  }
-  if (Tag === 'img') {
-    return <img alt="" {...props} key={props.key} />;
-  }
-  return createElement(Tag, props);
+  const { children, ...attrs } = props;
+  // Use `jsx` instead of `createElement` for string tags so that `children`
+  // from props are correctly processed as child VNodes rather than set as a DOM attribute.
+  // (`createElement` for string types does not handle children at all — only `jsx` does.)
+  return children != null ? jsx(Tag, { ...attrs, children }) : jsx(Tag, attrs);
 }
 
 /**

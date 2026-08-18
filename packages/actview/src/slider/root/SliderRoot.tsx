@@ -1,11 +1,11 @@
-import { computed, ref, watch } from 'actview';
+import { computed, ref, watch, onMounted } from 'actview';
 import { ownerDocument } from '@base-ui/actview-utils/owner';
 import { useControlled } from '@base-ui/actview-utils/useControlled';
 import { warn } from '@base-ui/actview-utils/warn';
 import { clamp } from '@base-ui/actview-utils/clamp';
 import { areArraysEqual } from '@base-ui/actview-utils/areArraysEqual';
 import { activeElement, contains } from '@base-ui/actview-utils/shadowDom';
-import type { BaseUIComponentProps, Orientation, RefObject } from '../../internals/types';
+import type { BaseUIComponentProps, HTMLProps, Orientation, RefObject } from '../../internals/types';
 import {
   createChangeEventDetails,
   createGenericEventDetails,
@@ -167,7 +167,7 @@ export function SliderRoot<Value extends number | readonly number[]>(
     const max = componentProps.max ?? 100;
 
     if (!Array.isArray(value)) {
-      return [clamp(value, min, max)];
+      return [clamp(value as number, min, max)];
     }
     return value.map((v) => clamp(v, min, max)).sort(asc);
   });
@@ -279,27 +279,39 @@ export function SliderRoot<Value extends number | readonly number[]>(
     );
   }
 
-  watch(
-    [() => disabled.value, () => active.value],
-    ([isDisabled]) => {
-      if (!isDisabled) {
-        return;
-      }
+  // Sync disabled state: blur active element and clear active thumb index when disabled.
+  // Split into initial (onMounted) and change (watch) per AI-001 workaround
+  // (see actview-issue.md).
+  const syncDisabled = () => {
+    if (!disabled.value) {
+      return;
+    }
 
-      const activeEl = activeElement(ownerDocument(sliderRef.current));
-      if (contains(sliderRef.current, activeEl)) {
-        // This is necessary because Firefox and Safari will keep focus
-        // on a disabled element:
-        // https://codesandbox.io/p/sandbox/mui-pr-22247-forked-h151h?file=/src/App.js
-        (activeEl as HTMLElement).blur();
-      }
+    const el = sliderRef.current;
+    if (!el) {
+      return;
+    }
 
-      if (active.value !== -1) {
-        setActive(-1);
-      }
-    },
-    { immediate: true, flush: 'post' },
-  );
+    const activeEl = activeElement(ownerDocument(el));
+    if (contains(el, activeEl)) {
+      // This is necessary because Firefox and Safari will keep focus
+      // on a disabled element:
+      // https://codesandbox.io/p/sandbox/mui-pr-22247-forked-h151h?file=/src/App.js
+      (activeEl as HTMLElement).blur();
+    }
+
+    if (active.value !== -1) {
+      setActive(-1);
+    }
+  };
+
+  onMounted(() => {
+    syncDisabled();
+  });
+
+  watch([() => disabled.value, () => active.value], () => {
+    syncDisabled();
+  });
 
   const state = computed<SliderRootState>(() => ({
     ...fieldContext.value.state,
@@ -324,7 +336,7 @@ export function SliderRoot<Value extends number | readonly number[]>(
     handleInputChange,
     indicatorPosition: indicatorPosition.value,
     inset: (componentProps.thumbAlignment ?? 'center') !== 'center',
-    labelId: ariaLabelledby.value,
+    labelId: ariaLabelledby.value as string | undefined,
     rootLabelId: defaultLabelId,
     largeStep: componentProps.largeStep ?? 10,
     lastUsedThumbIndex: lastUsedThumbIndex.value,
@@ -341,6 +353,7 @@ export function SliderRoot<Value extends number | readonly number[]>(
     pressedThumbIndexRef,
     pressedValuesRef,
     renderBeforeHydration: (componentProps.thumbAlignment ?? 'center') === 'edge',
+    registerFieldControlRef,
     setActive,
     setDragging,
     setIndicatorPosition,
@@ -354,7 +367,7 @@ export function SliderRoot<Value extends number | readonly number[]>(
     values: values.value,
   }));
 
-  const getElementProps = () => {
+  const getElementProps = (prev: HTMLProps): HTMLProps => {
     const {
       'aria-labelledby': _ariaLabelledBy,
       className: _className,
@@ -380,7 +393,7 @@ export function SliderRoot<Value extends number | readonly number[]>(
       style: _style,
       ...elementProps
     } = componentProps;
-    return elementProps;
+    return { ...prev, ...elementProps };
   };
 
   const getElement = useRenderElement('div', componentProps, {

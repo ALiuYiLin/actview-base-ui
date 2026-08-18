@@ -1,7 +1,7 @@
 import { computed } from 'actview';
 import type { VNodeChild } from '@actview/jsx';
 import { formatNumber } from '@base-ui/actview-utils/formatNumber';
-import type { BaseUIComponentProps } from '../../internals/types';
+import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
 import { useRenderElement } from '../../internals/useRenderElement';
 import { useSliderRootContext } from '../root/SliderRootContext';
 import { sliderStateAttributesMapping } from '../root/stateAttributesMapping';
@@ -35,7 +35,7 @@ export function SliderValue(componentProps: SliderValue.Props) {
 
   const defaultDisplayValue = computed(() => formattedValues.value.join(' – '));
 
-  const getElementProps = () => {
+  const getElementProps = (prev: HTMLProps): HTMLProps => {
     const {
       'aria-live': _ariaLive,
       render: _render,
@@ -44,7 +44,7 @@ export function SliderValue(componentProps: SliderValue.Props) {
       style: _style,
       ...elementProps
     } = componentProps;
-    return elementProps;
+    return { ...prev, ...elementProps };
   };
 
   const getElement = useRenderElement('output', componentProps, {
@@ -68,7 +68,9 @@ export function SliderValue(componentProps: SliderValue.Props) {
     stateAttributesMapping: sliderStateAttributesMapping,
   });
 
-  return getElement();
+  // Wrap in a Fragment so the ActView Babel transform recognizes this as a JSX
+  // return and converts the component to a `{ __setup }` VNode type (AI-003).
+  return <>{getElement()}</>;
 }
 
 export interface SliderValueState extends SliderRootState {}

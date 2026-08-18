@@ -5,7 +5,7 @@ import { ownerDocument, ownerWindow } from '@base-ui/actview-utils/owner';
 import { useAnimationFrame } from '@base-ui/actview-utils/useAnimationFrame';
 import { clamp } from '@base-ui/actview-utils/clamp';
 import { activeElement, contains, getTarget } from '@base-ui/actview-utils/shadowDom';
-import type { BaseUIComponentProps } from '../../internals/types';
+import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
 import {
   createChangeEventDetails,
   createGenericEventDetails,
@@ -453,14 +453,14 @@ export function SliderControl(componentProps: SliderControl.Props) {
     { immediate: true },
   );
 
-  const getElementProps = () => {
+  const getElementProps = (prev: HTMLProps): HTMLProps => {
     const {
       render: _render,
       className: _className,
       style: _style,
       ...elementProps
     } = componentProps;
-    return elementProps;
+    return { ...prev, ...elementProps };
   };
 
   const getElement = useRenderElement('div', componentProps, {
@@ -533,7 +533,11 @@ export function SliderControl(componentProps: SliderControl.Props) {
     stateAttributesMapping: sliderStateAttributesMapping,
   });
 
-  return getElement();
+  // Wrap in a Fragment so the ActView Babel transform recognizes this as a JSX
+  // return and converts the component to a `{ __setup }` VNode type. A bare
+  // `return getElement()` stays a raw function at runtime, which the renderer
+  // misroutes as a native element (DOMException) — see actview-issue.md AI-003.
+  return <>{getElement()}</>;
 }
 
 interface FingerState {

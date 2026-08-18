@@ -1,5 +1,5 @@
 import { computed } from 'actview';
-import type { BaseUIComponentProps } from '../../internals/types';
+import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
 import { useRenderElement } from '../../internals/useRenderElement';
 import { useSliderRootContext } from '../root/SliderRootContext';
 import type { SliderRootState } from '../root/SliderRoot';
@@ -16,14 +16,14 @@ export function SliderTrack(componentProps: SliderTrack.Props) {
 
   const state = computed(() => ctx.value.state);
 
-  const getElementProps = () => {
+  const getElementProps = (prev: HTMLProps): HTMLProps => {
     const {
       render: _render,
       className: _className,
       style: _style,
       ...elementProps
     } = componentProps;
-    return elementProps;
+    return { ...prev, ...elementProps };
   };
 
   const getElement = useRenderElement('div', componentProps, {
@@ -40,7 +40,9 @@ export function SliderTrack(componentProps: SliderTrack.Props) {
     stateAttributesMapping: sliderStateAttributesMapping,
   });
 
-  return getElement();
+  // Wrap in a Fragment so the ActView Babel transform recognizes this as a JSX
+  // return and converts the component to a `{ __setup }` VNode type (AI-003).
+  return <>{getElement()}</>;
 }
 
 export interface SliderTrackState extends SliderRootState {}

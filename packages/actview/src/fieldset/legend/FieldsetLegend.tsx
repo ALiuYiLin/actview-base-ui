@@ -39,7 +39,9 @@ export function FieldsetLegend(componentProps: FieldsetLegend.Props) {
     props: [() => ({ id }), getElementProps],
   });
 
-  return getElement();
+  // Wrap in a Fragment so the ActView Babel transform recognizes this as a JSX
+  // return and converts the component to a `{ __setup }` VNode type (AI-003).
+  return <>{getElement()}</>;
 }
 
 export interface FieldsetLegendState {

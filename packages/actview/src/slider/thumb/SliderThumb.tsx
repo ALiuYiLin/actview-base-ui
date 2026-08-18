@@ -1,4 +1,4 @@
-import { computed, ref, watch } from 'actview';
+import { computed, ref, watch, onMounted, onUnmounted } from 'actview';
 import { useMergedRefs } from '@base-ui/actview-utils/useMergedRefs';
 import { visuallyHidden } from '@base-ui/actview-utils/visuallyHidden';
 import { ownerWindow } from '@base-ui/actview-utils/owner';
@@ -6,7 +6,7 @@ import { clamp } from '@base-ui/actview-utils/clamp';
 import { formatNumber } from '@base-ui/actview-utils/formatNumber';
 import { contains } from '@base-ui/actview-utils/shadowDom';
 import { script as prehydrationScript } from './prehydrationScript.min';
-import type { BaseUIComponentProps } from '../../internals/types';
+import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
 import { mergeProps } from '../../merge-props';
 import { useBaseUiId } from '../../internals/useBaseUiId';
 import { useIsHydrating } from '../../utils/useIsHydrating';
@@ -203,56 +203,46 @@ export function SliderThumb(componentProps: SliderThumb.Props) {
     }
   };
 
-  watch(
-    inset,
-    (isInset) => {
-      if (isInset) {
-        queueMicrotask(getInsetPosition);
-      }
-    },
-    { immediate: true, flush: 'post' },
-  );
+  // ── Inset positioning ──────────────────────────────────────────────
+  // Refactored from flush:'post'+immediate pattern (AI-001 workaround).
+  // Initial setup in onMounted (DOM ready → refs populated, isConnected=true).
+  // Changes handled by watch without immediate/flush:post.
 
-  watch(
-    [inset, thumbValuePercent],
-    ([isInset]) => {
-      if (isInset) {
-        getInsetPosition();
-      }
-    },
-    { immediate: true, flush: 'post' },
-  );
+  onMounted(() => {
+    if (!inset.value) {
+      return;
+    }
 
-  watch(
-    inset,
-    (isInset, _oldValue, onCleanup) => {
-      if (!isInset) {
-        return;
-      }
+    const control = controlRef.current;
+    const thumb = thumbRef.current;
+    if (!control || !thumb) {
+      return;
+    }
 
-      const control = controlRef.current;
-      const thumb = thumbRef.current;
+    // Direct call: DOM is already mounted, no layout pending.
+    getInsetPosition();
 
-      if (!control || !thumb) {
-        return;
-      }
+    // ResizeObserver for dimension changes while inset is active.
+    const ResizeObserverCtor = ownerWindow(control).ResizeObserver;
+    if (typeof ResizeObserverCtor === 'function') {
+      const ro = new ResizeObserverCtor(getInsetPosition);
+      ro.observe(control);
+      ro.observe(thumb);
+      onUnmounted(() => ro.disconnect());
+    }
+  });
 
-      const ResizeObserverCtor = ownerWindow(control).ResizeObserver;
-      if (typeof ResizeObserverCtor !== 'function') {
-        return;
-      }
+  watch(inset, (isInset) => {
+    if (isInset) {
+      queueMicrotask(getInsetPosition);
+    }
+  });
 
-      const resizeObserver = new ResizeObserverCtor(getInsetPosition);
-
-      resizeObserver.observe(control);
-      resizeObserver.observe(thumb);
-
-      onCleanup(() => {
-        resizeObserver.disconnect();
-      });
-    },
-    { immediate: true, flush: 'post' },
-  );
+  watch([inset, thumbValuePercent], ([isInset]) => {
+    if (isInset) {
+      getInsetPosition();
+    }
+  });
 
   const startEdge = computed(() => (vertical.value ? 'bottom' : 'insetInlineStart'));
   const crossOffsetProperty = computed(() => (vertical.value ? 'left' : 'top'));
@@ -456,8 +446,8 @@ export function SliderThumb(componentProps: SliderThumb.Props) {
         // So that VoiceOver's focus indicator matches the thumb's dimensions
         width: '100%',
         height: '100%',
-        writingMode: cssWritingMode.value,
-      } as StyleObject,
+        ...(cssWritingMode.value !== undefined && { writingMode: cssWritingMode.value }),
+      } as Record<string, string | number>,
       tabIndex: componentProps.tabIndex,
       type: 'range',
       value: thumbValue.value ?? '',
@@ -472,7 +462,7 @@ export function SliderThumb(componentProps: SliderThumb.Props) {
 
   const mergedInputRef = useMergedRefs(inputRef, validation.inputRef, componentProps.inputRef);
 
-  const getElementProps = () => {
+  const getElementProps = (prev: HTMLProps): HTMLProps => {
     const {
       render: _render,
       children: _children,
@@ -494,7 +484,7 @@ export function SliderThumb(componentProps: SliderThumb.Props) {
       style: _style,
       ...elementProps
     } = componentProps;
-    return elementProps;
+    return { ...prev, ...elementProps };
   };
 
   const getElement = useRenderElement('div', componentProps, {
@@ -506,7 +496,9 @@ export function SliderThumb(componentProps: SliderThumb.Props) {
         children: (
           <>
             {componentProps.children}
-            <input ref={mergedInputRef} {...getInputProps()} />
+            {/* mergeProps wraps handlers in WithBaseUIEvent; the native input element
+                expects plain intrinsic handlers, so cast back to the intrinsic props. */}
+            <input ref={mergedInputRef} {...(getInputProps() as JSX.IntrinsicElements['input'] & { form?: string })} />
             {/* Rendered with the last thumb to ensure all preceding thumbs are already in the DOM. */}
             {inset.value && last.value && renderBeforeHydration.value && (
               <PrehydrationScript script={prehydrationScript} />
@@ -532,7 +524,9 @@ export function SliderThumb(componentProps: SliderThumb.Props) {
     stateAttributesMapping: sliderStateAttributesMapping,
   });
 
-  return getElement();
+  // Wrap in a Fragment so the ActView Babel transform recognizes this as a JSX
+  // return and converts the component to a `{ __setup }` VNode type (AI-003).
+  return <>{getElement()}</>;
 }
 
 export interface ThumbMetadata {

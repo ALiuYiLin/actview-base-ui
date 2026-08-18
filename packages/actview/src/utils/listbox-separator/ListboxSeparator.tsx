@@ -18,7 +18,9 @@ export function ListboxSeparator(componentProps: ListboxSeparator.Props) {
     props: [{ role: 'presentation' }, elementProps],
   });
 
-  return getElement();
+  // Wrap in a Fragment so the ActView Babel transform recognizes this as a JSX
+  // return and converts the component to a `{ __setup }` VNode type (AI-003).
+  return <>{getElement()}</>;
 }
 
 export interface ListboxSeparatorProps extends BaseUIComponentProps<'div', ListboxSeparatorState> {

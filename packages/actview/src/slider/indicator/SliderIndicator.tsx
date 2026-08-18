@@ -1,5 +1,5 @@
 import { computed } from 'actview';
-import type { BaseUIComponentProps } from '../../internals/types';
+import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
 import { valueToPercent } from '../../utils/valueToPercent';
 import { useIsHydrating } from '../../utils/useIsHydrating';
 import { useRenderElement } from '../../internals/useRenderElement';
@@ -83,14 +83,14 @@ export function SliderIndicator(componentProps: SliderIndicator.Props) {
     ),
   );
 
-  const getElementProps = () => {
+  const getElementProps = (prev: HTMLProps): HTMLProps => {
     const {
       render: _render,
       className: _className,
       style: _style,
       ...elementProps
     } = componentProps;
-    return elementProps;
+    return { ...prev, ...elementProps };
   };
 
   const getElement = useRenderElement('div', componentProps, {
@@ -106,7 +106,9 @@ export function SliderIndicator(componentProps: SliderIndicator.Props) {
     stateAttributesMapping: sliderStateAttributesMapping,
   });
 
-  return getElement();
+  // Wrap in a Fragment so the ActView Babel transform recognizes this as a JSX
+  // return and converts the component to a `{ __setup }` VNode type (AI-003).
+  return <>{getElement()}</>;
 }
 
 export interface SliderIndicatorState extends SliderRootState {}
