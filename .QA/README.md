@@ -13,11 +13,8 @@
 | actview-test-infra-patterns | 基础语义 | @actview/testing + createRenderer、jsdom PointerEvent/portal/waitFor、portal 查询、hidden input 断言 |
 | actview-select-infra-item-checklist | 参考清单 | select 需 10 项基建逐项确认（constants/composite/labelable/direction/mapping/InteractionType/floating utils/actview-utils 通配导出/toolbar） |
 | actview-framework-adaptation-rules | 基础语义 | 提炼自根目录 plantform-diff.md(PD/AD)/actview-issue.md(AI)：setup 单次、getter 求值、getter 合并 prev、return JSX、布尔属性/ref/Teleport/watch 数组源等框架差异与适配速查 |
-| toast-port-fixes | 基础语义 | toast 移植 tsgo 修复 4 条：addEventListener 不要从 watch 数组解构 element（回调体读 ref）、ComputedRef<Store> 用 .value! 解包、context 普通值快照要在 computed 内重读 context.value（AD-35 延伸）、store 的相对导入路径已对 |
-| toast-crash-diagnosis | 基础语义 | toast 渲染 DOMException{} 诊断：ToastTitle/Description 的 `return useToastLabelElement(...)` 函数调用结尾 → Babel 不转换 → 裸函数被当原生元素抛 DOMException（AI-003 复发）；限于 `return <>{...}</>`；limit 测试期望是理解偏差 |
-| toast-render-update-diagnosis | 基础语义 | toast 更新不重渲染/不消失诊断：waitFor(()=>query()) 误用（只在 throw 时重试，断言要进回调）+ ToastRoot setup 解构 toast prop 冻结（PD-15）→ 读 componentProps.toast 用 computed；transition:undefined 序列化 |
-| toast-final-three-fixes | 基础语义 | toast 收尾：getter 必须 (prev)=>({...prev,...actionProps})（整体替换丢 props）；ref.value.map 在 JSX return 被响应式追踪（mountComponent runEffect）确认为真，update 不更新是同因之 stale toast prop；非元素 prop 必须解构排除否则泄漏 toast="[object Object]"（SelectItem 惯例） |
-| toast-title-render-mechanism | 基础语义 | 模板重跑不刷新 getElement 子树：不是框架缓存（mountComponent 每次重调 render 并重新求值 useToastLabelElement/getElement），是 children 在 setup 解构冻结（PD-15）；ProbeTitle 更新因读响应式 props 代理；正确写法——children/toast 用 computed 读 componentProps，绝不解构成普通变量 |
+| toast-port-fixes | 基础语义 | toast 移植 tsgo 类型级修复 4 条：addEventListener 不要从 watch 数组解构 element（回调体读 ref）、ComputedRef<Store> 用 .value! 解包、context 普通值快照要在 computed 内重读 context.value、store 的相对导入路径已对 |
+| toast-render-diagnostics | 基础语义 | toast 渲染/更新问题合并根因链路（含 AI-003 崩溃、waitFor 误用、setup 解构冻结 PD-15、getter 合并 prev、非元素 prop 泄漏、runEffect 重跑机制），已修复+最终正确写法；由 4 篇旧诊断合并而来 |
 
 - 依赖关系：select-root-floating-organization 依赖 merge-props-actview-semantics；select-selectstore-class-design 与 select-root-floating-organization 互补（store class vs Root 交互接线）。
 - 权威长文在根目录 `plantform-diff.md`（PD-*/AD-*，维护态）；`actview-issue.md`/`issue.md`/`plan.md` 为过程性/框架问题记录，仅 actview-framework-adaptation-rules 提炼其可复用的部分。

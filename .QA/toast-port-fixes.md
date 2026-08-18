@@ -27,19 +27,18 @@ toast（packages/actview/src/toast/）移植时 tsgo 报错：1) watch 数组解
 
 ### (2) 从 ComputedRef<Store> 拿 store —— `.value!` 解包
 - `useToastProviderContext()` 返回 `ComputedRef<ToastContext>`（ToastProviderContext.ts:9-14）；toast 全局惯例 **`const store = useToastProviderContext().value!;`**（ToastRoot.tsx:60、ToastViewport.tsx:28、ToastClose.tsx:24、ToastPositioner.tsx:32），然后 `store.useState(...)`/`store.set(...)`/`store.pauseTimers()` 直接调用。
-- **Bug**：`useToastManager.ts:13-15` 写的是 `const store = useToastProviderContext(); const toasts = store.useState('toasts');` —— 在 ComputedRef 上直接调 useState（无此方法）→ tsgo 错。修复：`const toasts = store.value!.useState('toasts')`。
+- ~~**Bug**：`useToastManager.ts` 曾在 ComputedRef 上直接 `store.useState('toasts')`（无此方法）~~ **已修复**：现为 `const toasts = store.value!.useState('toasts')`。（任何 `ComputedRef<SomeStore>` 拆出 store 都要 `.value!` 再调方法。）
 
 ### (3) context 普通值（expanded: boolean）快照 —— 在 computed/渲染 getter 内重读 context.value
-- `ToastRootContext`（ToastRootContext.ts:9-16）里 `expanded: boolean` 等是**普通值非 ref**；provider 用 `computed(() => ({ ..., expanded: expanded.value, visibleIndex: visibleIndex.value }))` 提供（ToastRoot.tsx:473-480）——整个 context **每次重算**。
-- setup 期 `const { expanded } = useToastRootContext().value!` 解构的是**快照**（setup 只跑一次，PD-06/AD-35）→ 不响应 + `expanded` 是 boolean 却写 `expanded.value`（TS 错）。
-- **正确模式**（AD-35 延伸）：读 `context.value.X` 放在 **computed/渲染 getter 里**，利用 context 是 ComputedRef 的重算：
+- `ToastRootContext`（ToastRootContext.ts:9-16）里 `expanded: boolean` 等是**普通值非 ref**；provider 用 `computed(() => ({ ..., expanded: expanded.value, visibleIndex: visibleIndex.value }))` 提供——整个 context **每次重算**。
+- setup 期 `const { expanded } = useToastRootContext().value!` 解构的是**快照**（setup 只跑一次，PD-15/AD-35）→ 不响应 + `expanded` 是 boolean 却写 `expanded.value`（TS 错）。~~ToastContent/ToastClose 最初有此坏例，已在移植时修复。~~
+- **正确模式**：读 `context.value.X` 放 **computed/渲染 getter 里**（利用 context 是 ComputedRef 的重算）：
   ```ts
   const context = useToastRootContext();
   const behind = computed(() => context.value.visibleIndex > 0);
   const state = computed(() => ({ expanded: context.value.expanded, behind: behind.value }));
   ```
-- 需修的既有坏例：`ToastContent.tsx:20`（解构 expanded/visibleIndex，47 行 `visibleIndex.value`、50 行 `expanded.value` 都是 boolean/number 误当 ref）；`ToastClose.tsx:25,37`（`expanded.value`）。改法同上——所需值在 computed/getter 内从 `useToastRootContext().value.XX` 读取。
-- **注意**：从 context 取**稳定**的东西（toast 对象、setTitleId/setDescriptionId/recalculateHeight 回调）仍可在 setup 解构一次（ToastAction.tsx:24、useToastLabelPart.tsx:17 OK），只有**响应式值**（numeric/boolean 随 store 变化）必须放 computed/getter 里重读。
+- **注意**：从 context 取**稳定**的东西（toast 对象、setTitleId/setDescriptionId/recalculateHeight 回调）仍可 setup 解构一次；只有**响应式值**（numeric/boolean 随 store 变化）必须放 computed/getter 里重读。
 
 ### (4) src/toast/store.ts 到 floating-ui-actview/utils 的相对路径 —— 已是正确写法
 - `src/toast/store.ts` → `../../floating-ui-actview/utils` = `src/floating-ui-actview/utils`（`..`→src/toast/，`../..`→src/）。**无需修改**。
@@ -56,3 +55,5 @@ toast（packages/actview/src/toast/）移植时 tsgo 报错：1) watch 数组解
 - toast/store.ts:12（路径正确）
 - floating-ui-actview/utils.ts:1-5; utils/element.ts:3,7（shadowDom re-export）
 - 既有 typed addEventListener 范本：SliderControl.tsx:435、useDismiss.ts:705+、FloatingFocusManager.tsx:548+
+
+> 本文是 toast 移植的**类型级**修复（tsgo 层面）；toast 渲染/更新运行时问题的诊断链路见 toast-render-diagnostics.md（AI-003、waitFor、PD-15 解构冻结、getter 合并 prev、prop 泄漏）。
