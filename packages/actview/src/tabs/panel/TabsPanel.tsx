@@ -70,7 +70,8 @@ export function TabsPanel(componentProps: TabsPanel.Props) {
     state,
     ref: [componentProps.ref, listItemRef, panelRef],
     props: [
-      {
+      // Getter (not a static object): reactive props must be re-evaluated per render.
+      () => ({
         'aria-labelledby': correspondingTabId.value,
         hidden: hidden.value,
         id,
@@ -78,7 +79,7 @@ export function TabsPanel(componentProps: TabsPanel.Props) {
         tabIndex: open.value ? 0 : -1,
         inert: inertValue(!open.value),
         'data-index': index.value,
-      },
+      }),
       getElementProps,
     ],
     stateAttributesMapping,

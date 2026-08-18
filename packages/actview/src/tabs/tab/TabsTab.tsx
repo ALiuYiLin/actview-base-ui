@@ -196,7 +196,9 @@ export function TabsTab(componentProps: TabsTab.Props) {
     ref: [componentProps.ref, buttonRef, compositeRef, observeTabElement],
     props: [
       compositeProps,
-      {
+      // Getter (not a static object): props must be re-evaluated on every render,
+      // otherwise `active.value` etc. are frozen at setup time (see plantform-diff.md).
+      () => ({
         role: 'tab',
         'aria-controls': tabPanelId.value,
         // PD-01: ActView renders boolean-true attributes as empty strings; ARIA booleans
@@ -210,7 +212,7 @@ export function TabsTab(componentProps: TabsTab.Props) {
         onKeyDownCapture() {
           isNavigating = true;
         },
-      },
+      }),
       getElementProps,
       getButtonProps,
     ],

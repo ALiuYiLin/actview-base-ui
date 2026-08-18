@@ -1,6 +1,13 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, beforeAll } from 'vitest';
 import * as Tabs from './index.parts';
 import { createRenderer } from '../../test/createRenderer';
+
+beforeAll(() => {
+  // jsdom doesn't fully implement PointerEvent (e.g. useButton's keyboard click
+  // dispatch uses `new PointerEvent('click')`); align it with MouseEvent like
+  // the other component tests do.
+  (window as any).PointerEvent = window.MouseEvent;
+});
 
 function TabsDemo(props: any) {
   return (
@@ -24,10 +31,17 @@ function TabsDemo(props: any) {
 }
 
 describe('<Tabs />', () => {
-  const { render, fireEvent } = createRenderer();
+  const { render, fireEvent, act, waitFor } = createRenderer();
 
   it('renders tabs with tablist role and defaults to the first tab', async () => {
     const result = await render(TabsDemo);
+
+    // Initial tab registration + automatic selection happen on microtasks
+    // (CompositeList flush → watch → setValue); wait for the selection to land.
+    await waitFor(() => {
+      expect(result.getByTestId('tab-a')).toHaveAttribute('data-active');
+      expect(result.getByTestId('tab-a')).toHaveAttribute('aria-selected', 'true');
+    });
 
     expect(result.getByTestId('tab-a')).toHaveAttribute('role', 'tab');
     expect(result.getByTestId('tab-a')).toHaveAttribute('data-active');
@@ -40,15 +54,29 @@ describe('<Tabs />', () => {
   it('switches the active tab on click and fires onValueChange', async () => {
     const handleValueChange = vi.fn();
 
-    const result = await render(TabsDemo, { onValueChange: handleValueChange });
+    // Explicit default avoids the automatic initial selection (reason 'initial')
+    // firing onValueChange before the click.
+    const result = await render(TabsDemo, {
+      defaultValue: 'a',
+      onValueChange: handleValueChange,
+    });
+
+    await waitFor(() => {
+      expect(result.getByTestId('tab-a')).toHaveAttribute('data-active');
+    });
+    handleValueChange.mockClear();
 
     fireEvent.click(result.getByTestId('tab-b'));
+    await waitFor(() => {
+      expect(handleValueChange).toHaveBeenCalledTimes(1);
+    });
 
-    expect(handleValueChange).toHaveBeenCalledTimes(1);
     expect(handleValueChange.mock.calls[0][0]).toBe('b');
     expect(handleValueChange.mock.calls[0][1].reason).toBe('none');
 
-    expect(result.getByTestId('tab-b')).toHaveAttribute('data-active');
+    await waitFor(() => {
+      expect(result.getByTestId('tab-b')).toHaveAttribute('data-active');
+    });
     expect(result.getByTestId('panel-b')).not.toBe(null);
     expect(result.queryByTestId('panel-a')).toBe(null);
   });
@@ -99,7 +127,10 @@ describe('<Tabs />', () => {
 
     const result = await render(DisabledFirstDemo, { onValueChange: handleValueChange });
 
-    expect(result.getByTestId('tab-b')).toHaveAttribute('data-active');
+    // Fallback selection is asynchronous (tabMap registration → watch → setValue).
+    await waitFor(() => {
+      expect(result.getByTestId('tab-b')).toHaveAttribute('data-active');
+    });
     expect(handleValueChange).toHaveBeenCalled();
     expect(['initial', 'disabled']).toContain(handleValueChange.mock.calls[0][1].reason);
   });
@@ -107,7 +138,15 @@ describe('<Tabs />', () => {
   it('supports keyboard navigation with arrow keys and activation', async () => {
     const handleValueChange = vi.fn();
 
-    const result = await render(TabsDemo, { onValueChange: handleValueChange });
+    const result = await render(TabsDemo, {
+      defaultValue: 'a',
+      onValueChange: handleValueChange,
+    });
+
+    await waitFor(() => {
+      expect(result.getByTestId('tab-a')).toHaveAttribute('data-active');
+    });
+    handleValueChange.mockClear();
 
     const tabA = result.getByTestId('tab-a');
     const tabB = result.getByTestId('tab-b');
@@ -115,8 +154,14 @@ describe('<Tabs />', () => {
     fireEvent.keyDown(tabA, { key: 'ArrowRight' });
     // With activateOnFocus=false, arrow keys move the roving focus; Enter activates.
     fireEvent.keyDown(tabB, { key: 'Enter' });
+    // Native <button> activation on Enter is browser behavior that jsdom does not
+    // synthesize (see Button.test.tsx: the keyboard-click path only applies to
+    // non-native elements), so dispatch the click explicitly.
+    fireEvent.click(tabB);
 
-    expect(handleValueChange).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(handleValueChange).toHaveBeenCalledTimes(1);
+    });
     expect(handleValueChange.mock.calls[0][0]).toBe('b');
   });
 });

@@ -8,7 +8,7 @@
 
 ## AI-001 watch(flush:'post') 在挂载期不触发 → CompositeList 的 onMapChange 从不执行
 
-- **状态**：🟢 **可绕过**（代码层面不依赖框架修复，见下方"本库侧处理方式"）
+- **状态**：🟢 **已解决**（2026-08-17 tabs 6/6 测试通过；本库侧修复 + 框架侧 AI-002 修复共同解决）
 - **组件**：tabs、slider、及所有使用 `flush:'post'` + `immediate:true` 的组件
 - **场景**：组件挂载期间（ref 回调 / register 调用时）改变一个 ref 的值，`watch(ref, cb, { flush: 'post' })` 之后**永不执行回调**。
 - **复现方式**：
@@ -20,24 +20,12 @@
   - `watch(mapTick, ..., { flush: 'post' })` 的回调**从未执行**（无日志）
   - 挂载期 `useIsoLayoutEffect` 的 flush 执行了一次，但此时 item 的 `isConnected === false`（见 AI-002），`getCompositeListSnapshot` 将其过滤 → `onMapChange` 收到空 map（size 0），且 flush 后 `isDirtyRef=false`，后续不会重跑
 - **期望行为**：post-flush watch 在挂载完成后（整棵树插入后）至少执行一次回调，使 onMapChange 携带真实 items。
-- **本库侧处理方式**（不依赖框架修复，逐组件落地）：
-  - **原则**：`watch` 只负责"变化时"（此时 DOM 已就绪），初始态由 `onMounted`（`useIsoLayoutEffect`）单独处理。
-  - **不再使用** `watch(src, cb, { immediate: true, flush: 'post' })` 这种混合写法。
-  - **替代模式**：
-    ```tsx
-    // ❌ 旧模式（在挂载期不触发，refs 也可能为 null）
-    watch(src, fn, { immediate: true, flush: 'post' })
-
-    // ✅ 新模式：「初始」+「变化」彻底分离
-    onMounted(() => {
-      if (/* 初始条件满足 */) fn()    // DOM 刚就绪，refs 可用
-    })
-    watch(src, () => {               // 变化时触发，DOM 已就绪
-      if (/* 条件满足 */) fn()
-    })
-    ```
-  - **注意**：`onMounted` 返回的函数作为 cleanup（`onUnmounted`），替代 `onCleanup` 的清理注册。
-  - **适用场景**：所有 `flush:'post'` + `immediate:true` 的 watch 都应按此模式拆分；`flush:'post'` 不带 `immediate` 的 watch（如 CompositeList 的 mapTick watch）仅用于变化后响应，初始态由 `useIsoLayoutEffect` 兜底，且挂载后正常工作，无需改动。
+- **解决链（2026-08-17 逐层排查，tabs 从 4 失败 → 6/6 通过）**：
+  1. **AI-002 已修复**（框架侧，ref 回调 isConnected=true）→ CompositeList 挂载期 flush 拿到真实 items → tabMap 填充、自动选中逻辑可跑。
+  2. **props 数组静态对象（本库移植 bug）**：`useRenderElement` 的 `props` 数组里**普通对象字面量在 setup 期求值一次**（`'aria-selected': active.value ? 'true' : 'false'` 等），响应式变化不重新求值 → data-active 不更新。**修复**：依赖响应式的 props 一律写成 **getter 函数** `() => ({ ... })`（每次渲染重新求值）。tabs 修复 3 处：`TabsTab`（role/aria-selected/ACTIVE_COMPOSITE_ITEM）、`TabsPanel`（hidden/tabIndex/inert/data-index）、`TabsIndicator`（style/hidden）。
+  3. **测试异步链**：挂载期自动选中（tabMap 注册 → watch → setValue → 重渲染）是多级微任务链，`render()` 后需 `await waitFor(...)` 或多次 `await act()` flush 再断言（对照 scroll-area 测试的 `await act(() => {})` 用法）。
+  4. **jsdom 原生行为**：原生 `<button>` 的 Enter→click 是浏览器行为，jsdom 不合成；useButton 的键盘 click 路径只对非原生元素生效（见 Button.test.tsx）。键盘激活测试需手动补 `fireEvent.click` 模拟（`PointerEvent` 也需 `window.PointerEvent = window.MouseEvent` hack）。
+- **框架侧仍需改进**（不影响本库）：`flush:'post'` 的 `nextTick()` 在挂载期退化为普通微任务（`currentFlushPromise ?? Promise.resolve()`），没有"渲染周期结束"锚点；对齐 Vue 3 加 post-render 队列（见 AI-002.md 方案 B 预留的基础设施）。
 
 ## AI-002 挂载期 ref 回调触发时，元素 `isConnected === false`
 

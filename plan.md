@@ -26,11 +26,11 @@
 
 ## 二、组件状态（共 47 个 src 目录，非测试文件口径）
 
-### ✅ 已完成（27 个）
-`avatar`、`button`（7 测试通过 ✅）、`checkbox`、`checkbox-group`、`collapsible`、`csp-provider`、`direction-provider`、`fieldset`、`form`、`input`（7 测试通过 ✅，依赖 FieldControl 已修）、`internals`、`merge-props`、`meter`、`progress`、`radio`、`radio-group`、`scroll-area`（13 测试通过 ✅：root/viewport/scrollbar，jsdom 适配见 plantform-diff.md AD-16）、`separator`、`slider`（23 测试通过 ✅：root 10 + utils 13；修复 AI-003：组件末尾 `return <>{getElement()}</>` 规避 Babel 转换漏检，见 actview-issue.md）、`switch`、`toggle`、`toggle-group`、`toolbar`、`types`、`unstable-use-media-query`、`use-render`、`utils`
+### ✅ 已完成（28 个）
+`avatar`、`button`（7 测试通过 ✅）、`checkbox`、`checkbox-group`、`collapsible`、`csp-provider`、`direction-provider`、`fieldset`、`form`、`input`（7 测试通过 ✅，依赖 FieldControl 已修）、`internals`、`merge-props`、`meter`、`progress`、`radio`、`radio-group`、`scroll-area`（13 测试通过 ✅：root/viewport/scrollbar，jsdom 适配见 plantform-diff.md AD-16）、`separator`、`slider`（23 测试通过 ✅：root 10 + utils 13；修复 AI-003：组件末尾 `return <>{getElement()}</>` 规避 Babel 转换漏检，见 actview-issue.md）、`switch`、`tabs`（6 测试通过 ✅：AI-001 解决链完成——AI-002 框架修复 + props 静态对象改 getter（AD-17）+ 测试 waitFor flush（AD-18）+ jsdom 键盘模拟（AD-19），见 actview-issue.md AI-001）、`toggle`、`toggle-group`、`toolbar`、`types`、`unstable-use-media-query`、`use-render`、`utils`
 
-### 🔄 部分完成（9 个，需逐个验收/修复/补测试）
-`number-field(22/25)`、`select(17/40)`、`accordion(9/16)`、`field(12/18)`、`popover(10/28)`、`toast(12/36)`、`menu(2/51)`、`combobox(4/61)`、**`tabs`（源码已写入，实现暂停 ⏸：依赖框架问题 AI-001，见 actview-issue.md，待框架维护者处理）**
+### 🔄 部分完成（8 个，需逐个验收/修复/补测试）
+`number-field(22/25)`、`select(17/40)`、`accordion(9/16)`、`field(12/18)`、`popover(10/28)`、`toast(12/36)`、`menu(2/51)`、`combobox(4/61)`
 
 ### ⏳ 未开始（15 个）
 | 组件 | 说明 |

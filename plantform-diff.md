@@ -287,6 +287,15 @@
 ### AD-16 布局测量测试的 jsdom 策略
 - **适配**：jsdom 无布局（offsetHeight/clientHeight 等为 0）、无 ResizeObserver、无 `getAnimations`。scroll-area 测试：① `Object.defineProperties` mock viewport 尺寸与 scrollTop/scrollLeft；② 组件内 `typeof ResizeObserver === 'undefined'` 跳过、`viewport.getAnimations?.()` 防御；③ 依赖真实布局的断言（thumb 实际尺寸等）不在 jsdom 覆盖（react 版同场景用 `isJSDOM` 跳过）
 
+### AD-17 useRenderElement 的 props 数组静态对象不响应
+- **适配**：actview 的组件 **setup 只执行一次**；`useRenderElement` 的 `props` 数组里**普通对象字面量在 setup 期求值一次**，其中读取的响应式值（`active.value`、`hidden.value` 等）被**冻结**，后续变化不重新求值 → DOM 不更新（tabs 的 data-active/aria-selected 不出现的直接根因，见 actview-issue.md AI-001 解决链第 2 条）。**依赖响应式的 props 一律写成 getter 函数** `() => ({ ... })`（每次渲染重新求值），与 mergePropsN 的"getter 每次调用"语义匹配。已修复：TabsTab/TabsPanel/TabsIndicator。排查方法：grep `props: [` 后跟 `{` 或换行 `{` 的静态对象。
+
+### AD-18 测试异步链需 flush/waitFor
+- **适配**：挂载期多级微任务链（如 tabs 的 tabMap 注册 → watch → setValue → 重渲染）在 `render()` 后未完成，立即断言失败。对照 scroll-area 测试的 `await act(() => {})`（flush 一次渲染），tabs 测试改用 `await waitFor(...)`（自动重试到超时）断言自动选中/激活后的 DOM 状态。
+
+### AD-19 jsdom 的原生 button 键盘激活
+- **适配**：原生 `<button>` 的 Enter→click 是浏览器行为，jsdom 不合成；useButton 的键盘 click（`dispatchClickWithModifiers`）只对**非原生元素**（`nativeButton: false`）生效（见 Button.test.tsx）。键盘激活测试需手动补 `fireEvent.click` 模拟原生行为，且 `dispatchClickWithModifiers` 用 `window.PointerEvent`（jsdom 未实现），测试需 `(window as any).PointerEvent = window.MouseEvent`。
+
 ---
 
 > 维护说明：新增差异/适配时在对应部分追加，编号递增；修改后同步更新 plan.md 与 issue.md 的关联条目。

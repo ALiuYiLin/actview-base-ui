@@ -182,11 +182,12 @@ export function TabsIndicator(componentProps: TabsIndicator.Props) {
     state,
     ref: componentProps.ref,
     props: [
-      {
+      // Getter (not a static object): reactive props must be re-evaluated per render.
+      () => ({
         role: 'presentation',
         style: style.value,
         hidden: !displayIndicator.value, // do not display the indicator before the layout is settled
-      },
+      }),
       getElementProps,
     ],
     stateAttributesMapping,
