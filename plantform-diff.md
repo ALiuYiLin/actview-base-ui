@@ -308,6 +308,15 @@
 ### AD-23 测试组件需定义在顶层（Babel 转换范围）
 - **适配**：测试文件里**返回 JSX 的组件若定义在 `it()` 回调内部**，actview 的 Babel 插件（@actview/plugin-vite）不识别为组件 → 运行时被当原生元素 → `DOMException`（容器渲染为空）。调试期把组件写在 `it` 内导致 number-field 全部测试"组件渲染错误"。修复：测试组件（`NumberField`、`FormDemo` 等）**定义在 describe/it 之外的文件顶层**（slider/tabs 测试均如此）。
 
+### AD-24 actview 无 React 属性名映射（htmlFor → for）
+- **适配**：actview 的 `setProp` 只有 `className → class` 一个属性名映射，其余按原 key `setAttribute` 透传。React 的 `htmlFor` 会被原样渲染为 `htmlfor` 属性（HTML 解析器强制小写），label 的 `.htmlFor`/`for` 关联失效。**必须直接写 HTML 标准属性名 `for`**。已修复：`useLabel` 返回 `for` 而非 `htmlFor`（影响所有使用 label 的组件）。
+
+### AD-25 Field 的 messageIds 注册是替换式
+- **适配**：actview 的 `LabelableContext.setMessageIds` 是**替换式写入**（`(ids: string[]) => void`），不支持 React 的函数式更新（`setMessageIds(v => v.concat(id))`）。注册/注销必须读当前列表后整体替换：`setMessageIds([...current, id])` / `setMessageIds(current.filter(i => i !== id))`。已修复：FieldError（watch immediate 注册 + onCleanup 注销）、FieldDescription 沿用。另：FieldError 的 `children` 应优先用用户传入的 children（`childrenProp ?? errorMessage`），否则用户自定义错误文案会被计算出的验证消息覆盖。
+
+### AD-26 Form 组件 getElementProps 需合并 prev
+- **适配**：form/Form.tsx 的 `getElementProps` 原为无参 getter，会整体替换 `getFormProps`（含 `onSubmit`）→ **表单提交验证失效**（jsdom 中 `fireEvent.click(submit)` / `fireEvent.submit(form)` 不触发 Field 校验）。修复为 `(prev) => ({ ...prev, ...elementProps })`（AD-20 变体，Field 测试暴露）。
+
 ---
 
 > 维护说明：新增差异/适配时在对应部分追加，编号递增；修改后同步更新 plan.md 与 issue.md 的关联条目。

@@ -5,7 +5,7 @@ import {
   type BaseUIGenericEventDetails,
 } from '../internals/createBaseUIEventDetails';
 import { REASONS } from '../internals/reasons';
-import type { BaseUIComponentProps, RefObject } from '../internals/types';
+import type { BaseUIComponentProps, HTMLProps, RefObject } from '../internals/types';
 import { FormContext } from '../internals/form-context/FormContext';
 import { useRenderElement } from '../internals/useRenderElement';
 
@@ -127,7 +127,7 @@ export function Form<FormValues extends Record<string, any> = Record<string, any
     },
   });
 
-  const getElementProps = () => {
+  const getElementProps = (prev: HTMLProps) => {
     const {
       render: _render,
       className: _className,
@@ -140,7 +140,7 @@ export function Form<FormValues extends Record<string, any> = Record<string, any
       ref: _ref,
       ...elementProps
     } = componentProps;
-    return elementProps;
+    return { ...prev, ...elementProps };
   };
 
   const getElement = useRenderElement('form', componentProps, {

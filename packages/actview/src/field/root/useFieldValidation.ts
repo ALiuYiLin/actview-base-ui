@@ -361,7 +361,7 @@ export function useFieldValidation(
     mergeProps<any>(
       getDescriptionProps(externalProps),
       unref(state).valid === false && !unref(state).disabled && !disabled
-        ? { 'aria-invalid': true }
+        ? ({ 'aria-invalid': true } as HTMLProps)
         : EMPTY_OBJECT,
     );
 

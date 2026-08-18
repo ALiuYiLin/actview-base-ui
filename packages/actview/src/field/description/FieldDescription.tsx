@@ -34,7 +34,8 @@ export function FieldDescription(componentProps: FieldDescription.Props) {
 
   const addMessageId = () => {
     const current = labelableContext.value.messageIds;
-    labelableContext.value.setMessageIds([...current, id]);
+    // `id` is guaranteed non-null at the call site (guarded by `if (!id)` before `addMessageId`).
+    labelableContext.value.setMessageIds([...current, id!]);
   };
 
   const removeMessageId = () => {

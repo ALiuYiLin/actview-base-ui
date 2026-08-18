@@ -68,7 +68,9 @@ export function useLabel(params: UseLabelParameters = {}): () => UseLabelReturnV
     native
       ? {
           id,
-          htmlFor: resolvedControlId.value,
+          // ActView does not map `htmlFor` to the HTML `for` attribute (only `className` is
+          // mapped), so the raw attribute name must be used (plantform-diff.md AD-24).
+          for: resolvedControlId.value,
           onMouseDown: handleInteraction,
         }
       : {

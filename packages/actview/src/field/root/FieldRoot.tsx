@@ -1,4 +1,5 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'actview';
+import { createElement } from '@actview/jsx';
 import { FieldRootContext } from '../../internals/field-root-context/FieldRootContext';
 import {
   DEFAULT_VALIDITY_STATE,
@@ -229,11 +230,10 @@ function FieldRootInner(componentProps: FieldRoot.Props) {
  * Documentation: [Base UI Field](https://base-ui.com/react/components/field)
  */
 export function FieldRoot(componentProps: FieldRoot.Props) {
-  return (
-    <LabelableProvider>
-      <FieldRootInner {...componentProps} />
-    </LabelableProvider>
-  );
+  // `createElement` is used instead of `<FieldRootInner {...componentProps} />` because the
+  // JSX element check rejects Base UI's function-valued `className`/`style` props
+  // (plantform-diff.md PD-17).
+  return <LabelableProvider>{createElement(FieldRootInner, componentProps)}</LabelableProvider>;
 }
 
 export interface FieldValidityData {
