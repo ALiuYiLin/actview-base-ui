@@ -344,6 +344,12 @@
 ### AD-35 依赖响应式值的 props 必须用 getter 求值（不能 setup 期合并）
 - **适配**：`useRenderElement` 的 `props` 若在 setup 期用普通对象一次合并（如 `mergeProps(storeProps.value, {...})`），`storeProps.value`/`open.value` 都是**快照**，后续变化不反映到 DOM（SelectTrigger 的 aria-expanded 永远 false、items 的 data-highlighted 不更新、triggerProps 的交互 handler 绑定不上）。修复：props 数组里用 getter 函数（每次渲染求值）——`props: [(prev: any) => mergeProps(prev, triggerProps.value), (prev: any) => ({ ...prev, ...getDefaultProps() }), elementProps, getButtonProps]`（getter 内部合并 prev 保事件链，AD-20/AD-27）。select 的 Trigger/Item/List/Popup 均按此改造。
 
+### AD-36 渲染元素组件的 elementProps 是 setup 快照，含 children 会冻结更新（ToastRoot 场景）
+- **适配**：渲染元素（非 context provider）的组件若在 setup 解构 `...elementProps` 并直接放进 props 数组，`elementProps` 是**快照**——其中 `children` 是父组件首次渲染时的 VNode，store 更新换新 toast 对象后父组件重渲染传新 children，但 elementProps.children 仍是旧 VNode 且（因在 props 数组靠后）**覆盖** getter 提供的响应式 children → 界面永不更新（toast update title 不刷新）。修复：渲染元素组件的剩余 props 用 getter 从 `componentProps` 每次重读——`const getElementProps = (prev: any) => { const { toast: _t, render: _r, className: _c, style: _s, ...rest } = componentProps; return { ...prev, ...rest }; }`（必须 `{...prev, ...rest}` 保 prev，否则丢 role 等，AD-35）。同类：ToastTitle/Description 的 `children` 必须从解构排除（`children: _children`），由 getter 用 `() => componentProps.children` 读取。
+
+### AD-37 store 换新对象的响应式 prop 必须 computed 化（ToastRoot 的 toast）
+- **适配**：`Toast.Root` 的 `toast` prop 由 store 在每次 add/update/close 时**替换为新对象**（`setToasts(toasts.map(...))`），若 setup 解构 `const { toast } = componentProps` 则冻结旧对象——transitionStatus 永远 'starting'（data-starting-style 残留）、close 的 ending 读不到（useOpenChangeComplete 永不 remove）、update 的 title 不刷新。修复：`const toast = computed(() => componentProps.toast)`，全组件读 `toast.value.xxx`（getDefaultProps/state computed/watch 源/事件回调）。这是 PD-15 在"store 换对象"场景的强制要求。
+
 ---
 
 > 维护说明：新增差异/适配时在对应部分追加，编号递增；修改后同步更新 plan.md 与 issue.md 的关联条目。
