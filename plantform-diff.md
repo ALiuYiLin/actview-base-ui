@@ -317,6 +317,9 @@
 ### AD-26 Form 组件 getElementProps 需合并 prev
 - **适配**：form/Form.tsx 的 `getElementProps` 原为无参 getter，会整体替换 `getFormProps`（含 `onSubmit`）→ **表单提交验证失效**（jsdom 中 `fireEvent.click(submit)` / `fireEvent.submit(form)` 不触发 Field 校验）。修复为 `(prev) => ({ ...prev, ...elementProps })`（AD-20 变体，Field 测试暴露）。
 
+### AD-27 props 链中每个 getter 都要合并 prev 才能保 id/children
+- **适配**：`useRenderElement` 的 props 数组按序 merge，**每个 getter 返回的对象整体替换**累计值。若链中某 getter 返回不含 `id`/`children`/`data-*` 的新对象（如 panel 的 ARIA/style getter），会**丢弃前面 getter 提供的 id/children**（panel 渲染空 div、丢 id）。必须每个 getter 写 `(prev) => ({ ...prev, ...新属性 })`。已修复：AccordionPanel 的 aria/style getter、style 临时覆盖 getter。另外 `aria-expanded` 等 ARIA 布尔需显式 `'true'/'false'` 字符串（actview 布尔 true 渲染空串，见 PD-01）。排查方法：props 链中 grep 无 `...prev` 的 `() => ({...})` getter。
+
 ---
 
 > 维护说明：新增差异/适配时在对应部分追加，编号递增；修改后同步更新 plan.md 与 issue.md 的关联条目。
