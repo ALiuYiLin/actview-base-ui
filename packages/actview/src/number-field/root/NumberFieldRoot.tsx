@@ -13,7 +13,7 @@ import { useFieldRootContext } from '../../internals/field-root-context/FieldRoo
 import { useFormContext } from '../../internals/form-context/FormContext';
 import type { FieldRootState } from '../../field/root/FieldRoot';
 import { useLabelableId } from '../../internals/labelable-provider/useLabelableId';
-import type { BaseUIComponentProps, RefObject } from '../../internals/types';
+import type { BaseUIComponentProps, HTMLProps, RefObject } from '../../internals/types';
 import type { RefValue } from '../../types';
 import { stateAttributesMapping } from '../utils/stateAttributesMapping';
 import { useRenderElement } from '../../internals/useRenderElement';
@@ -75,7 +75,7 @@ export function NumberFieldRoot(componentProps: NumberFieldRoot.Props) {
   const inputRef: RefObject<HTMLInputElement | null> = { current: null };
   const hiddenInputRef = useMergedRefs(componentProps.inputRef, fieldRootContext.value.validation.inputRef);
 
-  const id = useLabelableId({ id: () => componentProps.id });
+  const id = useLabelableId({ id: computed(() => componentProps.id) });
 
   watch(
     () => value.value,
@@ -416,7 +416,7 @@ export function NumberFieldRoot(componentProps: NumberFieldRoot.Props) {
     onValueCommitted,
   }));
 
-  function getElementProps() {
+  function getElementProps(prev: HTMLProps): HTMLProps {
     const {
       id: _id,
       min: _min,
@@ -444,7 +444,7 @@ export function NumberFieldRoot(componentProps: NumberFieldRoot.Props) {
       style: _style,
       ...elementProps
     } = componentProps;
-    return elementProps;
+    return { ...prev, ...elementProps };
   }
 
   function getHiddenInputProps() {
@@ -479,32 +479,34 @@ export function NumberFieldRoot(componentProps: NumberFieldRoot.Props) {
   const getRoot = useRenderElement('div', componentProps, {
     state,
     ref: componentProps.ref,
-    props: getElementProps,
+    props: [getElementProps],
     stateAttributesMapping,
   });
+
+  const getHiddenInputPropsWithExtras = () => ({
+    ...getHiddenInputProps(),
+    ref: hiddenInputRef,
+    type: 'number' as const,
+    form: componentProps.form,
+    name: name.value,
+    value: value.value ?? '',
+    min: componentProps.min,
+    max: componentProps.max,
+    // stepMismatch validation is broken unless an explicit `min` is added.
+    // See https://github.com/react/react/issues/12334.
+    step: componentProps.step ?? 1,
+    disabled: disabled.value,
+    readOnly: readOnly.value,
+    required: required.value,
+    'aria-hidden': true,
+    tabIndex: -1,
+    style: name.value ? visuallyHiddenInput : visuallyHidden,
+  }) as JSX.IntrinsicElements['input'] & { form?: string };
 
   return (
     <NumberFieldRootContext.Provider value={contextValue}>
       {getRoot()}
-      <input
-        {...getHiddenInputProps()}
-        ref={hiddenInputRef}
-        type="number"
-        form={componentProps.form}
-        name={name.value}
-        value={value.value ?? ''}
-        min={componentProps.min}
-        max={componentProps.max}
-        // stepMismatch validation is broken unless an explicit `min` is added.
-        // See https://github.com/react/react/issues/12334.
-        step={componentProps.step ?? 1}
-        disabled={disabled.value}
-        readOnly={readOnly.value}
-        required={required.value}
-        aria-hidden
-        tabIndex={-1}
-        style={name.value ? visuallyHiddenInput : visuallyHidden}
-      />
+      <input {...getHiddenInputPropsWithExtras()} />
     </NumberFieldRootContext.Provider>
   );
 }

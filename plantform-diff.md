@@ -296,6 +296,18 @@
 ### AD-19 jsdom 的原生 button 键盘激活
 - **适配**：原生 `<button>` 的 Enter→click 是浏览器行为，jsdom 不合成；useButton 的键盘 click（`dispatchClickWithModifiers`）只对**非原生元素**（`nativeButton: false`）生效（见 Button.test.tsx）。键盘激活测试需手动补 `fireEvent.click` 模拟原生行为，且 `dispatchClickWithModifiers` 用 `window.PointerEvent`（jsdom 未实现），测试需 `(window as any).PointerEvent = window.MouseEvent`。
 
+### AD-20 mergePropsN 链中 getter 的"整体替换"语义
+- **适配**：`mergePropsN` 的 props 数组从左到右合并，**getter（函数）返回的对象整体替换 prev**，不自动合并。因此 props 链中若有一个无参 getter（`() => elementProps`），会**丢弃前面所有 getter 产生的属性**（如 input 的 `value`、按钮的 `aria-label`、`role` 等）→ DOM 缺属性。依赖响应式的 getter 必须写成 `(prev) => ({ ...prev, ...elementProps })`（slider 全组件已遵循）。排查方法：grep 无参的 `getElementProps()` 且其所在 props 数组还有其他 getter。已修复：number-field 全部子组件（Root/Group/Input/stepper/ScrubArea/ScrubAreaCursor）。
+
+### AD-21 setup 期静态对象展开不响应（隐藏 input 场景）
+- **适配**：actview 的 JSX return 每次渲染重新求值，但**函数体内的普通对象字面量只在 setup 求值一次**。number-field 的隐藏 `<input type="number">` 曾把 props 组装成 setup 期对象（`value: value.value ?? ''`），后续 value 变化 hidden input 不更新（stepMismatch 校验失效）。修复：**props 组装函数化** `getHiddenInputPropsWithExtras = () => ({ ... })`，在 JSX 中 `{...getHiddenInputPropsWithExtras()}` 调用，每次渲染重新求值。
+
+### AD-22 actview 无 createPortal，用 `<Teleport to={...}>`
+- **适配**：actview 无 `ReactDOM.createPortal`；提供等价内置组件 `<Teleport to={selectorOrElement}>`（从 `actview` 导入），children 渲染到目标容器（`string` → `document.querySelector`；`Element` → 直接用；null → 当前容器）。NumberFieldScrubAreaCursor 用它把虚拟光标传送到 `document.body`。条件渲染（返回 null / 三元 / `&&`）在渲染器与 Babel 插件层面原生支持。
+
+### AD-23 测试组件需定义在顶层（Babel 转换范围）
+- **适配**：测试文件里**返回 JSX 的组件若定义在 `it()` 回调内部**，actview 的 Babel 插件（@actview/plugin-vite）不识别为组件 → 运行时被当原生元素 → `DOMException`（容器渲染为空）。调试期把组件写在 `it` 内导致 number-field 全部测试"组件渲染错误"。修复：测试组件（`NumberField`、`FormDemo` 等）**定义在 describe/it 之外的文件顶层**（slider/tabs 测试均如此）。
+
 ---
 
 > 维护说明：新增差异/适配时在对应部分追加，编号递增；修改后同步更新 plan.md 与 issue.md 的关联条目。

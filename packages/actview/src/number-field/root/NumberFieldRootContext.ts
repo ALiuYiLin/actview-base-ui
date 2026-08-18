@@ -2,6 +2,7 @@ import type { RefObject } from '../../internals/types';
 import type { NumberFieldRoot, NumberFieldRootState } from './NumberFieldRoot';
 import type { EventWithOptionalKeyState, IncrementValueParameters } from '../utils/types';
 import { createContext } from '../../internals/createContext';
+import type { ComputedRef } from '@actview/core';
 
 export type InputMode = 'numeric' | 'decimal' | 'text';
 
@@ -39,7 +40,7 @@ export const NumberFieldRootContext = createContext<NumberFieldRootContext | und
   undefined,
 );
 
-export function useNumberFieldRootContext() {
+export function useNumberFieldRootContext(): ComputedRef<NumberFieldRootContext> {
   const context = NumberFieldRootContext.use();
   if (context.value === undefined) {
     throw new Error(
@@ -47,5 +48,5 @@ export function useNumberFieldRootContext() {
     );
   }
 
-  return context;
+  return context as ComputedRef<NumberFieldRootContext>;
 }

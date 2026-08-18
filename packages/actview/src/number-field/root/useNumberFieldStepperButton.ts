@@ -1,5 +1,5 @@
 import { computed } from 'actview';
-import type { BaseUIComponentProps, NativeButtonProps } from '../../internals/types';
+import type { BaseUIComponentProps, HTMLProps, NativeButtonProps } from '../../internals/types';
 import { useRenderElement } from '../../internals/useRenderElement';
 import { useButton } from '../../internals/use-button';
 import { isTouchLikePointerType, usePressAndHold } from '../../internals/usePressAndHold';
@@ -8,7 +8,7 @@ import {
   createChangeEventDetails,
   createGenericEventDetails,
 } from '../../internals/createBaseUIEventDetails';
-import type { EventWithOptionalKeyState } from '../utils/types';
+import type { DirectionalChangeReason, EventWithOptionalKeyState } from '../utils/types';
 import type { NumberFieldRoot, NumberFieldRootState } from './NumberFieldRoot';
 import { REASONS } from '../../internals/reasons';
 import { useNumberFieldRootContext } from './NumberFieldRootContext';
@@ -50,7 +50,7 @@ export function useNumberFieldStepperButton(
     () => (componentProps.disabled ?? false) || contextDisabled.value || isAtBoundary.value,
   );
 
-  const pressReason: NumberFieldRoot.ChangeEventReason = isIncrement
+  const pressReason: DirectionalChangeReason = isIncrement
     ? REASONS.incrementPress
     : REASONS.decrementPress;
 
@@ -175,7 +175,7 @@ export function useNumberFieldStepperButton(
     };
   }
 
-  function getElementProps() {
+  function getElementProps(prev: HTMLProps) {
     const {
       render: _render,
       className: _className,
@@ -184,7 +184,7 @@ export function useNumberFieldStepperButton(
       style: _style,
       ...elementProps
     } = componentProps;
-    return elementProps;
+    return { ...prev, ...elementProps };
   }
 
   const { getButtonProps, buttonRef } = useButton({
@@ -192,7 +192,7 @@ export function useNumberFieldStepperButton(
     // `data-readonly` (from `state`) is preserved for styling. `aria-readonly` isn't valid on the
     // `button` role, so it's intentionally not set.
     disabled: computed(() => disabled.value || readOnly.value),
-    native: () => componentProps.nativeButton ?? true,
+    native: computed(() => componentProps.nativeButton ?? true),
     focusableWhenDisabled: true,
   });
 

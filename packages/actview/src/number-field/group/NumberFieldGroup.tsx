@@ -1,7 +1,7 @@
 import { computed } from 'actview';
 import { useNumberFieldRootContext } from '../root/NumberFieldRootContext';
 import type { NumberFieldRootState } from '../root/NumberFieldRoot';
-import type { BaseUIComponentProps } from '../../internals/types';
+import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
 import { stateAttributesMapping } from '../utils/stateAttributesMapping';
 import { useRenderElement } from '../../internals/useRenderElement';
 
@@ -16,9 +16,9 @@ export function NumberFieldGroup(componentProps: NumberFieldGroup.Props) {
 
   const state = computed(() => rootContext.value.state);
 
-  function getElementProps() {
+  function getElementProps(prev: HTMLProps): HTMLProps {
     const { render: _render, className: _className, style: _style, ...elementProps } = componentProps;
-    return elementProps;
+    return { ...prev, ...elementProps };
   }
 
   const getElement = useRenderElement('div', componentProps, {
