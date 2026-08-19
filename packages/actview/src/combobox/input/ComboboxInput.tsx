@@ -58,6 +58,10 @@ export function ComboboxInput(componentProps: ComboboxInput.Props) {
   // `inputValue` can't be placed in the store.
   // https://github.com/mui/base-ui/issues/2703
   const inputValue = useComboboxInputValueContext();
+  // The rendered string is mirrored into the store so the input re-renders when it
+  // changes (e.g. inline autocomplete fills) — context values don't drive re-renders
+  // on their own (see QA: combobox-context-render-reactivity).
+  const storeInputValue = store.useState('inputValue');
   const direction = useDirection();
 
   const required = store.useState('required');
@@ -203,7 +207,7 @@ export function ComboboxInput(componentProps: ComboboxInput.Props) {
           inputProps.value,
           triggerProps.value,
           {
-            value: composingValue.value ?? inputValue.value,
+            value: composingValue.value ?? storeInputValue.value,
             'aria-readonly': readOnly.value || undefined,
             'aria-required': required.value || undefined,
             'aria-labelledby': labelableContext.value.labelId,
@@ -467,20 +471,20 @@ export function ComboboxInput(componentProps: ComboboxInput.Props) {
     stateAttributesMapping: triggerStateAttributesMapping,
   });
 
-  const renderedInput = hasPositionerParent.value ? (
-    <FieldRootContext.Provider value={DEFAULT_FIELD_ROOT_CONTEXT}>
-      {getElement()}
-    </FieldRootContext.Provider>
-  ) : (
-    getElement()
-  );
-
   return (
     <>
       {open.value && focusManagerModal.value && (
         <ComboboxInternalDismissButton ref={store.state.startDismissRef} />
       )}
-      {renderedInput}
+      {/* `getElement()` must be invoked inside the render function (not cached in a
+          setup const) so reactive props re-evaluate on every render (AD-38). */}
+      {hasPositionerParent.value ? (
+        <FieldRootContext.Provider value={DEFAULT_FIELD_ROOT_CONTEXT}>
+          {getElement()}
+        </FieldRootContext.Provider>
+      ) : (
+        getElement()
+      )}
     </>
   );
 }

@@ -17,6 +17,13 @@ export type State = {
 
   selectedValue: any;
 
+  /**
+   * The visible input value, mirrored into the store so consumers re-render through the
+   * store subscription path (the input value itself can't live in the store's semantic
+   * state, but the rendered string is safe to sync — see QA: combobox-context-render-reactivity).
+   */
+  inputValue: string;
+
   open: boolean;
   mounted: boolean;
   transitionStatus: TransitionStatus;
@@ -114,6 +121,8 @@ function createInitialState(initialState?: Partial<State>): State {
 
     selectedValue: null,
 
+    inputValue: '',
+
     open: false,
     mounted: false,
     transitionStatus: undefined,
@@ -194,6 +203,7 @@ export const selectors = {
   items: (state: State) => state.items,
 
   selectedValue: (state: State) => state.selectedValue,
+  inputValue: (state: State) => state.inputValue,
   hasSelectionChips: (state: State) => {
     const selectedValue = state.selectedValue;
     return Array.isArray(selectedValue) && selectedValue.length > 0;

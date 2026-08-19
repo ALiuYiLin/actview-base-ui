@@ -1,4 +1,4 @@
-import { computed, unref, watch } from 'actview';
+import { computed, ref, unref, watch } from 'actview';
 import {
   useComboboxRootContext,
   useComboboxHasItemsContext,
@@ -77,6 +77,10 @@ function ComboboxItemInner(props: ComboboxItemInnerProps) {
   const itemProps = store.useState('itemProps');
 
   const itemRef = { current: null as HTMLDivElement | null };
+  // Reactive mirror of the mounted element: the registration watch below must re-run once the
+  // element actually mounts (its `immediate` run happens in setup, before the ref is assigned),
+  // so first-render indices that never change still get registered in `listRef`.
+  const itemElement = ref<HTMLDivElement | null>(null);
 
   const id = computed(() =>
     rootId.value != null && hasRegistered.value ? `${rootId.value}-${index.value}` : undefined,
@@ -86,7 +90,7 @@ function ComboboxItemInner(props: ComboboxItemInnerProps) {
   // Register the DOM element in the list ref for virtualized lists (the composite registry
   // covers non-virtualized ones).
   watch(
-    [hasRegistered, computed(() => virtualized), computed(() => indexProp != null), index],
+    [hasRegistered, computed(() => virtualized), computed(() => indexProp != null), index, itemElement],
     () => {
       const shouldRun = hasRegistered.value && (virtualized || indexProp != null);
       if (!shouldRun) {
@@ -94,7 +98,7 @@ function ComboboxItemInner(props: ComboboxItemInnerProps) {
       }
 
       const list = store.state.listRef.current;
-      list[index.value] = itemRef.current;
+      list[index.value] = itemElement.value;
 
       return () => {
         delete list[index.value];
@@ -219,7 +223,15 @@ function ComboboxItemInner(props: ComboboxItemInnerProps) {
   });
 
   const getElement = useRenderElement('div', componentProps, {
-    ref: [buttonRef, componentProps.ref, listItem.ref, itemRef],
+    ref: [
+      buttonRef,
+      componentProps.ref,
+      listItem.ref,
+      itemRef,
+      (element: HTMLDivElement | null) => {
+        itemElement.value = element;
+      },
+    ],
     state,
     props: [(prev: any) => ({ ...prev, ...itemProps.value }), defaultProps, elementProps, getButtonProps],
   });

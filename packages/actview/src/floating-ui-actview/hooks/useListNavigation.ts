@@ -733,20 +733,28 @@ export function useListNavigation(
     },
   };
 
-  const getAriaActiveDescendant = () => {
-    if (typeableComboboxReference.value) {
-      return undefined;
-    }
+  // `aria-activedescendant` semantics (per QA: floating-activedescendant-split):
+  // - The reference (e.g. the combobox input) always gets `${id}-${activeIndex}` while
+  //   virtual, open, and an active index exist — typeable comboboxes included.
+  // - The floating (list) side omits it for typeable combobox references.
+  const getReferenceAriaActiveDescendant = () => {
     if (!virtual || !open.value || activeIndexRef.current == null) {
       return undefined;
     }
     return `${id}-${activeIndexRef.current}`;
   };
 
+  const getFloatingAriaActiveDescendant = () => {
+    if (typeableComboboxReference.value) {
+      return undefined;
+    }
+    return getReferenceAriaActiveDescendant();
+  };
+
   const floating: ElementProps['floating'] = {
     'aria-orientation': orientation === 'both' ? undefined : orientation,
     get 'aria-activedescendant'() {
-      return getAriaActiveDescendant();
+      return getFloatingAriaActiveDescendant();
     },
     onKeyDown(event: KeyboardEvent) {
       // Close submenu on Shift+Tab
@@ -886,7 +894,7 @@ export function useListNavigation(
 
   const reference: ElementProps['reference'] = {
     get 'aria-activedescendant'() {
-      return getAriaActiveDescendant();
+      return getReferenceAriaActiveDescendant();
     },
     ...trigger,
   };

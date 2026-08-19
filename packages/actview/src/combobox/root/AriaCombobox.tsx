@@ -78,9 +78,7 @@ type InternalAriaComboboxProps<Value, Mode extends SelectionMode, Item = Value> 
   Value,
   Mode,
   Item
-> & {
-  filterQuery?: string | undefined;
-};
+>;
 
 /**
  * @internal
@@ -110,7 +108,6 @@ export function AriaCombobox<Value, Mode extends SelectionMode = 'none', Item = 
     items: itemsProp,
     filteredItems: filteredItemsProp,
     filter: filterProp,
-    filterQuery: filterQueryProp,
     openOnInputClick = true,
     autoHighlight = false,
     keepHighlight = false,
@@ -342,7 +339,7 @@ export function AriaCombobox<Value, Mode extends SelectionMode = 'none', Item = 
   );
 
   const filterQuery = computed(() =>
-    shouldBypassFiltering.value ? '' : (filterQueryProp ?? query.value),
+    shouldBypassFiltering.value ? '' : (componentProps.filterQuery ?? query.value),
   );
   const shouldIgnoreExternalFiltering = computed(
     () =>
@@ -1500,12 +1497,14 @@ export function AriaCombobox<Value, Mode extends SelectionMode = 'none', Item = 
       computed(() => isItemEqualToValue),
       computed(() => submitOnItemClick),
       hasInputValue,
+      inputValueValue,
       computed(() => (selectionMode === 'none' && (inlineProp || !store.state.inputInsidePopup))),
     ],
     () => {
       store.update({
         id: id.value ?? undefined,
         selectedValue: selectedValueValue.value,
+        inputValue: inputValueValue.value,
         open: openValue.value,
         mounted: mounted.value,
         transitionStatus: transitionStatus.value,
@@ -1854,6 +1853,12 @@ interface ComboboxRootProps<ItemValue, Item = ItemValue> {
     | null
     | ((item: Item, query: string, itemToString?: (item: Item) => string) => boolean)
     | undefined;
+  /**
+   * INTERNAL: The query used to filter items, overriding the derived input query.
+   * Used by `AutocompleteRoot` to keep filtering against the typed query while inline
+   * autocompletion temporarily changes the displayed input value.
+   */
+  filterQuery?: string | undefined;
   /**
    * When the item values are objects (`<Combobox.Item value={object}>`), this function converts the object value to a string representation for display in the input.
    * If the shape of the object is `{ value, label }`, the label will be used automatically without needing to specify this prop.

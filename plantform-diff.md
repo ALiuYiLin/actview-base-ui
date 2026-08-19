@@ -350,6 +350,21 @@
 ### AD-37 store 换新对象的响应式 prop 必须 computed 化（ToastRoot 的 toast）
 - **适配**：`Toast.Root` 的 `toast` prop 由 store 在每次 add/update/close 时**替换为新对象**（`setToasts(toasts.map(...))`），若 setup 解构 `const { toast } = componentProps` 则冻结旧对象——transitionStatus 永远 'starting'（data-starting-style 残留）、close 的 ending 读不到（useOpenChangeComplete 永不 remove）、update 的 title 不刷新。修复：`const toast = computed(() => componentProps.toast)`，全组件读 `toast.value.xxx`（getDefaultProps/state computed/watch 源/事件回调）。这是 PD-15 在"store 换对象"场景的强制要求。
 
+### AD-38 useRenderElement 的 getElement() 不能在 setup 缓存成 VNode（ComboboxInput 场景）
+- **适配**：若把 `getElement()` 的调用结果（或含 `{getElement()}` 的 JSX 片段）赋给 setup 局部 `const renderedInput = ...`，渲染函数复用该 VNode **快照**——`useRenderElement` 的 props getter（读 store ref/computed）只在 setup 执行一次，后续响应式变化（受控 inputValue 更新、inline 补全、data 属性）**永不反映到 DOM**（autocomplete 输入后 ArrowDown 的 input.value 不更新、aria-activedescendant 缺失）。注意它与 AD-35 不同：AD-35 是 props 数组内的普通对象合并，这里是**整个渲染元素被缓存**。修复：把 JSX 三元/条件直接内联到组件**最终 return 的 JSX**（每次渲染求值 `getElement()`）——`return <>{cond ? <Provider>{getElement()}</Provider> : getElement()}</>`。排查法：给 getter 加日志，若状态已更新但 getter 不重跑，就是渲染元素被缓存。
+
+### AD-39 context computed 值变化不驱动消费者重渲染 → 渲染用值镜像进 store（combobox inputValue）
+- **适配**：`internals/createContext` 的 Provider 包 `computed(() => unref(props.value))`，消费者 `use()` 拿 live computed，但**消费者组件只在自身 store 订阅/渲染依赖变化时重渲染**——context 值变了但消费者渲染函数不重跑，读 `.value` 也拿不到新值（惰性 computed 未被读取）。combobox 的 `inputValue` 走 context（"不能放 store"是 react 语义限制），导致 autocomplete 的 inline 补全/受控 value 更新后 input 显示滞后。修复：**把渲染用字符串镜像进 store**（`store.inputValue` + AriaCombobox 同步 watch 依赖加 `inputValueValue` + ComboboxInput `store.useState('inputValue')`），消费方走已验证可靠的 store 订阅路径；语义状态（选中值等）仍不进 store。QA 记录：`.QA/combobox-context-render-reactivity.md`。
+
+### AD-40 listRef 注册 watch 的 immediate 在 setup 跑（ref 未挂载）→ 依赖加响应式元素 ref（ComboboxItem）
+- **适配**：`watch(..., { immediate: true })` 在 setup 同步执行，此时元素 ref（`{ current: null }` 普通对象）尚未挂载——若注册逻辑（如 `listRef[index] = itemRef.current`）写在 immediate 回调且依赖里**没有元素的挂载时机**，首渲染 index 已是最终值时 watch 不再重跑 → listRef 项永为 null（combobox items-prop 场景 Enter 键盘选择 clickHighlightedItem 失效；combobox 测试先打开再过滤、index 必变化所以没暴露）。修复：加响应式 `const itemElement = ref<HTMLElement|null>(null)`，ref 数组加 `(el) => { itemElement.value = el; }`，watch 依赖加 `itemElement`——挂载后立即重跑注册。
+
+### AD-41 useListNavigation 的 aria-activedescendant 需 reference/floating 分流（typeable combobox）
+- **适配**：actview 移植把 react floating-ui 的 reference/floating 两个 aria-activedescendant 分支折叠进共享 getter，且把"floating 才排除 typeable"误实现成"两侧都排除"——combobox/autocomplete 的 input 永远没有 aria-activedescendant。正确语义（react 源码 S6 证据）：reference（input）侧**无条件**（`virtual && open && activeIndex != null` 即返回 `${id}-${activeIndex}`，typeable 也不例外）；floating（list）侧才 `if (typeableComboboxReference) return undefined`。QA 记录：`.QA/floating-activedescendant-split.md`。
+
+### AD-42 context hook 的 use() 必须在 setup 顶层调用（DirectionContext 场景）
+- **适配**：`useDirection()` 若写成 `return computed(() => DirectionContext.use()...)`，`useInjects` 在 computed getter（非 setup）执行 → 警告 `useInjects 只能在组件 setup 中调用` + 返回 fallback。修复：setup 顶层先 `const context = DirectionContext.use()`，computed 里只读 `context.value`（与 useComboboxInputValueContext 同模式）。排查法：`new Error().stack` 抓 fallback 栈（computed getter 出现即命中）。
+
 ---
 
 > 维护说明：新增差异/适配时在对应部分追加，编号递增；修改后同步更新 plan.md 与 issue.md 的关联条目。

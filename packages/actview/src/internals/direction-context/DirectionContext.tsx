@@ -17,5 +17,8 @@ export const DirectionContext = createContext<DirectionContext | undefined>(
  * Read `.value` inside render functions.
  */
 export function useDirection() {
-  return computed(() => DirectionContext.use().value?.direction ?? 'ltr');
+  // `use()` must be called in setup (it uses `useInjects`), so resolve the context
+  // once here and read `.value` inside the computed.
+  const context = DirectionContext.use();
+  return computed(() => context.value?.direction ?? 'ltr');
 }
