@@ -40,14 +40,20 @@ export type HTMLProps<T = any> = Omit<HTMLAttributes, HTMLAttributesEventKeys> &
 };
 
 /**
- * Shape of the render prop: a function that takes props to be spread on the element and component's state and returns a VNode.
+ * Shape of the render prop: a function that takes a single merged props object
+ * (element props + component state + ref) and returns a VNode.
  *
- * @template Props Props to be spread on the rendered element.
- * @template State Component's internal state.
+ * ActView design: the component world is "single props object" everywhere —
+ * component setup receives one props object, and the render prop likewise
+ * receives one merged object. State is not a separate argument; it is merged
+ * into props, so the headless component and the plain component share the same
+ * mental model.
+ *
+ * @template RenderFunctionProps Props to be spread on the rendered element.
+ * @template State Component's internal state, merged into the props object.
  */
-export type ComponentRenderFn<Props, State> = (
-  props: Props,
-  state: State,
+export type ComponentRenderFn<RenderFunctionProps, State> = (
+  props: RenderFunctionProps & State & { ref?: RefValue },
 ) => VNode | null | undefined;
 
 export type BaseUIEvent<E extends Event> = E & {
