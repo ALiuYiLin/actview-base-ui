@@ -20,6 +20,7 @@
 | actview-framework-adaptation-rules | 语义 | 框架差异总纲速查（PD-01..26/AD-01..42 映射）：setup 单次、getter 求值、return JSX、布尔属性、ref/Teleport、watch、弹层、顶层抛错整树丢弃、测试 | 
 | actview-test-infra-patterns | 语义 | 测试基建怎么用 + 测试失败诊断：@actview/testing + createRenderer、jsdom PointerEvent/portal 残留/waitFor 只在 throw 重试/空查询断言/inputType、hidden input 断言 |
 | select-port-design | 设计建议 | select 移植 3 篇合并：SelectStore class（无 PopupTriggerMap）、Root 弹层组织（floatingContext 不进 store、两层 mergeProps、onNavigate/typeahead）、10 项基建清单 |
+| toast-port-notes | 备注 | toast 完成态非问题残留：`' subscribe'` 订阅键是伪私有（非 bug）、store applyLimited 测 limited 需加第 4 个 toast、store 相对导入路径已对（toast 问题均已提取至各问题档） |
 
 ## 依赖/引用关系
 - 被 plantform-diff.md 与源文件注释**外部引用**、故独立保留：`combobox-context-render-reactivity`、`floating-activedescendant-split`。

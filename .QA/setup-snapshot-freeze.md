@@ -6,6 +6,9 @@ actview 组件 **setup 只执行一次**，props 是 shallowReactive 代理、�
 ## 共通修复
 凡是要「跟着 props 变化」的值，一律不 setup 解构，改**惰性读取**：`const x = computed(() => componentProps.x)`（或渲染 getter 内读 `componentProps.x`），全组件读 `x.value`。
 
+## 机制补充（为什么"模板重跑但 DOM 不更新"几乎总是快照问题）
+- actview **无子树缓存**：每次响应式变化重新调用 setup 返回的 render（`runEffect(update)` 包装，mountComponent.ts:257-259），模板里的函数调用表达式（`ref.value.map(...)`、包 getElement 的 IIFE、`useToastLabelElement(getElement, ...)` 等）**每帧重跑、重生成 VNode**——这些"包函数"是正常且响应式的（`store.useState` 列表渲染能更新、close 能卸载都靠它）。所以「模板重跑了但 DOM/文本不更新」时，根因几乎总是：读的值来自 **setup 解构的冻结拷贝 / 被缓存的渲染元素 / props 数组普通对象**（下方排查顺序），不是框架问题。
+
 ## 各组件实例（同一问题的不同触发场景）
 1. **toast —— store 换新对象**（AD-36/37）：store 每次 add/update/close 换**新 toast 对象**（`setToasts(toasts.map(...))`），`const { toast } = componentProps` 冻结旧对象 → transitionStatus 永远 'starting'（data-starting-style 残留）、close 的 ending 读不到（永不消失）、update 的 title/actionProps 不刷新。修复 `const toast = computed(() => componentProps.toast)`，全组件读 `toast.value.xxx`（watch 源 / state computed / getDefaultProps / 事件回调）。
 2. **toast —— children 快照覆盖 getter**（AD-36）：`children` 也必须从 setup 解构排除（`children: _children`），由 getter/computed 读 `componentProps.children`——否则 elementProps 里的旧 children VNode 会**覆盖** getter 的新 children，title 永不更新。

@@ -9,6 +9,7 @@
 ## 第一部分：框架差异（Platform Diff）
 
 ### PD-01 aria-* 布尔属性渲染
+// ✅ 已实施：setProp 对 aria-* 键布尔值规范化（true→"true"、false→"false" 不移除，对齐 ARIA 规范与 React）；renderToString 同步
 - **标题**：aria-* 布尔属性的渲染值不同
 - **场景**：`aria-disabled`、`aria-checked`、`aria-required` 等布尔型 ARIA 属性
 - **代码示例**：
@@ -23,6 +24,7 @@
 - **状态**：已记录，待执行方案 B（规范化）或保持（测试按存在性断言，见 issue #20）
 
 ### PD-02 组件级 ref 指向组件实例
+// TODO 框架侧（可选）：组件实例暴露根 DOM 访问器（如 instance.rootEl = subTree.el）或 Vue 式 expose() 等价物，减少"拿根元素需内部 ref/DOM 查询"的负担；保持 ref→组件实例语义
 - **标题**：组件的 `ref` prop 指向**组件实例**而非根 DOM 元素
 - **场景**：用户给组件传 `ref`（如 `<Button ref={el => ...}/>`）；actview 的 mountComponent 在 setup 执行**前** `delete props.ref`，并把 ref 回调以**组件实例**调用
 - **代码示例**：
@@ -34,6 +36,7 @@
 - **状态**：已记录（issue #21）
 
 ### PD-03 onChange 语义
+// TODO 框架侧（评估）：文档/类型层提示"受控文本输入用 onInput"；可选提供 React 兼容的 onChange→input 映射（仅文本类 input，checkbox/radio/select 保持原生 change）
 - **标题**：`onChange` 是原生 `change` 事件（React 的 onChange = input 事件，每次输入都触发）
 - **场景**：受控文本框（input/combobox/number-field 等）的值变化监听
 - **代码示例**：
@@ -44,6 +47,7 @@
 - **适配**：受控文本输入统一改用 `onInput`（每次输入触发）；checkbox/radio/select 的 onChange 原生语义正确无需改
 
 ### PD-04 无合成事件
+// TODO 保持：无合成事件是设计取舍（原生事件，文档已覆盖），无需框架改动
 - **标题**：事件是**原生 DOM 事件**，无 React 合成事件包装（无池化、无 `event.nativeEvent`）
 - **场景**：任何事件处理（`event.nativeEvent`、`event.currentTarget` 类型）
 - **代码示例**：
@@ -56,6 +60,7 @@
 - **适配**：删除所有 `event.nativeEvent` 用法；`React.MouseEvent` 等类型改原生类型
 
 ### PD-05 class / className
+// TODO 保持：class/className 双支持已满足（SVG 走 setAttribute），无需改动
 - **标题**：`class` 与 `className` 都映射到元素 className（SVG 走 setAttribute）
 - **场景**：样式类传递
 - **代码示例**：`<div class="a" className="b" />`
@@ -63,6 +68,7 @@
 - **适配**：公共 props 名保留 `className`（React 兼容）；内部统一用 `class`
 
 ### PD-06 组件函数只执行一次（setup）
+// TODO 保持：setup+render 是核心设计；PD-15 的 props 解构已由 useProp/useProps 解决
 - **标题**：组件函数体只执行一次（setup），返回的 JSX 被包成 render 函数每次更新执行
 - **场景**：派生逻辑、props 对象构造、条件渲染的位置
 - **代码示例**：
@@ -81,6 +87,7 @@
 - **适配**：派生值用 `computed`；props 对象构造放 getter（`getXxxProps()` 在 JSX 内调用）；setup 层禁止解构 props（PD-17）
 
 ### PD-07 组件必须以 return JSX 结尾（babel 转换）
+// ✅ 已实施（对齐 renderToString，非全自动解包）：isComponentVNode 接受函数类型；挂载时调一次 fn(props)：返回函数→作 render（手动 setup 风格可用）；返回 VNode→明确报错替代 InvalidCharacterError
 - **标题**：babel 转换只把「最后 return 为 JSX/null/含 JSX 的三元」的组件包成 defineComponent；`return getElement()`（调用表达式）不转换 → 裸函数进入运行时崩溃
 - **场景**：任何组件函数
 - **代码示例**：
@@ -93,6 +100,7 @@
 - **适配**：所有组件统一 `return <>{getElement()}</>`（issue #19）
 
 ### PD-08 JSX 标签不支持成员表达式 / 动态组件
+// TODO 已支持：本仓库 babel 插件编译 JSXMemberExpression（Avatar.Root + 具名插槽已验证通过）；该条目应属 oxc 工具链路径，确认后更新/移除
 - **标题**：JSX 标签不支持成员表达式 `<A.b />`（oxc 解析器拒绝）；动态组件用内置 `<component is={Comp} />`
 - **场景**：动态渲染不同组件
 - **代码示例**：
@@ -105,27 +113,32 @@
 - **渲染后示例**：成员表达式报 `Expected '>' but found '{'`；`<component is>` 正确渲染目标组件
 
 ### PD-09 含 JSX 的文件必须 .tsx
+// ✅ 已实施：@actview/plugin-vite transform 扩展 .ts（含 JSX 时同样转换；无 JSX 的 .ts 经 babel 原样再生）
 - **标题**：`.ts` 文件中的 JSX 不被 vite oxc 处理（actview 插件只转 .tsx/.js）
 - **场景**：非组件文件含 JSX（如 createContext.tsx、测试工具）
 - **适配**：含 JSX 一律 `.tsx` 后缀
 
 ### PD-10 store 订阅返回 Ref
+// TODO 保持：Ref 返回是响应式设计（JSX 需 .value，与全框架一致）；可选在 @actview/store 提供解包便捷 API
 - **标题**：`store.use(selector)`（原 useSyncExternalStore 等价物）返回 `Ref`，需读 `.value`
 - **场景**：所有 store 状态读取
 - **代码示例**：`const open = store.useState('open')` → 渲染内 `open.value`
 - **适配**：全局统一 `.value` 读取
 
 ### PD-11 useId 无 SSR 稳定 id
+// ✅ 已实施：useId() 基于组件实例自增 id（mountComponent uid，setup 只跑一次→重渲染间稳定）+ 调用计数；SSR/setup 外回退全局计数（无水合，服务端/客户端无需一致）
 - **标题**：actview 无 React.useId 的 SSR/hydration 稳定 id 等价物（进程内自增）
 - **场景**：组件生成 id（useId/useBaseUiId）
 - **适配**：JSDoc 注明 SSR 下 id 可能与客户端不一致；label id 在 setup 读一次
 
 ### PD-12 useIsoLayoutEffect 无 layout 阶段
+// TODO 框架侧（评估）：增加 layout 阶段能力（如 watch flush:'layout' 在 DOM 提交前调度，或 onBeforeUpdate 钩子）；当前 onMounted 同步执行 + watch immediate 方案可先用
 - **标题**：actview 无 layout phase，`useIsoLayoutEffect` 等价于 onMounted（挂载后执行）
 - **场景**：需要在 DOM 提交前测量/写样式的场景
 - **适配**：挂载后同步执行；需要响应 deps 的场景用 `watch(..., {immediate:true})`
 
 ### PD-13 useForcedRerendering 不存在
+// TODO 框架侧（可选）：新增 useForceUpdate() 帮助函数（内部 tick ref，渲染表达式内读取建立依赖）
 - **标题**：actview 无 forceUpdate（`setState({})` 等价物）
 - **场景**：依赖外部变化强制重渲染（TabsIndicator、NumberFieldRoot）
 - **适配**：本地 tick ref 模式：
@@ -136,11 +149,13 @@
   ```
 
 ### PD-14 reactive 不能整体重赋值
+// TODO 保持：与 Vue 一致（reactive 变量重赋值丢代理），文档已覆盖；无框架改动
 - **标题**：`reactive` 变量整体重新赋值会丢代理
 - **场景**：`state = {...}` 模式
 - **适配**：改属性，或整体替换用 `ref({...})` + `.value = {...}`
 
 ### PD-15 props 原地更新，setup 解构冻结
+// TODO 已解决：useProp/useProps（ComputedRef 活引用 + normalize 默认值 + key:undefined 裸透传 + rest 动态透传，组件内单参形式）——更新本条目的适配说明
 - **标题**：props 是 shallowReactive 代理，父更新时原地写（updateProps）；setup 层解构 props 会捕获旧值
 - **场景**：任何 props 读取
 - **代码示例**：
@@ -153,38 +168,45 @@
 - **适配**：getter/JSX 内读 `props.x`；rest props 用 `getElementProps()` 函数内解构
 
 ### PD-16 测试 API 差异
+// ✅ 已实施：@actview/testing 的 render(Component, { props }) 支持 props（内部 Harness + reactive 代理），rerender(props) 更新触发响应式重渲染
 - **标题**：`@actview/testing` 的 `render(组件)` 不接受 props；`getByText` 返回**最外层**包含匹配的元素
 - **场景**：测试编写
 - **代码示例**：`render(Component)` → 传 props 需 Harness 组件
 - **适配**：测试基建 `test/createRenderer.tsx`（reactive props 的 Harness + setProps/rerender）；查询优先 `getByTestId`
 
 ### PD-17 事件处理器逆变（无 bivariance）
+// ✅ 已实施：EventHandler 加 bivarianceHack（`{ bivarianceHack(e: E): void }['bivarianceHack']`）——仅放宽赋值方向、保留 E 精确类型；纯类型层，与原生事件设计（PD-04）无冲突
 - **标题**：actview 的 `EventHandler<E>` 是逆变函数属性（React 用 bivarianceHack）
 - **场景**：`WithBaseUIEvent` 包装的 handler 与原生元素 props 类型不兼容
 - **适配**：`HTMLProps` 把 `on*` 键用模板索引重声明为宽松类型（`[key: \`on${string}\`]: ((event: any) => any) | undefined`）
 
 ### PD-18 类型来源
+// ✅ 已实施：actview 聚合包补导类型（Ref/ComputedRef/WritableComputedRef/ComputedOptions/WatchSource/WatchOptions/Context 等）；core 补导 WatchSource/WatchOptions/WatchCleanup
 - **标题**：`actview` 聚合包不导出类型（Ref/ComputedRef/WatchSource 等）
 - **场景**：类型导入
 - **适配**：类型一律 `from '@actview/core'`
 
 ### PD-19 布尔 true 属性的 data-* 输出
+// ✅ 已实施：与 PD-01 一并规范化（aria-*/data-* 布尔键：true→"true"、false→"false" 不移除）——统一 setProp 布尔策略
 - **标题**：`data-*` 等普通属性的布尔值：actview `true → ""`（React 的 data-* 布尔会字符串化 "true"）
 - **场景**：`getStateAttributesProps` 生成的 data-* 状态属性（data-disabled 等）
 - **渲染后示例**：React `<div data-disabled="true">`；ActView `<div data-disabled="">`
 - **适配**：无（状态属性只需存在性；与 PD-01 同源，可一并规范化）
 
 ### PD-20 生命周期顺序
+// TODO 保持：子先父后对齐 Vue 3 语义（与 React 相反），文档说明；无框架改动
 - **标题**：onMounted 在首次渲染后**同步**触发，子组件先于父组件
 - **场景**：依赖挂载时机的逻辑
 - **适配**：与 React 相反（React 父先子后）；依赖顺序的逻辑需按 actview 语义调整
 
 ### PD-21 渲染错误处理
+// TODO 保持：Vue 风格错误处理（onErrorCaptured → ErrorBoundary → console.error），文档说明；无框架改动
 - **标题**：渲染错误走 onErrorCaptured 链 → ErrorBoundary → console.error（React 默认 throw）
 - **场景**：渲染期异常
 - **适配**：需要自定义处理时用 ErrorBoundary
 
 ### PD-22 JSX 组件标签的 props 校验限制
+// TODO 框架侧：@actview/jsx 组件 props 类型放宽（支持函数式 className/style 等自定义类型），或提供类型级"宽松展开"选项（对齐 HTMLProps 模板索引方案）
 - **标题**：用 JSX 组件标签 `<Comp {...props} />` 展开全量 props 时，TS 校验会强制 `className`/`style` 等为原始 DOM 类型，与 Base UI 的函数式 `className`（`(state) => string`）冲突
 - **场景**：包装组件（如 Input 包 FieldControl）直接 spread 用户 props
 - **代码示例**：
@@ -197,12 +219,14 @@
 - **适配**：包装类组件统一 `createElement` + Fragment 返回（组件内部不受影响，因为 useRenderElement 走宽松 HTMLProps）
 
 ### PD-23 defaultValue 属性行为
+// ✅ 已实施：setProp 对 defaultValue/defaultChecked 走 property 赋值（el.defaultValue/el.defaultChecked）；renderToString 序列化映射 defaultValue→value、defaultChecked→checked（对齐 React SSR）
 - **标题**：actview 渲染器把 `defaultValue` 当普通属性 setAttribute（不设置 input 的 `.value` 属性）；React 以属性赋值（`.defaultValue`）实现
 - **场景**：受控/非受控 input 的 defaultValue
 - **渲染后示例**：React `<input>` 显示 defaultValue 值；ActView 仅 DOM 有 `defaultvalue` 属性、input.value 为空
 - **适配**：FieldControl 的 input ref 回调里对非受控 defaultValue 直接赋值 `node.defaultValue = String(v)`
 
 ### PD-24 `<component is>` 动态组件残留 `is`
+// ✅ 已实施：resolveDynamicVNode 解析后删除 vnode.props.is（keepAlive 在 render 期先读 props.is、每次新 vnode，先读后删安全）
 - **标题**：`<component is={Comp}/>` 会把 `is` 键残留进组件 props（Base UI 无 `is` 语义）
 - **场景**：测试基建里切换当前渲染的组件
 - **代码示例**：
@@ -212,6 +236,7 @@
 - **适配**：createRenderer 改用 `createElement(Current.value, state)`（PD-24 于 createRenderer 注释中引用）
 
 ### PD-25 对象 style 渲染丢弃 `--*` 自定义属性键
+// ✅ 已实施：setProp 的 style 对象处理支持 CSS 变量（--* 键走 el.style.setProperty(key, value)，其余 camelCase 键走 el.style[key]）
 - **标题**：actview 渲染对象 style 时过滤 `--*`（CSS 变量）键；字符串 style 可完整保留，但与对象 style 合并（mergeObjects）会破坏
 - **场景**：scroll-area 的 corner/thumb/overflow 尺寸通过 CSS 变量传递（`--scroll-area-corner-height` 等）
 - **代码示例**：
@@ -225,6 +250,7 @@
 - **适配**：scroll-area 用命令式 `element.style.setProperty('--xxx', value)` + `watch`/`onMounted` 应用（Root 的 corner vars、Scrollbar 的 thumb var、Viewport 的 overflow 距离 vars）；消费方以 `var(--xxx)` 作为 style **值**渲染（值字符串不受影响）。相关文件：ScrollAreaRoot/ScrollAreaScrollbar/ScrollAreaViewport
 
 ### PD-26 pointerenter / pointerleave 不冒泡
+// TODO 框架侧（评估）：事件系统为 pointerenter/pointerleave 模拟冒泡（React 合成事件语义；原生不冒泡）——或文档明确用 pointermove 替代
 - **标题**：原生 `pointerenter`/`pointerleave` 不冒泡（React 合成事件模拟为可冒泡），挂在祖先上的处理收不到子元素的 enter/leave
 - **场景**：ScrollArea.Root 把 onPointerEnter/onPointerLeave 挂在 root div，子元素（viewport）进入/离开时 root 收不到事件
 - **代码示例**：
