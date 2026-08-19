@@ -60,4 +60,13 @@ describe('<Select />', () => {
 
 > 证据（路径与行号）已在各 bullet 内联；关键文件：actview/test/{createRenderer.tsx,index.ts,setupVitest.ts,fireEvent.ts,wait.ts}、actview-utils/src/{testUtils.ts,visuallyHidden.ts}、E:\actview\packages\testing\src\testing.ts、popover/Popover.test.tsx、TEST-WAVE.md、react/select/root/SelectRoot{.tsx,.test.tsx}。
 
+## 测试失败诊断（跨组件常见坑）
+- **waitFor 只在回调 throw 时重试**：`waitFor(() => queryToast())` 返回 null 是「成功」不抛 → 立即返回 null，不轮询。断言必须进回调：`await waitFor(() => { expect(x).not.toBeNull(); })`。
+- **cleanup() 只删 render 容器、不跑 unmount 钩子**：订阅/unmount 清理不执行 → 弹层节点需手动 afterEach 删 `[data-base-ui-portal], [data-base-ui-focus-guard]`（select/menu/popover/toast 同款全过）；还残留就 dump `document.body.innerHTML` 核实或改在容器内查询。
+- **fireEvent.input 必须带 `inputType`**（如 `'insertText'`）——否则 combobox 的 `isTypedInput` 判定当非输入事件（PD-03）。
+- **测试用例本身语义错**：空查询 `''` = AriaCombobox 显示全部（`if (filterQueryValue === '') return 全部`），断言 `not.toContain('Banana')` 必然失败——"过滤未生效"其实是"空查询本就无过滤"，单跑偶然过、套跑挂 = 观察偏差，不是隔离问题。输入真实子串（`'Ap'`）再断言。
+- **jsdom 不合成原生 button 的 Enter**：键盘激活只对 nativeButton:false 生效（AD-19，详见 jsdom-keyboard-activation.md）；测试补手动 `fireEvent.click(trigger)`。
+- **PointerEvent polyfill**：jsdom 不全实现 → `beforeAll(() => (window as any).PointerEvent = window.MouseEvent)`。
+- **测试组件必须顶层定义 + 首字母大写**（Babel 转换范围，AD-23）；**Position 类 jsdom 测不了**用 `it.skipIf(isJSDOM)`（AD-16）。
+
 > 框架测试差异的权威长文见根目录 plantform-diff.md（PD-16 测试 API / AD-16 jsdom 布局策略 / AD-18 waitFor flush / AD-19 原生 button 键盘 / AD-23 顶层定义），本文是其精简速查。

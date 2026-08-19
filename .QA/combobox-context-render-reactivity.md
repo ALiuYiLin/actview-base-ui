@@ -30,6 +30,12 @@ AutocompleteRoot(mode both, autoHighlight) → AriaCombobox(selectionMode none)�
 
 ## aria-activedescendant 不同步（用户问是否同类）
 **大概率同类**：它在 input 上由某个（衍生自 context-computed 或未触发重算的）值驱动——检查它的数据源：若经 `inputProps.value.aria-activedescendant`（merge 进 getter，getter 没重跑 → 不更新）或 readValue 来自 activeIndex 的 store 派生（应随 store 更新，需确认 activeIndex 是否真的变了）。**修法同「走 store.useState + 由 store 派生」**，与 inputValue 一起解决。先跑探针确认数据源。
+（实际最终修法见 floating-activedescendant-split.md —— reference/floating 分流，非 store 问题，已修正）
+
+## 同家族问题（context 的 use()/值读取）
+- **context hook 的 `use()` 只能在组件 setup 顶层调用（AD-42）**：`internals/createContext` 的 `use()` = `useInjects(key) ?? computed(defaultValue)`，`useInjects` 只在 setup 有上下文（lifecycle.ts:132-138：setup 外调用 → warn + undefined → 落 fallback 常量）。写成 `computed(() => DirectionContext.use()...)` 会在 computed 重算（setup 外）时命中警告+fallback（DirectionContext 场景）。修复：setup 顶层先 `const context = DirectionContext.use()`，computed 里只读 `context.value`（与 useComboboxInputValueContext 同模式）。排查：`new Error().stack` 抓 fallback 栈——computed getter 出现即命中。
+- **从 ComputedRef<Store> 拿 store 要 `.value!` 解包**（toast 家族）：`const store = useToastProviderContext().value!` 再调 `store.useState(...)`；直接在 ComputedRef 上调方法会 TypeError（曾 bug：useToastManager）。
+- **context 普通值快照** → 见 setup-snapshot-freeze.md 实例 7。
 
 ## 文件证据
 - E:\actview\packages\core\src\runtime\mountComponent.ts:217-224（update → render → patch 在 effect 内）、:257-259（runEffect(update)）

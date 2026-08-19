@@ -1,29 +1,27 @@
 # QA Knowledge Base
 
-本目录记录本地项目 QA 会话产出的问答档案。类型约定：
-- **基础语义**：跨组件通用的工具约定（mergeProps 等），被其他文档引用。
-- **设计建议**：某组件该「怎么写」的建议（结合 react 参照 + actview 基建）。
-- **参考清单**：基建/API 的存在性、导入路径、行号速查。
+本目录记录本地项目 QA 会话产出的问答档案。**归档原则：按问题本质分类**——同一问题在多组件/多篇里出现即合并为一档「xxx问题.md」，从中抽取各实例（不做按组件的 lesson 归档）。
+类型约定：
+- **问题**：跨组件可复用的根因/修复（AD/PD 家族）。
+- **语义**：工具/基建约定（mergeProps、测试基建）。
+- **设计建议**：某组件该「怎么写」（结合 react 参照 + actview 基建；组件级合理独立）。
+- 问题本质（最近/最常）清单见 `list.md`。
 
-| 常规 | 类型 | 内容 |
+| 常规 | 类型 | 问题/内容 |
 |---|---|---|
-| merge-props-actview-semantics | 基础语义 | actview mergeProps/mergePropsN 导入路径+语义（getter 整体替换、右到左事件链、getter 必须 mergeProps(prev,…) 保链） |
-| select-selectstore-class-design | 设计建议 | 直接 new SelectStore(initialState)、不要 PopupTriggerMap、context 可空（react 对齐） |
-| select-root-floating-organization | 设计建议 | floatingContext 放 SelectRootContext 不进 store、两层 mergeProps、onNavigate 写 activeIndex、typeahead disabledIndices |
-| actview-test-infra-patterns | 基础语义 | @actview/testing + createRenderer、jsdom PointerEvent/portal/waitFor、portal 查询、hidden input 断言 |
-| actview-select-infra-item-checklist | 参考清单 | select 需 10 项基建逐项确认（constants/composite/labelable/direction/mapping/InteractionType/floating utils/actview-utils 通配导出/toolbar） |
-| actview-framework-adaptation-rules | 基础语义 | 提炼自根目录 plantform-diff.md(PD/AD)/actview-issue.md(AI)：setup 单次、getter 求值、getter 合并 prev、return JSX、布尔属性/ref/Teleport/watch 数组源等框架差异与适配速查 |
-| toast-port-fixes | 基础语义 | toast 移植 tsgo 类型级修复 4 条：addEventListener 不要从 watch 数组解构 element（回调体读 ref）、ComputedRef<Store> 用 .value! 解包、context 普通值快照要在 computed 内重读 context.value、store 的相对导入路径已对 |
-| toast-render-diagnostics | 基础语义 | toast 渲染/更新问题合并根因链路（含 AI-003 崩溃、waitFor 误用、setup 解构冻结 PD-15、getter 合并 prev、非元素 prop 泄漏、runEffect 重跑机制），已修复+最终正确写法；由 4 篇旧诊断合并而来 |
-| menu-trigger-not-rendering | 基础语义 | actview menu 移植：全部测试 trigger 查不到 +「closed 假通过」= MenuRoot(顶层) setup 抛错 → 整树被 handleError 静默丢弃；重点差异：MenuRoot 无条件每次渲染求值浮动交互 props（popover 用 shouldRenderInteractions 条件挂载），及 .ts 裸 return null(AD-31)/selector 缺失/enabled 误判 |
-| ai003-return-shape-checklist | 基础语义 | AI-003 完整清单：最后 return 仅认 JSX 字面量/_jsx调用/null/含渲染分支的三元·逻辑（wrapComponentFn 源码）；return 变量/裸函数调用/对象/数组均不转换→裸函数→DOMException；批量排查（grep+跑测试+AST）；标准修复 return <>{expr}</> 的原理 |
-| menu-enter-not-opening | 基础语义 | menu Enter 打不开 = useButton 键盘激活只对 native:false(useButton.ts:168)，原生 button 的 Enter 留给浏览器、jsdom 不合成 → 测试手动补 fireEvent.click；select item 通因 nativeButton:false；附 submenu mousedown 排查点 + arrow aria-hidden 用字符串(PD-01) |
-| menu-mergeprops-audit | 基础语义 | mergePropsN getter 审计：menu 目录 {...prev,...X} spread 隐患清单（X 含 on* → 必改 mergeProps）：MenuItem/LinkItem/CheckboxItem/RadioItem(itemProps)、Checkbox/Radio onClick:handleClick 顶掉 listNav onClick、MenuPopup(popupProps)、MenuViewport(elementProps)；B 类纯属性 spread 安全 |
-| watch-array-undefined-after-unmount | 基础语义 | watch 数组回调收 undefined 根因：runJob 无 active 守卫，stop 后 stale 微任务 → effect.run() 回 undefined → hasChanged true → cb(undefined) → 解构崩；修复=框架 watch.ts runJob 已加 if(!effect.active)（✅ 已由框架侧完成）+ 库内 useTransitionStatus:66/useOpenChangeComplete:16/useSyncedFloatingRootContext:85 补 Array.isArray（✅ 已落地，AD-33 漏网补全）；menu 触发概率高因 useSyncedFloatingRootContext watch 高频 + 快速 open/close |
-| combobox-test-isolation | 基础语义 | combobox「filters items while typing」suite 失败：测试输入空查询 '' → AriaCombobox 空查询=显示全部(过滤天然不生效)，断言 not.toContain 必然失败；AnimationFrame(afterEach reset)/closeQuery(per-mount+Escape 未输入)/filterCache 均排除；残留 DOM 需 dump body.innerHTML 核实；修法=输入真实子串 + 容器内查询 |
-| combobox-port-lessons | 基础语义 | combobox 移植 5 大通用易错点：①watch 数组源不能放函数/方法(被当 getter 调、store 未就绪崩)；②computed 内不能调 context hook(useInjects 只能在 setup)；③keyed diff 不重触发 ref callback→listRef/结构类 ref 要响应式驱动(Chip guess/Item indexFromFilter 分支/useStore a1 传 ref/items prop 跳 CompositeList)；④store 持有的 floatingRootContext 需手动 watch 同步 reference/floating(否则 useListNavigation 456 分支不跑、键盘导航失效) + activeIndex 传 ref；⑤onInput 替代 onChange + fireEvent.input 带 inputType |
-| combobox-context-render-reactivity | 基础语义 | context-computed 变化不触发渲染 getter：框架 render 读取在 runEffect 内会被 track（store.useState 可靠即此因）；combobox 用 internals/createContext(Provider live=computed(()=>unref(props.value))+useInjects)，断点在 live 依赖链；探针(inputValue===live?/value 是否已变/warn 堆栈)+稳妥解=可见值路由进 store.useState；aria-activedescendant 同类 |
-| floating-activedescendant-split | 基础语义 | react floating-ui useListNavigation 的 aria-activedescendant 语义：reference 侧无条件（virtual&&open&&hasActiveIndex→`${id}-${activeIndex}`），floating 侧另有 !typeableComboboxReference 排除（typeable combobox 时 input 有/list 无）；actview 移植把两条语义折叠进共享 getAriaActiveDescendant 且开头对 typeable 一律 undefined → input 永远没该属性；修=拆两个 getter，reference 不含 typeable 检查、floating 加 typeable 排除 |
+| setup-snapshot-freeze | 问题 | setup 解构/对象快照冻结（PD-15 家族）：toast toast 换对象/children 覆盖、combobox filterQuery/index 快照、getElement 缓存 VNode(AD-38)、useRenderElement props 数组普通对象(AD-17)、context 普通值快照、setup return null 固定(AD-34)；排查顺序 |
+| mergeprops-getter-chain | 问题 | mergeProps getter 链：整体替换丢属性 & {...prev,...X} spread 覆盖 on* → 必须 mergeProps(prev,X)（AD-20/26/27/35）；mergeProps 语义 + menu/combobox/toast/select 实例 |
+| watch-array-source-issues | 问题 | watch 数组源：函数源被当 getter 调用、卸载期 stale 微任务收 undefined（AD-33，框架守卫+库内 Array.isArray 已落地）、从数组源解构 element 用 addEventListener TS2769 → 回调体读 ref |
+| structural-ref-registration | 问题 | 结构类 ref（listRef）在 keyed diff 下不可靠 + 注册时机（AD-40）：ref callback 不重触发 stale 覆盖、watch immediate 先于挂载 → 响应式 itemElement ref / indexFromFilter / 跳过 CompositeList / Chip guess |
+| jsdom-keyboard-activation | 问题 | jsdom 不合成原生 button 的 Enter→click（AD-19）：useButton 键盘激活只对 native:false；menu(button) 不通 select item(div) 通；测试手动补 click |
+| combobox-context-render-reactivity | 问题 | context-computed 变化不驱动消费者渲染（AD-39/38）+ useInjects/use() 只能 setup 顶层（AD-42）+ ComputedRef<Store> .value! 解包；渲染用场景值镜像进 store 的稳妥解 |
+| floating-activedescendant-split | 问题 | floating-ui useListNavigation 的 aria-activedescendant 语义（AD-41）：reference 侧无条件 `${id}-${activeIndex}`（typeable combobox 也要）、floating 侧才排除 typeable；共享 getter 折叠的误伤与拆法 |
+| ai003-return-shape-checklist | 问题 | AI-003：最后 return 仅认 JSX 字面量/_jsx/null/含渲染分支三元·逻辑；return 变量/裸函数/对象/数组不转换→裸函数→DOMException；批量排查 + 标准修复 return <>{expr}</> |
+| actview-framework-adaptation-rules | 语义 | 框架差异总纲速查（PD-01..26/AD-01..42 映射）：setup 单次、getter 求值、return JSX、布尔属性、ref/Teleport、watch、弹层、顶层抛错整树丢弃、测试 | 
+| actview-test-infra-patterns | 语义 | 测试基建怎么用 + 测试失败诊断：@actview/testing + createRenderer、jsdom PointerEvent/portal 残留/waitFor 只在 throw 重试/空查询断言/inputType、hidden input 断言 |
+| select-port-design | 设计建议 | select 移植 3 篇合并：SelectStore class（无 PopupTriggerMap）、Root 弹层组织（floatingContext 不进 store、两层 mergeProps、onNavigate/typeahead）、10 项基建清单 |
 
-- 依赖关系：select-root-floating-organization 依赖 merge-props-actview-semantics；select-selectstore-class-design 与 select-root-floating-organization 互补（store class vs Root 交互接线）。
-- 权威长文在根目录 `plantform-diff.md`（PD-*/AD-*，维护态）；`actview-issue.md`/`issue.md`/`plan.md` 为过程性/框架问题记录，仅 actview-framework-adaptation-rules 提炼其可复用的部分。
+## 依赖/引用关系
+- 被 plantform-diff.md 与源文件注释**外部引用**、故独立保留：`combobox-context-render-reactivity`、`floating-activedescendant-split`。
+- `select-port-design` 依赖 `mergeprops-getter-chain`（两层 mergeProps 保链）；`actview-framework-adaptation-rules` 是总纲，各问题档是深挖。
+- 权威长文在根目录 `plantform-diff.md`（PD-*/AD-*，维护态）；`actview-issue.md`/`issue.md`/`plan.md` 为过程性/框架问题记录，仅 actview-framework-adaptation-rules 提炼可复用部分。
