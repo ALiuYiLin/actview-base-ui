@@ -1,48 +1,57 @@
-import { EMPTY_OBJECT, EMPTY_ARRAY } from '@base-ui/actview-utils/empty';
+import { defineComponent, unref } from '@actview/core';
 import type { Ref } from '@actview/core';
 import type { VNodeChild } from '@actview/jsx';
-import { useRenderElement } from '../../useRenderElement';
 import { useCompositeItem } from './useCompositeItem';
 import type { BaseUIComponentProps, RefValue } from '../../types';
-import { StateAttributesMapping } from '../../getStateAttributesProps';
+import { getStateAttributesProps, type StateAttributesMapping } from '../../getStateAttributesProps';
+import { mergePropsN } from '@base-ui/actview/merge-props';
+import { EMPTY_OBJECT } from '@base-ui/actview-utils/empty';
 
-const COMPOSITE_ITEM_ELEMENT_PROPS_EXCLUDED = new Set([
-  'render',
-  'className',
-  'style',
-  'state',
-  'props',
-  'refs',
-  'metadata',
-  'stateAttributesMapping',
-  'tag',
-]);
-
-export function CompositeItem<Metadata, State extends Record<string, any>>(
-  componentProps: CompositeItem.Props<Metadata, State>,
-) {
-  const { compositeProps, compositeRef } = useCompositeItem({ metadata: componentProps.metadata });
-
-  const getElementProps = () => {
-    const rest: Record<string, any> = {};
-    for (const key in componentProps) {
-      if (!COMPOSITE_ITEM_ELEMENT_PROPS_EXCLUDED.has(key)) {
-        rest[key] = (componentProps as Record<string, any>)[key];
-      }
-    }
-    return rest;
-  };
-
-  const getElement = useRenderElement(componentProps.tag ?? 'div', componentProps, {
-    state: componentProps.state ?? EMPTY_OBJECT,
-    // The composite ref attaches first so an outer item wins when nested items share a DOM node.
-    ref: [compositeRef, ...(componentProps.refs ?? EMPTY_ARRAY)] as RefValue<Element>[],
-    props: [compositeProps, ...(componentProps.props ?? EMPTY_ARRAY), getElementProps],
-    stateAttributesMapping: componentProps.stateAttributesMapping,
+export const CompositeItem = defineComponent(function <
+  Metadata,
+  State extends Record<string, any>,
+>(componentProps: CompositeItem.Props<Metadata, State>) {
+  const { compositeProps, compositeRef } = useCompositeItem({
+    metadata: componentProps.metadata,
   });
 
-  return <>{getElement()}</>;
-}
+  return () => {
+    const {
+      render,
+      className,
+      style,
+      state,
+      props: extraProps,
+      metadata: _metadata, // 已由 useCompositeItem 使用
+      stateAttributesMapping,
+      tag,
+      ...elementProps
+    } = componentProps;
+
+    const resolvedState = (unref(state) ?? EMPTY_OBJECT) as State;
+
+    // state → data-* 属性（单值映射，对齐 Base UI 契约：mapping[key](state[key])）
+    const stateAttributes = getStateAttributesProps(resolvedState, stateAttributesMapping);
+
+    const merged = mergePropsN([
+      compositeProps,
+      stateAttributes,
+      ...(extraProps ?? []),
+      elementProps,
+    ]);
+
+    if (typeof render === 'function') {
+      return render({ ...merged, ...resolvedState, ref: compositeRef });
+    }
+    if (render) {
+      const Tag = render.type as any;
+      return <Tag key={render.key} {...render.props} {...merged} ref={compositeRef} />;
+    }
+    return <component is={tag ?? 'div'} {...merged} ref={compositeRef} />;
+  };
+}) as <Metadata, State extends Record<string, any>>(
+  props: CompositeItem.Props<Metadata, State>,
+) => any;
 
 export interface CompositeItemState {}
 
@@ -52,7 +61,6 @@ export interface CompositeItemProps<Metadata, State extends Record<string, any>>
 > {
   children?: VNodeChild;
   metadata?: Metadata | undefined;
-  refs?: RefValue<HTMLElement | null>[] | undefined;
   props?: Array<Record<string, any> | (() => Record<string, any>)> | undefined;
   state?: State | Ref<State> | undefined;
   stateAttributesMapping?: StateAttributesMapping<State> | undefined;

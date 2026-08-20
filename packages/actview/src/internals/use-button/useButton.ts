@@ -1,103 +1,87 @@
 import { isHTMLElement } from '@floating-ui/utils/dom';
 import { error } from '@base-ui/actview-utils/error';
-import { computed, onMounted, unref, watch } from 'actview';
+import { computed, onMounted, onUpdated, ref, unref, useRootElement } from 'actview';
+import type { Ref } from '@actview/core';
 import { makeEventPreventable, mergeProps } from '../../merge-props';
 import { useCompositeRootContext } from '../composite/root/CompositeRootContext';
 import type { BaseUIEvent, HTMLProps, MaybeRef } from '../types';
 import { useFocusableWhenDisabled } from '../../utils/useFocusableWhenDisabled';
 import { dispatchClickWithModifiers } from '../../utils/dispatchClickWithModifiers';
 
-export function useButton(parameters: UseButtonParameters = {}): UseButtonReturnValue {
-  const {
-    disabled = false,
-    focusableWhenDisabled,
-    tabIndex = 0,
-    native: isNativeButton = true,
-    composite: compositeProp,
-  } = parameters;
+// ============================================================
+// useButton — ActView 版（Base UI useButton 移植）
+//   setup 期调用一次；参数为 MaybeRef 对象（消费方传 computed，渲染期
+//   unref 求值 → 读 props 代理 → 响应式）。
+//   getButtonProps 渲染期调用（事件系统 invoker 复用不重绑，闭包每次最新）；
+//   内部处理器经 mergeProps 链式合并（focusable → 内部 → 用户，Base UI 语义）。
+// ============================================================
+export function useButton(parameters: UseButtonParameters) {
+  const elementRef = useRootElement()
 
-  const elementRef = { current: null as HTMLElement | null };
 
-  const compositeRootContext = useCompositeRootContext(true);
+  // composite 判定：compositeProp 优先，否则从 CompositeRoot 上下文推导
+  // （React：const isCompositeItem = compositeProp ?? compositeRootContext !== undefined）
+  const compositeRootContext = useCompositeRootContext(true)
   const isCompositeItem = computed(
-    () => unref(compositeProp) ?? compositeRootContext.value !== undefined,
-  );
+    () => unref(parameters.composite) ?? compositeRootContext.value !== undefined,
+  )
 
-  const { props: getFocusableWhenDisabledProps } = useFocusableWhenDisabled({
-    focusableWhenDisabled,
-    disabled,
+  // focusableWhenDisabled：渲染期 getter 产出 props（读 props 代理 → 响应式）
+  const focusableWhenDisabled = useFocusableWhenDisabled({
+    focusableWhenDisabled: parameters.focusableWhenDisabled,
+    disabled: computed(() => unref(parameters.disabled) ?? false),
     composite: isCompositeItem,
-    tabIndex,
-    isNativeButton,
-  });
+    tabIndex: parameters.tabIndex,
+    isNativeButton: computed(() => unref(parameters.native) ?? true),
+  })
 
-  if (process.env.NODE_ENV !== 'production') {
-    const checkNativeButton = () => {
-      const element = elementRef.current;
-      if (!element) {
-        return;
+  // —— 挂载后：native 标签一致性警告（对齐 React useEffect，dev 环境）——
+  onMounted(() => {
+    const el = elementRef.value
+    if (!el) return
+    const isNativeButton = unref(parameters.native) ?? true
+    const isButtonTag = isButtonElement(el)
+    if (isNativeButton) {
+      if (!isButtonTag) {
+        error(
+          'A component that acts as a button expected a native <button> because the ' +
+            '`native` prop is true. Rendering a non-<button> removes native button ' +
+            'semantics, which can impact forms and accessibility. Use a real <button> in ' +
+            'the `render` prop, or set `native` to `false`.',
+        )
       }
-
-      const isButtonTag = isButtonElement(element);
-
-      if (unref(isNativeButton)) {
-        if (!isButtonTag) {
-          const message =
-            'A component that acts as a button expected a native <button> because the ' +
-            '`nativeButton` prop is true. Rendering a non-<button> removes native button ' +
-            'semantics, which can impact forms and accessibility. Use a real <button> in the ' +
-            '`render` prop, or set `nativeButton` to `false`.';
-          error(message);
-        }
-      } else if (isButtonTag) {
-        const message =
-          'A component that acts as a button expected a non-<button> because the `nativeButton` ' +
+    } else if (isButtonTag) {
+      error(
+        'A component that acts as a button expected a non-<button> because the `native` ' +
           'prop is false. Rendering a <button> keeps native behavior while Base UI applies ' +
-          'non-native attributes and handlers, which can add unintended extra attributes (such ' +
-          'as `role` or `aria-disabled`). Use a non-<button> in the `render` prop, or set ' +
-          '`nativeButton` to `true`.';
-        error(message);
-      }
-    };
+          'non-native attributes and handlers, which can add unintended extra attributes ' +
+          '(such as `role` or `aria-disabled`). Use a non-<button> in the `render` prop, or ' +
+          'set `native` to `true`.',
+      )
+    }
+  })
 
-    onMounted(checkNativeButton);
-    watch(() => unref(isNativeButton), checkNativeButton);
-  }
-
-  // handles a disabled composite button rendering another button, e.g.
-  // <Toolbar.Button disabled render={<Menu.Trigger />} />
-  // the `disabled` prop needs to pass through 2 `useButton`s then finally
-  // delete the `disabled` attribute from DOM
+  // —— disabled 穿透修复（composite 禁用按钮渲染另一个按钮时删 DOM disabled）——
+  // focusable props 的 disabled 为 undefined（可聚焦禁用项不设原生 disabled）
+  // 是穿透判断的依据（对齐 React updateDisabled）
   const updateDisabled = () => {
-    const element = elementRef.current;
-
-    if (!isButtonElement(element)) {
-      return;
+    const el = elementRef.value
+    if (!isButtonElement(el)) return
+    const disabled = unref(parameters.disabled) ?? false
+    const fwdProps = focusableWhenDisabled.props()
+    if (isCompositeItem.value && disabled && fwdProps.disabled === undefined && el.disabled) {
+      el.disabled = false
     }
+  }
+  onMounted(updateDisabled)
+  onUpdated(updateDisabled)
 
-    const disabledValue = unref(disabled);
-    const focusableWhenDisabledProps = getFocusableWhenDisabledProps();
-
-    if (
-      isCompositeItem.value &&
-      disabledValue &&
-      focusableWhenDisabledProps.disabled === undefined &&
-      element.disabled
-    ) {
-      element.disabled = false;
-    }
-  };
-
-  watch(
-    [
-      () => unref(disabled),
-      () => getFocusableWhenDisabledProps().disabled,
-      () => isCompositeItem.value,
-    ],
-    updateDisabled,
-  );
-
+  // —— getButtonProps：渲染期调用，闭包读最新参数 ——
   const getButtonProps = (externalProps: GenericButtonProps = {}) => {
+    const disabled = unref(parameters.disabled) ?? false
+    const isNativeButton = unref(parameters.native) ?? true
+    const isCompositeItemValue = isCompositeItem.value
+
     const {
       onClick: externalOnClick,
       onMouseDown: externalOnMouseDown,
@@ -105,29 +89,26 @@ export function useButton(parameters: UseButtonParameters = {}): UseButtonReturn
       onKeyDown: externalOnKeyDown,
       onPointerDown: externalOnPointerDown,
       ...otherExternalProps
-    } = externalProps;
+    } = externalProps
 
-    const disabledValue = unref(disabled);
-    const nativeValue = unref(isNativeButton);
-    const compositeItemValue = isCompositeItem.value;
-    const focusableWhenDisabledProps = getFocusableWhenDisabledProps();
+    const focusableProps = focusableWhenDisabled.props()
 
     return mergeProps(
       {
         onClick(event: MouseEvent) {
-          if (disabledValue) {
+          if (disabled) {
             event.preventDefault();
             return;
           }
           externalOnClick?.(event);
         },
         onMouseDown(event: MouseEvent) {
-          if (!disabledValue) {
+          if (!disabled) {
             externalOnMouseDown?.(event);
           }
         },
         onKeyDown(event: BaseUIEvent<KeyboardEvent>) {
-          if (disabledValue) {
+          if (disabled) {
             return;
           }
 
@@ -140,87 +121,78 @@ export function useButton(parameters: UseButtonParameters = {}): UseButtonReturn
           const isCurrentTarget = event.target === event.currentTarget;
           const currentTarget = event.currentTarget as Element;
           const isButton = isButtonElement(currentTarget);
-          const isLink = !nativeValue && isValidLinkElement(currentTarget);
-          const shouldClick = isCurrentTarget && (nativeValue ? isButton : !isLink);
+          const isLink = !isNativeButton && isValidLinkElement(currentTarget);
+          const shouldClick = isCurrentTarget && (isNativeButton ? isButton : !isLink);
           const isEnterKey = event.key === 'Enter';
           const isSpaceKey = event.key === ' ';
           const role = currentTarget.getAttribute('role');
           const isTextNavigationRole =
             role?.startsWith('menuitem') || role === 'option' || role === 'gridcell';
 
-          if (isCurrentTarget && compositeItemValue && isSpaceKey) {
+          // composite 项 Space：keydown 激活（阻止滚动 + 派发 click）
+          if (isCurrentTarget && isCompositeItemValue && isSpaceKey) {
             if (event.defaultPrevented && isTextNavigationRole) {
               return;
             }
-
             event.preventDefault();
-
-            // Only a native-mode item that isn't a real <button> is excluded.
-            if (!nativeValue || isButton) {
+            // 仅原生模式且不是真实 <button> 的元素被排除（点击由浏览器默认处理）
+            if (!isNativeButton || isButton) {
               event.preventBaseUIHandler();
               dispatchClickWithModifiers(currentTarget, event);
             }
-
             return;
           }
 
-          // Keyboard accessibility for native and non-native elements.
-          if (!shouldClick || nativeValue || (!isSpaceKey && !isEnterKey)) {
-            // Space activates links on keyup (`role="button"` semantics, matching the
-            // composite path); prevent the page scroll Space would otherwise trigger.
-            // Enter is left to the browser's native link activation.
+          // 键盘可访问性（原生/非原生元素）
+          if (!shouldClick || isNativeButton || (!isSpaceKey && !isEnterKey)) {
+            // Space 激活链接（`role="button"` 语义，匹配 composite 路径）；
+            // 阻止页面滚动（否则 Space 会触发滚动）
             if (isCurrentTarget && isLink && isSpaceKey) {
               event.preventDefault();
             }
             return;
           }
 
-          // Match native buttons: preventing the keydown's default cancels activation.
+          // 对齐原生按钮：keydown 默认行为被阻止 → 取消激活
           if (event.defaultPrevented) {
             return;
           }
-
           event.preventDefault();
-
           if (isEnterKey) {
             event.preventBaseUIHandler();
             dispatchClickWithModifiers(currentTarget, event);
           }
         },
         onKeyUp(event: BaseUIEvent<KeyboardEvent>) {
-          if (disabledValue) {
+          if (disabled) {
             return;
           }
 
-          // calling preventDefault in keyUp on a <button> will not dispatch a click event if Space is pressed
-          // https://codesandbox.io/p/sandbox/button-keyup-preventdefault-dn7f0
           makeEventPreventable(event);
           externalOnKeyUp?.(event);
 
+          // Space 在原生 <button> 的 keyup 上 preventDefault 会阻止 click 派发
           if (
             event.target === event.currentTarget &&
-            nativeValue &&
-            compositeItemValue &&
+            isNativeButton &&
+            isCompositeItemValue &&
             isButtonElement(event.currentTarget as HTMLElement) &&
             event.key === ' '
           ) {
             event.preventDefault();
             return;
           }
-
           if (event.baseUIHandlerPrevented) {
             return;
           }
 
-          // Keyboard accessibility for non interactive elements.
-          // Match native buttons: preventing the keyup's default cancels Space activation.
-          // Limitation: unlike a native <button>, a prevented *keydown* cannot cancel the
-          // activation — no state is kept between keydown and keyup, so we can't tell
-          // whether the keydown was prevented or even happened on this element.
+          // 非交互元素的键盘激活（非原生、非 composite）：
+          // 对齐原生按钮——keyup preventDefault 取消 Space 激活（keydown 无法取消，
+          // 因为 keydown/keyup 之间不保留状态）
           if (
             event.target === event.currentTarget &&
-            !nativeValue &&
-            !compositeItemValue &&
+            !isNativeButton &&
+            !isCompositeItemValue &&
             !event.defaultPrevented &&
             event.key === ' '
           ) {
@@ -229,28 +201,23 @@ export function useButton(parameters: UseButtonParameters = {}): UseButtonReturn
           }
         },
         onPointerDown(event: PointerEvent) {
-          if (disabledValue) {
+          if (disabled) {
             event.preventDefault();
             return;
           }
           externalOnPointerDown?.(event);
         },
       },
-      nativeValue ? { type: 'button' } : { role: 'button' },
-      focusableWhenDisabledProps,
+      isNativeButton ? { type: 'button' } : { role: 'button' },
+      focusableProps,
       otherExternalProps,
-    ) as HTMLProps;
-  };
-
-  const buttonRef = (element: HTMLElement | null) => {
-    elementRef.current = element;
-    updateDisabled();
-  };
+    ) as HTMLProps
+  }
 
   return {
     getButtonProps,
-    buttonRef,
-  };
+    buttonRef: elementRef,
+  }
 }
 
 function isButtonElement(elem: Element | null): elem is HTMLButtonElement {
@@ -305,10 +272,10 @@ export interface UseButtonReturnValue {
    */
   getButtonProps: (externalProps?: HTMLProps) => HTMLProps;
   /**
-   * A ref to the button DOM element. This ref should be passed to the rendered element.
-   * It is not a part of the props returned by `getButtonProps`.
+   * 模板 ref（ref={buttonRef}）——指向按钮根 DOM。
+   * 由使用方合并进 useRenderElement 的 ref 数组（[componentProps.ref, buttonRef]）。
    */
-  buttonRef: (element: HTMLElement | null) => void;
+  buttonRef: Ref<HTMLElement | null>;
 }
 
 export interface UseButtonState {}
