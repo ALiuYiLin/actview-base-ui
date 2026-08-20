@@ -1,5 +1,5 @@
 import type { ComputedRef } from '@actview/core';
-import { createContext } from '../../internals/createContext';
+import { createContext } from 'actview';
 
 export type MeterRootContext = {
   formattedValue: string;
@@ -11,12 +11,12 @@ export type MeterRootContext = {
   value: number;
 };
 
-export const MeterRootContext = createContext<MeterRootContext | undefined>(
-  'base-ui-meter-root-context',
-  undefined,
-);
+// 框架官方 createContext（单参数：defaultValue）。Provider 注入 ref 本体，
+// use() 返回该 ref，渲染期读 .value 建立响应式追踪（对照 ToggleGroupContext）
+export const MeterRootContext = createContext<MeterRootContext | undefined>(undefined);
 
-export function useMeterRootContext() {
+export function useMeterRootContext(): ComputedRef<MeterRootContext> {
+  // `use()` 必须在 setup 调用（依赖 useInjects），渲染期读 .value 追踪
   const context = MeterRootContext.use();
   if (context.value === undefined) {
     throw new Error(

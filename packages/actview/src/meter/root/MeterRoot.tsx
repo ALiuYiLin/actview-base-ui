@@ -1,11 +1,11 @@
-import { computed, ref } from 'actview';
+import { computed, defineComponent, ref } from 'actview';
 import { clamp } from '@base-ui/actview-utils/clamp';
 import { formatNumber } from '@base-ui/actview-utils/formatNumber';
 import { visuallyHidden } from '@base-ui/actview-utils/visuallyHidden';
 import { MeterRootContext } from './MeterRootContext';
 import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
 import { valueToPercent } from '../../utils/valueToPercent';
-import { useRenderElement } from '../../internals/useRenderElement';
+import { mergePropsN } from '../../merge-props';
 
 /**
  * Groups all parts of the meter and provides the value for screen readers.
@@ -13,12 +13,14 @@ import { useRenderElement } from '../../internals/useRenderElement';
  *
  * Documentation: [Base UI Meter](https://base-ui.com/react/components/meter)
  */
-export function MeterRoot(componentProps: MeterRoot.Props) {
+export const MeterRoot = defineComponent(function (componentProps: MeterRoot.Props) {
+  // ================= setup（只执行一次） =================
   const labelId = ref<string | undefined>(undefined);
   const setLabelId = (id: string | undefined) => {
     labelId.value = id;
   };
 
+  // 派生计算：渲染期调用（读 props 代理 → 响应式）
   const getDerived = () => {
     const { value, min = 0, max = 100, format, locale } = componentProps;
 
@@ -36,6 +38,8 @@ export function MeterRoot(componentProps: MeterRoot.Props) {
     return { percentageValue, clampedValue, formattedValue };
   };
 
+  // context 值：computed 惰性缓存——依赖不变时引用稳定（对照 React useMemo，
+  // 也保证 Provider watch 只在派生值真正变化时同步）
   const contextValue = computed<MeterRootContext>(() => {
     const derived = getDerived();
     return {
@@ -46,8 +50,27 @@ export function MeterRoot(componentProps: MeterRoot.Props) {
     };
   });
 
-  const getRootProps = (prev: HTMLProps): HTMLProps => {
-    const { getAriaValueText, value, children } = componentProps;
+  // 根 ref：组件根 VNode 是 Provider 包裹（div 在内层），useRootElement 拿不到
+  // 实际元素 → ref() + 显式挂载（对照 CompositeRoot 边界，案例 6）
+  const rootRef = ref<HTMLElement | null>(null);
+
+  // ================= render（每次更新执行） =================
+  return () => {
+    const {
+      format: _format,
+      getAriaValueText,
+      locale: _locale,
+      max: _max,
+      min: _min,
+      value,
+      render,
+      className,
+      children,
+      style,
+      ref: _ref, // 用户 ref：根是 Provider 包裹，由内部 rootRef 绑定 DOM
+      ...elementProps
+    } = componentProps;
+
     const derived = getDerived();
 
     let ariaValuetext = derived.formattedValue;
@@ -55,8 +78,9 @@ export function MeterRoot(componentProps: MeterRoot.Props) {
       ariaValuetext = getAriaValueText(derived.formattedValue, value);
     }
 
-    return {
-      ...prev,
+    const state: MeterRootState = {};
+
+    const defaultProps: HTMLProps = {
       'aria-labelledby': labelId.value,
       'aria-valuemax': componentProps.max ?? 100,
       'aria-valuemin': componentProps.min ?? 0,
@@ -72,32 +96,39 @@ export function MeterRoot(componentProps: MeterRoot.Props) {
         </>
       ),
     };
+
+    const merged = mergePropsN([
+      defaultProps,
+      elementProps,
+      {
+        className: typeof className === 'function' ? className(state) : className,
+        style: typeof style === 'function' ? style(state) : style,
+      },
+    ]);
+
+    // render 三形态 + Provider 包裹（Provider 必须始终包裹：向子件提供派生值）
+    if (typeof render === 'function') {
+      return (
+        <MeterRootContext.Provider value={contextValue.value}>
+          {render({ ...merged, ...state, ref: rootRef })}
+        </MeterRootContext.Provider>
+      );
+    }
+    if (render) {
+      const Tag = render.type as any;
+      return (
+        <MeterRootContext.Provider value={contextValue.value}>
+          <Tag key={render.key} {...render.props} {...merged} ref={rootRef} />
+        </MeterRootContext.Provider>
+      );
+    }
+    return (
+      <MeterRootContext.Provider value={contextValue.value}>
+        <div ref={rootRef} {...merged} />
+      </MeterRootContext.Provider>
+    );
   };
-
-  const getElementProps = (prev: HTMLProps): HTMLProps => {
-    const {
-      format,
-      getAriaValueText,
-      locale,
-      max,
-      min,
-      value,
-      render,
-      className,
-      children,
-      style,
-      ...elementProps
-    } = componentProps;
-    return { ...prev, ...elementProps };
-  };
-
-  const getElement = useRenderElement('div', componentProps, {
-    ref: componentProps.ref,
-    props: [getRootProps, getElementProps],
-  });
-
-  return <MeterRootContext.Provider value={contextValue}>{getElement()}</MeterRootContext.Provider>;
-}
+}) as (props: MeterRoot.Props) => any;
 
 export interface MeterRootState {}
 

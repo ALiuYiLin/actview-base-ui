@@ -1,8 +1,9 @@
+import { computed, defineComponent } from 'actview';
 import { useMeterRootContext } from '../root/MeterRootContext';
 import type { MeterRootState } from '../root/MeterRoot';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { useRenderElement } from '../../internals/useRenderElement';
+import type { BaseUIComponentProps } from '../../internals/types';
 import { useRegisteredLabelId } from '../../utils/useRegisteredLabelId';
+import { mergePropsN } from '../../merge-props';
 
 /**
  * An accessible label for the meter.
@@ -10,29 +11,49 @@ import { useRegisteredLabelId } from '../../utils/useRegisteredLabelId';
  *
  * Documentation: [Base UI Meter](https://base-ui.com/react/components/meter)
  */
-export function MeterLabel(componentProps: MeterLabel.Props) {
+export const MeterLabel = defineComponent(function (componentProps: MeterLabel.Props) {
+  // ================= setup（只执行一次） =================
+  // context hook 必须在 setup 顶层（AD-42）；setLabelId 是 Root 提供的稳定函数
   const context = useMeterRootContext();
 
-  const id = useRegisteredLabelId(componentProps.id, context.value.setLabelId);
+  // 注册 label id 到 Root：idProp 传 computed（响应式）——id 变化重新注册（PD-15）
+  const id = useRegisteredLabelId(
+    computed(() => componentProps.id),
+    context.value.setLabelId,
+  );
 
-  const getLabelProps = (prev: HTMLProps): HTMLProps => ({
-    ...prev,
-    id,
-    role: 'presentation',
-  });
+  // ================= render（每次更新执行） =================
+  return () => {
+    const {
+      render,
+      className,
+      style,
+      id: _id, // setup useRegisteredLabelId 已接管
+      ref: _ref, // 用户 ref：根是元素，可顺带绑定
+      ...elementProps
+    } = componentProps;
 
-  const getElementProps = (prev: HTMLProps): HTMLProps => {
-    const { render, className, style, id: idProp, ...elementProps } = componentProps;
-    return { ...prev, ...elementProps };
+    const state: MeterLabelState = {};
+
+    const merged = mergePropsN([
+      { id: id.value, role: 'presentation' },
+      elementProps,
+      {
+        className: typeof className === 'function' ? className(state) : className,
+        style: typeof style === 'function' ? style(state) : style,
+      },
+    ]);
+
+    if (typeof render === 'function') {
+      return render({ ...merged, ...state });
+    }
+    if (render) {
+      const Tag = render.type as any;
+      return <Tag key={render.key} {...render.props} {...merged} />;
+    }
+    return <span {...merged} />;
   };
-
-  const getElement = useRenderElement('span', componentProps, {
-    ref: componentProps.ref,
-    props: [getLabelProps, getElementProps],
-  });
-
-  return <>{getElement()}</>;
-}
+}) as (props: MeterLabel.Props) => any;
 
 export interface MeterLabelState extends MeterRootState {}
 

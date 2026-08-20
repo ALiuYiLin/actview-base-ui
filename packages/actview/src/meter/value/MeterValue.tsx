@@ -1,8 +1,9 @@
+import { defineComponent } from 'actview';
 import type { VNodeChild } from '@actview/jsx';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
+import type { BaseUIComponentProps } from '../../internals/types';
 import { useMeterRootContext } from '../root/MeterRootContext';
 import type { MeterRootState } from '../root/MeterRoot';
-import { useRenderElement } from '../../internals/useRenderElement';
+import { mergePropsN } from '../../merge-props';
 
 /**
  * A text element displaying the current value.
@@ -10,33 +11,49 @@ import { useRenderElement } from '../../internals/useRenderElement';
  *
  * Documentation: [Base UI Meter](https://base-ui.com/react/components/meter)
  */
-export function MeterValue(componentProps: MeterValue.Props) {
+export const MeterValue = defineComponent(function (componentProps: MeterValue.Props) {
+  // ================= setup（只执行一次） =================
+  // context hook 必须在 setup 顶层（AD-42），渲染期读 .value 建立响应式
   const context = useMeterRootContext();
 
-  const getValueProps = (prev: HTMLProps): HTMLProps => {
+  // ================= render（每次更新执行） =================
+  return () => {
+    const {
+      render,
+      className,
+      style,
+      children,
+      ref: _ref, // 用户 ref：根是元素，可顺带绑定
+      ...elementProps
+    } = componentProps;
+
     const { value, formattedValue } = context.value;
-    return {
-      ...prev,
-      'aria-hidden': true,
-      children:
-        typeof componentProps.children === 'function'
-          ? componentProps.children(formattedValue, value)
-          : formattedValue,
-    };
+
+    const state: MeterValueState = {};
+
+    const merged = mergePropsN([
+      {
+        'aria-hidden': true,
+        children:
+          typeof children === 'function' ? children(formattedValue, value) : formattedValue,
+      },
+      elementProps,
+      {
+        className: typeof className === 'function' ? className(state) : className,
+        style: typeof style === 'function' ? style(state) : style,
+      },
+    ]);
+
+    if (typeof render === 'function') {
+      return render({ ...merged, ...state });
+    }
+    if (render) {
+      const Tag = render.type as any;
+      return <Tag key={render.key} {...render.props} {...merged} />;
+    }
+    return <span {...merged} />;
   };
-
-  const getElementProps = (prev: HTMLProps): HTMLProps => {
-    const { className, render, children, style, ...elementProps } = componentProps;
-    return { ...prev, ...elementProps };
-  };
-
-  const getElement = useRenderElement('span', componentProps, {
-    ref: componentProps.ref,
-    props: [getValueProps, getElementProps],
-  });
-
-  return <>{getElement()}</>;
-}
+}) as (props: MeterValue.Props) => any;
 
 export interface MeterValueState extends MeterRootState {}
 

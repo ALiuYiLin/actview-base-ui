@@ -59,11 +59,11 @@ export function createRenderer(): BaseUITestRenderer {
     const result = actviewRender(Harness);
 
     const setProps = async (newProps: Record<string, unknown>) => {
-      for (const key of Object.keys(state)) {
-        if (!(key in newProps)) {
-          delete state[key];
-        }
-      }
+      // React cloneElement(element, newProps) 语义：浅合并，**不删除**未提供的键。
+      // （React 版 setProps = rerender(cloneElement(element, newProps))，见
+      // packages/react/test/createRenderer.ts:38-40 —— cloneElement 只合并。）
+      // 之前的 delete 分支会在 setProps({ value: 60 }) 时删掉 renderFn 等
+      // 未在 newProps 里的键 → 函数 children 丢失（MeterValue renderFn 失效）。
       Object.assign(state, newProps);
       await nextTick();
     };
