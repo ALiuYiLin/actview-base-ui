@@ -83,7 +83,6 @@ export const CompositeRoot = defineComponent(function <
     const stateAttributes = getStateAttributesProps(resolvedState, stateAttributesMapping);
 
     const merged = mergePropsN([defaultProps, ...(extraProps ?? []), stateAttributes, elementProps]);
-    console.log('[PROBE-CR] merged aria-labelledby=', merged['aria-labelledby'], 'hasKey=', 'aria-labelledby' in merged);
 
     const element = (() => {
       if (typeof render === 'function') {

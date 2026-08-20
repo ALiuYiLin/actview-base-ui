@@ -322,9 +322,9 @@ describe('<RadioGroup />', () => {
     expect(item).toHaveAttribute('aria-checked', 'false');
 
     await act(() => {
+      // React 原版 fireEvent.click(input)：click 激活 → input/change 事件
       const input = document.querySelector('input[type="radio"]') as HTMLInputElement;
-      input.checked = true;
-      fireEvent.change(input);
+      fireEvent.click(input);
     });
 
     expect(item).toHaveAttribute('aria-checked', 'true');
@@ -774,7 +774,8 @@ describe('<RadioGroup />', () => {
           return (
             <RadioGroup onValueChange={changeSpy}>
               <Radio.Root value="a" data-testid="item" />
-              <label htmlFor="item">Label text</label>
+              {/* AD-24：actview 不映射 htmlFor→for，JSX 写原生属性名 for */}
+              <label for="item">Label text</label>
             </RadioGroup>
           );
       }
@@ -850,8 +851,13 @@ describe('<RadioGroup />', () => {
 
     it('revalidates when the controlled value changes externally', async () => {
       function Demo(props: any) {
+        // React 原版：validationMode="onChange" + value==='b' 时报错（初始 'a' 有效）
         return (
-          <Field.Root name="test" validate={(value: string) => (value === 'a' ? 'Error' : null)}>
+          <Field.Root
+            name="test"
+            validationMode="onChange"
+            validate={(value: string) => (value === 'b' ? 'Error' : null)}
+          >
             <RadioGroup value={props.value} onValueChange={props.onValueChange}>
               <Radio.Root value="a" data-testid="item-a" />
               <Radio.Root value="b" data-testid="item-b" />
@@ -866,8 +872,9 @@ describe('<RadioGroup />', () => {
       });
       await result.setProps({ value: 'b' });
 
-      const input = document.querySelector('input[type="radio"]') as HTMLInputElement;
-      expect(input).toHaveAttribute('aria-invalid', 'true');
+      // aria-invalid 上在 group 根（getValidationProps 应用在根，React 原版 getByRole('radiogroup')）
+      const radioGroup = document.querySelector('[role="radiogroup"]') as HTMLElement;
+      expect(radioGroup).toHaveAttribute('aria-invalid', 'true');
     });
   });
 
@@ -895,7 +902,8 @@ describe('<RadioGroup />', () => {
       function Demo() {
           return (
             <Field.Root name="test">
-              <Field.Label htmlFor="group-id" data-testid="label">
+              {/* AD-24：actview 不映射 htmlFor→for，JSX 写原生属性名 for */}
+              <Field.Label for="group-id" data-testid="label">
                 Label
               </Field.Label>
               <RadioGroup id="group-id" data-testid="group">
@@ -956,28 +964,42 @@ describe('<RadioGroup />', () => {
     });
 
     it('onBlur validates only when focus leaves the group', async () => {
+      const validate = vi.fn((value: string) => (value === 'a' ? 'Error' : null));
+
       function Demo() {
-          return (
-            <Field.Root name="test" validationMode="onBlur" validate={() => 'Error'}>
-              <RadioGroup data-testid="group">
-                <Radio.Root value="a" />
+        return (
+          <>
+            <Field.Root name="test" validationMode="onBlur" validate={validate}>
+              <RadioGroup defaultValue="a">
+                <Radio.Root value="a" data-testid="radio-a" />
+                <Radio.Root value="b" data-testid="radio-b" />
               </RadioGroup>
             </Field.Root>
-          );
+            <button type="button">Outside</button>
+          </>
+        );
       }
 
-      await render(Demo, {});;
+      await render(Demo, {});
 
-      const group = document.querySelector('[data-testid="group"]') as HTMLElement;
+      const group = document.querySelector('[role="radiogroup"]') as HTMLElement;
+      const radioA = document.querySelector('[data-testid="radio-a"]') as HTMLElement;
+      const radioB = document.querySelector('[data-testid="radio-b"]') as HTMLElement;
+
+      // blur 到组内 radio：不验证
       await act(() => {
-        group.focus();
-        fireEvent.blur(group);
+        fireEvent.focus(radioA);
+        fireEvent.blur(group, { relatedTarget: radioB });
       });
+      expect(validate).not.toHaveBeenCalled();
 
-      expect(document.querySelector('input[type="radio"]')).toHaveAttribute(
-        'aria-invalid',
-        'true',
-      );
+      // blur 到组外：验证
+      await act(() => {
+        fireEvent.blur(group, { relatedTarget: document.querySelector('button') as HTMLElement });
+      });
+      expect(validate).toHaveBeenCalledTimes(1);
+      expect(validate.mock.calls[0][0]).toBe('a');
+      expect(group).toHaveAttribute('aria-invalid', 'true');
     });
   });
 
@@ -1208,16 +1230,16 @@ describe('<RadioGroup />', () => {
     });
 
     it('runs the custom validator after every radio in the group unmounts', async () => {
-      const validate = vi.fn(() => null);
+      const handleSubmit = vi.fn();
+      const validate = vi.fn(() => 'always invalid');
+
       function Demo(props: any) {
         return (
-          <Form>
+          <Form onFormSubmit={handleSubmit}>
             <Field.Root name="choice" validate={validate}>
-              {props.show ? (
-                <RadioGroup>
-                  <Radio.Root value="a" />
-                </RadioGroup>
-              ) : null}
+              {/* React 原版：RadioGroup 保留，仅 Radio.Root 卸载（mounted && <Radio.Root/>） */}
+              <RadioGroup>{props.show ? <Radio.Root value="a" /> : null}</RadioGroup>
+              <Field.Error data-testid="error" />
             </Field.Root>
           </Form>
         );
@@ -1230,7 +1252,8 @@ describe('<RadioGroup />', () => {
         fireEvent.submit(document.querySelector('form') as HTMLElement);
       });
 
-      expect(validate).toHaveBeenCalled();
+      expect(handleSubmit).not.toHaveBeenCalled();
+      expect(document.querySelector('[data-testid="error"]')).toHaveTextContent('always invalid');
     });
 
     it('excludes a disabled selected radio from onFormSubmit to match native form data', async () => {
@@ -1362,25 +1385,34 @@ describe('<RadioGroup />', () => {
     });
 
     it('validates when inputRef is a function', async () => {
+      const inputRefSpy = vi.fn(() => () => {});
       function Demo() {
-          return (
-            <Form>
-              <Field.Root name="choice" validate={() => 'Error'}>
-                <RadioGroup inputRef={() => {}}>
-                  <Radio.Root value="a" />
-                </RadioGroup>
-              </Field.Root>
-            </Form>
-          );
+        return (
+          <Form>
+            <Field.Root name="test">
+              <RadioGroup name="group" required inputRef={inputRefSpy}>
+                <Radio.Root value="a" data-testid="item-a" />
+                <Radio.Root value="b" data-testid="item-b" />
+              </RadioGroup>
+              <Field.Error match="valueMissing" data-testid="error">
+                required
+              </Field.Error>
+            </Field.Root>
+            <button type="submit">Submit</button>
+          </Form>
+        );
       }
 
-      await render(Demo, {});;
+      await render(Demo, {});
+
+      expect(document.querySelector('[data-testid="error"]')).toBe(null);
 
       await act(() => {
-        fireEvent.submit(document.querySelector('form') as HTMLElement);
+        fireEvent.click(document.querySelector('button[type="submit"]') as HTMLElement);
       });
 
-      expect(document.querySelector('input[type="radio"]')).toHaveAttribute('aria-invalid', 'true');
+      expect(inputRefSpy.mock.calls.length).toBeGreaterThan(0);
+      expect(document.querySelector('[data-testid="error"]')).toHaveTextContent('required');
     });
 
     it('focuses the first enabled radio when all radios start disabled', async () => {
@@ -1426,22 +1458,41 @@ describe('<RadioGroup />', () => {
 
     it('appends the id attribute of the error to aria-describedby of individual radios', async () => {
       function Demo() {
-          return (
-            <Form errors={{ choice: 'Error' }}>
-              <Field.Root name="choice">
-                <RadioGroup>
-                  <Radio.Root value="a" data-testid="item" />
-                </RadioGroup>
-              </Field.Root>
-            </Form>
-          );
+        return (
+          <Form>
+            <Field.Root name="test">
+              <RadioGroup name="group" required>
+                <Field.Item>
+                  <Radio.Root value="a" />
+                  <Field.Description>description</Field.Description>
+                </Field.Item>
+              </RadioGroup>
+              <Field.Error match="valueMissing" data-testid="error" />
+            </Field.Root>
+            <button type="submit">Submit</button>
+          </Form>
+        );
       }
 
-      await render(Demo, {});;
+      await render(Demo, {});
 
-      const item = document.querySelector('[data-testid="item"]') as HTMLElement;
-      const error = document.querySelector('[role="alert"]') as HTMLElement;
-      expect(item.getAttribute('aria-describedby')).toContain(error.id);
+      expect(document.querySelector('[data-testid="error"]')).toBe(null);
+
+      await act(() => {
+        fireEvent.click(document.querySelector('button[type="submit"]') as HTMLElement);
+      });
+
+      const error = document.querySelector('[data-testid="error"]') as HTMLElement;
+      const radio = document.querySelector('[role="radio"]') as HTMLElement;
+      // React 原版 getByText('description')——actview 的 getByText 前序 DFS 返回最外层
+      // （Field.Item 的 div 也含该文本），故精确查 <p>（Field.Description 默认标签）
+      const descriptions = document.querySelectorAll('p');
+      const description = Array.from(descriptions).find(
+        (el) => el.textContent === 'description',
+      ) as HTMLElement;
+
+      expect(radio.getAttribute('aria-describedby')).toContain(error.getAttribute('id'));
+      expect(radio.getAttribute('aria-describedby')).toContain(description.getAttribute('id'));
     });
   });
 });

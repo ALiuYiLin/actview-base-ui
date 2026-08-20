@@ -250,7 +250,10 @@ export const RadioRoot = defineComponent(function <Value>(componentProps: RadioR
       checked: checked.value,
       required: required.value,
       readOnly: readOnly.value,
-      onChange(event: Event) {
+      // React 版是合成 onChange（对 radio 由 click/input 委托触发）；actview 只绑
+      // 原生事件——原生 change 事件（input 激活后触发）语义与 React onChange 不对齐，
+      // 用 onInput（原生 input 事件，radio 激活时触发，先于 change）
+      onInput(event: Event) {
         // Workaround for https://github.com/react/react/issues/9023
         // ActView dispatches native DOM events, so `defaultPrevented` is read directly.
         if (event.defaultPrevented) {

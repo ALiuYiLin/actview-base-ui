@@ -53,7 +53,8 @@ describe('<Radio.Root />', () => {
     function Demo() {
       return (
         <div>
-          <label data-testid="label" htmlFor="myRadio">
+          {/* AD-24：actview 不映射 htmlFor→for，JSX 写原生属性名 for（React 原版写 htmlFor） */}
+          <label data-testid="label" for="myRadio">
             A
           </label>
 
@@ -86,7 +87,8 @@ describe('<Radio.Root />', () => {
     function Demo() {
       return (
         <div>
-          <label htmlFor="radio-input">Label</label>
+          {/* AD-24：actview 不映射 htmlFor→for，JSX 写原生属性名 for */}
+          <label for="radio-input">Label</label>
           <RadioGroup>
             <RadioRoot value="a" id="radio-input" />
           </RadioGroup>
@@ -110,8 +112,9 @@ describe('<Radio.Root />', () => {
 
       return (
         <>
-          <label htmlFor="radio-input-a">Label A</label>
-          <label htmlFor="radio-input-b">Label B</label>
+          {/* AD-24：actview 不映射 htmlFor→for，JSX 写原生属性名 for */}
+          <label for="radio-input-a">Label A</label>
+          <label for="radio-input-b">Label B</label>
           <RadioGroup>
             <RadioRoot value="a" id={id.value} />
           </RadioGroup>

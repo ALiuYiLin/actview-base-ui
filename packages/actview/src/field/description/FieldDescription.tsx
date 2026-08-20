@@ -1,14 +1,13 @@
-import { computed } from 'actview';
-import { useIsoLayoutEffect } from '@base-ui/actview-utils/useIsoLayoutEffect';
+import { computed, defineComponent, onMounted, onUnmounted, useRootElement } from 'actview';
 import { type FieldRootState } from '../root/FieldRoot';
 import { useFieldRootContext } from '../../internals/field-root-context/FieldRootContext';
 import { useLabelableContext } from '../../internals/labelable-provider/LabelableContext';
 import { fieldValidityMapping } from '../../internals/field-constants/constants';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
+import type { BaseUIComponentProps } from '../../internals/types';
+import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
 import { useBaseUiId } from '../../internals/useBaseUiId';
-import { useRenderElement } from '../../internals/useRenderElement';
 import { useFieldItemContext } from '../item/FieldItemContext';
-import { mergeProps } from '../../merge-props';
+import { mergePropsN } from '../../merge-props';
 
 /**
  * A paragraph with additional information about the field.
@@ -16,12 +15,18 @@ import { mergeProps } from '../../merge-props';
  *
  * Documentation: [Base UI Field](https://base-ui.com/react/components/field)
  */
-export function FieldDescription(componentProps: FieldDescription.Props) {
+export const FieldDescription = defineComponent(function (componentProps: FieldDescription.Props) {
+  // ================= setup（只执行一次） =================
+  // useBaseUiId(idOverride)：用户 id 优先，否则生成（React useId 语义）
   const id = useBaseUiId(componentProps.id);
 
+  // context hook 必须在 setup 顶层（AD-42）
   const fieldRootContext = useFieldRootContext(false);
   const fieldItemContext = useFieldItemContext();
   const labelableContext = useLabelableContext();
+
+  // 组件根 DOM：根是元素（p），useRootElement 自动绑定（案例 6）
+  const rootRef = useRootElement();
 
   const state = computed(
     () =>
@@ -32,50 +37,58 @@ export function FieldDescription(componentProps: FieldDescription.Props) {
       }) as FieldDescriptionState,
   );
 
-  const addMessageId = () => {
+  // messageId 注册（aria-describedby 关联）：id 是 setup 固定值，
+  // 挂载注册、卸载注销（替代 useIsoLayoutEffect——actview-utils 版只在挂载跑一次，
+  // 语义等价）
+  onMounted(() => {
+    if (!id) {
+      return;
+    }
     const current = labelableContext.value.messageIds;
-    // `id` is guaranteed non-null at the call site (guarded by `if (!id)` before `addMessageId`).
-    labelableContext.value.setMessageIds([...current, id!]);
-  };
-
-  const removeMessageId = () => {
+    labelableContext.value.setMessageIds([...current, id]);
+  });
+  onUnmounted(() => {
     const current = labelableContext.value.messageIds;
     labelableContext.value.setMessageIds(current.filter((item) => item !== id));
-  };
-
-  useIsoLayoutEffect(() => {
-    if (!id) {
-      return undefined;
-    }
-
-    addMessageId();
-
-    return removeMessageId;
   });
 
-  const getElementProps = (externalProps: HTMLProps) => {
+  // ================= render（每次更新执行） =================
+  return () => {
     const {
-      render: _render,
-      id: _idProp,
-      className: _className,
-      style: _style,
-      ref: _ref,
+      render,
+      className,
+      style,
+      id: _idProp, // setup useBaseUiId 已接管
+      ref: _ref, // 用户 ref：根是元素，useRootElement 自动绑定
       ...elementProps
     } = componentProps;
-    return mergeProps(externalProps, elementProps) as HTMLProps;
+
+    const stateValue = state.value;
+
+    // state → data-* 属性（fieldValidityMapping）
+    const stateAttributes = getStateAttributesProps(stateValue, fieldValidityMapping);
+
+    const merged = mergePropsN([
+      { id },
+      stateAttributes,
+      elementProps,
+      {
+        className: typeof className === 'function' ? className(stateValue) : className,
+        style: typeof style === 'function' ? style(stateValue) : style,
+      },
+    ]);
+
+    // render 三形态（对照 FieldsetLegend/FieldRootInner）
+    if (typeof render === 'function') {
+      return render({ ...merged, ...stateValue, ref: rootRef });
+    }
+    if (render) {
+      const Tag = render.type as any;
+      return <Tag key={render.key} {...render.props} {...merged} ref={rootRef} />;
+    }
+    return <p ref={rootRef} {...merged} />;
   };
-
-  const getElement = useRenderElement('p', componentProps, {
-    ref: componentProps.ref,
-    state,
-    props: [() => ({ id }), getElementProps],
-    stateAttributesMapping: fieldValidityMapping,
-  });
-
-  // Wrap in a Fragment so the ActView Babel transform recognizes this as a JSX
-  // return and converts the component to a `{ __setup }` VNode type (AI-003).
-  return <>{getElement()}</>;
-}
+}) as (props: FieldDescription.Props) => any;
 
 export interface FieldDescriptionState extends FieldRootState {}
 

@@ -1,18 +1,18 @@
-import { computed, watch } from 'actview';
+import { computed, defineComponent, useRootElement, watch } from 'actview';
 import { type FieldRootState } from '../root/FieldRoot';
 import { useFieldRootContext } from '../../internals/field-root-context/FieldRootContext';
 import { useLabelableContext } from '../../internals/labelable-provider/LabelableContext';
 import { fieldValidityMapping } from '../../internals/field-constants/constants';
+import type { BaseUIComponentProps } from '../../internals/types';
+import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
 import { useFormContext } from '../../internals/form-context/FormContext';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import type { StateAttributesMapping } from '../../internals/getStateAttributesProps';
-import { useRenderElement } from '../../internals/useRenderElement';
 import { useBaseUiId } from '../../internals/useBaseUiId';
 import { useOpenChangeComplete } from '../../internals/useOpenChangeComplete';
 import { transitionStatusMapping } from '../../internals/stateAttributesMapping';
 import { type TransitionStatus, useTransitionStatus } from '../../internals/useTransitionStatus';
+import { mergePropsN } from '../../merge-props';
 
-const stateAttributesMapping: StateAttributesMapping<FieldErrorState> = {
+const stateAttributesMapping = {
   ...fieldValidityMapping,
   ...transitionStatusMapping,
 };
@@ -23,11 +23,14 @@ const stateAttributesMapping: StateAttributesMapping<FieldErrorState> = {
  *
  * Documentation: [Base UI Field](https://base-ui.com/react/components/field)
  */
-export function FieldError(componentProps: FieldError.Props) {
+export const FieldError = defineComponent(function (componentProps: FieldError.Props) {
+  // ================= setup（只执行一次） =================
+  // context hook 必须在 setup 顶层（AD-42）
   const fieldRootContext = useFieldRootContext(false);
   const labelableContext = useLabelableContext();
   const formContext = useFormContext();
 
+  // useBaseUiId(idOverride)：用户 id 优先，否则生成
   const id = useBaseUiId(componentProps.id);
 
   const rendered = computed(() => {
@@ -51,7 +54,8 @@ export function FieldError(componentProps: FieldError.Props) {
 
   const { mounted, transitionStatus, setMounted } = useTransitionStatus(rendered);
 
-  const errorRef: { current: HTMLDivElement | null } = { current: null };
+  // 组件根 DOM：根是元素（div），useRootElement 自动绑定（案例 6）
+  const rootRef = useRootElement();
 
   const state = computed<FieldErrorState>(() => ({
     ...fieldRootContext.value.state,
@@ -116,35 +120,9 @@ export function FieldError(componentProps: FieldError.Props) {
     { immediate: true },
   );
 
-  const getElementProps = (prev: HTMLProps) => {
-    const {
-      render: _render,
-      id: _idProp,
-      className: _className,
-      match: _match,
-      style: _style,
-      children: childrenProp,
-      ...elementProps
-    } = componentProps;
-    return {
-      ...prev,
-      ...elementProps,
-      id,
-      // User-provided children win; otherwise fall back to the computed error message.
-      children: childrenProp ?? errorMessage.value,
-    };
-  };
-
-  const getElement = useRenderElement('div', componentProps, {
-    ref: [componentProps.ref, errorRef],
-    state,
-    props: [getElementProps],
-    stateAttributesMapping,
-  });
-
   useOpenChangeComplete({
     open: rendered,
-    ref: errorRef,
+    ref: rootRef as unknown as { current?: HTMLElement | null; value?: HTMLElement | null },
     onComplete() {
       if (!rendered.value) {
         setMounted(false);
@@ -152,10 +130,50 @@ export function FieldError(componentProps: FieldError.Props) {
     },
   });
 
-  // Conditionally render: ActView's setup runs once, so the mount check must live in the
-  // render function (JSX), not as a setup-time early return (plantform-diff.md AD-23).
-  return <>{mounted.value ? getElement() : null}</>;
-}
+  // ================= render（每次更新执行） =================
+  // 条件渲染：ActView 的 setup 只跑一次，挂载判断必须在 render 函数里（AD-23）
+  return () => {
+    if (!mounted.value) {
+      return null;
+    }
+
+    const {
+      render,
+      className,
+      style,
+      id: _idProp, // setup useBaseUiId 已接管
+      match: _match, // setup rendered/error 已接管
+      children: childrenProp,
+      ref: _ref, // 用户 ref：根是元素，useRootElement 自动绑定
+      ...elementProps
+    } = componentProps;
+
+    const stateValue = state.value;
+
+    // state → data-* 属性（fieldValidityMapping + transitionStatusMapping）
+    const stateAttributes = getStateAttributesProps(stateValue, stateAttributesMapping);
+
+    const merged = mergePropsN([
+      stateAttributes,
+      elementProps,
+      { id, children: childrenProp ?? errorMessage.value },
+      {
+        className: typeof className === 'function' ? className(stateValue) : className,
+        style: typeof style === 'function' ? style(stateValue) : style,
+      },
+    ]);
+
+    // render 三形态（对照 FieldsetLegend/FieldRootInner）
+    if (typeof render === 'function') {
+      return render({ ...merged, ...stateValue, ref: rootRef });
+    }
+    if (render) {
+      const Tag = render.type as any;
+      return <Tag key={render.key} {...render.props} {...merged} ref={rootRef} />;
+    }
+    return <div ref={rootRef} {...merged} />;
+  };
+}) as (props: FieldError.Props) => any;
 
 export interface FieldErrorState extends FieldRootState {
   /**

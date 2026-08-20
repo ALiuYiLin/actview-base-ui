@@ -209,7 +209,6 @@ export const RadioGroup = defineComponent(function <Value>(componentProps: Radio
     } = componentProps;
 
     // 注册 id 渲染期合成（React 语义 idProp ?? useId()）；root 元素只显示显式 idProp
-    console.log('[PROBE-RG] render aria-labelledby prop=', componentProps['aria-labelledby'], 'labelId=', labelableContext.value.labelId);
     const ariaLabelledby = labelableContext.value.labelId ?? fieldsetContext.value?.legendId;
 
     const state: RadioGroupState = {

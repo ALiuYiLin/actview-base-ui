@@ -616,6 +616,140 @@ onUnmounted(stopW);  // 卸载 → stop() → onCleanup 执行（注销）
 
 ---
 
+## 案例 16：Radio 家族 —— 事件语义对齐（onInput + click 修饰键）+ 官方 context 时序坑（PD-16）+ AD-24 htmlFor
+
+**组件**：`RadioRoot.tsx`、`RadioGroup.tsx`、`RadioGroupContext.ts`
+
+### 16.1 React onChange vs 原生事件：radio 激活用 onInput
+
+React 对 radio 的 `onChange` 由 **click 委托**触发（`nativeEvent` 是 click，含修饰键）。actview 只有原生事件：
+
+- 原生 **`change` 事件不继承 click 修饰键**（jsdom 探针验证 shiftKey undefined）——`eventDetails` 的修饰键（shift/ctrl/alt/meta）对不上 React 语义
+- 原生 **`input` 事件**在 radio 激活时**先于 change 触发** → 用 `onInput` 承接"值变化"
+
+```tsx
+// setup 作用域：记录 input 上的 click（React 版 onChange 的 nativeEvent 是 click）
+let lastInputClickEvent: MouseEvent | null = null;
+
+// inputProps.onClick：记录 + stopPropagation
+// onInput（原生 input 事件，radio 激活先于 change 触发）：
+onInput(event: Event) {
+  if (event.defaultPrevented) return;
+  if (disabled || readOnly || value === undefined) return;
+  const details = createChangeEventDetails(REASONS.none, lastInputClickEvent ?? event);
+  groupContext.value?.setCheckedValue?.(value, details);
+  if (details.isCanceled) return;
+  fieldRootContext.value.setTouched(true);
+}
+```
+
+**规则**：React 合成事件映射到 actview 时，先确认"React 合成事件由哪个原生事件委托触发"——click 委托的合成事件（onChange）要拆成原生 click/input 记录，而不是用同名原生事件（change）硬映射。
+
+### 16.2 context 传播时序（PD-16）：事件回调里读 context 必须用 internals createContext
+
+**症状**：Arrow 键导航的 radio 自动选中 3 用例失败——`[PROBE-PR] focus touched= false`（capture 已设 true）。
+
+**根因**：actview **官方 createContext** 的 Provider 用 `watch(() => props.value, v => state.value = v)`（**pre flush 微任务**）同步——消费方读 `.value` 滞后一个微任务。**internals createContext**（`internals/createContext.tsx`）用 `computed(() => unref(props.value))` 包裹——消费方读 `.value` 时**同步重算**。
+
+Arrow 键导航的 focus 在 `queueMicrotask` 触发（同步事件回调之后）——官方版 Provider watch 未跑 → 消费方读到旧 touched → 自动选中失败。
+
+**规则**：**事件回调（onFocus/onClick 等同步执行）里读 context**，Provider 必须用 **internals createContext**（computed 同步）；纯渲染期读 context 官方版即可（渲染本来就在 flush 后）。
+
+```ts
+// RadioGroupContext 改用 internals 版（注释记录 PD-16）
+export const RadioGroupContext = createContext('base-ui-radio-group-context', undefined);
+```
+
+### 16.3 AD-24：actview 不映射 htmlFor→for
+
+actview renderer `setProp` 直接 `setAttribute('htmlFor', ...)` → DOM 无效属性。JSX/组件内必须写**原生属性名 `for`**：
+
+```tsx
+<label for="my-input">...</label>   // ✅ actview
+<label htmlFor="my-input">...</label> // ❌ React 写法，jsdom label 激活转发与 input.labels 关联全断
+```
+
+测试转写 React 原版的 `htmlFor` 时必须改 `for`（AD-24 注释标记）——jsdom 的 label 激活转发（htmlFor 目标）依赖 `for` 属性。
+
+---
+
+## 案例 17：Field 子件去 useRenderElement 重构 —— FieldItem / FieldDescription / FieldError
+
+**文件**：`field/item/FieldItem.tsx`、`field/description/FieldDescription.tsx`、`field/error/FieldError.tsx`
+
+**背景**：用户裁决「不允许使用 useRenderElement 实现任何组件」——field 家族三子件（含过渡渲染的 FieldError）全部改 defineComponent + render closure + mergePropsN 三形态（案例 1 范式）。
+
+### 17.1 FieldError 的过渡渲染：mounted 判断放 render 函数
+
+useTransitionStatus 的 `mounted` 是响应式 ref——**setup 只跑一次，条件渲染必须在 render 函数里判断**：
+
+```tsx
+return () => {
+  if (!mounted.value) {
+    return null;   // 未挂载 → 不渲染（actview render 返回 null 合法）
+  }
+  // ...解构 props、stateAttributes、mergePropsN、三形态
+};
+```
+
+useOpenChangeComplete 的 `ref` 参数兼容 `{ value }` 形态（useAnimationsFinished 读 current 或 value）——传 `useRootElement()` 返回的 rootRef 即可。
+
+### 17.2 messageId 注册：rendered + id 依赖的 watch（immediate）
+
+FieldError 的 aria-describedby 注册链（labelable messageIds）：
+
+```tsx
+watch(
+  () => [rendered.value, id],
+  (_nv, _ov, onCleanup) => {
+    if (!rendered.value || !id) return;
+    const current = labelableContext.value.messageIds;
+    labelableContext.value.setMessageIds([...current, id]);
+    onCleanup(() => { /* filter 掉 id */ });
+  },
+  { immediate: true },
+);
+```
+
+FieldDescription 的 messageId 用 `onMounted` 注册 + `onUnmounted` 注销（id 是 setup 固定值，无 rendered 条件）。
+
+### 17.3 mergePropsN 顺序：`{ id, children }` 放 elementProps 后
+
+FieldError merged：`[stateAttributes, elementProps, { id, children: childrenProp ?? errorMessage.value }, { className, style }]`——`id`/`children` 覆盖 elementProps（解构已排除 id/children，实际不冲突）。**mergePropsN 对 `id` 走 default 分支直接赋值**（探针验证：对象/getter 两种形态都正确透传 id）——id 丢失排查方向不在 mergePropsN，而在渲染链下游（patch setProp）或查询层。
+
+### 17.4 测试陷阱：description 查询用精确标签，别用 `querySelectorAll('div')`
+
+**症状**：`aria-describedby toContain(null)`——error/description 渲染都正常（探针 outerHTML 有 id、aria-describedby 含两个 id）。
+
+**根因**：`querySelectorAll('div').find(el => el.textContent === 'description')` **匹配到 Field.Item 的 div**——它的子元素只有 description 文本，textContent 也是 'description'，且**无 id**。真正的 Field.Description 是 `<p>`，不在 div 查询里 → `description.getAttribute('id')` 为 null → `toContain(null)` 失败。
+
+```tsx
+// ❌ 祖先 div 也匹配文本（actview getByText 前序 DFS 同样返回最外层）
+const descriptions = document.querySelectorAll('div');
+// ✅ 按默认标签精确查
+const descriptions = document.querySelectorAll('p');
+```
+
+**规则**：文本查询优先**按目标元素的默认标签**（`p`/`div`/`legend`）限定，再用 textContent 过滤；或 `getAllByText(...)` 取最后一个（actview getByText 前序 DFS 返回最外层，会命中祖先）。
+
+### 17.5 Form 验证链测试转写要点（radio 家族）
+
+| React 原版 | actview 转写 |
+|---|---|
+| `renderFakeTimers` | 无此基建——普通 `render` + `act` + `fireEvent.click(submit)` |
+| `user.click(Submit)` | `fireEvent.click(document.querySelector('button[type="submit"]'))` |
+| `getByRole('radio')` | `document.querySelector('[role="radio"]')`（根元素是 span，非 input） |
+| `validationMode="onChange"`（revalidates 用例） | 必须显式传——默认 onSubmit 时 `shouldValidateOnChange()` false → change 不重验 |
+| required 约束 | `RadioGroup name="group" required` + `Field.Error match="valueMissing"`（FieldError 已支持 match prop，rendered 判定 `validityData.state[match]`） |
+| 卸载语义 | React 版「RadioGroup 保留、仅 Radio.Root 卸载」——Field 仍在表单注册表 → validate 重跑 → 阻止提交；转写不能把整个 RadioGroup 卸载 |
+
+### 17.6 验证结果
+
+- Field.test 25/25（重构无回归）
+- RadioRoot 11/11、RadioGroup 62/62（含 2 个重写后的 Form 用例）
+
+---
+
 ## 案例总结：定义组件范式清单（后续组件照此实现）
 
 ```tsx
@@ -666,3 +800,8 @@ export const Xxx = defineComponent(function (componentProps: Xxx.Props) {
 | 薄委托组件？ | defineComponent + 渲染期 **JSX 透传**子组件（函数 union 类型合法，createElement 不需要——PD-17 作废）（案例 13） |
 | 测试包装组件？ | 必须渲染期解构（defineComponent + `return () =>`）或直接展开 props 代理——setup 解构冻结（案例 9） |
 | 本地状态？ | `ref()`（`.value` 读写）；复杂对象用 `reactive(obj)` 属性直读（`.key` 不用 `.value`，仍响应式）；**setup 解构 reactive 必须 `toRefs`**（案例 1） |
+| React 合成 onChange？ | 确认委托的原生事件——click 委托（radio onChange）拆成原生 `onInput` + click 记录，不硬映射同名 `change`（案例 16.1） |
+| 事件回调里读 context？ | Provider 必须用 **internals createContext**（computed 同步）；官方版 Provider watch 是 pre flush 微任务，同步事件回调读滞后（案例 16.2） |
+| htmlFor？ | actview 不映射 htmlFor→for——JSX/测试一律写原生 `for`（AD-24）（案例 16.3） |
+| 条件渲染（mounted 等 ref 判断）？ | 判断放 render 函数里（setup 只跑一次），`return null` 合法（案例 17.1） |
+| 文本查询？ | 按默认标签精确查（`querySelectorAll('p')`）或用 getAllByText 取最后一个——`div` 查询/前序 DFS 会命中祖先（案例 17.4） |
