@@ -64,8 +64,12 @@ export const ToolbarButton = defineComponent(function (componentProps: ToolbarBu
     // forwarding a disabled prop so focusable disabled buttons remain
     // hoverable for interactions like tooltips.
     // TODO: follow up after https://github.com/mui/base-ui/issues/1976#issuecomment-2916905663
-    const conditionalDisabledProps = () =>
-      componentProps.render ? { disabled: disabled.value } : EMPTY_OBJECT;
+    // ⚠️ 必须是对象不是函数：mergePropsN 把函数当 propsGetter（替换语义——返回值
+    // 整体替换 merged），返回 EMPTY_OBJECT 会冲掉前面 elementProps 的用户透传属性
+    // （data-testid 等）。渲染期求值（读 componentProps.render + disabled.value → 响应式）
+    const conditionalDisabledProps = componentProps.render
+      ? { disabled: disabled.value }
+      : EMPTY_OBJECT;
 
     return (
       <CompositeItem<ToolbarRoot.ItemMetadata, ToolbarButtonState>

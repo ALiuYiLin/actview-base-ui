@@ -66,6 +66,11 @@ export const ToolbarInput = defineComponent(function (componentProps: ToolbarInp
       onPointerDown: preventWhenDisabled,
     };
 
+    // ⚠️ 渲染期调用 getProps() 得对象：focusableWhenDisabledProps 是 getter 函数，
+    // 直接传函数会被 mergePropsN 当 propsGetter（替换语义）冲掉 elementProps 的
+    // 用户透传属性（data-testid 等）；渲染期求值对象则走普通合并路径
+    const focusableProps = focusableWhenDisabledProps();
+
     return (
       <CompositeItem<ToolbarRoot.ItemMetadata, ToolbarInputState>
         tag="input"
@@ -74,7 +79,7 @@ export const ToolbarInput = defineComponent(function (componentProps: ToolbarInp
         style={style}
         metadata={itemMetadata.value}
         state={state}
-        props={[defaultProps, elementProps, focusableWhenDisabledProps]}
+        props={[defaultProps, elementProps, focusableProps]}
       />
     );
   };

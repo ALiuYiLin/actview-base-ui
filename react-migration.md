@@ -466,6 +466,128 @@ expect(button1).toHaveAttribute('aria-pressed', 'true');
 
 ---
 
+## 案例 10：ToolbarGroup / ToolbarSeparator —— Provider 包裹三形态 + mergePropsN 的 propsGetter 陷阱
+
+### ToolbarGroup：根是 Provider 包裹（div 在内层）
+
+根 VNode 是 `<ToolbarGroupContext.Provider>{...}</...>`——Provider 不产生 DOM，`useRootElement` 拿不到实际元素 → 同 CompositeRoot 边界（案例 6）：`ref()` + 显式挂载。
+
+```tsx
+export const ToolbarGroup = defineComponent(function (componentProps: ToolbarGroup.Props) {
+  const rootContext = useToolbarRootContext();   // setup 顶层（AD-42）
+  const disabled = computed(
+    () => (rootContext.value.disabled ?? false) || (componentProps.disabled ?? false),
+  );
+  const contextValue = computed<ToolbarGroupContext>(() => ({ disabled: disabled.value }));
+  const rootRef = ref<HTMLElement | null>(null); // Provider 包裹 → 显式挂载
+
+  return () => {
+    const { className, disabled: _disabled, render, style, ref: _ref, ...elementProps } = componentProps;
+    const state: ToolbarGroupState = { disabled: disabled.value, orientation: rootContext.value.orientation };
+    const merged = mergePropsN([
+      { role: 'group' },
+      elementProps,
+      {
+        className: typeof className === 'function' ? className(state) : className,
+        style: typeof style === 'function' ? style(state) : style,
+      },
+    ]);
+
+    // 三形态各自 return，Provider 必须始终包裹（Group 的职责是提供 context）
+    if (typeof render === 'function') {
+      return <Provider>{render({ ...merged, ...state, ref: rootRef })}</Provider>;
+    }
+    if (render) { /* <Tag key={render.key} {...render.props} {...merged} ref={rootRef} /> */ }
+    return <Provider><div ref={rootRef} {...merged} /></Provider>;
+  };
+}) as (props: ToolbarGroup.Props) => any;
+```
+
+### ⚠️ mergePropsN 的 propsGetter 是「替换语义」——函数会冲掉前面的合并结果
+
+排查 data-testid 丢失的根因（DOM 里 button/input 只剩 aria-disabled，透传属性全丢）：
+
+`mergePropsN` 对数组项的处理：**对象** → `mutablyMergeInto`（右覆盖左合并）；**函数** → `resolvePropsGetter`（`fn(previousProps)` 的返回值**整体替换** merged，不自动合并）。
+
+```ts
+function mergeInto(merged, inputProps) {
+  if (isPropsGetter(inputProps)) return resolvePropsGetter(inputProps, merged); // 替换！
+  return mutablyMergeInto(merged, inputProps);                                  // 合并
+}
+```
+
+ToolbarButton 旧写法（bug）：`conditionalDisabledProps` 是函数且返回 `EMPTY_OBJECT` → 数组里它后面的所有合并结果被替换成空对象，`data-testid` 等全丢：
+
+```tsx
+const conditionalDisabledProps = () =>
+  componentProps.render ? { disabled: disabled.value } : EMPTY_OBJECT; // 冲掉一切！
+props={[elementProps, conditionalDisabledProps, getButtonProps]}
+```
+
+修复（对齐 React 原版——那里是**对象**）：渲染期直接求值对象，不传函数：
+
+```tsx
+const conditionalDisabledProps = componentProps.render
+  ? { disabled: disabled.value }
+  : EMPTY_OBJECT; // 对象 → mutablyMergeInto 合并路径，透传属性保留
+```
+
+ToolbarInput 同理：`useFocusableWhenDisabled` 返回的 `props` 是 getter **函数**，渲染期先调用得对象再进数组：
+
+```tsx
+const focusableProps = focusableWhenDisabledProps(); // 渲染期调用
+props={[defaultProps, elementProps, focusableProps]}
+```
+
+### 判断规则（props 数组里能放什么）
+
+| 数组项 | 语义 | 正确用法 |
+|---|---|---|
+| 对象 | 合并（右覆盖左） | 渲染期求值的普通对象（首选） |
+| 函数 | propsGetter：`fn(previousProps)` 返回值**替换** merged | 仅当函数自己展开 previousProps（如 `getButtonProps(externalProps)` 内部 `{...otherExternalProps}` 把 previous 带回来）；`() => EMPTY_OBJECT` 会冲掉一切 |
+
+### ToolbarSeparator：委托组件的 defineComponent 包装
+
+薄包装委托已重构的 Separator。defineComponent 包裹 + 渲染期算 orientation：
+
+```tsx
+export const ToolbarSeparator = defineComponent(function (componentProps: ToolbarSeparator.Props) {
+  const rootContext = useToolbarRootContext(); // setup 顶层（AD-42）
+  return () => {
+    const orientation =
+      componentProps.orientation ??
+      (rootContext.value.orientation === 'vertical' ? 'horizontal' : 'vertical');
+    return (
+      <Separator {...componentProps} orientation={orientation} /* className/style as any 保类型 */ />
+    );
+  };
+}) as (props: ToolbarSeparator.Props) => any;
+```
+
+委托子组件时透传全部 componentProps（含 ref）——子组件内部自己处理 ref / 三形态 / className 函数解析，包装层不重复实现。
+
+### 测试要点
+
+- **断言透传属性（data-testid）是否到达 DOM** 是验证 mergePropsN 链的有效手段——ToolbarGroup 测试靠它抓出了上述存量 bug。
+- actview 的 setup 错误被框架捕获为 `console.error('[actview] 组件渲染错误:', Error{...})` **双参数**日志（不 rethrow），断言日志而非 rejects：
+
+```tsx
+const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+try {
+  await render(ToolbarSeparator, {}); // 无 ToolbarRoot 包裹
+  expect(errorSpy).toHaveBeenCalledWith(
+    expect.any(String),
+    expect.objectContaining({
+      message: expect.stringContaining('Base UI: ToolbarRootContext is missing...'),
+    }),
+  );
+} finally {
+  errorSpy.mockRestore();
+}
+```
+
+---
+
 ## 案例总结：定义组件范式清单（后续组件照此实现）
 
 ```tsx
@@ -508,3 +630,4 @@ export const Xxx = defineComponent(function (componentProps: Xxx.Props) {
 | 泛型组件？ | 导出时 `as` 断言贴回泛型签名（案例 8） |
 | 测试交互？ | `fireEvent` 后必须 `await act(...)`；无 `getByRole`，用 `data-testid`（案例 9） |
 | state → data-*？ | `getStateAttributesProps(state, mapping)` 单值映射（对齐 Base UI 契约） |
+| props 数组传函数？ | 对象=合并；函数=propsGetter **替换**（`fn(previous)` 返回值整体替换 merged）——`() => EMPTY_OBJECT` 会冲掉透传属性，需要追加时渲染期求值对象（案例 10） |
