@@ -1,4 +1,4 @@
-import { computed, ref } from 'actview';
+import { computed, defineComponent, ref } from 'actview';
 import {
   type BaseUIComponentProps,
   type Orientation as BaseOrientation,
@@ -14,7 +14,8 @@ import { ToolbarRootContext } from './ToolbarRootContext';
  *
  * Documentation: [Base UI Toolbar](https://base-ui.com/react/components/toolbar)
  */
-export function ToolbarRoot(componentProps: ToolbarRoot.Props) {
+export const ToolbarRoot = defineComponent(function (componentProps: ToolbarRoot.Props) {
+  // ================= setup（只执行一次） =================
   const itemMap = ref(new Map<Node, CompositeMetadata<ToolbarRoot.ItemMetadata>>());
 
   const disabledIndices = computed(() => {
@@ -36,48 +37,48 @@ export function ToolbarRoot(componentProps: ToolbarRoot.Props) {
     orientation: orientation.value,
   }));
 
-  const state = computed<ToolbarRootState>(() => ({
-    disabled: componentProps.disabled ?? false,
-    orientation: orientation.value,
-  }));
-
-  const getDefaultProps = (): HTMLProps => ({
-    'aria-orientation': orientation.value,
-    role: 'toolbar',
-  });
-
-  const getElementProps = () => {
+  // ================= render（每次更新执行） =================
+  return () => {
     const {
-      disabled: _disabled,
-      loopFocus: _loopFocus,
-      orientation: _orientation,
-      className: _className,
-      render: _render,
-      style: _style,
+      disabled: _disabled, // setup computed 已接管
+      loopFocus,
+      orientation: _orientation, // setup computed 已接管
+      className,
+      render,
+      style,
+      ref: _ref, // 用户 ref：CompositeRoot 内部 useRootElement 自取根，无需转发
       ...elementProps
     } = componentProps;
-    return elementProps;
-  };
 
-  return (
-    <ToolbarRootContext.Provider value={toolbarRootContext}>
-      <CompositeRoot<ToolbarRoot.ItemMetadata, ToolbarRootState>
-        render={componentProps.render}
-        className={componentProps.className as any}
-        style={componentProps.style as any}
-        state={state.value}
-        refs={[componentProps.ref]}
-        props={[getDefaultProps, getElementProps]}
-        disabledIndices={disabledIndices.value}
-        loopFocus={componentProps.loopFocus}
-        onMapChange={(map) => {
-          itemMap.value = map;
-        }}
-        orientation={orientation.value}
-      />
-    </ToolbarRootContext.Provider>
-  );
-}
+    const state: ToolbarRootState = {
+      disabled: componentProps.disabled ?? false,
+      orientation: orientation.value,
+    };
+
+    const defaultProps: HTMLProps = {
+      'aria-orientation': orientation.value,
+      role: 'toolbar',
+    };
+
+    return (
+      <ToolbarRootContext.Provider value={toolbarRootContext.value}>
+        <CompositeRoot<ToolbarRoot.ItemMetadata, ToolbarRootState>
+          render={render}
+          className={className}
+          style={style}
+          state={state}
+          props={[defaultProps, elementProps]}
+          disabledIndices={disabledIndices.value}
+          loopFocus={loopFocus}
+          onMapChange={(map) => {
+            itemMap.value = map;
+          }}
+          orientation={orientation.value}
+        />
+      </ToolbarRootContext.Provider>
+    );
+  };
+}) as (props: ToolbarRoot.Props) => any;
 
 export interface ToolbarRootItemMetadata {
   disabled: boolean;

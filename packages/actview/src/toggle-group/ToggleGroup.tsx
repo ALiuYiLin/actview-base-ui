@@ -1,44 +1,53 @@
-import { computed } from 'actview';
-import type { ComputedRef } from '@actview/core';
-import { useControlled } from '@base-ui/actview-utils/useControlled';
+import { computed, defineComponent, ref } from 'actview';
 import { EMPTY_ARRAY } from '@base-ui/actview-utils/empty';
-import { useRenderElement } from '../internals/useRenderElement';
-import type { BaseUIComponentProps, HTMLProps, Orientation } from '../internals/types';
+import type { BaseUIComponentProps, Orientation } from '../internals/types';
 import { CompositeRoot } from '../internals/composite/root/CompositeRoot';
 import { useToolbarRootContext } from '../toolbar/root/ToolbarRootContext';
 import { useToolbarGroupContext } from '../toolbar/group/ToolbarGroupContext';
 import { ToggleGroupContext } from './ToggleGroupContext';
 import type { BaseUIChangeEventDetails } from '../internals/createBaseUIEventDetails';
 import { REASONS } from '../internals/reasons';
+import { mergePropsN } from '../merge-props';
 
 /**
  * Provides a shared state to a series of toggle buttons.
  *
  * Documentation: [Base UI Toggle Group](https://base-ui.com/react/components/toggle-group)
  */
-export function ToggleGroup<Value extends string>(props: ToggleGroup.Props<Value>) {
+export const ToggleGroup = defineComponent(function <Value extends string>(
+  componentProps: ToggleGroup.Props<Value>,
+) {
+  // ================= setup（只执行一次） =================
+  // context hooks 必须在 setup 顶层（AD-42），渲染期读 .value 建立响应式
   const toolbarContext = useToolbarRootContext(true);
   const toolbarGroupContext = useToolbarGroupContext();
 
+  // 受控状态（useControlled 等价）：初始值取 defaultValue——
+  // React 语义：default 仅首次生效，后续变化忽略
+  const isControlled = computed(() => componentProps.value !== undefined);
+  const valueState = ref<readonly Value[]>(componentProps.defaultValue ?? EMPTY_ARRAY);
+
+  const groupValue = computed<readonly Value[]>(() =>
+    isControlled.value && componentProps.value !== undefined
+      ? componentProps.value
+      : valueState.value,
+  );
+
+  // 用原始 prop 区分"未传"与"显式空数组默认值"
   const isValueInitialized = computed(
-    () => props.value !== undefined || props.defaultValue !== undefined,
+    () => componentProps.value !== undefined || componentProps.defaultValue !== undefined,
   );
 
   const disabled = computed<boolean>(
     () =>
       (toolbarContext.value?.disabled ?? false) ||
       (toolbarGroupContext.value?.disabled ?? false) ||
-      props.disabled ||
+      componentProps.disabled ||
       false,
   );
 
-  const groupValue = useControlled<readonly Value[]>({
-    controlled: () => props.value,
-    default: () => props.defaultValue ?? EMPTY_ARRAY,
-    name: 'ToggleGroup',
-    state: 'value',
-  });
-
+  // 事件回调 setup 定义：函数体内读 componentProps 代理 + groupValue.value，
+  // 事件触发时都是最新值（setup 不解构 → 无快照冻结）
   const setGroupValue = (
     newValue: Value,
     nextPressed: boolean,
@@ -46,7 +55,7 @@ export function ToggleGroup<Value extends string>(props: ToggleGroup.Props<Value
   ) => {
     const current = groupValue.value ?? EMPTY_ARRAY;
     let newGroupValue: Value[];
-    if (props.multiple ?? false) {
+    if (componentProps.multiple ?? false) {
       newGroupValue = current.slice();
       if (nextPressed) {
         newGroupValue.push(newValue);
@@ -57,21 +66,19 @@ export function ToggleGroup<Value extends string>(props: ToggleGroup.Props<Value
       newGroupValue = nextPressed ? [newValue] : [];
     }
 
-    props.onValueChange?.(newGroupValue, eventDetails);
+    componentProps.onValueChange?.(newGroupValue, eventDetails);
 
     if (eventDetails.isCanceled) {
       return;
     }
 
-    groupValue.setValueIfUncontrolled(newGroupValue);
+    if (!isControlled.value) {
+      valueState.value = newGroupValue;
+    }
   };
 
-  const state = computed<ToggleGroupState>(() => ({
-    disabled: disabled.value,
-    multiple: props.multiple ?? false,
-    orientation: props.orientation ?? 'horizontal',
-  }));
-
+  // context 值：computed 惰性缓存——依赖不变时引用稳定，
+  // Provider 的 watch 只在真正变化时同步（不产生无谓的消费方重渲染）
   const contextValue = computed<ToggleGroupContext<Value>>(() => ({
     disabled: disabled.value,
     setGroupValue,
@@ -79,51 +86,70 @@ export function ToggleGroup<Value extends string>(props: ToggleGroup.Props<Value
     isValueInitialized: isValueInitialized.value,
   }));
 
-  const getElementProps = () => {
+  // ================= render（每次更新执行） =================
+  return () => {
     const {
       defaultValue: _defaultValue,
-      disabled: _disabled,
-      loopFocus: _loopFocus,
+      disabled: _disabled, // setup computed 已接管
+      loopFocus,
       onValueChange: _onValueChange,
-      orientation: _orientation,
+      orientation,
       multiple: _multiple,
       value: _value,
-      className: _className,
-      render: _render,
-      style: _style,
-      ref: _ref,
+      className,
+      render,
+      style,
       ...elementProps
-    } = props;
-    return elementProps;
-  };
+    } = componentProps;
 
-  const getElement = useRenderElement('div', props, {
-    enabled: Boolean(toolbarContext.value),
-    state,
-    ref: props.ref,
-    props: [{ role: 'group' }, getElementProps],
-  });
+    const state: ToggleGroupState = {
+      disabled: disabled.value,
+      multiple: componentProps.multiple ?? false,
+      orientation: orientation ?? 'horizontal',
+    };
 
-  return (
-    <ToggleGroupContext.Provider value={contextValue}>
-      {toolbarContext.value ? (
-        getElement()
-      ) : (
+    const defaultProps = { role: 'group' };
+
+    // toolbar 分支：Toolbar 自己已是 CompositeRoot，这里直接渲染元素
+    if (toolbarContext.value) {
+      const merged = mergePropsN([
+        defaultProps,
+        elementProps,
+        {
+          className: typeof className === 'function' ? className(state) : className,
+          style: typeof style === 'function' ? style(state) : style,
+        },
+      ]);
+
+      if (typeof render === 'function') {
+        return render({ ...merged, ...state });
+      }
+      if (render) {
+        const Tag = render.type as any;
+        return <Tag key={render.key} {...render.props} {...merged} />;
+      }
+      return <div {...merged} />;
+    }
+
+    // 非 toolbar 分支：CompositeRoot 提供 roving focus / 键盘导航
+    return (
+      <ToggleGroupContext.Provider value={contextValue.value}>
         <CompositeRoot
-          render={props.render}
-          className={props.className}
-          style={props.style}
-          state={state.value}
-          refs={[props.ref]}
-          props={[{ role: 'group' }, getElementProps]}
-          loopFocus={props.loopFocus ?? true}
+          render={render}
+          className={className}
+          style={style}
+          state={state}
+          props={[defaultProps, elementProps]}
+          loopFocus={loopFocus ?? true}
           enableHomeAndEndKeys
-          orientation={props.orientation ?? 'horizontal'}
+          orientation={orientation ?? 'horizontal'}
         />
-      )}
-    </ToggleGroupContext.Provider>
-  );
-}
+      </ToggleGroupContext.Provider>
+    );
+  };
+}) as <Value extends string>(
+  props: ToggleGroup.Props<Value>,
+) => any;
 
 export interface ToggleGroupState {
   /**

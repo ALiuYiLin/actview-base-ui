@@ -1,16 +1,15 @@
 import type { ComputedRef } from '@actview/core';
 import type { Orientation } from '../../internals/types';
-import { createContext } from '../../internals/createContext';
+import { createContext } from 'actview';
 
 export interface ToolbarRootContext {
   disabled: boolean;
   orientation: Orientation;
 }
 
-export const ToolbarRootContext = createContext<ToolbarRootContext | undefined>(
-  'base-ui-toolbar-root-context',
-  undefined,
-);
+// 框架官方 createContext（单参数：defaultValue）。Provider 注入 ref 本体，
+// use() 返回该 ref，渲染期读 .value 建立响应式追踪（对照 ToggleGroupContext）
+export const ToolbarRootContext = createContext<ToolbarRootContext | undefined>(undefined);
 
 export function useToolbarRootContext(optional?: false): ComputedRef<ToolbarRootContext>;
 export function useToolbarRootContext(optional: true): ComputedRef<ToolbarRootContext | undefined>;

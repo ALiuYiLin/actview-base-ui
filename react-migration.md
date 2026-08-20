@@ -212,12 +212,267 @@ const merged: HTMLProps = {
 
 ---
 
+## 案例 5：官方 `createContext` —— 替换自封装版（Provider 收值、注入 ref 本体）
+
+**文件**：`toggle-group/ToggleGroupContext.ts`、`toolbar/root/ToolbarRootContext.ts`、`toolbar/group/ToolbarGroupContext.ts`
+
+### 迁移前（自封装 createContext，错误）
+
+```ts
+// internals/createContext.tsx（自封装）
+export function createContext<T>(key: string, defaultValue: T) {
+  function Provider(props: { value: ContextSource<T> }) {
+    const live = computed(() => unref(props.value));  // 包 computed 惰性求值
+    provide(key, live);
+    return <>{props.children}</>;
+  }
+  function use(): ComputedRef<T> { ... }
+}
+```
+
+### 迁移后（框架官方 API）
+
+```ts
+import { createContext } from 'actview';
+
+export const ToggleGroupContext = createContext<ToggleGroupContext<any> | undefined>(undefined);
+//                                            ↑ 只有一个参数：defaultValue
+
+export function useToggleGroupContext<Value>() {
+  // 框架 use() 返回 Ref（无 Provider 时返回默认值 ref，.value 为 undefined）
+  return ToggleGroupContext.use() as ComputedRef<ToggleGroupContext<Value> | undefined>;
+}
+```
+
+### 为什么这样改
+
+**框架版与自封装版的机制差异**：
+
+| | 自封装版 | 框架官方版 |
+|---|---|---|
+| 签名 | `createContext(key, defaultValue)` 两参 | `createContext(defaultValue)` 单参 |
+| Provider 注入 | 包 `computed(() => unref(props.value))`（注入"值"需惰性求值） | **注入 ref 本体**（provide(key, state)，state 就是响应式渠道） |
+| use() 返回 | ComputedRef（包装过） | 注入的 ref 本身（ComputedRef 和 Ref 都是 `.value` 读取） |
+
+**框架版全链机制**：
+
+```
+<ToggleGroupContext.Provider value={ctx}>
+  setup: state = ref(ctx ?? undefined)
+         provide(key, state)          ← 注入的是 ref 本体
+         watch(() => props.value)     ← value prop 变化 → state.value 同步
+消费方 setup 顶层: const ctx = ToggleGroupContext.use()   ← 拿到这个 ref
+消费方 render: ctx.value?.disabled   ← 读 .value → 追踪 state ref
+值变化 → state.value 写入 → 消费方 render effect 重跑 ✓
+```
+
+自封装包 computed 是因为注入的是"值"需要惰性求值；**框架版直接把响应式渠道（ref）注入**，use() 返回的就是它。
+
+### 关键点：Provider 传值不传 ref
+
+```tsx
+// ✅ 正确：value 传解包后的值（computed 惰性缓存 → 引用稳定）
+<ToggleGroupContext.Provider value={contextValue.value}>
+
+// ❌ 错误：传 computed 本体会类型报错
+// （框架版 Provider value 类型是值类型，不是 ComputedRef）
+<ToggleGroupContext.Provider value={contextValue}>
+```
+
+`contextValue` 用 `computed` 惰性缓存——**依赖不变时引用稳定**，Provider 的 `watch(() => props.value)` 只在真正变化时同步（不产生无谓的消费方重渲染）。
+
+---
+
+## 案例 6：`useRootElement` 的边界 —— "根是 Provider/List 包裹"时拿不到实际元素
+
+**文件**：`internals/composite/root/CompositeRoot.tsx`、`useCompositeRoot.ts`
+
+### 问题
+
+`useRootElement()` 绑定的是**调用它的组件根 VNode 的 el**。但 CompositeRoot 的根是：
+
+```tsx
+<CompositeRootContext.Provider value={...}>
+  <CompositeList>{element}</CompositeList>   // 实际元素在深层
+</CompositeRootContext.Provider>
+```
+
+组件根是 Provider（非元素）→ `subTree.el` 不是实际渲染的 div/button → **rootRef 恒为 null** → `onKeyDown` 里 `if (!element) return` → 键盘导航失效（ArrowRight/Home/End 不移动焦点）。
+
+### 判断规则（useRootElement 适用边界）
+
+| 组件根形态 | useRootElement | 修法 |
+|---|---|---|
+| **根是元素**（Toggle/useButton/useCompositeItem） | ✅ 自动绑定 | 直接用 |
+| **根是 Provider/Fragment 包裹**（实际元素在深层，如 CompositeRoot） | ❌ 拿不到 | `ref()` + **显式模板 ref 挂到渲染元素** |
+
+### 修复
+
+```tsx
+// CompositeRoot.tsx：用 ref() + 显式挂载
+const rootRef = ref<HTMLElement | null>(null);   // 不是 useRootElement()
+
+// useCompositeRoot.ts：rootRef 参数传入 + props.ref 显式挂到元素
+rootRef: Ref<HTMLElement | null>,   // 参数类型
+const props: HTMLProps = {
+  ref: rootRef as any,   // ← 显式挂到渲染元素（defaultProps.ref 链）
+  onFocus(event) { ... },
+  onKeyDown,
+};
+```
+
+**排查法**：`onKeyDown` 里给 `rootRef` 加日志，事件触发时若为 null → 根绑定失败（useRootElement 拿错根）。
+
+### 教训
+
+这是"根是组件时模板 ref 失效"（PD-02）的**另一面**：
+- 根是元素 → useRootElement 自动绑定
+- 根是 Provider/Fragment 包裹 → useRootElement 失效，需显式 ref 挂载
+
+选择前先问：**这个组件的根 VNode 是元素还是包裹组件？**
+
+---
+
+## 案例 7：`refs` 数组删除 —— ref 流简化（hook 内部自取根 DOM）
+
+**文件**：`internals/composite/item/CompositeItem.tsx`、`useCompositeItem.ts`、toolbar 家族
+
+### 迁移前（React 式 ref 显式传递）
+
+```tsx
+// CompositeItem 收 refs 数组，useRenderElement 合并挂到元素
+refs?: RefValue<HTMLElement | null>[] | undefined;
+ref: [compositeRef, ...(componentProps.refs ?? EMPTY_ARRAY)] as RefValue<Element>[],
+```
+
+### 迁移后（hook 内部自取根）
+
+```tsx
+// useCompositeItem 内部：useRootElement() 自取根 DOM（根是元素场景）
+const rootRef = useRootElement();
+return { compositeProps, compositeRef: rootRef as Ref<HTMLElement | null>, index };
+
+// CompositeItem 渲染层：ref 直接用 compositeRef，不再收 refs 数组
+if (typeof render === 'function') {
+  return render({ ...merged, ...resolvedState, ref: compositeRef });
+}
+if (render) {
+  const Tag = render.type as any;
+  return <Tag key={render.key} {...render.props} {...merged} ref={compositeRef} />;
+}
+return <component is={tag ?? 'div'} {...merged} ref={compositeRef} />;
+```
+
+### 连带影响
+
+- **用户 ref（`componentProps.ref`）不再转发**：渲染期解构 `ref: _ref` 丢弃即可——hook 内部自取根，调用方无需传
+- useButton 的 `buttonRef` 从回调 ref 改为 `Ref<HTMLElement|null>`（内部 useRootElement），同样不再需要转发
+- 但注意：**只有"根是元素"的组件能自取**；"根是包裹"的组件（CompositeRoot）仍需显式挂载（见案例 6）
+
+### 注册类 ref 仍需显式驱动
+
+`useCompositeItem` 里 `useCompositeListItem` 返回的 `ref` 是**注册回调**（register/unregister 到 CompositeList），不能丢——用 `watch` 桥接：
+
+```tsx
+// flush 'sync'：卸载时序是 beforeUnmount（useRootElement 置 null）→ scope.stop()
+// → 微任务才跑；默认 flush（微任务）的 runJob 在 effect 停止后执行 → 回调被丢弃。
+// 'sync' 在置 null 的瞬间同步执行，scope.stop() 之前完成注销 ✓
+watch(
+  rootRef,
+  (node) => { ref(node as HTMLElement | null); },
+  { immediate: true, flush: 'sync' },
+);
+```
+
+### 补充：`mergeProps` vs `mergePropsN`（数组展开）
+
+```tsx
+// ❌ 错误：mergeProps 是固定参数重载（最多 5 参），传数组报
+//    "扩张参数必须具有元组类型或传递给 rest 参数"
+const merged = mergeProps(props, { className, style });   // props 是数组
+
+// ✅ 正确：mergePropsN 收数组
+const merged = mergePropsN([compositeProps, ...(extraProps ?? []), elementProps]);
+```
+
+语义完全一致（mergePropsN 内部就是循环 mergeInto）。**props 数组场景一律用 mergePropsN**。
+
+---
+
+## 案例 8：`defineComponent` 泛型组件 —— `as` 断言保留泛型签名
+
+**文件**：`CompositeItem.tsx`、`CompositeRoot.tsx`、`ToggleGroup.tsx`
+
+### 问题
+
+```tsx
+// 泛型在 defineComponent 包裹的函数上
+export const CompositeItem = defineComponent(function <
+  Metadata,
+  State extends Record<string, any>,
+>(componentProps: CompositeItem.Props<Metadata, State>) {
+  ...
+});
+```
+
+`defineComponent(fn)` 的返回类型**丢失内层函数的泛型参数**——导出后的组件是非泛型类型，JSX 里 `<CompositeItem<A, B>>` 报"应有 0 个类型参数"（ts(2558)）。
+
+### 修复：导出时 `as` 断言贴回泛型签名
+
+```tsx
+export const CompositeItem = defineComponent(function <
+  Metadata,
+  State extends Record<string, any>,
+>(componentProps: CompositeItem.Props<Metadata, State>) {
+  // ...
+}) as <Metadata, State extends Record<string, any>>(
+  props: CompositeItem.Props<Metadata, State>,
+) => any;
+```
+
+像 React `forwardRef` 的 `as` 断言一样，把泛型签名"贴"回导出类型。**若调用处能自动推断则可不写显式泛型**（`metadata`/`state` props 类型可推断时）。
+
+---
+
+## 案例 9：测试必须 `await act()` —— ActView 响应式更新是异步 flush
+
+**文件**：`toggle-group/ToggleGroup.test.tsx`（17 用例）
+
+### 问题
+
+React 版测试用 `await user.click()`（user-event 自带等待）。actview 移植时直接 `fireEvent.click(button)` 后立即断言 → **12 个测试全挂**（`aria-pressed` 不变、焦点不移动）。
+
+**原因**：actview 的响应式更新是**异步 flush**（computed → Provider watch → 重渲染是微任务链），`fireEvent` 是同步 dispatch，事件后的状态变化还没落到 DOM。
+
+### 修复
+
+```tsx
+// createRenderer 提供 act：await fn() + nextTick
+await act(() => {
+  fireEvent.click(button1);
+});
+expect(button1).toHaveAttribute('aria-pressed', 'true');
+```
+
+### 判断规则
+
+| 场景 | 处理 |
+|---|---|
+| `render()` 后立即断言初始状态 | ✅ 同步（actviewRender 同步挂载） |
+| `fireEvent` 交互后断言 | ⚠️ 必须 `await act(() => { fireEvent... })` |
+| `setProps` 后断言 | ✅ `await result.setProps(...)`（内部已 nextTick） |
+
+**注意**：`createRenderer` 的 result **没有** `getByRole`/`getAllByRole`（actview 测试无 screen）——用 `data-testid` + `document.querySelector` 查询。
+
+---
+
 ## 案例总结：定义组件范式清单（后续组件照此实现）
 
 ```tsx
 export const Xxx = defineComponent(function (componentProps: Xxx.Props) {
-  // 1. setup：只做一次性初始化（ref / watch / store 等）
-  const rootRef = ref<HTMLElement | null>(null);
+  // 1. setup：只做一次性初始化（ref / watch / store / context hooks 顶层调用）
+  const rootRef = ref<HTMLElement | null>(null);   // 或 useRootElement()（根是元素时）
+  const ctx = useSomeContext();                     // context hook 必须在 setup 顶层（AD-42）
 
   return () => {
     // 2. 渲染期解构 props（避免 setup 冻结，PD-15）
@@ -225,6 +480,7 @@ export const Xxx = defineComponent(function (componentProps: Xxx.Props) {
     // 3. 计算 state（纯对象，非 computed——渲染期每次算）
     const state: XxxState = { ... };
     // 4. merged：ARIA/data-* 状态 + className/style 函数解析 + 用户透传
+    //    （props 数组场景用 mergePropsN，不用 mergeProps）
     const merged: HTMLProps = { role: '...', 'aria-...': ..., className: ..., style: ..., ...elementProps };
     // 5. render 三形态：函数（单对象）/ VNode（key 显式透传 + ref 兜底）/ 默认 JSX
     if (render) {
@@ -236,3 +492,19 @@ export const Xxx = defineComponent(function (componentProps: Xxx.Props) {
   };
 });
 ```
+
+## 范式决策速查（本次新增）
+
+| 问题 | 答案 |
+|---|---|
+| 组件怎么写？ | `defineComponent(fn)` + setup 初始化 + 渲染期解构（案例 1） |
+| render prop 类型？ | 单对象 `(props: RenderFunctionProps & State & { ref? }) => VNode`（案例 2） |
+| VNode 透传？ | `key={render.key}` 显式 + `{...render.props}` + ref 兜底（案例 3） |
+| className/style？ | 渲染期函数形态解析（案例 4） |
+| context 用哪个？ | **框架官方 `createContext(defaultValue)`**（案例 5），Provider 传值不传 ref |
+| 根 ref 怎么拿？ | 根是元素 → `useRootElement()`；根是 Provider/List 包裹 → `ref()` + 显式挂载（案例 6） |
+| refs 数组？ | 删除——hook 内部自取根；注册类 ref 用 `watch(..., { flush: 'sync' })`（案例 7） |
+| props 数组合并？ | `mergePropsN([...])`，不用 `mergeProps`（固定 5 参）（案例 7） |
+| 泛型组件？ | 导出时 `as` 断言贴回泛型签名（案例 8） |
+| 测试交互？ | `fireEvent` 后必须 `await act(...)`；无 `getByRole`，用 `data-testid`（案例 9） |
+| state → data-*？ | `getStateAttributesProps(state, mapping)` 单值映射（对齐 Base UI 契约） |

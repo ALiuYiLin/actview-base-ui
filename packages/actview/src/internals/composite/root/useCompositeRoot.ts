@@ -1,6 +1,5 @@
 import { computed, ref, unref } from 'actview';
 import { isElementDisabled } from '@base-ui/actview-utils/isElementDisabled';
-import { useMergedRefs } from '@base-ui/actview-utils/useMergedRefs';
 import { useIsoLayoutEffect } from '@base-ui/actview-utils/useIsoLayoutEffect';
 import { EMPTY_ARRAY } from '@base-ui/actview-utils/empty';
 import { getTarget } from '@base-ui/actview-utils/shadowDom';
@@ -24,8 +23,9 @@ import {
   type ModifierKey,
 } from '../composite';
 import { ACTIVE_COMPOSITE_ITEM } from '../constants';
+import type { Ref } from '@actview/core';
 import type { CompositeMetadata } from '../list/CompositeList';
-import type { HTMLProps, MaybeRef, RefValue } from '../../types';
+import type { HTMLProps, MaybeRef } from '../../types';
 import type { CompositeGridNavigator } from './gridNavigation';
 
 export interface UseCompositeRootParameters {
@@ -43,7 +43,11 @@ export interface UseCompositeRootParameters {
   highlightedIndex?: MaybeRef<number | undefined> | undefined;
   onHighlightedIndexChange?: ((index: number) => void) | undefined;
   direction: TextDirection;
-  rootRef?: RefValue<HTMLElement | null> | undefined;
+  /**
+   * 组件根 DOM ref（useRootElement 提供，subTree.el 统一解）。
+   * 由消费方（CompositeRoot）传入——键盘导航与滚动依赖它。
+   */
+  rootRef: Ref<HTMLElement | null>;
   /**
    * When `true`, pressing the Home key moves focus to the first item,
    * and pressing the End key moves focus to the last item.
@@ -78,7 +82,7 @@ export function useCompositeRoot(params: UseCompositeRootParameters) {
     direction,
     highlightedIndex: externalHighlightedIndex,
     onHighlightedIndexChange: externalSetHighlightedIndex,
-    rootRef: externalRef,
+    rootRef,
     enableHomeAndEndKeys = false,
     stopEventPropagation,
     disabledIndices,
@@ -88,9 +92,6 @@ export function useCompositeRoot(params: UseCompositeRootParameters) {
   const internalHighlightedIndex = ref(0);
   const isGrid = grid != null;
   const disabledIndicesValue = computed(() => unref(disabledIndices));
-
-  const rootRef = { current: null as HTMLElement | null };
-  const mergedRef = useMergedRefs(rootRef, externalRef);
 
   const elementsRef = { current: [] as Array<HTMLElement | null> };
   const hasSetDefaultIndexRef = { current: false };
@@ -109,7 +110,7 @@ export function useCompositeRoot(params: UseCompositeRootParameters) {
     }
     if (shouldScrollIntoView) {
       const newActiveItem = elementsRef.current[index];
-      scrollIntoViewIfNeeded(rootRef.current, newActiveItem, direction, orientation);
+      scrollIntoViewIfNeeded(rootRef.value, newActiveItem, direction, orientation);
     }
   };
 
@@ -166,7 +167,7 @@ export function useCompositeRoot(params: UseCompositeRootParameters) {
       }
     }
 
-    scrollIntoViewIfNeeded(rootRef.current, activeItem, direction, orientation);
+    scrollIntoViewIfNeeded(rootRef.value, activeItem, direction, orientation);
   };
 
   useIsoLayoutEffect(() => {
@@ -211,7 +212,7 @@ export function useCompositeRoot(params: UseCompositeRootParameters) {
       return;
     }
 
-    const element = rootRef.current;
+    const element = rootRef.value;
     if (!element) {
       return;
     }
@@ -314,10 +315,14 @@ export function useCompositeRoot(params: UseCompositeRootParameters) {
     }
   };
 
+  // 注意：根元素 ref 由 useRootElement 自动绑定（组件根 DOM），
+  // 此处不再返回 ref——避免元素收到重复/外部 ref 对象。
+  // 根元素 ref：显式挂到渲染元素上（组件根是 Provider/List 包裹，
+  // useRootElement 拿不到实际元素，需手动 ref 绑定）。
   const props: HTMLProps = {
-    ref: mergedRef,
+    ref: rootRef as any,
     onFocus(event) {
-      const element = rootRef.current;
+      const element = rootRef.value;
       const target = getTarget(event);
       if (!element || target == null || !isNativeInput(target)) {
         return;

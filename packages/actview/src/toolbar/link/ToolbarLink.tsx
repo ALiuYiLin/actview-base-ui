@@ -1,4 +1,4 @@
-import { computed } from 'actview';
+import { computed, defineComponent } from 'actview';
 import type { BaseUIComponentProps } from '../../internals/types';
 import type { ToolbarRoot } from '../root/ToolbarRoot';
 import { useToolbarRootContext } from '../root/ToolbarRootContext';
@@ -16,37 +16,36 @@ const TOOLBAR_LINK_METADATA = {
  *
  * Documentation: [Base UI Toolbar](https://base-ui.com/react/components/toolbar)
  */
-export function ToolbarLink(componentProps: ToolbarLink.Props) {
+export const ToolbarLink = defineComponent(function (componentProps: ToolbarLink.Props) {
+  // context hook 必须在 setup 顶层（AD-42）
   const rootContext = useToolbarRootContext();
 
-  const state = computed<ToolbarLinkState>(() => ({
-    orientation: rootContext.value.orientation,
-  }));
-
-  const getElementProps = () => {
+  return () => {
     const {
-      className: _className,
-      render: _render,
-      style: _style,
-      ref: _ref,
+      className,
+      render,
+      style,
+      ref: _ref, // 用户 ref：CompositeItem 内部 useRootElement 自取根，无需转发
       ...elementProps
     } = componentProps;
-    return elementProps;
-  };
 
-  return (
-    <CompositeItem<ToolbarRoot.ItemMetadata, ToolbarLinkState>
-      tag="a"
-      render={componentProps.render}
-      className={componentProps.className as any}
-      style={componentProps.style as any}
-      metadata={TOOLBAR_LINK_METADATA}
-      state={state.value}
-      refs={[componentProps.ref]}
-      props={[getElementProps]}
-    />
-  );
-}
+    const state: ToolbarLinkState = {
+      orientation: rootContext.value.orientation,
+    };
+
+    return (
+      <CompositeItem<ToolbarRoot.ItemMetadata, ToolbarLinkState>
+        tag="a"
+        render={render}
+        className={className}
+        style={style}
+        metadata={TOOLBAR_LINK_METADATA}
+        state={state}
+        props={[elementProps]}
+      />
+    );
+  };
+}) as (props: ToolbarLink.Props) => any;
 
 export interface ToolbarLinkState {
   /**

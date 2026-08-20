@@ -1,4 +1,4 @@
-import { computed } from 'actview';
+import { computed, defineComponent } from 'actview';
 import { EMPTY_OBJECT } from '@base-ui/actview-utils/empty';
 import { type BaseUIComponentProps, type NativeButtonProps } from '../../internals/types';
 import { useButton } from '../../internals/use-button';
@@ -13,7 +13,8 @@ import { CompositeItem } from '../../internals/composite/item/CompositeItem';
  *
  * Documentation: [Base UI Toolbar](https://base-ui.com/react/components/toolbar)
  */
-export function ToolbarButton(componentProps: ToolbarButton.Props) {
+export const ToolbarButton = defineComponent(function (componentProps: ToolbarButton.Props) {
+  // context hooks 必须在 setup 顶层（AD-42）
   const rootContext = useToolbarRootContext();
   const groupContext = useToolbarGroupContext();
 
@@ -26,63 +27,59 @@ export function ToolbarButton(componentProps: ToolbarButton.Props) {
 
   const focusableWhenDisabled = computed(() => componentProps.focusableWhenDisabled ?? true);
 
-  const itemMetadata = {
-    disabled: disabled.value,
-    focusableWhenDisabled: focusableWhenDisabled.value,
-  };
-
-  const { getButtonProps, buttonRef } = useButton({
+  // useButton：MaybeRef 对象参数（computed 渲染期求值 → 响应式）；
+  // buttonRef 内部 useRootElement 自取根 DOM，无需转发给 CompositeItem
+  const { getButtonProps } = useButton({
     disabled,
     focusableWhenDisabled,
     native: computed(() => componentProps.nativeButton ?? true),
   });
 
-  const state = computed<ToolbarButtonState>(() => ({
-    disabled: disabled.value,
-    orientation: rootContext.value.orientation,
-    focusable: focusableWhenDisabled.value,
-  }));
-
-  const getElementProps = () => {
+  return () => {
     const {
-      className: _className,
-      disabled: _disabled,
-      focusableWhenDisabled: _focusableWhenDisabled,
-      render: _render,
-      nativeButton: _nativeButton,
-      style: _style,
-      ref: _ref,
+      className,
+      disabled: _disabled, // setup computed 已接管
+      focusableWhenDisabled: _focusableWhenDisabled, // setup computed 已接管
+      nativeButton: _nativeButton, // setup computed 已接管
+      render,
+      style,
+      ref: _ref, // 用户 ref：CompositeItem 内部 useRootElement 自取根，无需转发
       ...elementProps
     } = componentProps;
-    return elementProps;
+
+    const itemMetadata: ToolbarRoot.ItemMetadata = {
+      disabled: disabled.value,
+      focusableWhenDisabled: focusableWhenDisabled.value,
+    };
+
+    const state: ToolbarButtonState = {
+      disabled: disabled.value,
+      orientation: rootContext.value.orientation,
+      focusable: focusableWhenDisabled.value,
+    };
+
+    // When a render prop is provided (typically another Base UI component
+    // like Menu.Trigger), forward `disabled` so the rendered component can
+    // derive its own disabled state. For the default toolbar button, avoid
+    // forwarding a disabled prop so focusable disabled buttons remain
+    // hoverable for interactions like tooltips.
+    // TODO: follow up after https://github.com/mui/base-ui/issues/1976#issuecomment-2916905663
+    const conditionalDisabledProps = () =>
+      componentProps.render ? { disabled: disabled.value } : EMPTY_OBJECT;
+
+    return (
+      <CompositeItem<ToolbarRoot.ItemMetadata, ToolbarButtonState>
+        tag="button"
+        render={render}
+        className={className}
+        style={style}
+        metadata={itemMetadata}
+        state={state}
+        props={[elementProps, conditionalDisabledProps, getButtonProps]}
+      />
+    );
   };
-
-  const getConditionalDisabledProps = () =>
-    componentProps.render ? { disabled: disabled.value } : EMPTY_OBJECT;
-
-  return (
-    <CompositeItem<ToolbarRoot.ItemMetadata, ToolbarButtonState>
-      tag="button"
-      render={componentProps.render}
-      className={componentProps.className as any}
-      style={componentProps.style as any}
-      metadata={itemMetadata}
-      state={state.value}
-      refs={[componentProps.ref, buttonRef]}
-      props={[
-        getElementProps,
-        // When a render prop is provided (typically another Base UI component
-        // like Menu.Trigger), forward `disabled` so the rendered component can
-        // derive its own disabled state. For the default toolbar button, avoid
-        // forwarding a disabled prop so focusable disabled buttons remain
-        // hoverable for interactions like tooltips.
-        // TODO: follow up after https://github.com/mui/base-ui/issues/1976#issuecomment-2916905663
-        getConditionalDisabledProps,
-        getButtonProps,
-      ]}
-    />
-  );
-}
+}) as (props: ToolbarButton.Props) => any;
 
 export interface ToolbarButtonState extends ToolbarRootState {
   /**
