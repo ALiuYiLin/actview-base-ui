@@ -1,4 +1,4 @@
-import { computed, onMounted, onUnmounted, ref, watch } from 'actview';
+import { computed, defineComponent, onMounted, onUnmounted, ref, watch } from 'actview';
 import { EMPTY_OBJECT } from '@base-ui/actview-utils/empty';
 import {
   createGenericEventDetails,
@@ -7,7 +7,7 @@ import {
 import { REASONS } from '../internals/reasons';
 import type { BaseUIComponentProps, HTMLProps, RefObject } from '../internals/types';
 import { FormContext } from '../internals/form-context/FormContext';
-import { useRenderElement } from '../internals/useRenderElement';
+import { mergePropsN } from '../merge-props';
 
 /**
  * A native form element with consolidated error handling.
@@ -15,11 +15,16 @@ import { useRenderElement } from '../internals/useRenderElement';
  *
  * Documentation: [Base UI Form](https://base-ui.com/react/components/form)
  */
-export function Form<FormValues extends Record<string, any> = Record<string, any>>(
-  componentProps: Form.Props<FormValues>,
-) {
+export const Form = defineComponent(function <
+  FormValues extends Record<string, any> = Record<string, any>,
+>(componentProps: Form.Props<FormValues>) {
+  // ================= setup（只执行一次） =================
+  // 注册表/标志位：稳定引用，生命周期内不变
   const formRef: FormContext['formRef'] = { current: { fields: new Map() } };
-  const elementRef: RefObject<HTMLFormElement | null> = { current: null };
+  // elementRef：ref()（value 形态，actview 模板 ref 原生支持）——
+  // 渲染期 ref={elementRef} 显式挂载根 form 元素（根是 Provider 包裹 → 案例 6）。
+  // ⚠️ 不能用手动 { current } 对象：actview 模板 ref 只赋值 ref() 创建的 Ref
+  const elementRef = ref<HTMLFormElement | null>(null);
   const submittedRef = { current: false };
   const submitAttemptedRef: RefObject<boolean> = { current: false };
 
@@ -53,6 +58,7 @@ export function Form<FormValues extends Record<string, any> = Record<string, any
     return hasInvalid;
   };
 
+  // 外部 errors 同步（useValueChanged 等价）：errors prop 变化 → 本地 ref 更新
   const errors = ref<FormContext['errors'] | undefined>(componentProps.errors);
 
   watch(
@@ -62,6 +68,7 @@ export function Form<FormValues extends Record<string, any> = Record<string, any
     },
   );
 
+  // 提交后 errors 更新 → 聚焦第一个无效字段（React useEffect [errors] 等价）
   watch(errors, () => {
     if (!submittedRef.current) {
       return;
@@ -94,59 +101,37 @@ export function Form<FormValues extends Record<string, any> = Record<string, any
     }
   });
 
-  const getFormProps = () => ({
-    noValidate: true,
-    onSubmit(event: Event) {
-      submitAttemptedRef.current = true;
+  // onSubmit：setup 定义——闭包读 props 代理（事件触发时最新值）+ setup refs，
+  // 渲染期 defaultProps 引用同一函数（不重建，事件系统 invoker 复用）
+  const onSubmit = (event: Event) => {
+    submitAttemptedRef.current = true;
 
-      // Async validation isn't supported to stop the submit event.
+    // Async validation isn't supported to stop the submit event.
+    formRef.current.fields.forEach((field) => {
+      field.validate();
+    });
+
+    if (focusFirstInvalid()) {
+      event.preventDefault();
+      return;
+    }
+
+    submittedRef.current = true;
+    componentProps.onSubmit?.(event as any);
+
+    if (componentProps.onFormSubmit) {
+      event.preventDefault();
+
+      const formValues = {} as FormValues;
       formRef.current.fields.forEach((field) => {
-        field.validate();
+        if (field.name) {
+          (formValues as Record<string, any>)[field.name] = field.getValue();
+        }
       });
 
-      if (focusFirstInvalid()) {
-        event.preventDefault();
-        return;
-      }
-
-      submittedRef.current = true;
-      componentProps.onSubmit?.(event as any);
-
-      if (componentProps.onFormSubmit) {
-        event.preventDefault();
-
-        const formValues = {} as FormValues;
-        formRef.current.fields.forEach((field) => {
-          if (field.name) {
-            (formValues as Record<string, any>)[field.name] = field.getValue();
-          }
-        });
-
-        componentProps.onFormSubmit(formValues, createGenericEventDetails(REASONS.none, event));
-      }
-    },
-  });
-
-  const getElementProps = (prev: HTMLProps) => {
-    const {
-      render: _render,
-      className: _className,
-      validationMode: _validationMode,
-      errors: _errors,
-      onSubmit: _onSubmit,
-      onFormSubmit: _onFormSubmit,
-      actionsRef: _actionsRef,
-      style: _style,
-      ref: _ref,
-      ...elementProps
-    } = componentProps;
-    return { ...prev, ...elementProps };
+      componentProps.onFormSubmit(formValues, createGenericEventDetails(REASONS.none, event));
+    }
   };
-
-  const getElement = useRenderElement('form', componentProps, {
-    ref: [componentProps.ref, elementRef],
-    props: [getFormProps, getElementProps],
-  });
 
   const clearErrors = (name: string | undefined) => {
     if (!name) {
@@ -161,6 +146,7 @@ export function Form<FormValues extends Record<string, any> = Record<string, any
     errors.value = nextErrors;
   };
 
+  // context 值：computed 惰性缓存——依赖不变时引用稳定（对照 React useMemo）
   const contextValue = computed<FormContext>(() => ({
     elementRef,
     formRef,
@@ -170,8 +156,63 @@ export function Form<FormValues extends Record<string, any> = Record<string, any
     submitAttemptedRef,
   }));
 
-  return <FormContext.Provider value={contextValue}>{getElement()}</FormContext.Provider>;
-}
+  // ================= render（每次更新执行） =================
+  return () => {
+    const {
+      render,
+      className,
+      validationMode: _validationMode, // contextValue computed 已接管
+      errors: _errors, // setup errors ref 已接管
+      onSubmit: _onSubmit, // setup onSubmit 已接管（读代理最新）
+      onFormSubmit: _onFormSubmit, // setup onSubmit 已接管
+      actionsRef: _actionsRef, // setup onMounted/onUnmounted 已接管
+      style,
+      ref: _ref, // 用户 ref：elementRef 内部显式挂载，无需转发
+      ...elementProps
+    } = componentProps;
+
+    const state: FormState = {};
+
+    const defaultProps: HTMLProps = {
+      noValidate: true,
+      onSubmit,
+    };
+
+    const merged = mergePropsN([
+      defaultProps,
+      elementProps,
+      {
+        className: typeof className === 'function' ? className(state) : className,
+        style: typeof style === 'function' ? style(state) : style,
+      },
+    ]);
+
+    // render 三形态 + Provider 包裹。根是 Provider 包裹（form 在内层）——
+    // elementRef 显式挂载到实际 form 元素（对照 CompositeRoot 边界，案例 6）
+    if (typeof render === 'function') {
+      return (
+        <FormContext.Provider value={contextValue.value}>
+          {render({ ...merged, ...state, ref: elementRef })}
+        </FormContext.Provider>
+      );
+    }
+    if (render) {
+      const Tag = render.type as any;
+      return (
+        <FormContext.Provider value={contextValue.value}>
+          <Tag key={render.key} {...render.props} {...merged} ref={elementRef} />
+        </FormContext.Provider>
+      );
+    }
+    return (
+      <FormContext.Provider value={contextValue.value}>
+        <form ref={elementRef} {...merged} />
+      </FormContext.Provider>
+    );
+  };
+}) as <FormValues extends Record<string, any> = Record<string, any>>(
+  props: Form.Props<FormValues>,
+) => any;
 
 export type FormSubmitEventReason = typeof REASONS.none;
 export type FormSubmitEventDetails = BaseUIGenericEventDetails<Form.SubmitEventReason>;
