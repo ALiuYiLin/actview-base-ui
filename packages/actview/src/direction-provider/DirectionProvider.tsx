@@ -1,4 +1,4 @@
-import { computed } from 'actview';
+import { computed, defineComponent } from 'actview';
 import {
   DirectionContext,
   type TextDirection,
@@ -9,18 +9,29 @@ import {
  *
  * Documentation: [Base UI Direction Provider](https://base-ui.com/react/utils/direction-provider)
  */
-export function DirectionProvider(props: DirectionProvider.Props) {
-  const contextValue = computed(
-    () =>
-      ({
-        direction: props.direction ?? 'ltr',
-      }) as { direction: TextDirection },
-  );
+export const DirectionProvider = defineComponent(function (
+  componentProps: DirectionProvider.Props,
+) {
+  // ================= setup（只执行一次） =================
+  // context 值：computed 惰性缓存——依赖不变时引用稳定（对照 React useMemo，
+  // 也保证 Provider watch 只在 direction 真正变化时同步）
+  const contextValue = computed<DirectionContext>(() => ({
+    direction: componentProps.direction ?? 'ltr',
+  }));
 
-  return (
-    <DirectionContext.Provider value={contextValue}>{props.children}</DirectionContext.Provider>
-  );
-}
+  // ================= render（每次更新执行） =================
+  return () => {
+    const { children } = componentProps;
+
+    // Provider 传值不传 ref（案例 5）：value={contextValue.value}，
+    // 引用稳定由 computed 惰性缓存保证
+    return (
+      <DirectionContext.Provider value={contextValue.value}>
+        {children}
+      </DirectionContext.Provider>
+    );
+  };
+}) as (props: DirectionProvider.Props) => any;
 
 export interface DirectionProviderState {}
 

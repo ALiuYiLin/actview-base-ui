@@ -588,6 +588,89 @@ try {
 
 ---
 
+## 案例 11：DirectionProvider / CSPProvider —— 无 DOM 的 Provider 组件 + context 换官方 createContext
+
+### 无 DOM 的 Provider 组件：比普通组件更简单（无三形态）
+
+Provider 组件不渲染自身元素，只包 children + 提供 context。defineComponent + setup computed + 渲染期解构 children：
+
+```tsx
+export const DirectionProvider = defineComponent(function (componentProps: DirectionProvider.Props) {
+  // setup：context 值 computed 惰性缓存——依赖不变时引用稳定（对照 React useMemo，
+  // 也保证 Provider watch 只在 direction 真正变化时同步）
+  const contextValue = computed<DirectionContext>(() => ({
+    direction: componentProps.direction ?? 'ltr',
+  }));
+
+  return () => {
+    const { children } = componentProps; // 渲染期解构
+
+    // Provider 传值不传 ref（案例 5）：value={contextValue.value}
+    return (
+      <DirectionContext.Provider value={contextValue.value}>
+        {children}
+      </DirectionContext.Provider>
+    );
+  };
+}) as (props: DirectionProvider.Props) => any;
+```
+
+要点：
+- 没有根元素 → 无 rootRef / 无 render 三形态 / 无 className-style 解析
+- `as` 断言贴回 Props 签名（无泛型时 `(props: X.Props) => any`）
+- **传值不传 ref**：`value={contextValue.value}`。原实现传 `value={contextValue}`（computed 本体）虽也能工作（框架 watch 会解包 ref），但不符约定，统一传值
+
+### context 基建换官方 createContext（自封装双参 → 官方单参）
+
+DirectionContext/CspContext 原用自封装 `internals/createContext`（`createContext(key, defaultValue)` 双参 + name + `ContextSource` 三态），换框架官方：
+
+```ts
+// 自封装版（旧）
+import { createContext } from '../createContext';
+export const DirectionContext = createContext<DirectionContext | undefined>(
+  'base-ui-direction-context', // key
+  undefined,
+);
+
+// 官方版（新）——单参 defaultValue
+import { createContext } from 'actview';
+export const DirectionContext = createContext<DirectionContext | undefined>(undefined);
+```
+
+### use() 消费者形态：computed 包一层保持兼容
+
+官方 `createContext.use()` 返回注入 ref；自封装返回 `ComputedRef`。消费 hook 包 `computed` 保持 `.value` 读取形态不变，10+ 个调用方零改动：
+
+```ts
+export function useDirection() {
+  const context = DirectionContext.use();           // setup 调用（依赖 useInjects）
+  return computed(() => context.value?.direction ?? 'ltr'); // 渲染期读 .value 追踪
+}
+```
+
+**注意**：自封装 createContext 仍有 59 处使用（未重构家族的全部 context），不能删——已重构家族（ToggleGroup/Toolbar/Direction/CSP）用官方版，未重构的继续用自封装，逐个家族迁移时换掉。
+
+### 测试：probe 组件验证 context 传导
+
+Provider 本身不渲染 DOM，用 probe 子组件读 context 验证（React 原版同款思路）：
+
+```tsx
+function DirectionProbe() {
+  const direction = useDirection();
+  return <span data-testid="direction">{direction.value}</span>;
+}
+
+it('provides the configured direction to descendants', async () => {
+  const result = await render(DirectionProviderTest, { direction: 'rtl' });
+  expect(document.querySelector('[data-testid="direction"]')).toHaveTextContent('rtl');
+
+  await result.setProps({ direction: 'ltr' }); // 响应式传导验证
+  expect(document.querySelector('[data-testid="direction"]')).toHaveTextContent('ltr');
+});
+```
+
+---
+
 ## 案例总结：定义组件范式清单（后续组件照此实现）
 
 ```tsx
@@ -631,3 +714,5 @@ export const Xxx = defineComponent(function (componentProps: Xxx.Props) {
 | 测试交互？ | `fireEvent` 后必须 `await act(...)`；无 `getByRole`，用 `data-testid`（案例 9） |
 | state → data-*？ | `getStateAttributesProps(state, mapping)` 单值映射（对齐 Base UI 契约） |
 | props 数组传函数？ | 对象=合并；函数=propsGetter **替换**（`fn(previous)` 返回值整体替换 merged）——`() => EMPTY_OBJECT` 会冲掉透传属性，需要追加时渲染期求值对象（案例 10） |
+| 无 DOM 的 Provider 组件？ | defineComponent + setup computed + 渲染期解构 children + `value={contextValue.value}` 传值，无三形态（案例 11） |
+| context 用自封装还是官方？ | 已重构家族用**框架官方 `createContext(defaultValue)`**；自封装 internals/createContext（双参+name）只在未重构家族暂存，逐个迁移时换掉（案例 11） |
