@@ -1,4 +1,4 @@
-import { createElement } from '@actview/jsx';
+import { defineComponent } from 'actview';
 import { FieldControl } from '../field/control/FieldControl';
 import type { FieldControlState } from '../field/control/FieldControl';
 import type { BaseUIComponentProps } from '../internals/types';
@@ -9,12 +9,15 @@ import type { BaseUIComponentProps } from '../internals/types';
  *
  * Documentation: [Base UI Input](https://base-ui.com/react/components/input)
  */
-export function Input(props: Input.Props) {
-  // `createElement` is used instead of `<FieldControl {...props} />` because the JSX
-  // element check rejects Base UI's function-valued `className`/`style` props
-  // (plantform-diff.md PD-17).
-  return <>{createElement(FieldControl, props)}</>;
-}
+export const Input = defineComponent(function (componentProps: Input.Props) {
+  // ================= render（每次更新执行） =================
+  return () => {
+    // 纯委托 FieldControl（字段注册/值受控逻辑都在 Field 家族）。
+    // 直接 JSX 透传：className/style 的函数 union 类型（BaseUIComponentProps）合法，
+    // 不存在 createElement workaround 的问题（PD-17 结论作废）
+    return <FieldControl {...componentProps} />;
+  };
+}) as (props: Input.Props) => any;
 
 export interface InputProps extends BaseUIComponentProps<'input', InputState> {
   /**

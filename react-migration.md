@@ -710,6 +710,137 @@ Button 重构为 defineComponent。已有 7 个测试（disabled 原生属性、
 
 ---
 
+## 案例 13：Form / Input —— 泛型 Provider 组件 + RefObject 显式挂载 + 薄委托
+
+### Form：泛型组件 + 根是 Provider 包裹 + 复杂 setup 状态
+
+Form 有泛型（`<FormValues>`）→ 导出 as 断言**带泛型签名**（案例 8）：
+
+```tsx
+export const Form = defineComponent(function <
+  FormValues extends Record<string, any> = Record<string, any>,
+>(componentProps: Form.Props<FormValues>) {
+  // setup：注册表 Map / submittedRef / submitAttemptedRef / errors ref + watch /
+  // validate / clearErrors / focusFirstInvalid / onMounted·onUnmounted(actionsRef)
+  const onSubmit = (event: Event) => { /* setup 定义：闭包读 props 代理（事件时最新） */ };
+
+  const contextValue = computed<FormContext>(() => ({ elementRef, formRef, /* ... */ }));
+
+  return () => {
+    const { render, className, style, /* 控制参数全解构排除 */ ...elementProps } = componentProps;
+    const merged = mergePropsN([{ noValidate: true, onSubmit }, elementProps, { className, style }]);
+    // 三形态 + Provider 包裹（value={contextValue.value} 传值）
+  };
+}) as <FormValues extends Record<string, any> = Record<string, any>>(
+  props: Form.Props<FormValues>,
+) => any;
+```
+
+### ⚠️ elementRef 必须用 ref()（value 形态）——actview 模板 ref 只赋值 ref() 创建的 Ref
+
+**验证结论**（probe 用例实测）：`{ current: null }` 手动对象 → 模板 ref **不赋值**（probe 显示 'null'，DOM 取不到）；`ref()` → 正确绑定（probe 显示 'bound'）。
+
+```tsx
+// ❌ 手动 { current } 对象：actview 模板 ref 不认这个形态，取不到 DOM
+const elementRef: RefObject<HTMLFormElement | null> = { current: null };
+
+// ✅ ref()（value 形态）：模板 ref 原生支持，挂载后 elementRef.value = form 元素
+const elementRef = ref<HTMLFormElement | null>(null);
+// 渲染期显式挂载（根是 Provider 包裹 → 案例 6）：
+<form ref={elementRef} {...merged} />
+```
+
+**消费方（Field 家族）旧写法读 `elementRef.current` 是错的**——需改成 `.value`（其 TS 报错 + 运行时 undefined 是预期，迁移 Field 家族时一并改，当前忽略）。FormContext 接口的 `elementRef` 类型已改为 `Ref<HTMLFormElement | null>`。
+
+**判断规则升级**（案例 13 修正）：需要**模板 ref 绑定 DOM** 的 ref 必须 `ref()`（value 形态）——`{ current }` 手动对象只适合纯内部标志（如 submitAttemptedRef，不依赖框架绑定）；通过 context 暴露给子组件且子组件要读 DOM 的 ref，同样用 `ref()`，消费方按 `.value` 读。
+
+### 验证技巧：probe 组件实测 ref 绑定
+
+```tsx
+function ElementRefProbe() {
+  const formContext = useFormContext();
+  // 渲染期直读 .value：Ref 响应式追踪，模板 ref 赋值后自动重渲染
+  return <span data-testid="probe">{formContext.value.elementRef.value ? 'bound' : 'null'}</span>;
+}
+// 断言 probe 文本 'bound' —— 实测 { current } 版显示 'null'（取不到），ref() 版显示 'bound'
+```
+
+注意：onMounted 里读 elementRef.value 可能仍是 null（模板 ref 赋值时机在异步 flush 之后），渲染期直读 + 响应式追踪更可靠。
+
+### FormContext 换官方：带完整默认值对象的 createContext
+
+与 Direction/CSP（默认 undefined）不同，FormContext 默认值是**完整对象**（无 Provider 时 Field 仍可读默认 elementRef/formRef）。官方 `createContext(defaultValue)` 单参直接传对象即可，无 Provider 时 use() 回落同一默认对象（与自封装行为一致）。
+
+### Input：薄委托组件的 defineComponent（JSX 透传，PD-17 作废）
+
+Input 纯委托 FieldControl（字段注册/值受控逻辑在 Field 家族）。defineComponent + 渲染期 **JSX 透传**——`className`/`style` 的函数 union 类型（BaseUIComponentProps）合法，不存在 JSX 元素检查拒绝的问题，`createElement` workaround 不需要（PD-17 结论作废）：
+
+```tsx
+export const Input = defineComponent(function (componentProps: Input.Props) {
+  return () => <FieldControl {...componentProps} />; // 直接 JSX 委托
+}) as (props: Input.Props) => any;
+```
+
+---
+
+## 案例 14：FieldControl —— 复杂 setup 状态 + watch flush:sync 注册类 ref + propsGetter 链
+
+### setup 保持的部分（一次性初始化）
+
+context hooks（FieldRoot/Form/Labelable）+ `set*` 稳定函数 setup 解构 + computed（disabled/name/validityData/validationMode/id）+ `useControlled` + `useRegisterFieldControl` + `useIsoLayoutEffect` + `useValueChanged`——这些都是 setup 期初始化，原样保留。
+
+### ⚠️ 组件 inputRef 用 ref()（value）；validation.inputRef（{ current }）用 watch flush:sync 手动同步
+
+两个 ref 的分工（案例 13 判断规则的补充）：
+
+| ref | 形态 | 赋值方式 |
+|---|---|---|
+| 组件 `inputRef`（模板绑定） | `ref()`（value） | `<input ref={inputRef} {...merged} />`——模板 ref 原生支持 |
+| `validation.inputRef`（FieldRoot 提供） | `{ current }` 手动对象 | **watch flush:sync 手动赋值**（不是模板绑定，手动赋值完全可行） |
+
+```tsx
+const inputRef = ref<HTMLInputElement | null>(null);
+watch(
+  inputRef,
+  (node) => {
+    validation.inputRef.current = node;   // 手动同步到 { current } 对象
+    if (node && !isControlled.value && componentProps.defaultValue !== undefined) {
+      node.defaultValue = String(componentProps.defaultValue); // PD-01/19：setAttribute 不设 input.value
+    }
+  },
+  { flush: 'sync', immediate: true },      // 案例 7：注册类 ref 必须 flush sync
+);
+```
+
+**关键区分**：`{ current }` 手动对象**不能**被模板 ref 赋值（案例 13 验证），但**手动赋值完全没问题**——watch flush:sync 是官方推荐的注册类 ref 同步方式（案例 7）。elementRef 的教训是"别把手动对象当模板 ref 用"，不是"别用手动对象"。
+
+### getControlProps setup 定义 + 渲染期调用；getValidationProps 传函数放最后
+
+```tsx
+const getControlProps = () => ({ id: id.value, disabled: disabled.value, /* 事件闭包读代理 */ });
+// 渲染期：
+const merged = mergePropsN([
+  getControlProps(),                                     // 对象（渲染期调用）
+  getStateAttributesProps(state, fieldValidityMapping),  // state → data-valid/data-invalid
+  elementProps,
+  (p: HTMLProps) => validation.getValidationProps(disabled.value, p), // propsGetter（消费 previous）→ 函数放最后（案例 12）
+  { className: fn, style: fn },
+] as any);
+```
+
+`getValidationProps(disabled, externalProps)` 消费 previous props（同 `getButtonProps`）→ **传函数放数组最后**（案例 12 规则）。
+
+### 测试
+
+Input 7/7、Field 12/12、NumberField 13/13 全过（FieldControl 重构后），全量 243 过 + 2 tabs 存量失败。
+
+### 测试
+
+- Form 精简测试（6 个）：novalidate 默认/关闭、onSubmit 冒泡、invalid 阻止提交（Field 集成）、onFormSubmit 值收集、actionsRef.validate——依赖 Field 家族（旧范式可用），不重复 Field.test.tsx 已覆盖的 errors 传导
+- 验证锚点：`data-testid` + `fireEvent.submit(form)` 直接提交；值变更后 `await act(() => fireEvent.input(...))` 再提交
+
+---
+
 ## 案例总结：定义组件范式清单（后续组件照此实现）
 
 ```tsx
@@ -756,3 +887,7 @@ export const Xxx = defineComponent(function (componentProps: Xxx.Props) {
 | 无 DOM 的 Provider 组件？ | defineComponent + setup computed + 渲染期解构 children + `value={contextValue.value}` 传值，无三形态（案例 11） |
 | context 用自封装还是官方？ | 已重构家族用**框架官方 `createContext(defaultValue)`**；自封装 internals/createContext（双参+name）只在未重构家族暂存，逐个迁移时换掉（案例 11） |
 | getButtonProps 传函数还是对象？ | **传函数放数组最后**（previousProps 进 externalProps → disabled 拦截生效）；`() => EMPTY_OBJECT` 类不消费 previous 的函数才渲染期求值对象（案例 12） |
+| 根 ref 用 ref() 还是 RefObject？ | **模板 ref 绑定 DOM 必须 `ref()`（value 形态）**——actview 模板 ref 只赋值 ref() 创建的 Ref；`{ current }` 手动对象只适合纯内部标志（不依赖框架绑定）（案例 13） |
+| 手动 { current } 对象？ | 模板 ref **不赋值**它，但**手动赋值可行**——注册类 ref 用 `watch(ref, ..., { flush: 'sync', immediate: true })` 手动同步（案例 7/14） |
+| 泛型组件 as 断言？ | `as <T extends ...>(props: X.Props<T>) => any`——断言带泛型签名（案例 8/13） |
+| 薄委托组件？ | defineComponent + 渲染期 **JSX 透传**子组件（函数 union 类型合法，createElement 不需要——PD-17 作废）（案例 13/14） |

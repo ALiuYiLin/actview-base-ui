@@ -1,4 +1,4 @@
-import { computed } from 'actview';
+import { computed, defineComponent, ref, watch } from 'actview';
 import { useControlled } from '@base-ui/actview-utils/useControlled';
 import { useIsoLayoutEffect } from '@base-ui/actview-utils/useIsoLayoutEffect';
 import { ownerDocument } from '@base-ui/actview-utils/owner';
@@ -9,14 +9,14 @@ import { useFormContext } from '../../internals/form-context/FormContext';
 import { useLabelableContext } from '../../internals/labelable-provider/LabelableContext';
 import { useLabelableId } from '../../internals/labelable-provider/useLabelableId';
 import { fieldValidityMapping } from '../../internals/field-constants/constants';
+import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
 import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { useRenderElement } from '../../internals/useRenderElement';
 import { useValueChanged } from '../../internals/useValueChanged';
 import { createChangeEventDetails } from '../../internals/createBaseUIEventDetails';
 import { REASONS } from '../../internals/reasons';
 import type { BaseUIChangeEventDetails } from '../../internals/createBaseUIEventDetails';
 import { activeElement } from '../../floating-ui-actview/utils';
-import { mergeProps } from '../../merge-props';
+import { mergePropsN } from '../../merge-props';
 
 /**
  * The form control to label and validate.
@@ -28,11 +28,15 @@ import { mergeProps } from '../../merge-props';
  *
  * Documentation: [Base UI Field](https://base-ui.com/react/components/field)
  */
-export function FieldControl(componentProps: FieldControl.Props) {
+export const FieldControl = defineComponent(function (componentProps: FieldControl.Props) {
+  // ================= setup（只执行一次） =================
+  // context hooks 必须在 setup 顶层（AD-42），渲染期读 .value 建立响应式
   const fieldRootContext = useFieldRootContext();
   const formContext = useFormContext();
   const labelableContext = useLabelableContext();
 
+  // set* / validation / clearErrors：context 提供的稳定函数，setup 取一次
+  //（FieldRoot 未重构，保持原行为——旧范式同样在 setup 解构）
   const setTouched = fieldRootContext.value.setTouched;
   const setDirty = fieldRootContext.value.setDirty;
   const setFocused = fieldRootContext.value.setFocused;
@@ -46,14 +50,6 @@ export function FieldControl(componentProps: FieldControl.Props) {
   const name = computed(() => fieldRootContext.value.name ?? componentProps.name);
   const validityData = computed(() => fieldRootContext.value.validityData);
   const validationMode = computed(() => fieldRootContext.value.validationMode);
-
-  const state = computed(
-    () =>
-      ({
-        ...fieldRootContext.value.state,
-        disabled: disabled.value,
-      }) as FieldControlState,
-  );
 
   const labelId = computed(() => labelableContext.value.labelId);
 
@@ -100,27 +96,39 @@ export function FieldControl(componentProps: FieldControl.Props) {
     validation.change(serializedValue.value);
   });
 
-  const inputRef: { current: HTMLElement | null } = { current: null };
+  // 组件根 input 的模板 ref（value 形态，actview 模板 ref 原生支持）。
+  // watch flush:sync 同步到 validation.inputRef（{ current } 形态，FieldRoot 提供）——
+  // 注册类 ref 模式（案例 7）。defaultValue 的 DOM 属性赋值也在此：
+  // actview 渲染器把 defaultValue 当普通属性（setAttribute），不设置 input.value
+  // （plantform-diff.md PD-01/PD-19）——镜像 React 行为直接赋属性
+  const inputRef = ref<HTMLInputElement | null>(null);
 
-  useIsoLayoutEffect(() => {
-    if (componentProps.autoFocus && inputRef.current === activeElement(ownerDocument(inputRef.current))) {
-      setFocused(true);
-    }
-  });
-
-  const getControlProps = () => ({
-    id: id.value ?? undefined,
-    disabled: disabled.value,
-    name: name.value,
-    ref: (node: HTMLInputElement | null) => {
+  watch(
+    inputRef,
+    (node) => {
       validation.inputRef.current = node;
-      // ActView's renderer treats `defaultValue` as a plain attribute (setAttribute),
-      // which does not set the input's `.value` (plantform-diff.md PD-01/PD-19). Mirror
-      // React's behavior by assigning the property directly.
       if (node && !isControlled.value && componentProps.defaultValue !== undefined) {
         node.defaultValue = String(componentProps.defaultValue);
       }
     },
+    { flush: 'sync', immediate: true },
+  );
+
+  useIsoLayoutEffect(() => {
+    if (
+      componentProps.autoFocus &&
+      inputRef.value === activeElement(ownerDocument(inputRef.value))
+    ) {
+      setFocused(true);
+    }
+  });
+
+  // 事件/属性对象：setup 定义（闭包读 computed + props 代理 → 事件时最新值），
+  // 渲染期调用得对象（对照案例 12：对象进 mergePropsN 走普通合并路径）
+  const getControlProps = () => ({
+    id: id.value ?? undefined,
+    disabled: disabled.value,
+    name: name.value,
     'aria-labelledby': labelId.value ?? undefined,
     autoFocus: componentProps.autoFocus,
     ...(isControlled.value ? { value: value.value } : { defaultValue: componentProps.defaultValue }),
@@ -165,35 +173,55 @@ export function FieldControl(componentProps: FieldControl.Props) {
     },
   });
 
-  const getElementProps = (externalProps: HTMLProps) => {
+  // ================= render（每次更新执行） =================
+  return () => {
     const {
-      render: _render,
-      className: _className,
-      id: _idProp,
-      name: _nameProp,
-      value: _valueProp,
-      disabled: _disabledProp,
-      onValueChange: _onValueChange,
-      defaultValue: _defaultValue,
-      autoFocus: _autoFocus,
-      style: _style,
-      ref: _ref,
+      render,
+      className,
+      id: _id, // setup useLabelableId 已接管
+      name: _name, // setup computed 已接管
+      value: _value, // setup valueControlled 已接管
+      disabled: _disabled, // setup computed 已接管
+      onValueChange: _onValueChange, // getControlProps onInput 已接管
+      defaultValue: _defaultValue, // watch(inputRef) 已接管
+      autoFocus: _autoFocus, // getControlProps 已接管
+      style,
+      ref: _ref, // 用户 ref：inputRef 内部模板绑定，无需转发
       ...elementProps
     } = componentProps;
-    return mergeProps(externalProps, elementProps) as HTMLProps;
+
+    const state: FieldControlState = {
+      ...fieldRootContext.value.state,
+      disabled: disabled.value,
+    };
+
+    // state → data-* 属性（fieldValidityMapping：valid → data-valid/data-invalid）
+    const stateAttributes = getStateAttributesProps(state, fieldValidityMapping);
+
+    // getValidationProps 是 propsGetter（消费 previous）→ 传函数放数组最后（案例 12）。
+    // 类型放宽：事件签名（InputEvent/KeyboardEvent 等）与 JSX 事件类型不匹配（tsgo 基线同款）
+    const merged = mergePropsN([
+      getControlProps(),
+      stateAttributes,
+      elementProps,
+      (p: HTMLProps) => validation.getValidationProps(disabled.value, p),
+      {
+        className: typeof className === 'function' ? className(state) : className,
+        style: typeof style === 'function' ? style(state) : style,
+      },
+    ] as any);
+
+    // render 三形态
+    if (typeof render === 'function') {
+      return render({ ...merged, ...state, ref: inputRef });
+    }
+    if (render) {
+      const Tag = render.type as any;
+      return <Tag key={render.key} {...render.props} {...merged} ref={inputRef} />;
+    }
+    return <input ref={inputRef} {...merged} />;
   };
-
-  const getElement = useRenderElement('input', componentProps, {
-    ref: [componentProps.ref, inputRef],
-    state,
-    props: [getControlProps, getElementProps, (p) => validation.getValidationProps(disabled.value, p)],
-    stateAttributesMapping: fieldValidityMapping,
-  });
-
-  // Must end with a JSX return so the Babel transform wraps this component in
-  // `defineComponent` (issue #19).
-  return <>{getElement()}</>;
-}
+}) as (props: FieldControl.Props) => any;
 
 export interface FieldControlState extends FieldRootState {}
 
