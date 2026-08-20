@@ -1,8 +1,9 @@
-import { computed } from 'actview';
-import { useRenderElement } from '../../internals/useRenderElement';
+import { computed, defineComponent, useRootElement } from 'actview';
 import { useFieldsetRootContext } from '../root/FieldsetRootContext';
-import type { BaseUIComponentProps } from '../../internals/types';
+import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
+import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
 import { useRegisteredLabelId } from '../../utils/useRegisteredLabelId';
+import { mergePropsN } from '../../merge-props';
 
 /**
  * An accessible label that is automatically associated with the fieldset.
@@ -10,39 +11,59 @@ import { useRegisteredLabelId } from '../../utils/useRegisteredLabelId';
  *
  * Documentation: [Base UI Fieldset](https://base-ui.com/react/components/fieldset)
  */
-export function FieldsetLegend(componentProps: FieldsetLegend.Props) {
+export const FieldsetLegend = defineComponent(function (componentProps: FieldsetLegend.Props) {
+  // ================= setup（只执行一次） =================
+  // context hook 必须在 setup 顶层（AD-42）；setLegendId 是 Root 提供的稳定函数
   const rootContext = useFieldsetRootContext();
 
-  const setLegendId = rootContext.value.setLegendId;
+  // 组件根 DOM：根是元素（div），useRootElement 自动绑定（案例 6）
+  const rootRef = useRootElement();
 
-  const id = useRegisteredLabelId(componentProps.id, setLegendId);
+  // 注册 label id 到 Root：idProp 传 computed（响应式）——id 变化重新注册（PD-15）。
+  // ⚠️ 不能传原始 prop（setup 只跑一次，解构/直传都是首次值快照）
+  const id = useRegisteredLabelId(
+    computed(() => componentProps.id),
+    rootContext.value.setLegendId,
+  );
 
-  const state = computed<FieldsetLegendState>(() => ({
-    disabled: rootContext.value.disabled,
-  }));
-
-  const getElementProps = () => {
+  // ================= render（每次更新执行） =================
+  return () => {
     const {
-      render: _render,
-      className: _className,
-      style: _style,
-      id: _idProp,
-      ref: _ref,
+      render,
+      className,
+      style,
+      id: _id, // setup useRegisteredLabelId 已接管
+      ref: _ref, // 用户 ref：根是元素，useRootElement 自动绑定
       ...elementProps
     } = componentProps;
-    return elementProps;
+
+    const state: FieldsetLegendState = {
+      disabled: rootContext.value.disabled,
+    };
+
+    // state → data-* 属性（默认映射：disabled=true → data-disabled=""）
+    const stateAttributes = getStateAttributesProps(state);
+
+    const merged = mergePropsN([
+      { id: id.value },
+      stateAttributes,
+      elementProps,
+      {
+        className: typeof className === 'function' ? className(state) : className,
+        style: typeof style === 'function' ? style(state) : style,
+      },
+    ]);
+
+    if (typeof render === 'function') {
+      return render({ ...merged, ...state, ref: rootRef });
+    }
+    if (render) {
+      const Tag = render.type as any;
+      return <Tag key={render.key} {...render.props} {...merged} ref={rootRef} />;
+    }
+    return <div ref={rootRef} {...merged} />;
   };
-
-  const getElement = useRenderElement('div', componentProps, {
-    state,
-    ref: componentProps.ref,
-    props: [() => ({ id }), getElementProps],
-  });
-
-  // Wrap in a Fragment so the ActView Babel transform recognizes this as a JSX
-  // return and converts the component to a `{ __setup }` VNode type (AI-003).
-  return <>{getElement()}</>;
-}
+}) as (props: FieldsetLegend.Props) => any;
 
 export interface FieldsetLegendState {
   /**

@@ -21,7 +21,7 @@ export function useRegisteredLabelId(
   const fallbackId = useBaseUiId();
   const id = computed(() => unref(idProp) ?? fallbackId);
 
-  watch(
+  const stopW = watch(
     id,
     (_nextId, _prevId, onCleanup) => {
       // 捕获当前 id：onCleanup 在下次触发时执行，闭包必须引用本次值
@@ -40,14 +40,10 @@ export function useRegisteredLabelId(
     { immediate: true, flush: 'sync' },
   );
 
-  // ⚠️ 组件卸载时 watch 的 onCleanup 不执行（scope.stop 直接丢弃回调，案例 7）——
-  // 必须显式 onUnmounted 清理，否则 Root 的 labelId 残留旧值（aria-labelledby 不清除）
-  onUnmounted(() => {
-    if (registeredLabelId.get(setLabelId) === id.value) {
-      registeredLabelId.set(setLabelId, undefined);
-      setLabelId(undefined);
-    }
-  });
+  // ⚠️ 组件卸载时 watch 的 onCleanup 不执行（scope.stop 只调 effect.stop()，不清 watch
+  // 闭包的 cleanup，案例 7）——保存 watch 的 stop，卸载时调用即触发 onCleanup：
+  // 复用同一份清理代码（"重跑前注销旧值"与"卸载注销"零重复）。
+  onUnmounted(stopW);
 
   return id;
 }

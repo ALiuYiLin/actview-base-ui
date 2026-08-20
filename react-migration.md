@@ -82,6 +82,16 @@ export const Separator = defineComponent(function (componentProps: Separator.Pro
 | **高效** | 渲染期直接 JSX，无额外代理/合并层 |
 | **响应式正确** | 渲染函数每次执行读取 props 代理 → 变化自然触发重渲染 |
 
+### ActView 响应式 API 全貌：ref / reactive / props 代理
+
+最近重构的组件只用 `ref()`——本地状态简单，`ref` 够用。但 ActView 还有 `reactive`：
+
+- **`reactive(obj)`**：构建响应式对象。`reactiveObj = reactive(obj)`，**渲染中 `reactiveObj.key` 直接读属性值——不用 `.value`**，且仍具响应式特性（属性读取被 track，变化触发重渲染）
+- **`ref()`**：`refObj.value` 读写（已大量使用）
+- **props 本身就是 shallowReactive 代理**：渲染期 `componentProps.xxx` 直接读——这也是"解构放渲染期"能工作的底层原因（案例 1）
+
+⚠️ 唯一注意点：**setup 阶段解构 reactive 对象必须用 `toRefs`**——`const { a, b } = reactiveObj` 解构出的是普通值快照（同 PD-15 语义，后续变化不反映）；`toRefs(reactiveObj)` 解构出的才是保持响应式的 ref 集合。
+
 ---
 
 ## 案例 2：render prop 类型 —— 单 props 对象（元素 props + state + ref）
@@ -275,20 +285,36 @@ watch(
 );
 ```
 
-### ⚠️ watch 的 onCleanup 在组件卸载时不调用——必须显式 onUnmounted
+### ⚠️ watch 的 onCleanup 在组件卸载时不调用——三种卸载清理方案
 
-`useRegisteredLabelId` 原用 `watch(id, (_, __, onCleanup) => {...})` 的 onCleanup 做清理——**组件卸载时 onCleanup 不执行**（actview scope.stop 直接丢弃 watch 回调，即使 flush: 'sync'）→ Root 的 labelId 残留旧值。必须显式：
+**根因**（effectScope.ts:49-58）：`scope.stop()` 只做 `this.effects.forEach((e) => e.stop())`——调的是 `effect.stop()`，不是 watch 的 `stop()` 闭包（watch.ts:113-119，cleanup 只在闭包里执行）。实测：pre 和 sync 两种 flush 卸载时 onCleanup 都不调用。
+
+`useRegisteredLabelId` 原用 `watch(id, (_, __, onCleanup) => {...})` 的 onCleanup 做清理——**组件卸载时 onCleanup 不执行** → Root 的 labelId 残留旧值（aria-labelledby 不清除）。三种方案：
 
 ```ts
+// 方案 A（初版）：onUnmounted 显式清理 —— ✓ 正确但重复了清理逻辑
 onUnmounted(() => {
   if (registeredLabelId.get(setLabelId) === id.value) {
     registeredLabelId.set(setLabelId, undefined);
     setLabelId(undefined);
   }
 });
+
+// 方案 B（推荐）：保存 watch 的 stop，卸载时调用 → 触发 onCleanup（复用同一份清理代码）
+const stopW = watch(id, (v, _o, onCleanup) => {
+  onCleanup(() => {
+    registeredLabelId.set(setLabelId, undefined);   // 注销（值变化重跑时也执行）
+    setLabelId(undefined);
+  });
+  registeredLabelId.set(setLabelId, v);            // 注册
+});
+onUnmounted(stopW);                                  // 卸载 → stop() → cleanup 执行 ✓
+
+// 方案 C：onScopeDispose —— scope.stop() 时 cleanups 数组自动执行（卸载时机等价）
+onScopeDispose(() => { registeredLabelId.set(setLabelId, undefined); setLabelId(undefined); });
 ```
 
-flush: 'sync' 保证**值变化**时同步，但**卸载清理**仍需 onUnmounted。
+**选型**：对"id 变化要注销旧 id、卸载要注销"的场景，方案 B 最优雅——onCleanup 天然处理"重跑前注销旧值"，`onUnmounted(stopW)` 补齐卸载路径，清理逻辑零重复。flush: 'sync' 保证**值变化**时同步注册/注销。
 
 ### 手动 { current } 同步（案例 6 的应用）
 
@@ -384,7 +410,7 @@ const setProps = async (newProps) => {
 
 ### 包装组件必须渲染期解构（PD-15）
 
-测试包装组件同样受 PD-15 约束——setup 解构冻结快照，setProps 后收不到新值。直接 `{...props}` 展开代理也可以（引用稳定）：
+测试包装组件同样受 PD-15 约束——setup 解构冻结快照，setProps 后收不到新值。直接 `{...props}` 展开代理也可以——机制上**两者缺一不可**：props 代理引用稳定（`updateProps` 原地写不换代理，渲染期始终拿到最新值），而展开本身每次渲染产新对象（`_jsx` 编译的 `{...props}` 材料化）——**新对象 + 新值** → `isSameProps` 正常判变。若真的"引用稳定"（同一个对象反复传）反而会短路（判为 same，不重渲染）：
 
 ```tsx
 // ✅ 渲染期解构（defineComponent + return () =>）
@@ -574,11 +600,12 @@ Input 7/7、Field 12/12、NumberField 13/13 全过（FieldControl 重构后）�
 
 - **MeterRoot**：setup 派生计算（valueToPercent → clamp → formatNumber）+ contextValue computed + **根是 Provider 包裹 → rootRef 显式挂载**（案例 6）+ 渲染期解构 + `mergePropsN` + 三形态；defaultProps 里注入 children（visuallyHidden span）
 - **子件**（Label/Value/Indicator/Track）：薄组件，setup 读 context + 渲染期解构 + 三形态；MeterValue 支持 **children 函数形态**（`typeof children === 'function' ? children(formattedValue, value)`）
-- **useRegisteredLabelId 响应式改造**（setup 冻结修复）：idProp 改 `MaybeRef`（消费方传 computed）+ 返回 `Ref<string | undefined>`；卸载清理用 onUnmounted（案例 7）
+- **useRegisteredLabelId 响应式改造**（setup 冻结修复）：idProp 改 `MaybeRef`（消费方传 computed）+ 返回 `Ref<string | undefined>`；卸载清理用 `onUnmounted(stopW)`——保存 watch 的 stop，卸载时调用触发 onCleanup（案例 7 方案 B，清理零重复）
 
 ```ts
 const id = computed(() => unref(idProp) ?? fallbackId);  // fallbackId = useBaseUiId()（setup 一次）
-watch(id, (_, __, onCleanup) => {...}, { immediate: true, flush: 'sync' });
+const stopW = watch(id, (_, __, onCleanup) => {...}, { immediate: true, flush: 'sync' });
+onUnmounted(stopW);  // 卸载 → stop() → onCleanup 执行（注销）
 ```
 
 ### 测试要点
@@ -634,7 +661,8 @@ export const Xxx = defineComponent(function (componentProps: Xxx.Props) {
 | props 数组传函数？ | 对象=合并；函数=propsGetter **替换**——消费 previous（getButtonProps/getValidationProps）→ 传函数放最后；不消费 → 渲染期求值对象（案例 10） |
 | 无 DOM 的 Provider 组件？ | defineComponent + setup computed + 渲染期解构 children + `value={contextValue.value}` 传值，无三形态（案例 11） |
 | context 用自封装还是官方？ | 已重构家族用**框架官方 `createContext(defaultValue)`**；自封装只在未重构家族暂存，逐个迁移时换掉（案例 5） |
-| watch 的 onCleanup？ | **组件卸载时不调用**（scope.stop 丢弃回调）——卸载清理必须显式 `onUnmounted`（案例 7） |
+| watch 的 onCleanup？ | **组件卸载时不调用**（scope.stop 丢弃回调）——保存 watch 的 stop，`onUnmounted(stopW)` 触发 onCleanup，清理零重复（案例 7 方案 B） |
 | setProps 语义？ | **只合并不删除**（对齐 React cloneElement）——旧的 delete 分支会删掉未提供键（函数 children 丢失）（案例 9） |
 | 薄委托组件？ | defineComponent + 渲染期 **JSX 透传**子组件（函数 union 类型合法，createElement 不需要——PD-17 作废）（案例 13） |
 | 测试包装组件？ | 必须渲染期解构（defineComponent + `return () =>`）或直接展开 props 代理——setup 解构冻结（案例 9） |
+| 本地状态？ | `ref()`（`.value` 读写）；复杂对象用 `reactive(obj)` 属性直读（`.key` 不用 `.value`，仍响应式）；**setup 解构 reactive 必须 `toRefs`**（案例 1） |
