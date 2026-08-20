@@ -16,8 +16,11 @@ import { mergePropsN } from '../../merge-props';
 export const MeterRoot = defineComponent(function (componentProps: MeterRoot.Props) {
   // ================= setup（只执行一次） =================
   const labelId = ref<string | undefined>(undefined);
-  const setLabelId = (id: string | undefined) => {
-    labelId.value = id;
+  // 函数式更新（对齐 React）：useRegisteredLabelId 注销传函数，keyed remount 不误清
+  const setLabelId = (
+    next: string | undefined | ((current: string | undefined) => string | undefined),
+  ) => {
+    labelId.value = typeof next === 'function' ? next(labelId.value) : next;
   };
 
   // 派生计算：渲染期调用（读 props 代理 → 响应式）

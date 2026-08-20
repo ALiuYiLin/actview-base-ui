@@ -2,7 +2,7 @@ import type { ComputedRef } from '@actview/core';
 import type { UseFieldValidationReturnValue } from '../field/root/useFieldValidation';
 import type { BaseUIChangeEventDetails } from '../internals/createBaseUIEventDetails';
 import type { BaseUIEventReasons } from '../internals/reasons';
-import { createContext } from 'actview';
+import { createContext } from '../internals/createContext';
 
 export interface RadioGroupContext<Value> {
   disabled: boolean | undefined;
@@ -21,10 +21,15 @@ export interface RadioGroupContext<Value> {
   registerInputRef: (element: HTMLInputElement | null) => void | (() => void);
 }
 
-// 框架官方 createContext（单参数：defaultValue）。Provider 注入 ref 本体，
-// use() 返回该 ref，渲染期/惰性读 .value 建立响应式追踪（对照 MeterRootContext，
-// 案例 5）——radio 家族（未重构）读 `.value` 零改动兼容。
-export const RadioGroupContext = createContext<RadioGroupContext<any> | undefined>(undefined);
+// internals createContext（computed 包裹）：消费方读 .value 时同步重算——事件回调
+// （onFocus 等同步执行）里读 context 能立即拿到最新值。actview 官方 createContext
+// 的 Provider 用 watch（pre flush 微任务）同步 value prop → state ref，消费方读到的
+// 值滞后一个微任务：Arrow 键导航的 focus 在 queueMicrotask 里触发，此时 watch 未跑，
+// touched 读到旧值 → 自动选中失败（PD-16：context 传播时序）。
+export const RadioGroupContext = createContext<RadioGroupContext<any> | undefined>(
+  'base-ui-radio-group-context',
+  undefined,
+);
 
 export function useRadioGroupContext() {
   return RadioGroupContext.use() as ComputedRef<RadioGroupContext<any> | undefined>;

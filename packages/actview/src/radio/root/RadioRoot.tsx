@@ -1,4 +1,4 @@
-import { computed, onMounted, watch } from 'actview';
+import { computed, defineComponent, onMounted, onUnmounted, ref, useRootElement, watch } from 'actview';
 import { mergeRefsN } from '@base-ui/actview-utils/useMergedRefs';
 import { visuallyHidden, visuallyHiddenInput } from '@base-ui/actview-utils/visuallyHidden';
 import { EMPTY_OBJECT } from '@base-ui/actview-utils/empty';
@@ -13,7 +13,6 @@ import { REASONS } from '../../internals/reasons';
 import { stateAttributesMapping } from '../utils/stateAttributesMapping';
 import { dispatchClickWithModifiers } from '../../utils/dispatchClickWithModifiers';
 import { useBaseUiId } from '../../internals/useBaseUiId';
-import { useRenderElement } from '../../internals/useRenderElement';
 import { useButton } from '../../internals/use-button';
 import { ACTIVE_COMPOSITE_ITEM } from '../../internals/composite/constants';
 import { CompositeItem } from '../../internals/composite/item/CompositeItem';
@@ -26,6 +25,8 @@ import { useLabelableId } from '../../internals/labelable-provider/useLabelableI
 import { useRadioGroupContext } from '../../radio-group/RadioGroupContext';
 import { serializeValue } from '../../internals/serializeValue';
 import { RadioRootContext } from './RadioRootContext';
+import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
+import { mergePropsN } from '../../merge-props';
 
 /**
  * Represents the radio button itself.
@@ -33,26 +34,30 @@ import { RadioRootContext } from './RadioRootContext';
  *
  * Documentation: [Base UI Radio](https://base-ui.com/react/components/radio)
  */
-export function RadioRoot<Value>(props: RadioRoot.Props<Value>) {
+export const RadioRoot = defineComponent(function <Value>(componentProps: RadioRoot.Props<Value>) {
+  // ================= setup（只执行一次） =================
+  // context hook 必须在 setup 顶层（AD-42）；group/field-root/field-item/labelable
+  // 都返回 ref 形态，读 .value 一致
   const groupContext = useRadioGroupContext();
-
   const fieldRootContext = useFieldRootContext();
   const fieldItemContext = useFieldItemContext();
   const labelableContext = useLabelableContext();
 
-  const nativeButton = props.nativeButton ?? false;
+  const nativeButton = computed(() => componentProps.nativeButton ?? false);
 
   const disabled = computed<boolean>(
     () =>
       fieldRootContext.value.disabled ||
       fieldItemContext.value.disabled ||
       groupContext.value?.disabled ||
-      props.disabled ||
+      componentProps.disabled ||
       false,
   );
-  const readOnly = computed<boolean>(() => groupContext.value?.readOnly || props.readOnly || false);
+  const readOnly = computed<boolean>(
+    () => groupContext.value?.readOnly || componentProps.readOnly || false,
+  );
   const required = computed<boolean>(
-    () => groupContext.value?.required || props.required || false,
+    () => groupContext.value?.required || componentProps.required || false,
   );
   const form = computed(() => groupContext.value?.form);
   const name = computed(() => groupContext.value?.name);
@@ -61,12 +66,25 @@ export function RadioRoot<Value>(props: RadioRoot.Props<Value>) {
 
   const checked = computed<boolean>(() =>
     groupContext.value
-      ? groupContext.value.checkedValue === props.value
-      : props.value === '',
+      ? groupContext.value.checkedValue === componentProps.value
+      : componentProps.value === '',
   );
 
-  const radioRef = { current: null as HTMLElement | null };
-  const inputRef = { current: null as HTMLInputElement | null };
+  // 组件根 DOM：subTree.el 沿挂载链传播（Provider 包裹也收敛到最终根元素），
+  // useRootElement 推导绑定（对照 Toggle）。
+  // inputRef / radioRef 都用标准 ref()（value 形态，案例 6）——手动 { current }
+  // 对象不符合 actview ref 规范；radioRef 的依赖方（validation.registerInput 的
+  // controlRef 读取处）已同步适配 .value（useFieldValidation）
+  const rootRef = useRootElement();
+  const radioRef = ref<HTMLElement | null>(null);
+  const inputRef = ref<HTMLInputElement | null>(null);
+  watch(
+    rootRef,
+    (el) => {
+      radioRef.value = el;
+    },
+    { immediate: true, flush: 'sync' },
+  );
 
   const registerInput = (element: HTMLInputElement | null) => {
     if (element) {
@@ -77,21 +95,47 @@ export function RadioRoot<Value>(props: RadioRoot.Props<Value>) {
     }
   };
 
+  // 保存最后一次有效 attach 的 cleanup（案例 7 方案 B 变体：卸载清理必须显式）。
+  // 组件子树卸载时 input 元素 ref 的 attach cleanup 不会被调用（applyRef 只处理
+  // 组件自身 ref，不递归子树元素）→ detach 链断裂 → groupInputRef 残留、inputRef
+  // 不置 null。disabled 分支返回 undefined 时不覆盖（保留最后一次有效 cleanup）。
+  let detachInputRef: (() => void) | undefined;
   const registerInputRef = (element: HTMLInputElement | null) => {
-    groupContext.value?.registerInputRef?.(element);
+    const cleanup = groupContext.value?.registerInputRef?.(element);
+    if (cleanup) {
+      detachInputRef = cleanup;
+    }
+    return cleanup;
   };
 
+  onUnmounted(() => {
+    detachInputRef?.();
+    detachInputRef = undefined;
+  });
+
   const getInputRef = () =>
-    mergeRefsN<HTMLInputElement>([props.inputRef, inputRef, registerInputRef, registerInput]);
+    mergeRefsN<HTMLInputElement>([
+      componentProps.inputRef,
+      inputRef,
+      registerInputRef,
+      registerInput,
+    ]);
+
+  // React 版 eventDetails.event 是 click 事件：React 对 radio/checkbox 的 onChange
+  // 由 click 委托触发（nativeEvent 是 click）。actview 是原生 change 监听，而 jsdom
+  // 的 change 事件不继承 click 的修饰键（shiftKey 等为 undefined）——记录 input 上
+  // 触发激活的 click，onChange 用它构造 details（React 语义对齐；无 click 时回退
+  // change 事件本身）。事件顺序：input click（监听器先跑）→ 激活 → change。
+  let lastInputClickEvent: MouseEvent | null = null;
 
   onMounted(() => {
-    if (inputRef.current?.checked) {
+    if (inputRef.value?.checked) {
       fieldRootContext.value.setFilled(true);
     }
   });
 
   const syncRegisterInputRef = () => {
-    if (!inputRef.current) {
+    if (!inputRef.value) {
       return;
     }
 
@@ -100,110 +144,31 @@ export function RadioRoot<Value>(props: RadioRoot.Props<Value>) {
       return;
     }
 
-    registerInputRef(inputRef.current);
+    registerInputRef(inputRef.value);
   };
 
   onMounted(syncRegisterInputRef);
   watch([() => checked.value, () => disabled.value], syncRegisterInputRef);
 
   const id = useBaseUiId();
-  const inputId = useLabelableId({ id: () => props.id });
-  const hiddenInputId = computed(() => (nativeButton ? undefined : inputId.value));
+  // labelable hooks 的 MaybeRef 不含 getter 形态——必须传 computed（Ref），
+  // 传 getter 会被 unref 原样返回 → 渲染成字符串（旧版遗留 bug，测试暴露）
+  const inputId = useLabelableId({ id: computed(() => componentProps.id) });
+  const hiddenInputId = computed(() => (nativeButton.value ? undefined : inputId.value));
   const ariaLabelledBy = useAriaLabelledBy(
-    () => props['aria-labelledby'],
-    () => labelableContext.value.labelId,
+    computed(() => componentProps['aria-labelledby']),
+    computed(() => labelableContext.value.labelId),
     inputRef,
-    () => !nativeButton,
-    nativeButton ? undefined : (inputId.value ?? undefined),
+    computed(() => !nativeButton.value),
+    // labelSourceId 必须 reactive（computed）：generatedLabelId 派生跟随当前值，
+    // 传快照会在 id 变化后仍用旧前缀（labelA.id === labelB.id）
+    computed(() => (nativeButton.value ? undefined : (inputId.value ?? undefined))),
   );
 
-  const getRootProps = () => ({
-    role: 'radio',
-    'aria-checked': checked.value,
-    'aria-labelledby': ariaLabelledBy.value,
-    [ACTIVE_COMPOSITE_ITEM as string]: checked.value ? '' : undefined,
-    id: nativeButton ? inputId.value : id,
-    onKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Enter') {
-        // Radio only activates with Space. Preventing the keydown's default
-        // stops useButton from turning Enter into a click.
-        event.preventDefault();
-      }
-    },
-    onClick(event: MouseEvent) {
-      if (event.defaultPrevented || disabled.value || readOnly.value) {
-        return;
-      }
-
-      event.preventDefault();
-
-      const input = inputRef.current;
-      if (!input) {
-        return;
-      }
-
-      dispatchClickWithModifiers(input, event);
-    },
-    onFocus(event: FocusEvent) {
-      if (event.defaultPrevented || disabled.value || readOnly.value || !touched.value) {
-        return;
-      }
-
-      inputRef.current?.click();
-
-      setTouched(false);
-    },
-  });
-
-  const { getButtonProps, buttonRef } = useButton({
+  const { getButtonProps } = useButton({
     disabled,
     native: nativeButton,
     composite: false,
-  });
-
-  const getInputProps = () => ({
-    type: 'radio',
-    ref: getInputRef(),
-    form: form.value,
-    id: hiddenInputId.value,
-    name: name.value,
-    tabIndex: -1,
-    style: name.value ? visuallyHiddenInput : visuallyHidden,
-    'aria-hidden': true,
-    ...(props.value !== undefined ? { value: serializeValue(props.value) } : EMPTY_OBJECT),
-    disabled: disabled.value,
-    checked: checked.value,
-    required: required.value,
-    readOnly: readOnly.value,
-    onChange(event: Event) {
-      // Workaround for https://github.com/react/react/issues/9023
-      // ActView dispatches native DOM events, so `defaultPrevented` is read directly.
-      if (event.defaultPrevented) {
-        return;
-      }
-
-      if (disabled.value || readOnly.value || props.value === undefined) {
-        return;
-      }
-
-      const details = createChangeEventDetails(REASONS.none, event);
-
-      groupContext.value?.setCheckedValue?.(props.value, details);
-
-      if (details.isCanceled) {
-        return;
-      }
-
-      fieldRootContext.value.setTouched(true);
-    },
-    onClick(event: MouseEvent) {
-      // Clicks dispatched on the input from the root's `onClick` and `onFocus` are an
-      // implementation detail and must not reach ancestors.
-      event.stopPropagation();
-    },
-    onFocus() {
-      radioRef.current?.focus();
-    },
   });
 
   const state = computed<RadioRootState>(() => ({
@@ -216,71 +181,161 @@ export function RadioRoot<Value>(props: RadioRoot.Props<Value>) {
 
   const isRadioGroup = computed(() => groupContext.value !== undefined);
 
-  const refs = [props.ref, radioRef, buttonRef];
-
-  const getElementProps = () => {
+  // ================= render（每次更新执行） =================
+  return () => {
     const {
-      render: _render,
-      className: _className,
-      disabled: _disabled,
-      readOnly: _readOnly,
-      required: _required,
-      'aria-labelledby': _ariaLabelledBy,
-      value: _value,
-      inputRef: _inputRef,
-      nativeButton: _nativeButton,
-      id: _id,
-      style: _style,
-      ref: _ref,
+      render,
+      className,
+      disabled: _disabled, // setup computed 已接管
+      readOnly: _readOnly, // setup computed 已接管
+      required: _required, // setup computed 已接管
+      'aria-labelledby': _ariaLabelledBy, // setup useAriaLabelledBy 已接管
+      value,
+      inputRef: _inputRef, // setup getInputRef 已接管
+      nativeButton: _nativeButton, // setup computed 已接管
+      id: _id, // setup useLabelableId/useBaseUiId 已接管
+      style,
+      ref: _ref, // 用户 ref：根由 useRootElement 自取，不显式转发（对照 MeterRoot）
       ...elementProps
-    } = props;
-    return elementProps;
+    } = componentProps;
+
+    const rootProps: HTMLProps = {
+      role: 'radio',
+      'aria-checked': checked.value,
+      'aria-labelledby': ariaLabelledBy.value,
+      [ACTIVE_COMPOSITE_ITEM as string]: checked.value ? '' : undefined,
+      id: nativeButton.value ? inputId.value : id,
+      onKeyDown(event: KeyboardEvent) {
+        if (event.key === 'Enter') {
+          // Radio only activates with Space. Preventing the keydown's default
+          // stops useButton from turning Enter into a click.
+          event.preventDefault();
+        }
+      },
+      onClick(event: MouseEvent) {
+        if (event.defaultPrevented || disabled.value || readOnly.value) {
+          return;
+        }
+
+        event.preventDefault();
+
+        const input = inputRef.value;
+        if (!input) {
+          return;
+        }
+
+        dispatchClickWithModifiers(input, event);
+      },
+      onFocus(event: FocusEvent) {
+        if (event.defaultPrevented || disabled.value || readOnly.value || !touched.value) {
+          return;
+        }
+
+        inputRef.value?.click();
+
+        setTouched(false);
+      },
+    };
+
+    const inputProps: HTMLProps = {
+      type: 'radio',
+      ref: getInputRef(),
+      form: form.value,
+      id: hiddenInputId.value,      name: name.value,
+      tabIndex: -1,
+      style: name.value ? visuallyHiddenInput : visuallyHidden,
+      'aria-hidden': true,
+      ...(value !== undefined ? { value: serializeValue(value) } : EMPTY_OBJECT),
+      disabled: disabled.value,
+      checked: checked.value,
+      required: required.value,
+      readOnly: readOnly.value,
+      onChange(event: Event) {
+        // Workaround for https://github.com/react/react/issues/9023
+        // ActView dispatches native DOM events, so `defaultPrevented` is read directly.
+        if (event.defaultPrevented) {
+          return;
+        }
+
+        if (disabled.value || readOnly.value || value === undefined) {
+          return;
+        }
+
+        const details = createChangeEventDetails(REASONS.none, lastInputClickEvent ?? event);
+
+        groupContext.value?.setCheckedValue?.(value, details);
+
+        if (details.isCanceled) {
+          return;
+        }
+
+        fieldRootContext.value.setTouched(true);
+      },
+      onClick(event: MouseEvent) {
+        // Clicks dispatched on the input from the root's `onClick` and `onFocus` are an
+        // implementation detail and must not reach ancestors.
+        lastInputClickEvent = event;
+        event.stopPropagation();
+      },
+      onFocus() {
+        radioRef.value?.focus();
+      },
+    };
+
+    // propsGetter 链：getButtonProps / getDescriptionProps / getValidationProps 都是函数
+    // （消费 previousProps），getValidationProps 放最后（disabled 拦截在最外层，案例 10）
+    const props: Array<Record<string, any> | ((p: HTMLProps) => Record<string, any>)> = [
+      rootProps,
+      elementProps,
+      getButtonProps,
+      (externalProps: HTMLProps) => labelableContext.value.getDescriptionProps(externalProps),
+      groupContext.value?.validation
+        ? (externalProps: HTMLProps) =>
+            groupContext.value!.validation!.getValidationProps(disabled.value, externalProps)
+        : (EMPTY_OBJECT as HTMLProps),
+    ];
+
+    // 非 group（独立 Radio.Root）：三形态（对照案例 2/3），state → data-* 手动合并
+    const stateAttributes = getStateAttributesProps(state.value, stateAttributesMapping);
+    const merged = mergePropsN([...props, stateAttributes]);
+
+    const element = isRadioGroup.value ? (
+      <CompositeItem
+        tag="span"
+        render={render}
+        className={className}
+        style={style}
+        state={state}
+        props={props}
+        stateAttributesMapping={stateAttributesMapping}
+      />
+    ) : (
+      (() => {
+        if (typeof render === 'function') {
+          return render({ ...merged, ...state.value, ref: rootRef });
+        }
+        if (render) {
+          const Tag = render.type as any;
+          return <Tag key={render.key} {...render.props} {...merged} />;
+        }
+        return <span {...merged} />;
+      })()
+    );
+
+    return (
+      // 官方 createContext：Provider 传值不传 ref（value={state.value}，computed 惰性
+      // 缓存保引用稳定；传 computed 对象则 watch 引用不变永不同步，案例 5）。
+      // children 必须包 Fragment：Provider 直接返回 children，数组（element + input）
+      // 不扁平化会被当单个 child → <undefined> 元素（renderer.ts normalizeChildren）
+      <RadioRootContext.Provider value={state.value}>
+        <>
+          {element}
+          <input {...inputProps} />
+        </>
+      </RadioRootContext.Provider>
+    );
   };
-
-  const getDescriptionProps = (externalProps: HTMLProps) =>
-    labelableContext.value.getDescriptionProps(externalProps);
-
-  const getValidationProps = (externalProps: HTMLProps): HTMLProps =>
-    groupContext.value?.validation
-      ? groupContext.value.validation.getValidationProps(disabled.value, externalProps)
-      : (EMPTY_OBJECT as HTMLProps);
-
-  const elementPropsArray = [
-    getRootProps,
-    getElementProps,
-    getButtonProps,
-    getDescriptionProps,
-    getValidationProps,
-  ];
-
-  const getElement = useRenderElement('span', props, {
-    enabled: !isRadioGroup.value,
-    state,
-    ref: refs,
-    props: elementPropsArray,
-    stateAttributesMapping,
-  });
-
-  return (
-    <RadioRootContext.Provider value={state}>
-      {isRadioGroup.value ? (
-        <CompositeItem
-          tag="span"
-          render={props.render}
-          className={props.className}
-          style={props.style}
-          state={state.value}
-          refs={refs}
-          props={elementPropsArray}
-          stateAttributesMapping={stateAttributesMapping}
-        />
-      ) : (
-        getElement()
-      )}
-      <input {...getInputProps()} />
-    </RadioRootContext.Provider>
-  );
-}
+}) as <Value>(props: RadioRoot.Props<Value>) => any;
 
 export interface RadioRootState extends FieldRootState {
   /**

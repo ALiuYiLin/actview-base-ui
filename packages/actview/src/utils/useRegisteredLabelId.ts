@@ -9,13 +9,19 @@ import type { MaybeRef } from '../internals/types';
 // read access to the current value (ActView `setLabelId` is a plain writer).
 const registeredLabelId = new WeakMap<Function, string | undefined>();
 
+type LabelIdSetter = (id: string | undefined) => void;
+type LabelIdUpdater =
+  | string
+  | undefined
+  | ((current: string | undefined) => string | undefined);
+
 /**
  * 注册 label id 到 Root。idProp 必须是响应式的（computed/ref）——
  * setup 只跑一次，直接传原始 prop 会冻结首次值（PD-15），id 变化不会重新注册。
  */
 export function useRegisteredLabelId(
   idProp: MaybeRef<string | undefined>,
-  setLabelId: (id: string | undefined) => void,
+  setLabelId: (id: LabelIdUpdater) => void,
 ): Ref<string | undefined> {
   // 兜底 id：setup 生成一次（稳定）。idProp 提供时优先（React 语义）
   const fallbackId = useBaseUiId();
@@ -32,7 +38,13 @@ export function useRegisteredLabelId(
       onCleanup(() => {
         if (registeredLabelId.get(setLabelId) === currentId) {
           registeredLabelId.set(setLabelId, undefined);
-          setLabelId(undefined);
+          // 函数式注销：只有当前 labelId 仍是本实例注册的值才清（对齐 React
+          // setLabelId((current) => (current === id ? undefined : current))）。
+          // keyed remount（旧 key 卸载晚于新 key 挂载）时，当前 labelId 已是
+          // 新实例注册的值——普通 setLabelId(undefined) 会误清新注册
+          setLabelId((current: string | undefined) =>
+            current === currentId ? undefined : current,
+          );
         }
       });
     },

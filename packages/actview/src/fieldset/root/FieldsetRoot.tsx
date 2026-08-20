@@ -13,8 +13,12 @@ import { mergePropsN } from '../../merge-props';
 export const FieldsetRoot = defineComponent(function (componentProps: FieldsetRoot.Props) {
   // ================= setup（只执行一次） =================
   const labelId = ref<string | undefined>(undefined);
-  const setLabelId = (id: string | undefined) => {
-    labelId.value = id;
+  // 函数式更新：useRegisteredLabelId 注销时传函数（对齐 React 函数式 setState）——
+  // 只有当前值 === 本实例注册的 id 才清，keyed remount 不误清新注册
+  const setLabelId = (
+    next: string | undefined | ((current: string | undefined) => string | undefined),
+  ) => {
+    labelId.value = typeof next === 'function' ? next(labelId.value) : next;
   };
 
   // 父级 fieldset 的 disabled（可嵌套；官方 context 的 use() 必须在 setup 顶层，AD-42）

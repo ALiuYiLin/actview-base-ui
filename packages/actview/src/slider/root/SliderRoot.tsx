@@ -80,8 +80,11 @@ export function SliderRoot<Value extends number | readonly number[]>(
   const labelableContext = useLabelableContext();
 
   const labelId = ref<string | undefined>(undefined);
-  const setLabelId = (nextLabelId: string | undefined) => {
-    labelId.value = nextLabelId;
+  // 函数式更新（对齐 React）：useRegisteredLabelId 注销传函数，keyed remount 不误清
+  const setLabelId = (
+    next: string | undefined | ((current: string | undefined) => string | undefined),
+  ) => {
+    labelId.value = typeof next === 'function' ? next(labelId.value) : next;
   };
 
   const ariaLabelledby = computed(

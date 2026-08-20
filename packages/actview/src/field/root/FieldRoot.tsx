@@ -1,4 +1,4 @@
-import { computed, onMounted, onUnmounted, ref, watch } from 'actview';
+import { computed, defineComponent, onMounted, onUnmounted, ref, watch } from 'actview';
 import { createElement } from '@actview/jsx';
 import { FieldRootContext } from '../../internals/field-root-context/FieldRootContext';
 import {
@@ -9,16 +9,16 @@ import { useFieldsetRootContext } from '../../fieldset/root/FieldsetRootContext'
 import type { Form } from '../../form';
 import { useFormContext } from '../../internals/form-context/FormContext';
 import { LabelableProvider } from '../../internals/labelable-provider';
-import type { BaseUIComponentProps, HTMLProps, RefObject } from '../../internals/types';
-import { useRenderElement } from '../../internals/useRenderElement';
+import type { BaseUIComponentProps, RefObject } from '../../internals/types';
+import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
 import { useFieldValidation } from './useFieldValidation';
 import { useFieldControlRegistration } from '../../internals/field-register-control/useFieldControlRegistration';
-import { mergeProps } from '../../merge-props';
+import { mergePropsN } from '../../merge-props';
 
 /**
  * @internal
  */
-function FieldRootInner(componentProps: FieldRoot.Props) {
+const FieldRootInner = defineComponent(function (componentProps: FieldRoot.Props) {
   const formContext = useFormContext();
   const fieldsetContext = useFieldsetRootContext(true);
 
@@ -168,6 +168,15 @@ function FieldRootInner(componentProps: FieldRoot.Props) {
     }
   });
 
+  if ((globalThis as any).__av_patchLog) {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    watch(
+      () => componentProps.children,
+      () => console.log('[PROBE-FRInner-watch] children changed'),
+      { flush: 'sync' },
+    );
+  }
+
   onUnmounted(() => {
     if (componentProps.actionsRef) {
       componentProps.actionsRef.current = null;
@@ -191,10 +200,11 @@ function FieldRootInner(componentProps: FieldRoot.Props) {
     validation,
   }));
 
-  const getElementProps = (externalProps: HTMLProps) => {
+  // ================= render（每次更新执行） =================
+  return () => {
     const {
-      render: _render,
-      className: _className,
+      render,
+      className,
       validate: _validate,
       validationDebounceTime: _validationDebounceTime,
       validationMode: _validationMode,
@@ -204,24 +214,51 @@ function FieldRootInner(componentProps: FieldRoot.Props) {
       dirty: _dirty,
       touched: _touched,
       actionsRef: _actionsRef,
-      style: _style,
-      ref: _ref,
+      style,
+      ref: _ref, // 用户 ref：由下方三形态绑到根 DOM
       ...elementProps
     } = componentProps;
-    return mergeProps(externalProps, elementProps) as HTMLProps;
+
+    const stateValue = state.value;
+
+    // state → data-* 属性（fieldValidityMapping：valid → data-valid/data-invalid）
+    const stateAttributes = getStateAttributesProps(stateValue, fieldValidityMapping);
+
+    const merged = mergePropsN([
+      elementProps,
+      stateAttributes,
+      {
+        className: typeof className === 'function' ? className(stateValue) : className,
+        style: typeof style === 'function' ? style(stateValue) : style,
+      },
+    ]);
+
+    // render 三形态 + Provider 包裹（Provider 必须始终包裹：向子件提供 context）。
+    // value 传 computed ref（对齐原版）：Provider 的 watch(() => props.value) 直接
+    // 跟踪 contextValue 内部依赖（disabled/validityData 等）——context 变化不依赖
+    // Field.Root 重渲染，时序对齐 React（keeps-inputRef 等用例依赖此语义）
+    if (typeof render === 'function') {
+      return (
+        <FieldRootContext.Provider value={contextValue}>
+          {render({ ...merged, ...stateValue, ref: componentProps.ref })}
+        </FieldRootContext.Provider>
+      );
+    }
+    if (render) {
+      const Tag = render.type as any;
+      return (
+        <FieldRootContext.Provider value={contextValue}>
+          <Tag key={render.key} {...render.props} {...merged} ref={componentProps.ref} />
+        </FieldRootContext.Provider>
+      );
+    }
+    return (
+      <FieldRootContext.Provider value={contextValue}>
+        <div ref={componentProps.ref} {...merged} />
+      </FieldRootContext.Provider>
+    );
   };
-
-  const getElement = useRenderElement('div', componentProps, {
-    ref: componentProps.ref,
-    state,
-    props: [getElementProps],
-    stateAttributesMapping: fieldValidityMapping,
-  });
-
-  return (
-    <FieldRootContext.Provider value={contextValue}>{getElement()}</FieldRootContext.Provider>
-  );
-}
+});
 
 /**
  * Groups all parts of the field.

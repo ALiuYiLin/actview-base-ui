@@ -19,7 +19,7 @@ interface CompositeListItem<Metadata> {
  * Provides context for a list of items in a composite component.
  */
 export function CompositeList<Metadata>(props: CompositeList.Props<Metadata>) {
-  const { children, elementsRef, labelsRef } = props;
+  const { elementsRef, labelsRef } = props;
   const onMapChange = props.onMapChange;
 
   const mapTick = ref(false);
@@ -214,7 +214,7 @@ export function CompositeList<Metadata>(props: CompositeList.Props<Metadata>) {
   const contextValue = { register, unregister, subscribeMapChange, nextIndexRef };
 
   return (
-    <CompositeListContext.Provider value={contextValue}>{children}</CompositeListContext.Provider>
+    <CompositeListContext.Provider value={contextValue}>{props.children}</CompositeListContext.Provider>
   );
 }
 

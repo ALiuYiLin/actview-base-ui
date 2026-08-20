@@ -28,8 +28,13 @@ export function FieldLabel(componentProps: FieldLabel.Props) {
 
   const labelRef: { current: HTMLElement | null } = { current: null };
 
+  // id 必须响应式（PD-15）：keyed remount 时新 label 挂载早于旧 label 卸载，
+  // setup 快照会继承旧 label 的 id（labelId ?? idProp）并注册错值——computed
+  // 跟随 labelId，旧 label 注销后自动回落到自己的 idProp 并重新注册
+  const labelIdComputed = computed(() => labelableContext.value.labelId ?? componentProps.id);
+
   const getLabelProps = useLabel({
-    id: labelableContext.value.labelId ?? componentProps.id,
+    id: labelIdComputed,
     native: componentProps.nativeLabel ?? true,
   });
 

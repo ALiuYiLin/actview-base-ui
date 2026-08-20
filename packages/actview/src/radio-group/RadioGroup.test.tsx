@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
+import { ref } from 'actview';
 import { RadioGroup } from './RadioGroup';
+import { Field } from '../field';
+import { Fieldset } from '../fieldset';
+import { Form } from '../form';
+import { Radio } from '../radio';
+import { DirectionProvider } from '../direction-provider';
 import { createRenderer } from '../../test/createRenderer';
 
 const { render, fireEvent, act } = createRenderer();
@@ -55,30 +61,22 @@ describe('<RadioGroup />', () => {
   });
 
   // ══════════════════════════════════════════════════════════════════════
-  // TODO refactor component: Radio 家族重构后，搜索 `TODO refactor component`
-  // 取消本块注释（以下为 React 原版 RadioGroup.test.tsx 完整用例的 actview
-  // 转写，全部渲染 <Radio.Root> 子件）。取消注释时启用导入：
-  //   import { ref } from 'actview';
-  //   import { Field } from '../field';
-  //   import { Fieldset } from '../fieldset';
-  //   import { Form } from '../form';
-  //   import { Radio } from '../radio';
-  //   import { DirectionProvider } from '../direction-provider';
+  // TODO refactor component: 本块曾因 Radio 家族未重构而注释（Radio.Root 不可用）。
+  // Radio 家族已重构（RadioRoot/RadioIndicator），本块已解锁；如需再次禁用，
+  // 保留 `// TODO refactor component` 标记供全局搜索。
   // ══════════════════════════════════════════════════════════════════════
-  /*
   describe('prop: onValueChange', () => {
     it('should call onValueChange when an item is clicked', async () => {
       const handleChange = vi.fn();
-      await render(
-        function Demo() {
-          return (
-            <RadioGroup onValueChange={handleChange}>
-              <Radio.Root value="a" data-testid="item" />
-            </RadioGroup>
-          );
-        },
-        {},
-      );
+      function Demo() {
+        return (
+          <RadioGroup onValueChange={handleChange}>
+            <Radio.Root value="a" data-testid="item" />
+          </RadioGroup>
+        );
+      }
+
+      await render(Demo, {});
 
       await act(() => {
         fireEvent.click(document.querySelector('[data-testid="item"]') as HTMLElement);
@@ -90,23 +88,26 @@ describe('<RadioGroup />', () => {
 
     it('should report keyboard modifier event properties when calling onCheckedChange', async () => {
       const handleChange = vi.fn((value: string, eventDetails: any) => eventDetails);
-      await render(
-        function Demo() {
+      function Demo() {
           return (
             <RadioGroup onValueChange={handleChange}>
               <Radio.Root value="a" data-testid="item" />
             </RadioGroup>
           );
-        },
-        {},
-      );
+      }
+
+      await render(Demo, {});;
 
       await act(() => {
         fireEvent.keyDown(document.querySelector('[data-testid="item"]') as HTMLElement, {
           key: 'Shift',
           shiftKey: true,
         });
-        fireEvent.click(document.querySelector('[data-testid="item"]') as HTMLElement);
+        // React 原版用 user-event `{Shift>}` 按住 + click：click 事件 shiftKey=true。
+        // fireEvent 不维护按键状态，等价转写为 click 显式带 shiftKey。
+        fireEvent.click(document.querySelector('[data-testid="item"]') as HTMLElement, {
+          shiftKey: true,
+        });
       });
 
       expect(handleChange.mock.calls.length).toBe(1);
@@ -115,16 +116,15 @@ describe('<RadioGroup />', () => {
 
     it('should select an item with Space on keyup', async () => {
       const handleChange = vi.fn();
-      await render(
-        function Demo() {
+      function Demo() {
           return (
             <RadioGroup onValueChange={handleChange}>
               <Radio.Root value="a" data-testid="item" />
             </RadioGroup>
           );
-        },
-        {},
-      );
+      }
+
+      await render(Demo, {});;
 
       const item = document.querySelector('[data-testid="item"]') as HTMLElement;
       await act(() => {
@@ -145,16 +145,15 @@ describe('<RadioGroup />', () => {
 
     it('should not select an item with Enter', async () => {
       const handleChange = vi.fn();
-      await render(
-        function Demo() {
+      function Demo() {
           return (
             <RadioGroup onValueChange={handleChange}>
               <Radio.Root value="a" data-testid="item" />
             </RadioGroup>
           );
-        },
-        {},
-      );
+      }
+
+      await render(Demo, {});;
 
       const item = document.querySelector('[data-testid="item"]') as HTMLElement;
       await act(() => {
@@ -170,8 +169,7 @@ describe('<RadioGroup />', () => {
     });
 
     it('does not change state when canceled via a root click', async () => {
-      await render(
-        function Demo() {
+      function Demo() {
           return (
             <RadioGroup
               onValueChange={(_value, eventDetails) => eventDetails.cancel()}
@@ -179,9 +177,9 @@ describe('<RadioGroup />', () => {
               <Radio.Root value="a" data-testid="item" />
             </RadioGroup>
           );
-        },
-        {},
-      );
+      }
+
+      await render(Demo, {});;
 
       await act(() => {
         fireEvent.click(document.querySelector('[data-testid="item"]') as HTMLElement);
@@ -194,8 +192,7 @@ describe('<RadioGroup />', () => {
     });
 
     it('does not change state when canceled via a hidden input click', async () => {
-      await render(
-        function Demo() {
+      function Demo() {
           return (
             <RadioGroup
               onValueChange={(_value, eventDetails) => eventDetails.cancel()}
@@ -203,9 +200,9 @@ describe('<RadioGroup />', () => {
               <Radio.Root value="a" data-testid="item" />
             </RadioGroup>
           );
-        },
-        {},
-      );
+      }
+
+      await render(Demo, {});;
 
       await act(() => {
         fireEvent.click(document.querySelector('input[type="radio"]') as HTMLElement);
@@ -218,8 +215,7 @@ describe('<RadioGroup />', () => {
     });
 
     it('does not change state when canceled via arrow key navigation', async () => {
-      await render(
-        function Demo() {
+      function Demo() {
           return (
             <RadioGroup
               onValueChange={(_value, eventDetails) => eventDetails.cancel()}
@@ -228,9 +224,9 @@ describe('<RadioGroup />', () => {
               <Radio.Root value="b" data-testid="item-b" />
             </RadioGroup>
           );
-        },
-        {},
-      );
+      }
+
+      await render(Demo, {});;
 
       const itemA = document.querySelector('[data-testid="item-a"]') as HTMLElement;
       await act(() => {
@@ -247,16 +243,15 @@ describe('<RadioGroup />', () => {
 
   describe('prop: disabled', () => {
     it('should have the `aria-disabled` attribute (radio 子件断言)', async () => {
-      await render(
-        function Demo() {
+      function Demo() {
           return (
             <RadioGroup disabled>
               <Radio.Root value="a" />
             </RadioGroup>
           );
-        },
-        {},
-      );
+      }
+
+      await render(Demo, {});;
       expect(document.querySelector('[role="radiogroup"]')).toHaveAttribute(
         'aria-disabled',
         'true',
@@ -268,16 +263,15 @@ describe('<RadioGroup />', () => {
     });
 
     it('should not change its state when clicked', async () => {
-      await render(
-        function Demo() {
+      function Demo() {
           return (
             <RadioGroup disabled>
               <Radio.Root value="" data-testid="item" />
             </RadioGroup>
           );
-        },
-        {},
-      );
+      }
+
+      await render(Demo, {});;
 
       const item = document.querySelector('[data-testid="item"]') as HTMLElement;
       expect(item).toHaveAttribute('aria-checked', 'false');
@@ -292,16 +286,15 @@ describe('<RadioGroup />', () => {
 
   describe('prop: readOnly', () => {
     it('should not change its state when clicked', async () => {
-      await render(
-        function Demo() {
+      function Demo() {
           return (
             <RadioGroup readOnly>
               <Radio.Root value="" data-testid="item" />
             </RadioGroup>
           );
-        },
-        {},
-      );
+      }
+
+      await render(Demo, {});;
 
       const item = document.querySelector('[data-testid="item"]') as HTMLElement;
       expect(item).toHaveAttribute('aria-checked', 'false');
@@ -315,16 +308,15 @@ describe('<RadioGroup />', () => {
   });
 
   it('should update its state if the underlying input is toggled', async () => {
-    await render(
-      function Demo() {
+    function Demo() {
         return (
           <RadioGroup data-testid="root">
             <Radio.Root value="" data-testid="item" />
           </RadioGroup>
         );
-      },
-      {},
-    );
+      }
+
+      await render(Demo, {});;
 
     const item = document.querySelector('[data-testid="item"]') as HTMLElement;
     expect(item).toHaveAttribute('aria-checked', 'false');
@@ -339,33 +331,31 @@ describe('<RadioGroup />', () => {
   });
 
   it('should place the style hooks on the root and subcomponents', async () => {
-    await render(
-      function Demo() {
+    function Demo() {
         return (
           <RadioGroup disabled data-testid="root">
             <Radio.Root value="a" data-testid="item" />
           </RadioGroup>
         );
-      },
-      {},
-    );
+      }
+
+      await render(Demo, {});;
 
     expect(document.querySelector('[data-testid="root"]')).toHaveAttribute('data-disabled');
     expect(document.querySelector('[data-testid="item"]')).toHaveAttribute('data-disabled');
   });
 
   it('should set the name attribute on each radio input', async () => {
-    await render(
-      function Demo() {
+    function Demo() {
         return (
           <RadioGroup name="test" defaultValue="a">
             <Radio.Root value="a" />
             <Radio.Root value="b" />
           </RadioGroup>
         );
-      },
-      {},
-    );
+      }
+
+      await render(Demo, {});;
 
     const inputs = document.querySelectorAll('input[type="radio"]');
     expect(inputs[0]).toHaveAttribute('name', 'test');
@@ -374,17 +364,16 @@ describe('<RadioGroup />', () => {
 
   it('points inputRef to the checked radio input when present', async () => {
     const inputRef = { current: null as HTMLInputElement | null };
-    await render(
-      function Demo() {
+    function Demo() {
         return (
           <RadioGroup inputRef={inputRef} defaultValue="a">
             <Radio.Root value="a" />
             <Radio.Root value="b" />
           </RadioGroup>
         );
-      },
-      {},
-    );
+      }
+
+      await render(Demo, {});;
 
     const inputs = document.querySelectorAll('input[type="radio"]');
     expect(inputRef.current).toBe(inputs[0]);
@@ -392,17 +381,16 @@ describe('<RadioGroup />', () => {
 
   it('allows reading inputRef.current in an effect', async () => {
     const inputRef = { current: null as HTMLInputElement | null };
-    await render(
-      function Demo() {
+    function Demo() {
         return (
           <RadioGroup inputRef={inputRef} defaultValue="a">
             <Radio.Root value="a" />
             <Radio.Root value="b" />
           </RadioGroup>
         );
-      },
-      {},
-    );
+      }
+
+      await render(Demo, {});;
 
     const inputs = document.querySelectorAll('input[type="radio"]');
     expect(inputRef.current).toBe(inputs[0]);
@@ -410,17 +398,16 @@ describe('<RadioGroup />', () => {
 
   it('supports inputRef as a function', async () => {
     const refs: Array<HTMLInputElement | null> = [];
-    await render(
-      function Demo() {
+    function Demo() {
         return (
           <RadioGroup inputRef={(node) => refs.push(node)} defaultValue="a">
             <Radio.Root value="a" />
             <Radio.Root value="b" />
           </RadioGroup>
         );
-      },
-      {},
-    );
+      }
+
+      await render(Demo, {});;
 
     const inputs = document.querySelectorAll('input[type="radio"]');
     expect(refs[refs.length - 1]).toBe(inputs[0]);
@@ -445,17 +432,16 @@ describe('<RadioGroup />', () => {
 
   it('skips disabled radios when assigning inputRef', async () => {
     const inputRef = { current: null as HTMLInputElement | null };
-    await render(
-      function Demo() {
+    function Demo() {
         return (
           <RadioGroup inputRef={inputRef}>
             <Radio.Root value="a" disabled />
             <Radio.Root value="b" />
           </RadioGroup>
         );
-      },
-      {},
-    );
+      }
+
+      await render(Demo, {});;
 
     const inputs = document.querySelectorAll('input[type="radio"]');
     expect(inputRef.current).toBe(inputs[1]);
@@ -463,17 +449,16 @@ describe('<RadioGroup />', () => {
 
   it('points inputRef to the first radio input when nativeButton wraps a button', async () => {
     const inputRef = { current: null as HTMLInputElement | null };
-    await render(
-      function Demo() {
+    function Demo() {
         return (
           <RadioGroup inputRef={inputRef} nativeButton>
             <Radio.Root value="a" />
             <Radio.Root value="b" />
           </RadioGroup>
         );
-      },
-      {},
-    );
+      }
+
+      await render(Demo, {});;
 
     const inputs = document.querySelectorAll('input[type="radio"]');
     expect(inputRef.current).toBe(inputs[0]);
@@ -481,71 +466,136 @@ describe('<RadioGroup />', () => {
 
   it('keeps inputRef pointing to the first radio when the value is cleared', async () => {
     const inputRef = { current: null as HTMLInputElement | null };
-    function Demo(props: any) {
+    function App() {
+      const value = ref<null | string>('a');
+
       return (
-        <RadioGroup inputRef={inputRef} {...props}>
-          <Radio.Root value="a" />
-          <Radio.Root value="b" />
-        </RadioGroup>
+        <>
+          <RadioGroup value={value.value} inputRef={inputRef}>
+            <Radio.Root value="a" data-testid="radio-a" />
+            <Radio.Root value="b" data-testid="radio-b" />
+          </RadioGroup>
+          <button
+            type="button"
+            data-testid="clear"
+            onClick={() => {
+              value.value = null;
+            }}
+          >
+            Clear
+          </button>
+        </>
       );
     }
 
-    const result = await render(Demo, { defaultValue: 'b' });
-    await result.setProps({ value: undefined, defaultValue: undefined });
+    await render(App, {});
 
-    const inputs = document.querySelectorAll('input[type="radio"]');
-    expect(inputRef.current).toBe(inputs[0]);
+    const radioA = document.querySelector('[data-testid="radio-a"]') as HTMLElement;
+    const inputA = radioA.nextElementSibling as HTMLInputElement;
+
+    expect(inputRef.current).toBe(inputA);
+
+    await act(() => {
+      fireEvent.click(document.querySelector('[data-testid="clear"]') as HTMLElement);
+    });
+
+    expect(inputRef.current).toBe(inputA);
   });
 
   it('detaches inputRef when its current radio unmounts', async () => {
     const inputRef = { current: null as HTMLInputElement | null };
-    function Demo(props: any) {
+    function App() {
+      const showFirst = ref(true);
       return (
-        <RadioGroup inputRef={inputRef} {...props}>
-          {props.showFirst ? <Radio.Root value="a" /> : null}
-          <Radio.Root value="b" />
-        </RadioGroup>
+        <>
+          <RadioGroup inputRef={inputRef}>
+            {showFirst.value ? <Radio.Root value="a" data-testid="radio-a" /> : null}
+            <Radio.Root value="b" data-testid="radio-b" />
+          </RadioGroup>
+          <button
+            type="button"
+            data-testid="remove-first"
+            onClick={() => {
+              showFirst.value = false;
+            }}
+          >
+            Remove first
+          </button>
+        </>
       );
     }
 
-    const result = await render(Demo, { defaultValue: 'a', showFirst: true });
-    await result.setProps({ showFirst: false });
+    await render(App, {});
+
+    const inputA = document
+      .querySelector('[data-testid="radio-a"]')!
+      .nextElementSibling as HTMLInputElement;
+
+    expect(inputRef.current).toBe(inputA);
+
+    await act(() => {
+      fireEvent.click(document.querySelector('[data-testid="remove-first"]') as HTMLElement);
+    });
 
     expect(inputRef.current).toBe(null);
   });
 
   it('detaches inputRef when a radio selected after mount unmounts', async () => {
     const inputRef = { current: null as HTMLInputElement | null };
-    function Demo(props: any) {
+    function App() {
+      const showSecond = ref(true);
       return (
-        <RadioGroup inputRef={inputRef} {...props}>
-          {props.showFirst ? <Radio.Root value="a" /> : null}
-          <Radio.Root value="b" />
-        </RadioGroup>
+        <>
+          <RadioGroup inputRef={inputRef}>
+            <Radio.Root value="a" data-testid="radio-a" />
+            {showSecond.value ? <Radio.Root value="b" data-testid="radio-b" /> : null}
+          </RadioGroup>
+          <button
+            type="button"
+            data-testid="remove-second"
+            onClick={() => {
+              showSecond.value = false;
+            }}
+          >
+            Remove second
+          </button>
+        </>
       );
     }
 
-    const result = await render(Demo, { defaultValue: 'a', showFirst: true });
-    await act(() => {
-      fireEvent.click(document.querySelectorAll('input[type="radio"]')[1]);
-    });
-    await result.setProps({ showFirst: false });
+    await render(App, {});
 
-    expect(inputRef.current).toBe(document.querySelectorAll('input[type="radio"]')[0]);
+    const inputA = document
+      .querySelector('[data-testid="radio-a"]')!
+      .nextElementSibling as HTMLInputElement;
+    const inputB = document
+      .querySelector('[data-testid="radio-b"]')!
+      .nextElementSibling as HTMLInputElement;
+
+    expect(inputRef.current).toBe(inputA);
+
+    await act(() => {
+      fireEvent.click(document.querySelector('[data-testid="radio-b"]') as HTMLElement);
+    });
+    expect(inputRef.current).toBe(inputB);
+
+    await act(() => {
+      fireEvent.click(document.querySelector('[data-testid="remove-second"]') as HTMLElement);
+    });
+    expect(inputRef.current).toBe(null);
   });
 
   it('should automatically select radio upon navigation', async () => {
-    await render(
-      function Demo() {
+    function Demo() {
         return (
           <RadioGroup defaultValue="a">
             <Radio.Root value="a" data-testid="radio-a" />
             <Radio.Root value="b" data-testid="radio-b" />
           </RadioGroup>
         );
-      },
-      {},
-    );
+      }
+
+      await render(Demo, {});;
 
     const radioA = document.querySelector('[data-testid="radio-a"]') as HTMLElement;
     await act(() => {
@@ -593,17 +643,16 @@ describe('<RadioGroup />', () => {
 
   describe('modifier keys', () => {
     it('when Shift is pressed arrow keys move focus normally', async () => {
-      await render(
-        function Demo() {
+      function Demo() {
           return (
             <RadioGroup defaultValue="a">
               <Radio.Root value="a" data-testid="radio-a" />
               <Radio.Root value="b" data-testid="radio-b" />
             </RadioGroup>
           );
-        },
-        {},
-      );
+      }
+
+      await render(Demo, {});;
 
       const radioA = document.querySelector('[data-testid="radio-a"]') as HTMLElement;
       await act(() => {
@@ -638,8 +687,7 @@ describe('<RadioGroup />', () => {
 
   describe('style hooks', () => {
     it('should apply data-checked and data-unchecked to radio root and indicator', async () => {
-      await render(
-        function Demo() {
+      function Demo() {
           return (
             <RadioGroup defaultValue="a">
               <Radio.Root value="a" data-testid="radio-a">
@@ -650,9 +698,9 @@ describe('<RadioGroup />', () => {
               </Radio.Root>
             </RadioGroup>
           );
-        },
-        {},
-      );
+      }
+
+      await render(Demo, {});;
 
       expect(document.querySelector('[data-testid="radio-a"]')).toHaveAttribute(
         'data-checked',
@@ -666,32 +714,30 @@ describe('<RadioGroup />', () => {
   });
 
   it('does not forward `value` prop', async () => {
-    await render(
-      function Demo() {
+    function Demo() {
         return (
           <RadioGroup value="test" data-testid="radio-group">
             <Radio.Root value="" />
           </RadioGroup>
         );
-      },
-      {},
-    );
+      }
+
+      await render(Demo, {});;
 
     expect(document.querySelector('[data-testid="radio-group"]')).not.toHaveAttribute('value');
   });
 
   it('sets tabIndex=0 to the correct element initially', async () => {
-    await render(
-      function Demo() {
+    function Demo() {
         return (
           <RadioGroup defaultValue="b">
             <Radio.Root value="a" data-testid="radio-a" />
             <Radio.Root value="b" data-testid="radio-b" />
           </RadioGroup>
         );
-      },
-      {},
-    );
+      }
+
+      await render(Demo, {});;
 
     const radioA = document.querySelector('[data-testid="radio-a"]') as HTMLElement;
     const radioB = document.querySelector('[data-testid="radio-b"]') as HTMLElement;
@@ -702,8 +748,7 @@ describe('<RadioGroup />', () => {
   describe('with native <label>', () => {
     it('associates implicitly', async () => {
       const changeSpy = vi.fn((newValue: string) => newValue);
-      await render(
-        function Demo() {
+      function Demo() {
           return (
             <RadioGroup onValueChange={changeSpy}>
               <label>
@@ -712,9 +757,9 @@ describe('<RadioGroup />', () => {
               </label>
             </RadioGroup>
           );
-        },
-        {},
-      );
+      }
+
+      await render(Demo, {});;
 
       await act(() => {
         fireEvent.click(document.querySelector('[data-testid="item"]') as HTMLElement);
@@ -725,17 +770,16 @@ describe('<RadioGroup />', () => {
 
     it('associates explicitly', async () => {
       const changeSpy = vi.fn((newValue: string) => newValue);
-      await render(
-        function Demo() {
+      function Demo() {
           return (
             <RadioGroup onValueChange={changeSpy}>
               <Radio.Root value="a" data-testid="item" />
               <label htmlFor="item">Label text</label>
             </RadioGroup>
           );
-        },
-        {},
-      );
+      }
+
+      await render(Demo, {});;
 
       await act(() => {
         fireEvent.click(document.querySelector('[data-testid="item"]') as HTMLElement);
@@ -747,8 +791,7 @@ describe('<RadioGroup />', () => {
 
   describe('Field', () => {
     it('passes the `name` prop to the radio input', async () => {
-      await render(
-        function Demo() {
+      function Demo() {
           return (
             <Field.Root name="test">
               <RadioGroup defaultValue="a">
@@ -757,9 +800,9 @@ describe('<RadioGroup />', () => {
               </RadioGroup>
             </Field.Root>
           );
-        },
-        {},
-      );
+      }
+
+      await render(Demo, {});;
 
       const inputs = document.querySelectorAll('input[type="radio"]');
       expect(inputs[0]).toHaveAttribute('name', 'test');
@@ -769,8 +812,7 @@ describe('<RadioGroup />', () => {
 
   describe('Field.Root', () => {
     it('should receive disabled prop from Field.Root', async () => {
-      await render(
-        function Demo() {
+      function Demo() {
           return (
             <Field.Root disabled>
               <RadioGroup data-testid="group">
@@ -778,9 +820,9 @@ describe('<RadioGroup />', () => {
               </RadioGroup>
             </Field.Root>
           );
-        },
-        {},
-      );
+      }
+
+      await render(Demo, {});;
 
       expect(document.querySelector('[data-testid="group"]')).toHaveAttribute(
         'aria-disabled',
@@ -790,8 +832,7 @@ describe('<RadioGroup />', () => {
     });
 
     it('should receive name prop from Field.Root', async () => {
-      await render(
-        function Demo() {
+      function Demo() {
           return (
             <Field.Root name="test">
               <RadioGroup data-testid="group">
@@ -799,9 +840,9 @@ describe('<RadioGroup />', () => {
               </RadioGroup>
             </Field.Root>
           );
-        },
-        {},
-      );
+      }
+
+      await render(Demo, {});;
 
       const inputs = document.querySelectorAll('input[type="radio"]');
       expect(inputs[0]).toHaveAttribute('name', 'test');
@@ -832,8 +873,7 @@ describe('<RadioGroup />', () => {
 
   describe('Field.Label', () => {
     it('associates implicitly', async () => {
-      await render(
-        function Demo() {
+      function Demo() {
           return (
             <Field.Root name="test">
               <Field.Label data-testid="label">Label</Field.Label>
@@ -842,9 +882,9 @@ describe('<RadioGroup />', () => {
               </RadioGroup>
             </Field.Root>
           );
-        },
-        {},
-      );
+      }
+
+      await render(Demo, {});;
 
       const group = document.querySelector('[data-testid="group"]') as HTMLElement;
       const label = document.querySelector('[data-testid="label"]') as HTMLElement;
@@ -852,8 +892,7 @@ describe('<RadioGroup />', () => {
     });
 
     it('associates explicitly', async () => {
-      await render(
-        function Demo() {
+      function Demo() {
           return (
             <Field.Root name="test">
               <Field.Label htmlFor="group-id" data-testid="label">
@@ -864,9 +903,9 @@ describe('<RadioGroup />', () => {
               </RadioGroup>
             </Field.Root>
           );
-        },
-        {},
-      );
+      }
+
+      await render(Demo, {});;
 
       const group = document.querySelector('[data-testid="group"]') as HTMLElement;
       const label = document.querySelector('[data-testid="label"]') as HTMLElement;
@@ -876,8 +915,7 @@ describe('<RadioGroup />', () => {
 
   describe('Field.Description', () => {
     it('links the group and individual radios', async () => {
-      await render(
-        function Demo() {
+      function Demo() {
           return (
             <Field.Root name="test">
               <RadioGroup data-testid="group">
@@ -886,9 +924,9 @@ describe('<RadioGroup />', () => {
               <Field.Description data-testid="description">Description</Field.Description>
             </Field.Root>
           );
-        },
-        {},
-      );
+      }
+
+      await render(Demo, {});;
 
       const description = document.querySelector('[data-testid="description"]') as HTMLElement;
       const group = document.querySelector('[data-testid="group"]') as HTMLElement;
@@ -900,8 +938,7 @@ describe('<RadioGroup />', () => {
 
   describe('prop: validationMode', () => {
     it('onSubmit', async () => {
-      await render(
-        function Demo() {
+      function Demo() {
           return (
             <Field.Root name="test" validationMode="onSubmit" validate={() => 'Error'}>
               <RadioGroup data-testid="group">
@@ -909,9 +946,9 @@ describe('<RadioGroup />', () => {
               </RadioGroup>
             </Field.Root>
           );
-        },
-        {},
-      );
+      }
+
+      await render(Demo, {});;
 
       expect(document.querySelector('[data-testid="group"]')).not.toHaveAttribute(
         'aria-invalid',
@@ -919,8 +956,7 @@ describe('<RadioGroup />', () => {
     });
 
     it('onBlur validates only when focus leaves the group', async () => {
-      await render(
-        function Demo() {
+      function Demo() {
           return (
             <Field.Root name="test" validationMode="onBlur" validate={() => 'Error'}>
               <RadioGroup data-testid="group">
@@ -928,9 +964,9 @@ describe('<RadioGroup />', () => {
               </RadioGroup>
             </Field.Root>
           );
-        },
-        {},
-      );
+      }
+
+      await render(Demo, {});;
 
       const group = document.querySelector('[data-testid="group"]') as HTMLElement;
       await act(() => {
@@ -968,8 +1004,7 @@ describe('<RadioGroup />', () => {
     });
 
     it('labels the radio group from the fieldset legend', async () => {
-      await render(
-        function Demo() {
+      function Demo() {
           return (
             <Field.Root name="test">
               <Fieldset.Root render={<RadioGroup />}>
@@ -980,24 +1015,26 @@ describe('<RadioGroup />', () => {
               </Fieldset.Root>
             </Field.Root>
           );
-        },
-        {},
-      );
+      }
 
-      const legend = document.querySelector('fieldset')!.querySelector('div') as HTMLElement;
+      const result = await render(Demo, {});
+
+      // React 原版用 screen.getByText('Legend')；actview 的 getByText 是前序 DFS
+      // 返回最外层，getAllByText 取最后一个 = 文本直接父（legend 元素）
+      const legends = result.getAllByText('Legend');
+      const legend = legends[legends.length - 1];
       const radioGroup = document.querySelector('[role="radiogroup"]') as HTMLElement;
-      expect(radioGroup.getAttribute('aria-labelledby')).toBe(legend.id);
+      expect(radioGroup.getAttribute('aria-labelledby')).toBe(legend.getAttribute('id'));
     });
 
     it('updates label precedence without retaining replaced or unmounted IDs', async () => {
       function Demo() {
-        const [explicit, setExplicit] = ref(true);
-        const [fieldLabel, setFieldLabel] = ref<'field-label-a' | 'field-label-b'>(
-          'field-label-a',
-        );
-        const [showFieldLabel, setShowFieldLabel] = ref(true);
-        const [legend, setLegend] = ref<'legend-a' | 'legend-b'>('legend-a');
-        const [showLegend, setShowLegend] = ref(true);
+        // React 原版 useState 数组解构；actview ref() 返回 Ref 对象不可解构（转写修正）
+        const explicit = ref(true);
+        const fieldLabel = ref<'field-label-a' | 'field-label-b'>('field-label-a');
+        const showFieldLabel = ref(true);
+        const legend = ref<'legend-a' | 'legend-b'>('legend-a');
+        const showLegend = ref(true);
 
         return (
           <>
@@ -1020,7 +1057,7 @@ describe('<RadioGroup />', () => {
                   </Fieldset.Legend>
                 )}
                 <RadioGroup
-                  aria-labelledby={explicit.value ? 'explicit-label' : undefined}
+                  {...(explicit.value ? { 'aria-labelledby': 'explicit-label' } : {})}
                   data-testid="group"
                 >
                   <Radio.Root value="a" />
@@ -1030,7 +1067,7 @@ describe('<RadioGroup />', () => {
                 type="button"
                 data-testid="toggle-explicit"
                 onClick={() => {
-                  setExplicit(!explicit.value);
+                  explicit.value = !explicit.value;
                 }}
               >
                 Toggle explicit
@@ -1039,9 +1076,8 @@ describe('<RadioGroup />', () => {
                 type="button"
                 data-testid="change-field-label"
                 onClick={() => {
-                  setFieldLabel(
-                    fieldLabel.value === 'field-label-a' ? 'field-label-b' : 'field-label-a',
-                  );
+                  fieldLabel.value =
+                    fieldLabel.value === 'field-label-a' ? 'field-label-b' : 'field-label-a';
                 }}
               >
                 Change field label
@@ -1050,7 +1086,7 @@ describe('<RadioGroup />', () => {
                 type="button"
                 data-testid="toggle-field-label"
                 onClick={() => {
-                  setShowFieldLabel(!showFieldLabel.value);
+                  showFieldLabel.value = !showFieldLabel.value;
                 }}
               >
                 Toggle field label
@@ -1059,7 +1095,7 @@ describe('<RadioGroup />', () => {
                 type="button"
                 data-testid="change-legend"
                 onClick={() => {
-                  setLegend(legend.value === 'legend-a' ? 'legend-b' : 'legend-a');
+                  legend.value = legend.value === 'legend-a' ? 'legend-b' : 'legend-a';
                 }}
               >
                 Change legend
@@ -1068,7 +1104,7 @@ describe('<RadioGroup />', () => {
                 type="button"
                 data-testid="toggle-legend"
                 onClick={() => {
-                  setShowLegend(!showLegend.value);
+                  showLegend.value = !showLegend.value;
                 }}
               >
                 Toggle legend
@@ -1086,6 +1122,8 @@ describe('<RadioGroup />', () => {
       await act(() => {
         fireEvent.click(document.querySelector('[data-testid="toggle-explicit"]') as HTMLElement);
       });
+      const freshGroup = document.querySelector('[data-testid="group"]') as HTMLElement;
+      console.log('[PROBE] same element:', freshGroup === group, 'fresh aria-labelledby=', freshGroup.getAttribute('aria-labelledby'));
       expect(group.getAttribute('aria-labelledby')).toBe('field-label-a');
 
       await act(() => {
@@ -1118,8 +1156,7 @@ describe('<RadioGroup />', () => {
   describe('Form', () => {
     it('submits null to onFormSubmit when no radio is selected', async () => {
       const handleSubmit = vi.fn();
-      await render(
-        function Demo() {
+      function Demo() {
           return (
             <Form onFormSubmit={handleSubmit}>
               <Field.Root name="choice">
@@ -1130,9 +1167,9 @@ describe('<RadioGroup />', () => {
               </Field.Root>
             </Form>
           );
-        },
-        {},
-      );
+      }
+
+      await render(Demo, {});;
 
       await act(() => {
         fireEvent.submit(document.querySelector('form') as HTMLElement);
@@ -1198,8 +1235,7 @@ describe('<RadioGroup />', () => {
 
     it('excludes a disabled selected radio from onFormSubmit to match native form data', async () => {
       const handleSubmit = vi.fn();
-      await render(
-        function Demo() {
+      function Demo() {
           return (
             <Form onFormSubmit={handleSubmit}>
               <Field.Root name="choice">
@@ -1210,9 +1246,9 @@ describe('<RadioGroup />', () => {
               </Field.Root>
             </Form>
           );
-        },
-        {},
-      );
+      }
+
+      await render(Demo, {});;
 
       await act(() => {
         fireEvent.submit(document.querySelector('form') as HTMLElement);
@@ -1254,8 +1290,7 @@ describe('<RadioGroup />', () => {
 
     it('excludes an initially disabled selected radio from onFormSubmit to match native form data', async () => {
       const handleSubmit = vi.fn();
-      await render(
-        function Demo() {
+      function Demo() {
           return (
             <Form onFormSubmit={handleSubmit}>
               <Field.Root name="choice">
@@ -1265,9 +1300,9 @@ describe('<RadioGroup />', () => {
               </Field.Root>
             </Form>
           );
-        },
-        {},
-      );
+      }
+
+      await render(Demo, {});;
 
       await act(() => {
         fireEvent.submit(document.querySelector('form') as HTMLElement);
@@ -1281,8 +1316,7 @@ describe('<RadioGroup />', () => {
 
     it('includes a group fully portaled outside the form element in onFormSubmit', async () => {
       const handleSubmit = vi.fn();
-      await render(
-        function Demo() {
+      function Demo() {
           return (
             <>
               <Form onFormSubmit={handleSubmit}>
@@ -1293,9 +1327,9 @@ describe('<RadioGroup />', () => {
               </RadioGroup>
             </>
           );
-        },
-        {},
-      );
+      }
+
+      await render(Demo, {});;
 
       await act(() => {
         fireEvent.click(document.querySelector('[data-testid="item"]') as HTMLElement);
@@ -1306,8 +1340,7 @@ describe('<RadioGroup />', () => {
     });
 
     it('clears required validation when a value is selected', async () => {
-      await render(
-        function Demo() {
+      function Demo() {
           return (
             <Form>
               <Field.Root name="choice" required>
@@ -1317,9 +1350,9 @@ describe('<RadioGroup />', () => {
               </Field.Root>
             </Form>
           );
-        },
-        {},
-      );
+      }
+
+      await render(Demo, {});;
 
       await act(() => {
         fireEvent.click(document.querySelector('[data-testid="item"]') as HTMLElement);
@@ -1329,8 +1362,7 @@ describe('<RadioGroup />', () => {
     });
 
     it('validates when inputRef is a function', async () => {
-      await render(
-        function Demo() {
+      function Demo() {
           return (
             <Form>
               <Field.Root name="choice" validate={() => 'Error'}>
@@ -1340,9 +1372,9 @@ describe('<RadioGroup />', () => {
               </Field.Root>
             </Form>
           );
-        },
-        {},
-      );
+      }
+
+      await render(Demo, {});;
 
       await act(() => {
         fireEvent.submit(document.querySelector('form') as HTMLElement);
@@ -1369,8 +1401,7 @@ describe('<RadioGroup />', () => {
 
     it('clears external errors on change', async () => {
       const handleSubmit = vi.fn();
-      await render(
-        function Demo() {
+      function Demo() {
           return (
             <Form onFormSubmit={handleSubmit} errors={{ choice: 'External error' }}>
               <Field.Root name="choice">
@@ -1380,9 +1411,9 @@ describe('<RadioGroup />', () => {
               </Field.Root>
             </Form>
           );
-        },
-        {},
-      );
+      }
+
+      await render(Demo, {});;
 
       expect(document.querySelector('[data-testid="group"]')).toHaveAttribute('aria-invalid', 'true');
 
@@ -1394,8 +1425,7 @@ describe('<RadioGroup />', () => {
     });
 
     it('appends the id attribute of the error to aria-describedby of individual radios', async () => {
-      await render(
-        function Demo() {
+      function Demo() {
           return (
             <Form errors={{ choice: 'Error' }}>
               <Field.Root name="choice">
@@ -1405,14 +1435,13 @@ describe('<RadioGroup />', () => {
               </Field.Root>
             </Form>
           );
-        },
-        {},
-      );
+      }
+
+      await render(Demo, {});;
 
       const item = document.querySelector('[data-testid="item"]') as HTMLElement;
       const error = document.querySelector('[role="alert"]') as HTMLElement;
       expect(item.getAttribute('aria-describedby')).toContain(error.id);
     });
   });
-  */
 });

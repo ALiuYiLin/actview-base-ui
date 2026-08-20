@@ -17,9 +17,14 @@ export function useLabel(params: UseLabelParameters = {}): () => UseLabelReturnV
 
   const labelableContext = useLabelableContext();
 
-  const syncLabelId = (nextLabelId: string | undefined) => {
+  const syncLabelId = (
+    nextLabelId: string | undefined | ((current: string | undefined) => string | undefined),
+  ) => {
     labelableContext.value.setLabelId(nextLabelId);
-    setLabelIdProp?.(nextLabelId);
+    // 函数式注销不向外转发（setLabelIdProp 是普通写入）
+    if (typeof nextLabelId !== 'function') {
+      setLabelIdProp?.(nextLabelId);
+    }
   };
 
   const id = useRegisteredLabelId(idProp, syncLabelId);
@@ -67,14 +72,17 @@ export function useLabel(params: UseLabelParameters = {}): () => UseLabelReturnV
   return () =>
     native
       ? {
-          id,
+          // useRegisteredLabelId 响应式改造后返回 Ref<string | undefined>——
+          // 渲染期解包 .value（否则 label 的 id attribute 被 setAttribute 序列化成
+          // '[object Object]'，FieldsetLegend 同款适配见案例 15）
+          id: id.value,
           // ActView does not map `htmlFor` to the HTML `for` attribute (only `className` is
           // mapped), so the raw attribute name must be used (plantform-diff.md AD-24).
           for: resolvedControlId.value,
           onMouseDown: handleInteraction,
         }
       : {
-          id,
+          id: id.value,
           onClick: handleInteraction,
           onPointerDown(event: PointerEvent) {
             event.preventDefault();

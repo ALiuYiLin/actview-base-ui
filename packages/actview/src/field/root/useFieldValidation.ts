@@ -9,12 +9,15 @@ import { useFormContext } from '../../internals/form-context/FormContext';
 import type { Form } from '../../form';
 import { getCombinedFieldValidityData } from '../utils/getCombinedFieldValidityData';
 import type { HTMLProps, MaybeRef, RefObject } from '../../internals/types';
+import type { Ref } from '@actview/core';
 import type { FieldValidityData, FieldRootState } from './FieldRoot';
 
 const validityKeys = Object.keys(DEFAULT_VALIDITY_STATE) as Array<keyof ValidityState>;
 
+// controlRef：统一标准 ref()（value 形态，案例 6）。旧 { current } 调用方
+// （CheckboxRoot 等未重构家族）是错的，待各自重构时统一改——此处不兼容
 export type RegisteredInput = {
-  controlRef: RefObject<HTMLElement | null>;
+  controlRef: Ref<HTMLElement | null>;
   value: string | undefined;
 };
 
@@ -116,7 +119,7 @@ export function useFieldValidation(
 
   const getInputControl = () => {
     const element = findRepresentativeInput(registeredInputs, elementRef.current);
-    return (element && registeredInputs.get(element)?.controlRef.current) || null;
+    return (element && registeredInputs.get(element)?.controlRef.value) || null;
   };
 
   const commit = async (value: unknown, revalidate = false) => {

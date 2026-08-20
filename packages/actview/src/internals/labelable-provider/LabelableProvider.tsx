@@ -72,8 +72,17 @@ export function LabelableProvider(props: LabelableProvider.Props) {
     };
   };
 
-  const setLabelId = (id: string | undefined) => {
-    labelId.value = id;
+  const setLabelId = (
+    next:
+      | string
+      | undefined
+      | ((current: string | undefined) => string | undefined),
+  ) => {
+    // 函数式更新（对齐 React 函数式 setState）：注销时只清"当前值 === 自己的 id"
+    // 的注册——否则 keyed remount 场景下旧实例卸载会把新实例刚注册的 id 清成
+    // undefined（label precedence 链断裂）
+    labelId.value =
+      typeof next === 'function' ? (next as (c: string | undefined) => string | undefined)(labelId.value) : next;
   };
 
   const setMessageIds = (ids: string[]) => {
