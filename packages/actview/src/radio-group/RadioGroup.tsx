@@ -1,4 +1,4 @@
-import { computed, ref } from 'actview';
+import { computed, defineComponent, ref } from 'actview';
 import { useControlled } from '@base-ui/actview-utils/useControlled';
 import type { BaseUIComponentProps, HTMLProps, RefValue } from '../internals/types';
 import { useBaseUiId } from '../internals/useBaseUiId';
@@ -26,21 +26,26 @@ const MODIFIER_KEYS = [SHIFT];
  *
  * Documentation: [Base UI Radio Group](https://base-ui.com/react/components/radio)
  */
-export function RadioGroup<Value>(props: RadioGroup.Props<Value>) {
+export const RadioGroup = defineComponent(function <Value>(componentProps: RadioGroup.Props<Value>) {
+  // ================= setup（只执行一次） =================
+  // context hook 必须在 setup 顶层（AD-42）；未重构家族（field-root/labelable）自封装
+  // context 与官方 context 的 use() 都返回 ref 形态，读 .value 一致
   const fieldRootContext = useFieldRootContext();
   const labelableContext = useLabelableContext();
   const formContext = useFormContext();
   const fieldsetContext = useFieldsetRootContext(true);
 
   const disabled = computed<boolean | undefined>(
-    () => fieldRootContext.value.disabled || props.disabled,
+    () => fieldRootContext.value.disabled || componentProps.disabled,
   );
-  const name = computed(() => fieldRootContext.value.name ?? props.name);
-  const id = useBaseUiId(props.id);
+  const name = computed(() => fieldRootContext.value.name ?? componentProps.name);
+
+  // setup 顶层：生成一次兜底 id（稳定）；注册 id 渲染期合成（idProp ?? fallbackId）
+  const fallbackId = useBaseUiId();
 
   const checkedValue = useControlled<Value>({
-    controlled: () => props.value,
-    default: () => props.defaultValue,
+    controlled: () => componentProps.value,
+    default: () => componentProps.defaultValue,
     name: 'RadioGroup',
     state: 'value',
   });
@@ -50,7 +55,7 @@ export function RadioGroup<Value>(props: RadioGroup.Props<Value>) {
   };
 
   const setCheckedValue = (value: Value, eventDetails: RadioGroup.ChangeEventDetails) => {
-    props.onValueChange?.(value, eventDetails);
+    componentProps.onValueChange?.(value, eventDetails);
 
     if (eventDetails.isCanceled) {
       return;
@@ -71,14 +76,15 @@ export function RadioGroup<Value>(props: RadioGroup.Props<Value>) {
   // The registry (`validation.registeredInputs`) is authoritative for validation and form-value
   // projection, so the group must not write `validation.inputRef`: a stale, unmounted radio left
   // there would become the Field's fallback once the registry empties and keep blocking submission.
-  function setInputRef(hiddenInput: HTMLInputElement | null) {
-    let cleanup: void | (() => void) | undefined = undefined;
+  function setInputRef(hiddenInput: HTMLInputElement | null): (() => void) | undefined {
+    let cleanup: (() => void) | undefined = undefined;
 
-    if (props.inputRef) {
-      if (typeof props.inputRef === 'function') {
-        cleanup = props.inputRef(hiddenInput);
+    if (componentProps.inputRef) {
+      if (typeof componentProps.inputRef === 'function') {
+        // React 语义：ref 回调可返回清理函数；actview 侧仅记录（void 分支忽略）
+        cleanup = componentProps.inputRef(hiddenInput) as (() => void) | undefined;
       } else {
-        props.inputRef.current = hiddenInput;
+        componentProps.inputRef.current = hiddenInput;
       }
     }
 
@@ -123,7 +129,7 @@ export function RadioGroup<Value>(props: RadioGroup.Props<Value>) {
   };
 
   const getFormValue = () => {
-    const formElement = formContext.value.elementRef.current;
+    const formElement = formContext.value.elementRef.value;
     if (!formElement) {
       return checkedValue.value ?? null;
     }
@@ -137,13 +143,17 @@ export function RadioGroup<Value>(props: RadioGroup.Props<Value>) {
     return null;
   };
 
+  // 注册 id：computed 渲染期求值（idProp 变化时重新注册）——MaybeRef 不含 getter，
+  // 必须传 ref 形态（React 语义 idProp ?? useId()）
+  const registeredId = computed(() => componentProps.id ?? fallbackId);
+
   useRegisterFieldControl(
     controlRef,
-    id,
+    registeredId,
     () => checkedValue.value ?? null,
     getFormValue,
-    () => !disabled.value,
-    () => props.name,
+    computed(() => !disabled.value),
+    computed(() => componentProps.name),
   );
 
   useValueChanged(checkedValue, () => {
@@ -163,99 +173,102 @@ export function RadioGroup<Value>(props: RadioGroup.Props<Value>) {
     }
   });
 
-  const ariaLabelledby = computed(
-    () => labelableContext.value.labelId ?? fieldsetContext.value?.legendId,
-  );
-
-  const state = computed<RadioGroupState>(() => ({
-    ...fieldRootContext.value.state,
-    disabled: disabled.value ?? false,
-    required: props.required ?? false,
-    readOnly: props.readOnly ?? false,
-  }));
-
+  // context 值：computed 惰性缓存——依赖不变时引用稳定（对照 React useMemo）
   const contextValue = computed<RadioGroupContext<Value>>(() => ({
     checkedValue: checkedValue.value,
     disabled: disabled.value,
-    form: props.form,
+    form: componentProps.form,
     validation: fieldRootContext.value.validation,
     name: name.value,
-    readOnly: props.readOnly,
+    readOnly: componentProps.readOnly,
     registerInputRef,
-    required: props.required,
+    required: componentProps.required,
     setCheckedValue,
     setTouched,
     touched: touched.value,
   }));
 
-  const getDefaultProps = () => ({
-    id: props.id,
-    role: 'radiogroup',
-    'aria-required': props.required || undefined,
-    'aria-disabled': disabled.value || undefined,
-    'aria-readonly': props.readOnly || undefined,
-    'aria-labelledby': ariaLabelledby.value,
-    onFocus() {
-      fieldRootContext.value.setFocused(true);
-    },
-    onBlur(event: FocusEvent) {
-      if (!contains(event.currentTarget as Element, event.relatedTarget as Element)) {
-        fieldRootContext.value.setTouched(true);
-        fieldRootContext.value.setFocused(false);
-
-        if (fieldRootContext.value.validationMode === 'onBlur') {
-          fieldRootContext.value.validation.commit(checkedValue.value);
-        }
-      }
-    },
-    onKeyDownCapture(event: KeyboardEvent) {
-      if (event.key.startsWith('Arrow')) {
-        touched.value = true;
-        fieldRootContext.value.setFocused(true);
-      }
-    },
-  });
-
-  const getElementProps = () => {
+  // ================= render（每次更新执行） =================
+  return () => {
     const {
-      render: _render,
-      className: _className,
-      disabled: _disabled,
-      readOnly: _readOnly,
-      required: _required,
-      onValueChange: _onValueChange,
-      value: _value,
-      defaultValue: _defaultValue,
-      form: _form,
-      name: _name,
-      inputRef: _inputRef,
-      id: _id,
-      style: _style,
-      ref: _ref,
+      render,
+      className,
+      disabled: _disabled, // setup computed 已接管
+      readOnly,
+      required,
+      onValueChange: _onValueChange, // setup setCheckedValue 已接管
+      value: _value, // setup useControlled 已接管
+      defaultValue: _defaultValue, // setup useControlled 已接管
+      form: _form, // 进 contextValue
+      name: _name, // setup computed 已接管
+      inputRef: _inputRef, // setup setInputRef 已接管
+      id: idProp,
+      style,
+      ref: _ref, // 用户 ref：CompositeRoot 内部 rootRef 自取根，无需转发
       ...elementProps
-    } = props;
-    return elementProps;
+    } = componentProps;
+
+    // 注册 id 渲染期合成（React 语义 idProp ?? useId()）；root 元素只显示显式 idProp
+    const ariaLabelledby = labelableContext.value.labelId ?? fieldsetContext.value?.legendId;
+
+    const state: RadioGroupState = {
+      ...fieldRootContext.value.state,
+      disabled: disabled.value ?? false,
+      required: required ?? false,
+      readOnly: readOnly ?? false,
+    };
+
+    const defaultProps: HTMLProps = {
+      id: idProp,
+      role: 'radiogroup',
+      'aria-required': required || undefined,
+      'aria-disabled': disabled.value || undefined,
+      'aria-readonly': readOnly || undefined,
+      'aria-labelledby': ariaLabelledby,
+      onFocus() {
+        fieldRootContext.value.setFocused(true);
+      },
+      onBlur(event: FocusEvent) {
+        if (!contains(event.currentTarget as Element, event.relatedTarget as Element)) {
+          fieldRootContext.value.setTouched(true);
+          fieldRootContext.value.setFocused(false);
+
+          if (fieldRootContext.value.validationMode === 'onBlur') {
+            fieldRootContext.value.validation.commit(checkedValue.value);
+          }
+        }
+      },
+      onKeyDownCapture(event: KeyboardEvent) {
+        if (event.key.startsWith('Arrow')) {
+          touched.value = true;
+          fieldRootContext.value.setFocused(true);
+        }
+      },
+    };
+
+    // ⚠️ getValidationProps 必须传函数（propsGetter）且放数组最后：它接收 previousProps
+    // （externalProps 链），disabled 拦截需在最终合并层（案例 10）
+    return (
+      <RadioGroupContext.Provider value={contextValue.value}>
+        <CompositeRoot
+          render={render}
+          className={className}
+          style={style}
+          state={state}
+          props={[
+            defaultProps,
+            elementProps,
+            (p: HTMLProps) =>
+              fieldRootContext.value.validation.getValidationProps(disabled.value ?? false, p),
+          ]}
+          stateAttributesMapping={fieldValidityMapping}
+          enableHomeAndEndKeys={false}
+          modifierKeys={MODIFIER_KEYS}
+        />
+      </RadioGroupContext.Provider>
+    );
   };
-
-  const getValidationProps = (externalProps: HTMLProps) =>
-    fieldRootContext.value.validation.getValidationProps(disabled.value ?? false, externalProps);
-
-  return (
-    <RadioGroupContext.Provider value={contextValue}>
-      <CompositeRoot
-        render={props.render}
-        className={props.className}
-        style={props.style}
-        state={state.value}
-        props={[getDefaultProps, getElementProps, getValidationProps]}
-        refs={[props.ref]}
-        stateAttributesMapping={fieldValidityMapping}
-        enableHomeAndEndKeys={false}
-        modifierKeys={MODIFIER_KEYS}
-      />
-    </RadioGroupContext.Provider>
-  );
-}
+}) as <Value>(props: RadioGroup.Props<Value>) => any;
 
 export interface RadioGroupState extends FieldRootState {
   /**

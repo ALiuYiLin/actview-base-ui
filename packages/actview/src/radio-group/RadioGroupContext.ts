@@ -2,7 +2,7 @@ import type { ComputedRef } from '@actview/core';
 import type { UseFieldValidationReturnValue } from '../field/root/useFieldValidation';
 import type { BaseUIChangeEventDetails } from '../internals/createBaseUIEventDetails';
 import type { BaseUIEventReasons } from '../internals/reasons';
-import { createContext } from '../internals/createContext';
+import { createContext } from 'actview';
 
 export interface RadioGroupContext<Value> {
   disabled: boolean | undefined;
@@ -21,10 +21,10 @@ export interface RadioGroupContext<Value> {
   registerInputRef: (element: HTMLInputElement | null) => void | (() => void);
 }
 
-export const RadioGroupContext = createContext<RadioGroupContext<any> | undefined>(
-  'base-ui-radio-group-context',
-  undefined,
-);
+// 框架官方 createContext（单参数：defaultValue）。Provider 注入 ref 本体，
+// use() 返回该 ref，渲染期/惰性读 .value 建立响应式追踪（对照 MeterRootContext，
+// 案例 5）——radio 家族（未重构）读 `.value` 零改动兼容。
+export const RadioGroupContext = createContext<RadioGroupContext<any> | undefined>(undefined);
 
 export function useRadioGroupContext() {
   return RadioGroupContext.use() as ComputedRef<RadioGroupContext<any> | undefined>;
