@@ -671,6 +671,45 @@ it('provides the configured direction to descendants', async () => {
 
 ---
 
+## 案例 12：Button —— getButtonProps 传函数 vs 对象：disabled 拦截的关键差异
+
+### 背景
+
+Button 重构为 defineComponent。已有 7 个测试（disabled 原生属性、render 三形态、focusableWhenDisabled、Enter/Space 键盘激活、ref）全部保持通过。
+
+### ⚠️ getButtonProps 必须传「函数」（propsGetter）且放数组最后——不能像 Toggle 那样渲染期调用成对象
+
+案例 10 说"函数=替换语义，`() => EMPTY_OBJECT` 会冲掉一切，需要追加时渲染期求值对象"——**但 getButtonProps 是例外**：
+
+| 传法 | 用户 onClick 的 disabled 拦截 | 透传属性 |
+|---|---|---|
+| 函数（propsGetter，放最后） | ✅ **拦截**：`getButtonProps(previousProps)` 把 previous 当 externalProps，用户 onClick 进 `externalOnClick`，disabled 时内部 `return` 直接跳过 | ✅ `...otherExternalProps` 展开保留 |
+| 对象（`getButtonProps()` 渲染期调用） | ❌ **不拦截**：用户 onClick 在事件链外层（mergeEventHandlers 的 ourHandler），useButton 的 onClick 只拦 externalOnClick（空），disabled 时用户 onClick 仍被调用 | ✅ |
+
+```tsx
+// ✅ Button（传函数，放最后）：merged = mergePropsN([stateAttributes, elementProps, {className, style}, getButtonProps])
+// ❌ Toggle 用户版（对象）：props = [aria对象, elementProps, getButtonProps()]——Toggle 无
+//    focusableWhenDisabled 点击测试所以没暴露；Button 测试 5 会挂
+```
+
+**为什么函数放最后**：mergePropsN 从左到右合并，`mergeEventHandlers(our, their)` 里 **their（右侧）先执行**。getButtonProps 在最右 → 它的 onClick 第一个跑（disabled → `preventDefault + return`，不调 externalOnClick=用户）→ 拦截成功。放前面则用户 onClick 先跑，拦不住。
+
+### 判断规则升级（案例 10 补充）
+
+| props 数组里的函数 | 是否消费 previousProps | 处理 |
+|---|---|---|
+| `getButtonProps`（useButton 产物，`(externalProps?) => props`） | ✅ 消费 | **传函数，放数组最后**（externalProps 链 + disabled 拦截） |
+| `() => EMPTY_OBJECT` / 不接收参数的 getter | ❌ 不消费 | 渲染期求值对象（案例 10），否则替换冲掉一切 |
+
+### 其余范式点
+
+- **data-* 属性**：`getStateAttributesProps(state)` 默认映射即可（`disabled: true` → `data-disabled=""`），无需 customMapping
+- **ref**：不解构（留 elementProps 顺带绑定到根元素，同 Toggle）——组件 ref 回调仍触发
+- **render 三形态**：render 函数形态 `render({ ...merged, ...state })`；VNode 形态 `key` 显式透传；默认 `<button {...merged} />`
+- **类型**：`mergePropsN([...] as any)`——getButtonProps 事件签名（BaseUIEvent）与 JSX 事件类型不匹配（tsgo 基线同款错误），运行时兼容
+
+---
+
 ## 案例总结：定义组件范式清单（后续组件照此实现）
 
 ```tsx
@@ -716,3 +755,4 @@ export const Xxx = defineComponent(function (componentProps: Xxx.Props) {
 | props 数组传函数？ | 对象=合并；函数=propsGetter **替换**（`fn(previous)` 返回值整体替换 merged）——`() => EMPTY_OBJECT` 会冲掉透传属性，需要追加时渲染期求值对象（案例 10） |
 | 无 DOM 的 Provider 组件？ | defineComponent + setup computed + 渲染期解构 children + `value={contextValue.value}` 传值，无三形态（案例 11） |
 | context 用自封装还是官方？ | 已重构家族用**框架官方 `createContext(defaultValue)`**；自封装 internals/createContext（双参+name）只在未重构家族暂存，逐个迁移时换掉（案例 11） |
+| getButtonProps 传函数还是对象？ | **传函数放数组最后**（previousProps 进 externalProps → disabled 拦截生效）；`() => EMPTY_OBJECT` 类不消费 previous 的函数才渲染期求值对象（案例 12） |
