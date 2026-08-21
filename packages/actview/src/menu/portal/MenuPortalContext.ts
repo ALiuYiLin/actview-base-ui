@@ -1,10 +1,7 @@
 import type { ComputedRef } from '@actview/core';
-import { createContext } from '../../internals/createContext';
+import { createContext } from 'actview';
 
-export const MenuPortalContext = createContext<boolean | undefined>(
-  'base-ui-menu-portal-context',
-  undefined,
-);
+export const MenuPortalContext = createContext<boolean | undefined>(undefined);
 
 export function useMenuPortalContext() {
   const value = MenuPortalContext.use();

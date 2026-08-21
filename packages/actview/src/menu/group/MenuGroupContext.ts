@@ -1,14 +1,11 @@
 import type { ComputedRef } from '@actview/core';
-import { createContext } from '../../internals/createContext';
+import { createContext } from 'actview';
 
 export type MenuGroupContext = (
   next: string | undefined | ((current: string | undefined) => string | undefined),
 ) => void;
 
-export const MenuGroupContext = createContext<MenuGroupContext | undefined>(
-  'base-ui-menu-group-context',
-  undefined,
-);
+export const MenuGroupContext = createContext<MenuGroupContext | undefined>(undefined);
 
 export function useMenuGroupRootContext(): ComputedRef<MenuGroupContext> {
   const context = MenuGroupContext.use();

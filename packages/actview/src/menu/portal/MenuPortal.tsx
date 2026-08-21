@@ -1,7 +1,7 @@
-import { computed } from 'actview';
+import { computed, defineComponent } from 'actview';
 import { createElement } from '@actview/jsx';
 import { FloatingPortal } from '../../floating-ui-actview';
-import type { BaseUIComponentProps } from '../../internals/types';
+import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
 import { useMenuRootContext } from '../root/MenuRootContext';
 import { MenuPortalContext } from './MenuPortalContext';
 
@@ -12,14 +12,13 @@ import { MenuPortalContext } from './MenuPortalContext';
  *
  * Documentation: [Base UI Menu](https://base-ui.com/react/components/menu)
  */
-export function MenuPortal(props: MenuPortal.Props) {
-  const { keepMounted = false, ...portalProps } = props;
-
+export const MenuPortal = defineComponent(function (props: MenuPortal.Props) {
+  // ================= setup（只执行一次） =================
   const rootContext = useMenuRootContext();
   const { store, parent } = rootContext.value!;
   const mounted = store.useState('mounted');
 
-  const shouldRender = computed(() => mounted.value || keepMounted);
+  const shouldRender = computed(() => mounted.value || props.keepMounted);
 
   // The hidden `aria-owns` owner renders here, in the React tree, so the role must be decided by
   // where this portal sits, not by the active trigger. `parent` comes from context (the `Menu.Root`
@@ -29,14 +28,19 @@ export function MenuPortal(props: MenuPortal.Props) {
     return parentType === 'menu' || parentType === 'menubar' ? 'group' : undefined;
   });
 
-  return (
-    <MenuPortalContext.Provider value={computed(() => keepMounted)}>
-      {/* The hidden `aria-owns` owner needs `group` only under role-constrained parents. */}
-      {shouldRender.value &&
-        createElement(FloatingPortal, { ...portalProps, portalOwnerRole: portalOwnerRole.value })}
-    </MenuPortalContext.Provider>
-  );
-}
+  // ================= render（每次更新执行） =================
+  return () => {
+    const { keepMounted = false, ...portalProps } = props;
+
+    return (
+      <MenuPortalContext.Provider value={keepMounted}>
+        {/* The hidden `aria-owns` owner needs `group` only under role-constrained parents. */}
+        {shouldRender.value &&
+          createElement(FloatingPortal, { ...portalProps, portalOwnerRole: portalOwnerRole.value })}
+      </MenuPortalContext.Provider>
+    );
+  };
+}) as (props: MenuPortal.Props) => any;
 
 export interface MenuPortalState {}
 

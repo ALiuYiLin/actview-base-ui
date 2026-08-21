@@ -1,11 +1,12 @@
-import { computed } from 'actview';
+import { computed, defineComponent, ref } from 'actview';
+import { useMergedRefs } from '@base-ui/actview-utils/useMergedRefs';
 import { useMenuPositionerContext } from '../positioner/MenuPositionerContext';
 import { useMenuRootContext } from '../root/MenuRootContext';
-import { useRenderElement } from '../../internals/useRenderElement';
 import type { Side, Align } from '../../internals/useAnchorPositioning';
 import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
+import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
 import { popupStateMapping } from '../../utils/popupStateMapping';
-import { mergeProps } from '../../merge-props';
+import { mergePropsN } from '../../merge-props';
 
 /**
  * Displays an element positioned against the menu anchor.
@@ -13,14 +14,8 @@ import { mergeProps } from '../../merge-props';
  *
  * Documentation: [Base UI Menu](https://base-ui.com/react/components/menu)
  */
-export function MenuArrow(componentProps: MenuArrow.Props) {
-  const {
-    render: _render,
-    className: _className,
-    style: _style,
-    ...elementProps
-  } = componentProps;
-
+export const MenuArrow = defineComponent(function (componentProps: MenuArrow.Props) {
+  // ================= setup（只执行一次） =================
   const rootContext = useMenuRootContext();
   const store = rootContext.value!.store;
   const positionerContext = useMenuPositionerContext();
@@ -33,22 +28,45 @@ export function MenuArrow(componentProps: MenuArrow.Props) {
     uncentered: positionerContext.value.arrowUncentered.value,
   }));
 
-  const getElement = useRenderElement('div', componentProps, {
-    ref: [positionerContext.value.arrowRef, componentProps.ref],
-    stateAttributesMapping: popupStateMapping,
-    state,
-    props: [
-      (prev: any) =>
-        mergeProps(prev, {
-          style: positionerContext.value.arrowStyles.value,
-          'aria-hidden': 'true',
-        }) as HTMLProps,
-      (prev: any) => mergeProps(prev, elementProps) as HTMLProps,
-    ],
-  });
+  const rootRef = ref<HTMLDivElement | null>(null);
+  const mergedRef = useMergedRefs(positionerContext.value.arrowRef, componentProps.ref, rootRef);
 
-  return <>{getElement()}</>;
-}
+  // ================= render（每次更新执行） =================
+  return () => {
+    const {
+      render,
+      className,
+      style,
+      ref: _ref,
+      ...elementProps
+    } = componentProps;
+
+    const stateValue = state.value;
+    const arrowStyles = positionerContext.value.arrowStyles.value;
+
+    const stateAttributes = getStateAttributesProps(stateValue, popupStateMapping);
+
+    const merged = mergePropsN([
+      stateAttributes,
+      elementProps,
+      {
+        'aria-hidden': 'true',
+        style: typeof arrowStyles === 'object' ? { ...arrowStyles } : arrowStyles,
+        className: typeof className === 'function' ? className(stateValue) : className,
+      },
+    ]);
+
+    // render 三形态
+    if (typeof render === 'function') {
+      return render({ ...merged, ...stateValue, ref: mergedRef });
+    }
+    if (render) {
+      const Tag = render.type as any;
+      return <Tag key={render.key} {...render.props} {...merged} ref={mergedRef} />;
+    }
+    return <div ref={mergedRef} {...merged} />;
+  };
+}) as (props: MenuArrow.Props) => any;
 
 export interface MenuArrowState {
   /**

@@ -1,12 +1,13 @@
-import { computed } from 'actview';
+import { computed, defineComponent, ref } from 'actview';
+import { useMergedRefs } from '@base-ui/actview-utils/useMergedRefs';
 import { REGULAR_ITEM, useMenuItem } from './useMenuItem';
 import { useMenuRootContext } from '../root/MenuRootContext';
-import { useRenderElement } from '../../internals/useRenderElement';
 import { useBaseUiId } from '../../internals/useBaseUiId';
+import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
 import type { BaseUIComponentProps, HTMLProps, NonNativeButtonProps } from '../../internals/types';
 import { useCompositeListItem } from '../../internals/composite/list/useCompositeListItem';
 import { useMenuPositionerContext } from '../positioner/MenuPositionerContext';
-import { mergeProps } from '../../merge-props';
+import { mergePropsN } from '../../merge-props';
 
 /**
  * An individual interactive item in the menu.
@@ -14,39 +15,28 @@ import { mergeProps } from '../../merge-props';
  *
  * Documentation: [Base UI Menu](https://base-ui.com/react/components/menu)
  */
-export function MenuItem(componentProps: MenuItem.Props) {
-  const {
-    render: _render,
-    className: _className,
-    id: idProp,
-    label,
-    nativeButton = false,
-    disabled: disabledProp = false,
-    closeOnClick = true,
-    style: _style,
-    ...elementProps
-  } = componentProps;
-
-  const listItem = useCompositeListItem({ guess: true, label });
+export const MenuItem = defineComponent(function (componentProps: MenuItem.Props) {
+  // ================= setup（只执行一次） =================
+  const listItem = useCompositeListItem({ guess: true, label: componentProps.label });
   const menuPositionerContext = useMenuPositionerContext(true);
-  const id = useBaseUiId(idProp);
+  const id = useBaseUiId(componentProps.id);
 
   const rootContext = useMenuRootContext();
   const store = rootContext.value!.store;
   const rootDisabled = store.useState('disabled');
-  const disabled = computed(() => disabledProp || rootDisabled.value);
+  const disabled = computed(() => (componentProps.disabled ?? false) || rootDisabled.value);
   const highlighted = store.useState('isActive', listItem.index.value);
   const itemProps = store.useState('itemProps');
 
   const nodeId = () => menuPositionerContext.value?.context.nodeId;
 
   const { getItemProps, itemRef } = useMenuItem({
-    closeOnClick,
+    closeOnClick: componentProps.closeOnClick ?? true,
     disabled: () => disabled.value,
     highlighted: () => highlighted.value,
     id,
     store,
-    nativeButton,
+    nativeButton: componentProps.nativeButton ?? false,
     nodeId,
     itemMetadata: REGULAR_ITEM,
   });
@@ -56,20 +46,52 @@ export function MenuItem(componentProps: MenuItem.Props) {
     highlighted: highlighted.value,
   }));
 
-  const getElement = useRenderElement('div', componentProps, {
-    state,
-    props: [
-      // `itemProps` carries store-reactive values, so merge it inside a getter (setup would
-      // snapshot it — AD-36). Merge (not spread) so `on*` handlers chain (AD-20/AD-27).
-      (prev: any) => mergeProps(prev, itemProps.value) as HTMLProps,
-      (prev: any) => mergeProps(prev, elementProps) as HTMLProps,
-      getItemProps,
-    ],
-    ref: [itemRef, componentProps.ref, listItem.ref],
-  });
+  const rootRef = ref<HTMLDivElement | null>(null);
+  const mergedRef = useMergedRefs(itemRef, componentProps.ref, listItem.ref, rootRef);
 
-  return <>{getElement()}</>;
-}
+  // ================= render（每次更新执行） =================
+  return () => {
+    const {
+      render,
+      className,
+      style,
+      id: _id,
+      label: _label,
+      nativeButton: _nativeButton,
+      disabled: _disabled,
+      closeOnClick: _closeOnClick,
+      ref: _ref,
+      ...elementProps
+    } = componentProps;
+
+    const stateValue = state.value;
+    const currentItemProps = itemProps.value;
+
+    const stateAttributes = getStateAttributesProps(stateValue);
+
+    // `itemProps` carries store-reactive values, so read it in render (setup would snapshot it).
+    const merged = mergePropsN([
+      stateAttributes,
+      elementProps,
+      currentItemProps,
+      {
+        className: typeof className === 'function' ? className(stateValue) : className,
+        style: typeof style === 'function' ? style(stateValue) : style,
+      },
+      (p: HTMLProps) => getItemProps(p),
+    ]);
+
+    // render 三形态
+    if (typeof render === 'function') {
+      return render({ ...merged, ...stateValue, ref: mergedRef });
+    }
+    if (render) {
+      const Tag = render.type as any;
+      return <Tag key={render.key} {...render.props} {...merged} ref={mergedRef} />;
+    }
+    return <div ref={mergedRef} {...merged} />;
+  };
+}) as (props: MenuItem.Props) => any;
 
 export interface MenuItemState {
   /**

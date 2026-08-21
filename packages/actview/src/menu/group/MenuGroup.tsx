@@ -1,8 +1,8 @@
-import { computed, ref } from 'actview';
+import { computed, defineComponent, ref } from 'actview';
+import { useMergedRefs } from '@base-ui/actview-utils/useMergedRefs';
 import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { useRenderElement } from '../../internals/useRenderElement';
 import { MenuGroupContext } from './MenuGroupContext';
-import { mergeProps } from '../../merge-props';
+import { mergePropsN } from '../../merge-props';
 
 /**
  * Groups related menu items with the corresponding label.
@@ -10,14 +10,8 @@ import { mergeProps } from '../../merge-props';
  *
  * Documentation: [Base UI Menu](https://base-ui.com/react/components/menu)
  */
-export function MenuGroup(componentProps: MenuGroup.Props) {
-  const {
-    render: _render,
-    className: _className,
-    style: _style,
-    ...elementProps
-  } = componentProps;
-
+export const MenuGroup = defineComponent(function (componentProps: MenuGroup.Props) {
+  // ================= setup（只执行一次） =================
   const labelId = ref<string | undefined>(undefined);
 
   const setLabelId: MenuGroupContext = (next) => {
@@ -25,24 +19,47 @@ export function MenuGroup(componentProps: MenuGroup.Props) {
       typeof next === 'function' ? (next as (current: string | undefined) => string | undefined)(labelId.value) : next;
   };
 
-  const getElement = useRenderElement('div', componentProps, {
-    ref: componentProps.ref,
-    props: [
-      (prev: any) =>
-        mergeProps(prev, {
-          role: 'group',
-          'aria-labelledby': labelId.value,
-        }) as HTMLProps,
-      (prev: any) => mergeProps(prev, elementProps) as HTMLProps,
-    ],
-  });
+  const rootRef = ref<HTMLDivElement | null>(null);
+  const mergedRef = useMergedRefs(componentProps.ref, rootRef);
 
-  return (
-    <MenuGroupContext.Provider value={computed(() => setLabelId)}>
-      {getElement()}
-    </MenuGroupContext.Provider>
-  );
-}
+  // ================= render（每次更新执行） =================
+  return () => {
+    const {
+      render,
+      className,
+      style,
+      ref: _ref,
+      ...elementProps
+    } = componentProps;
+
+    const merged = mergePropsN([
+      elementProps,
+      {
+        role: 'group',
+        'aria-labelledby': labelId.value,
+        className: typeof className === 'function' ? className({} as any) : className,
+        style: typeof style === 'function' ? style({} as any) : style,
+      },
+    ]);
+
+    const element = (() => {
+      if (typeof render === 'function') {
+        return render({ ...merged, ref: mergedRef });
+      }
+      if (render) {
+        const Tag = render.type as any;
+        return <Tag key={render.key} {...render.props} {...merged} ref={mergedRef} />;
+      }
+      return <div ref={mergedRef} {...merged} />;
+    })();
+
+    return (
+      <MenuGroupContext.Provider value={setLabelId}>
+        {element}
+      </MenuGroupContext.Provider>
+    );
+  };
+}) as (props: MenuGroup.Props) => any;
 
 export interface MenuGroupProps extends BaseUIComponentProps<'div', MenuGroupState> {
   /**

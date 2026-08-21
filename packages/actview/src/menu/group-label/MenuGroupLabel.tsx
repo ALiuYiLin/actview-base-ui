@@ -1,9 +1,8 @@
-import { useIsoLayoutEffect } from '@base-ui/actview-utils/useIsoLayoutEffect';
+import { defineComponent, useRootElement, watch } from 'actview';
 import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { useRenderElement } from '../../internals/useRenderElement';
 import { useBaseUiId } from '../../internals/useBaseUiId';
 import { useMenuGroupRootContext } from '../group/MenuGroupContext';
-import { mergeProps } from '../../merge-props';
+import { mergePropsN } from '../../merge-props';
 
 /**
  * An accessible label that is automatically associated with its parent group.
@@ -11,40 +10,56 @@ import { mergeProps } from '../../merge-props';
  *
  * Documentation: [Base UI Menu](https://base-ui.com/react/components/menu)
  */
-export function MenuGroupLabel(componentProps: MenuGroupLabel.Props) {
-  const {
-    render: _render,
-    className: _className,
-    style: _style,
-    id: idProp,
-    ...elementProps
-  } = componentProps;
+export const MenuGroupLabel = defineComponent(function (componentProps: MenuGroupLabel.Props) {
+  // ================= setup（只执行一次） =================
+  const rootRef = useRootElement();
 
-  const id = useBaseUiId(idProp);
+  const id = useBaseUiId(componentProps.id);
 
   const setLabelId = useMenuGroupRootContext().value;
 
-  useIsoLayoutEffect(() => {
-    setLabelId(id);
-    return () => {
-      setLabelId((currentId) => (currentId === id ? undefined : currentId));
-    };
-  });
+  watch(
+    () => id,
+    () => {
+      setLabelId(id);
+      return () => {
+        setLabelId((currentId: string | undefined) => (currentId === id ? undefined : currentId));
+      };
+    },
+    { immediate: true },
+  );
 
-  const getElement = useRenderElement('div', componentProps, {
-    ref: componentProps.ref,
-    props: [
-      (prev: any) =>
-        mergeProps(prev, {
-          id,
-          role: 'presentation',
-        }) as HTMLProps,
-      (prev: any) => mergeProps(prev, elementProps) as HTMLProps,
-    ],
-  });
+  // ================= render（每次更新执行） =================
+  return () => {
+    const {
+      render,
+      className,
+      style,
+      id: _id,
+      ref: _ref,
+      ...elementProps
+    } = componentProps;
 
-  return <>{getElement()}</>;
-}
+    const merged = mergePropsN([
+      elementProps,
+      {
+        role: 'presentation',
+        className: typeof className === 'function' ? className({} as any) : className,
+        style: typeof style === 'function' ? style({} as any) : style,
+      },
+    ]);
+
+    // render 三形态
+    if (typeof render === 'function') {
+      return render({ ...merged, id, ref: rootRef });
+    }
+    if (render) {
+      const Tag = render.type as any;
+      return <Tag key={render.key} {...render.props} {...merged} id={id} ref={rootRef} />;
+    }
+    return <div ref={rootRef} {...merged} id={id} />;
+  };
+}) as (props: MenuGroupLabel.Props) => any;
 
 export interface MenuGroupLabelProps extends BaseUIComponentProps<'div', MenuGroupLabelState> {}
 
