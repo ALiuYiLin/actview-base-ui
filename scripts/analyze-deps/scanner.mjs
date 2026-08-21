@@ -40,6 +40,9 @@ export function compileGlob(pattern) {
       }
     } else if (ch === '?') {
       reStr += '[^/\\\\]';
+    } else if (ch === '/' || ch === '\\') {
+      // 路径分隔符：同时匹配 / 和 \（跨平台兼容）
+      reStr += '[/\\\\]';
     } else if (/[.+^${}()|[\]\\]/.test(ch)) {
       reStr += '\\' + ch;
     } else {
