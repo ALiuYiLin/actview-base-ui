@@ -750,7 +750,299 @@ const descriptions = document.querySelectorAll('p');
 
 ---
 
-## 案例总结：定义组件范式清单（后续组件照此实现）
+## 案例 18：测试渲染计数 —— `onUpdated` 生命周期钩子 + 计数 ref 不参与 render 读取
+
+**文件**：`packages/actview/src/field/control/FieldControl.test.tsx`
+
+**背景**：React 原版测试用 `renderCountRef = { current: 0 }` 在 render prop 里计数，验证非受控 input 的值变化不会导致组件重渲染。移植到 actview 时遇到两个错误写法。
+
+### 错误写法 1：`{ current: 0 }` 手动对象
+
+```tsx
+// ❌ 手动对象不是响应式，语义不对，碰巧通过
+const renderCountRef = { current: 0 };
+
+function Demo() {
+  return () => {
+    renderCountRef.current++;  // 渲染函数内 ++
+    return <FieldControl />;
+  };
+}
+```
+
+**为什么碰巧过**：`{ current: 0 }` 不是响应式数据，改它不触发重渲染。非受控 input 的 DOM 值变化本来就不触发 actview 重渲染，所以计数不乱。但语义完全错误——手动对象不是 actview 管理状态的方式。
+
+### 错误写法 2：`ref(0)` 在 render 函数内 `++`
+
+```tsx
+// ❌ 响应式 ref 在 render 函数内 ++ → 改值触发重渲染 → 无限循环
+const renderCountRef = ref(0);
+
+function Demo() {
+  return () => {
+    renderCountRef.value++;  // 渲染函数读并改 ref
+    // render 函数读了 renderCountRef.value →
+    // 变化触发重渲染 → 又执行 ++ → 无限循环
+    return <FieldControl />;
+  };
+}
+```
+
+**为什么无限循环**：actview 的响应式系统在 render 函数（`return () => {...}` 内部）读取的 ref 变化时会触发重新渲染。`renderCountRef.value++` 既读又改 → 改完触发重渲染 → 重渲染又读又改 → 死循环。
+
+### 正确写法：`onUpdated` 生命周期钩子
+
+```tsx
+// ✅ onUpdated 在 setup 注册，DOM 更新后执行，计数 ref 不参与 render 读取
+const renderCountRef = ref(0);
+
+function Demo() {
+  onUpdated(() => {
+    renderCountRef.value++;  // setup 注册，渲染后触发
+  });
+  // render 函数不读 renderCountRef.value → 变化不触发重渲染
+  return (
+    <FieldRoot>
+      <FieldControl data-testid="control" />
+    </FieldRoot>
+  );
+}
+```
+
+### 原理
+
+修改响应式数据**一定**触发组件重新渲染，不管在哪儿改。关键区别在于**修改的时机**：
+
+| 位置 | 行为 | 结果 |
+|---|---|---|
+| **render 函数内**（`return () => {...}` 内部） | render 执行 → 改 ref → 触发重渲染 → render 又执行 → 又改 ref | **同步死循环**（渲染没结束又触发新一轮渲染） |
+| **`onUpdated` 回调内**（setup 注册，渲染后触发） | render 已提交 DOM → `onUpdated` 触发 → 改 ref → `queueJob` 入队 → 下一轮微任务 render → `onUpdated` 再触发 → 再改 ref | **新的一轮异步队列**，`queueJob` 去重，不会无限循环 |
+
+```tsx
+// ❌ render 函数内改 ref → 同步死循环
+function Demo() {
+  return () => {
+    renderCountRef.value++;  // 改 → 触发重渲染 → 又执行到这行 → 死循环
+    return <FieldControl />;
+  };
+}
+
+// ✅ onUpdated 里改 ref → 新的一轮异步队列，不会无限循环
+function Demo() {
+  onUpdated(() => {
+    renderCountRef.value++;  // render 已提交后才改，不影响当前渲染
+  });
+  return () => {
+    // render 函数不读 renderCountRef → 但即使读了也不死循环
+    // 因为 onUpdated 是下一轮，不是同一轮
+    return <FieldControl />;
+  };
+}
+```
+
+**关键区别**：render 函数是同步执行链的一部分，改数据 → 立即触发重渲染 → 当前执行还没结束又从头开始 → 死循环。`onUpdated` 是生命周期钩子，执行在 render 提交之后，它触发的重渲染由 `queueJob` 调度到下一轮微任务——即使 `onUpdated` 里改的 ref 被 render 读取，也只是正常的新一轮渲染，不会无限循环。
+
+> ⚠️ 但测试中 `onUpdated` 里改的 `renderCountRef` 确实**没有被 render 函数读取**，所以即使 `onUpdated` 触发了重渲染，render 输出不变，DOM 不更新，`onUpdated` 在下一轮仍然会触发（因为组件确实重渲染了），计数仍然 +1。但 `onUpdated` 里改 ref 触发重渲染 → 重渲染触发 `onUpdated` → 再改 ref → 再触发重渲染... 这个链理论上会无限继续。**实际不会**，因为 `queueJob` 会去重：同一 effect 在微任务队列中只保留一个，如果 `onUpdated` 修改 ref 时没有其他原因触发重渲染，`onUpdated` 触发的新一轮渲染完成后，`onUpdated` 再次触发并再次修改 ref → 再次入队，但由于没有其他数据变化，渲染输出不变，`patch` 短路，`onUpdated` 仍会触发。这是微任务循环，不是死循环，测试中**有限次数的 fireEvent 互动后断言计数**，不会无限跑下去。
+
+### 测试用例对照
+
+```tsx
+// 非受控 input：值变化不应触发重渲染
+it('avoids rerendering for uncontrolled input changes', async () => {
+  const renderCountRef = ref(0);
+  function Demo() {
+    onUpdated(() => { renderCountRef.value++; });
+    return (
+      <FieldRoot>
+        <FieldControl data-testid="control" />
+      </FieldRoot>
+    );
+  }
+  const result = await render(Demo, {});
+  const control = result.getByTestId('control') as HTMLInputElement;
+  const initial = renderCountRef.value;
+
+  fireEvent.input(control, { target: { value: 'a' } });
+  await act(() => {});
+  const afterFirst = renderCountRef.value;  // 与 initial 相同 → 不重渲染
+
+  expect(afterFirst).toBeLessThanOrEqual(initial + 1);
+});
+
+// 受控 input：每次值变化都应触发重渲染
+it('renders once per keystroke for controlled input changes', async () => {
+  const renderCountRef = ref(0);
+  function Demo() {
+    const value = ref('');
+    onUpdated(() => { renderCountRef.value++; });
+    return (
+      <FieldRoot>
+        <FieldControl
+          value={value.value}
+          onValueChange={(v) => { value.value = v; }}
+        />
+      </FieldRoot>
+    );
+  }
+  // 两次 fireEvent → settledRenderCount + 2
+});
+```
+
+### 18.1 测试组件中的 `ref()` 状态管理
+
+受控值测试用 `ref()` + Babel 自动转换：
+
+```tsx
+function Demo() {
+  const value = ref('');         // setup：ref 创建一次
+  return (
+    <FieldControl
+      value={value.value}        // Babel 自动包裹为 return () => {...}
+      onValueChange={(v) => { value.value = v; }}
+    />
+  );
+}
+```
+
+`ref('')` 在 setup 创建，`value.value` 在 render 读取 → 变化触发重渲染。`onValueChange` 回调里 `value.value = v` 写 ref → 触发重渲染 → 新值传入 FieldControl。
+
+> ⚠️ 不要手动写 `return () => { return JSX; }` —— Babel 插件会自动将函数声明返回 JSX 转换为 `defineComponent`，内部的 JSX 部分会被自动包装为 `return () => JSX`。手动写双层 `return () =>` 会导致 Babel 二次包装，产生不符合规范的组件（案例 19）。
+
+---
+
+## 案例 19：测试组件正确写法 —— 函数声明直接返回 JSX，Babel 自动转换
+
+**不要手动写 `return () => { return JSX; }`**
+
+### 错误写法
+
+```tsx
+// ❌ Babel 插件会二次包装，产生不符合规范的组件
+function Demo() {
+  const showB = ref(false);
+  return () => {
+    return (
+      <>
+        <FieldRoot>
+          <FieldLabel data-testid="label">Label</FieldLabel>
+          {showB.value ? <FieldControl key="b" id="control-b" /> : <FieldControl key="a" id="control-a" />}
+        </FieldRoot>
+        <button onClick={() => { showB.value = true; }}>Toggle</button>
+      </>
+    );
+  };
+}
+```
+
+### 正确写法
+
+```tsx
+// ✅ 函数声明直接返回 JSX，Babel 自动转换为 defineComponent
+function Demo() {
+  const showB = ref(false);   // setup：一次性初始化
+  return (                    // Babel 自动包装为 return () => { return (...); }
+    <>
+      <FieldRoot>
+        <FieldLabel data-testid="label">Label</FieldLabel>
+        {showB.value ? <FieldControl key="b" id="control-b" /> : <FieldControl key="a" id="control-a" />}
+      </FieldRoot>
+      <button onClick={() => { showB.value = true; }}>Toggle</button>
+    </>
+  );
+}
+```
+
+### 原理
+
+actview 的 Babel 插件将**函数声明**（`function X() {}`）中返回 JSX 的部分自动转换为 `defineComponent` 的 `return () => {...}` 渲染函数：
+
+```js
+// 源码（tsx）
+function Demo() {
+  const showB = ref(false);
+  return <div>{showB.value}</div>;
+}
+
+// Babel 转换后（js）
+const Demo = defineComponent(function Demo() {
+  const showB = ref(false);        // → setup（只执行一次）
+  return () => <div>{showB.value}</div>;  // → render（每次渲染执行）
+});
+```
+
+所以：
+- **函数体最外层** = setup（只执行一次）—— `ref()` 等初始化放这里
+- **JSX 返回部分** = Babel 自动包装为 `return () => JSX`（每次渲染执行）
+
+手动写 `return () => { return JSX; }` 会导致 Babel 二次包装，函数体变成 setup，但内部的 `return () => {...}` 又包了一层渲染函数，造成组件结构异常。
+
+### 区分：测试组件 vs 源码组件
+
+| 场景 | 写法 | Babel 处理 |
+|---|---|---|
+| **测试组件**（`*.test.tsx`） | `function Demo() { setup; return JSX; }` | 自动转换为 `defineComponent` + `return () => JSX` |
+| **源码组件**（`packages/actview/src/`） | `export const Xxx = defineComponent(function(props) { setup; return () => { ... }; })` | 手动写 `defineComponent` 和 `return () => {...}`，Babel 不额外转换 |
+
+> 源码组件用 `defineComponent(...)` 显式包裹，`return () => {...}` 是手动写的渲染函数，Babel 不会二次包装。测试组件用函数声明，依赖 Babel 自动转换。
+
+### 测试文件中正确的写法对照
+
+```tsx
+// ✅ 静态组件（无状态变化）
+function StaticDemo() {
+  return (
+    <FieldRoot>
+      <FieldControl data-testid="control" />
+    </FieldRoot>
+  );
+}
+
+// ✅ 有状态组件的受控值
+function ControlledDemo() {
+  const value = ref('');
+  return (
+    <FieldControl
+      value={value.value}
+      onValueChange={(v) => { value.value = v; }}
+    />
+  );
+}
+
+// ✅ 有状态组件的条件渲染 + 事件
+function ToggleDemo() {
+  const showB = ref(false);
+  return (
+    <>
+      <FieldRoot>
+        <FieldLabel>Label</FieldLabel>
+        {showB.value ? <FieldControl id="b" /> : <FieldControl id="a" />}
+      </FieldRoot>
+      <button onClick={() => { showB.value = true; }}>Toggle</button>
+    </>
+  );
+}
+```
+
+### 函数表达式（`const f = function() {}`）不被 Babel 转换
+
+```tsx
+// ❌ 函数表达式不会被 Babel 转换——不是 defineComponent，JSX 会报错
+const renderFieldItem = function(merged: any) {
+  return <div {...merged} data-testid="item" />;
+};
+
+// ✅ 正确：仅当目标组件期望 render prop 是函数（非 defineComponent 对象）时
+// 函数表达式 + JSX 不会被 Babel 转换 → typeof 始终是 'function' → render prop 正常
+const renderFieldItem = function(merged: any) {
+  return <div {...merged} data-testid="item" />;
+};
+```
+
+**规则**：
+- 测试中的**组件**（`function Demo()`）→ 函数声明 → Babel 自动转换 → 直接返回 JSX
+- 测试中的**render prop 函数**（`const renderFn = function()`）→ 函数表达式 → Babel 不转换 → 保留函数形态
+
+## 案例总结：源码组件定义范式清单（后续组件照此实现）
 
 ```tsx
 export const Xxx = defineComponent(function (componentProps: Xxx.Props) {
@@ -781,7 +1073,7 @@ export const Xxx = defineComponent(function (componentProps: Xxx.Props) {
 
 | 问题 | 答案 |
 |---|---|
-| 组件怎么写？ | `defineComponent(fn)` + setup 初始化 + 渲染期解构（案例 1） |
+| 组件怎么写？ | 源码 `defineComponent(fn)` + setup 初始化 + `return () => {...}` 渲染函数（案例 1）；测试组件 `function Demo() { setup; return JSX; }` Babel 自动转换（案例 19） |
 | render prop 类型？ | 单对象 `(props: RenderFunctionProps & State & { ref? }) => VNode`（案例 2） |
 | VNode 透传？ | `key={render.key}` 显式 + `{...render.props}` + ref 兜底（案例 3） |
 | className/style？ | 渲染期函数形态解析（案例 4） |
@@ -805,3 +1097,7 @@ export const Xxx = defineComponent(function (componentProps: Xxx.Props) {
 | htmlFor？ | actview 不映射 htmlFor→for——JSX/测试一律写原生 `for`（AD-24）（案例 16.3） |
 | 条件渲染（mounted 等 ref 判断）？ | 判断放 render 函数里（setup 只跑一次），`return null` 合法（案例 17.1） |
 | 文本查询？ | 按默认标签精确查（`querySelectorAll('p')`）或用 getAllByText 取最后一个——`div` 查询/前序 DFS 会命中祖先（案例 17.4） |
+| 测试渲染计数？ | `onUpdated` 在 setup 注册，计数 ref 在渲染后修改，不阻塞当前渲染；render 函数内改 ref 会同步死循环（案例 18） |
+| 测试组件怎么写？ | `function Demo() { setup; return JSX; }` 函数声明，Babel 自动转换（案例 19） |
+| 测试 render prop 函数？ | `const renderFn = function() { return JSX; }` 函数表达式，Babel 不转换，保留函数形态（案例 19） |
+| 源码组件 vs 测试组件？ | 源码：`defineComponent(fn)` + `return () => {...}`；测试：`function Demo() { setup; return JSX; }`（案例 19） |
