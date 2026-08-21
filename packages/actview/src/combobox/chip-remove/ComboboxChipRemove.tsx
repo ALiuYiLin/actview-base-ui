@@ -1,6 +1,5 @@
-import { computed } from 'actview';
-import { useRenderElement } from '../../internals/useRenderElement';
-import type { BaseUIComponentProps, NativeButtonProps } from '../../internals/types';
+import { computed, defineComponent } from 'actview';
+import type { BaseUIComponentProps, HTMLProps, NativeButtonProps } from '../../internals/types';
 import { useComboboxRootContext } from '../root/ComboboxRootContext';
 import { useComboboxChipContext } from '../chip/ComboboxChipContext';
 import { useButton } from '../../internals/use-button';
@@ -8,6 +7,7 @@ import { stopEvent } from '../../floating-ui-actview/utils';
 import { createChangeEventDetails } from '../../internals/createBaseUIEventDetails';
 import { REASONS } from '../../internals/reasons';
 import { findItemIndex } from '../../internals/itemEquality';
+import { mergePropsN } from '../../merge-props';
 
 /**
  * A button to remove a chip.
@@ -15,28 +15,21 @@ import { findItemIndex } from '../../internals/itemEquality';
  *
  * Documentation: [Base UI Combobox](https://base-ui.com/react/components/combobox)
  */
-export function ComboboxChipRemove(componentProps: ComboboxChipRemove.Props) {
-  const {
-    render: _render,
-    className: _className,
-    disabled: disabledProp = false,
-    nativeButton = true,
-    style: _style,
-    ...elementProps
-  } = componentProps;
-
+export const ComboboxChipRemove = defineComponent(function (componentProps: ComboboxChipRemove.Props) {
+  // ================= setup（只执行一次） =================
   const store = useComboboxRootContext();
-  const { index } = useComboboxChipContext().value;
+  const chipContext = useComboboxChipContext();
+  const chipIndex = computed(() => chipContext.value.index);
 
   const comboboxDisabled = store.useState('disabled');
   const readOnly = store.useState('readOnly');
   const selectedValue = store.useState('selectedValue');
   const isItemEqualToValue = store.useState('isItemEqualToValue');
 
-  const disabled = computed(() => comboboxDisabled.value || disabledProp);
+  const disabled = computed(() => comboboxDisabled.value || (componentProps.disabled ?? false));
 
   const { buttonRef, getButtonProps } = useButton({
-    native: nativeButton,
+    native: computed(() => componentProps.nativeButton ?? true),
     disabled: computed(() => disabled.value || readOnly.value),
     focusableWhenDisabled: true,
   });
@@ -69,12 +62,12 @@ export function ComboboxChipRemove(componentProps: ComboboxChipRemove.Props) {
 
   function removeChip(event: MouseEvent | KeyboardEvent) {
     const eventDetails = createChangeEventDetails(REASONS.chipRemovePress, event);
-    const removedItem = selectedValue.value[index];
+    const removedItem = selectedValue.value[chipIndex.value];
 
     clearActiveIndexForRemovedItem(removedItem);
 
     store.state.setSelectedValue(
-      selectedValue.value.filter((_: any, i: number) => i !== index),
+      selectedValue.value.filter((_: any, i: number) => i !== chipIndex.value),
       eventDetails,
     );
 
@@ -82,10 +75,22 @@ export function ComboboxChipRemove(componentProps: ComboboxChipRemove.Props) {
     return eventDetails;
   }
 
-  const getElement = useRenderElement('button', componentProps, {
-    ref: [componentProps.ref, buttonRef],
-    state,
-    props: [
+  // ================= render（每次更新执行） =================
+  return () => {
+    const {
+      render,
+      className,
+      style,
+      disabled: _disabled,
+      nativeButton: _nativeButton,
+      ref: _ref,
+      ...elementProps
+    } = componentProps;
+
+    const stateValue = state.value;
+
+    const merged = mergePropsN([
+      elementProps,
       {
         tabIndex: -1,
         onMouseDown(event: MouseEvent) {
@@ -105,14 +110,23 @@ export function ComboboxChipRemove(componentProps: ComboboxChipRemove.Props) {
             }
           }
         },
+        className: typeof className === 'function' ? className(stateValue) : className,
+        style: typeof style === 'function' ? style(stateValue) : style,
       },
-      elementProps,
-      getButtonProps,
-    ],
-  });
+      (p: HTMLProps) => getButtonProps(p),
+    ]);
 
-  return <>{getElement()}</>;
-}
+    // render 三形态
+    if (typeof render === 'function') {
+      return render({ ...merged, ...stateValue, ref: buttonRef });
+    }
+    if (render) {
+      const Tag = render.type as any;
+      return <Tag key={render.key} {...render.props} {...merged} ref={buttonRef} />;
+    }
+    return <button ref={buttonRef} {...merged} />;
+  };
+}) as (props: ComboboxChipRemove.Props) => any;
 
 export interface ComboboxChipRemoveState {
   /**

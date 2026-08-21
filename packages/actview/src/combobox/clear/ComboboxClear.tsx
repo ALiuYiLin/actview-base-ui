@@ -1,7 +1,7 @@
-import { computed } from 'actview';
+import { computed, defineComponent } from 'actview';
 import { useComboboxInputValueContext, useComboboxRootContext } from '../root/ComboboxRootContext';
-import type { BaseUIComponentProps, NativeButtonProps } from '../../internals/types';
-import { useRenderElement } from '../../internals/useRenderElement';
+import type { BaseUIComponentProps, HTMLProps, NativeButtonProps } from '../../internals/types';
+import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
 import { useButton } from '../../internals/use-button';
 import { useFieldRootContext } from '../../internals/field-root-context/FieldRootContext';
 import { useTransitionStatus } from '../../internals/useTransitionStatus';
@@ -11,6 +11,7 @@ import { useOpenChangeComplete } from '../../internals/useOpenChangeComplete';
 import { createChangeEventDetails } from '../../internals/createBaseUIEventDetails';
 import { REASONS } from '../../internals/reasons';
 import { triggerOpenStateMapping } from '../../utils/popupStateMapping';
+import { mergePropsN } from '../../merge-props';
 
 const stateAttributesMapping: StateAttributesMapping<ComboboxClearState> = {
   ...transitionStatusMapping,
@@ -23,17 +24,8 @@ const stateAttributesMapping: StateAttributesMapping<ComboboxClearState> = {
  *
  * Documentation: [Base UI Combobox](https://base-ui.com/react/components/combobox)
  */
-export function ComboboxClear(componentProps: ComboboxClear.Props) {
-  const {
-    render: _render,
-    className: _className,
-    disabled: disabledProp = false,
-    nativeButton = true,
-    keepMounted = false,
-    style: _style,
-    ...elementProps
-  } = componentProps;
-
+export const ComboboxClear = defineComponent(function (componentProps: ComboboxClear.Props) {
+  // ================= setup（只执行一次） =================
   const fieldRootContext = useFieldRootContext();
   const store = useComboboxRootContext();
 
@@ -56,11 +48,11 @@ export function ComboboxClear(componentProps: ComboboxClear.Props) {
   });
 
   const disabled = computed(
-    () => fieldRootContext.value.disabled || comboboxDisabled.value || disabledProp,
+    () => fieldRootContext.value.disabled || comboboxDisabled.value || (componentProps.disabled ?? false),
   );
 
   const { buttonRef, getButtonProps } = useButton({
-    native: nativeButton,
+    native: computed(() => componentProps.nativeButton ?? true),
     disabled,
   });
 
@@ -83,10 +75,32 @@ export function ComboboxClear(componentProps: ComboboxClear.Props) {
     },
   });
 
-  const getElement = useRenderElement('button', componentProps, {
-    state,
-    ref: [componentProps.ref, buttonRef, store.state.clearRef],
-    props: [
+  const shouldRender = computed(() => (componentProps.keepMounted ?? false) || mounted.value);
+
+  // ================= render（每次更新执行） =================
+  return () => {
+    if (!shouldRender.value) {
+      return null;
+    }
+
+    const {
+      render,
+      className,
+      style,
+      disabled: _disabled,
+      nativeButton: _nativeButton,
+      keepMounted: _keepMounted,
+      ref: _ref,
+      ...elementProps
+    } = componentProps;
+
+    const stateValue = state.value;
+
+    const stateAttributes = getStateAttributesProps(stateValue, stateAttributesMapping);
+
+    const merged = mergePropsN([
+      stateAttributes,
+      elementProps,
       {
         tabIndex: -1,
         children: 'x',
@@ -120,18 +134,23 @@ export function ComboboxClear(componentProps: ComboboxClear.Props) {
 
           store.state.inputRef.current?.focus();
         },
+        className: typeof className === 'function' ? className(stateValue) : className,
+        style: typeof style === 'function' ? style(stateValue) : style,
       },
-      elementProps,
-      getButtonProps,
-    ],
-    stateAttributesMapping,
-  });
+      (p: HTMLProps) => getButtonProps(p),
+    ]);
 
-  const shouldRender = computed(() => keepMounted || mounted.value);
-
-  // Setup runs once in ActView, so the conditional render must live in JSX.
-  return <>{shouldRender.value ? getElement() : null}</>;
-}
+    // render 三形态
+    if (typeof render === 'function') {
+      return render({ ...merged, ...stateValue, ref: buttonRef });
+    }
+    if (render) {
+      const Tag = render.type as any;
+      return <Tag key={render.key} {...render.props} {...merged} ref={buttonRef} />;
+    }
+    return <button ref={buttonRef} {...merged} />;
+  };
+}) as (props: ComboboxClear.Props) => any;
 
 export interface ComboboxClearState {
   /**

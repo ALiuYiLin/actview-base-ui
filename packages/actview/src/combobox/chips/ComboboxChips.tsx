@@ -1,11 +1,11 @@
-import { computed, ref, watch } from 'actview';
-import { EMPTY_OBJECT } from '@base-ui/actview-utils/empty';
-import { useRenderElement } from '../../internals/useRenderElement';
-import type { BaseUIComponentProps } from '../../internals/types';
+import { computed, defineComponent, ref, watch } from 'actview';
+import { useMergedRefs } from '@base-ui/actview-utils/useMergedRefs';
+import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
 import { ComboboxChipsContext } from './ComboboxChipsContext';
 import { CompositeList } from '../../internals/composite/list/CompositeList';
 import { useComboboxRootContext } from '../root/ComboboxRootContext';
 import { handleInputPress } from '../utils/handleInputPress';
+import { mergePropsN } from '../../merge-props';
 
 /**
  * A container for the chips in a multiselectable input.
@@ -13,14 +13,8 @@ import { handleInputPress } from '../utils/handleInputPress';
  *
  * Documentation: [Base UI Combobox](https://base-ui.com/react/components/combobox)
  */
-export function ComboboxChips(componentProps: ComboboxChips.Props) {
-  const {
-    render: _render,
-    className: _className,
-    style: _style,
-    ...elementProps
-  } = componentProps;
-
+export const ComboboxChips = defineComponent(function (componentProps: ComboboxChips.Props) {
+  // ================= setup（只执行一次） =================
   const store = useComboboxRootContext();
 
   const open = store.useState('open');
@@ -44,20 +38,8 @@ export function ComboboxChips(componentProps: ComboboxChips.Props) {
 
   const chipsRef = { current: [] as Array<HTMLButtonElement | null> };
 
-  const getElement = useRenderElement('div', componentProps, {
-    ref: [componentProps.ref, store.state.chipsContainerRef],
-    // NVDA enters browse mode instead of staying in focus mode when navigating with
-    // arrow keys inside a container unless it has a toolbar role.
-    props: [
-      hasSelectionChips.value ? { role: 'toolbar' } : EMPTY_OBJECT,
-      {
-        onMouseDown(event: MouseEvent) {
-          handleInputPress(event, store, store.state.disabled, store.state.readOnly);
-        },
-      },
-      elementProps,
-    ],
-  });
+  const rootRef = ref<HTMLDivElement | null>(null);
+  const mergedRef = useMergedRefs(componentProps.ref, store.state.chipsContainerRef, rootRef);
 
   const contextValue = computed<ComboboxChipsContext>(() => ({
     highlightedChipIndex: highlightedChipIndex.value,
@@ -65,12 +47,51 @@ export function ComboboxChips(componentProps: ComboboxChips.Props) {
     chipsRef,
   }));
 
-  return (
-    <ComboboxChipsContext.Provider value={contextValue}>
-      <CompositeList elementsRef={chipsRef}>{getElement()}</CompositeList>
-    </ComboboxChipsContext.Provider>
-  );
-}
+  // ================= render（每次更新执行） =================
+  return () => {
+    const {
+      render,
+      className,
+      style,
+      ref: _ref,
+      ...elementProps
+    } = componentProps;
+
+    const hasSelectionValue = hasSelectionChips.value;
+
+    const merged = mergePropsN([
+      hasSelectionChips ? { role: 'toolbar' } : undefined,
+      {
+        onMouseDown(event: MouseEvent) {
+          handleInputPress(event, store, store.state.disabled, store.state.readOnly);
+        },
+      },
+      elementProps,
+      {
+        className: typeof className === 'function' ? className({} as any) : className,
+        style: typeof style === 'function' ? style({} as any) : style,
+      },
+    ]);
+
+    // render 三形态
+    const element = (() => {
+      if (typeof render === 'function') {
+        return render({ ...merged, ref: mergedRef });
+      }
+      if (render) {
+        const Tag = render.type as any;
+        return <Tag key={render.key} {...render.props} {...merged} ref={mergedRef} />;
+      }
+      return <div ref={mergedRef} {...merged} />;
+    })();
+
+    return (
+      <ComboboxChipsContext.Provider value={contextValue.value}>
+        <CompositeList elementsRef={chipsRef}>{element}</CompositeList>
+      </ComboboxChipsContext.Provider>
+    );
+  };
+}) as (props: ComboboxChips.Props) => any;
 
 export interface ComboboxChipsState {}
 

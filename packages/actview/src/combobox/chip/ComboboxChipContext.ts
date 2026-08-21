@@ -1,14 +1,11 @@
 import type { ComputedRef } from '@actview/core';
-import { createContext } from '../../internals/createContext';
+import { createContext } from 'actview';
 
 export interface ComboboxChipContext {
   index: number;
 }
 
-export const ComboboxChipContext = createContext<ComboboxChipContext | undefined>(
-  'base-ui-combobox-chip-context',
-  undefined,
-);
+export const ComboboxChipContext = createContext<ComboboxChipContext | undefined>(undefined);
 
 export function useComboboxChipContext(): ComputedRef<ComboboxChipContext> {
   const context = ComboboxChipContext.use();

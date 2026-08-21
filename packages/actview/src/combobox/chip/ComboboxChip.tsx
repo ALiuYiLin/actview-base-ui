@@ -1,6 +1,6 @@
-import { computed } from 'actview';
-import { useRenderElement } from '../../internals/useRenderElement';
-import type { BaseUIComponentProps } from '../../internals/types';
+import { computed, defineComponent, ref } from 'actview';
+import { useMergedRefs } from '@base-ui/actview-utils/useMergedRefs';
+import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
 import { useComboboxChipsContext } from '../chips/ComboboxChipsContext';
 import { useComboboxRootContext } from '../root/ComboboxRootContext';
 import { useCompositeListItem } from '../../internals/composite/list/useCompositeListItem';
@@ -10,6 +10,7 @@ import { createChangeEventDetails } from '../../internals/createBaseUIEventDetai
 import { REASONS } from '../../internals/reasons';
 import { useDirection } from '../../internals/direction-context/DirectionContext';
 import { getChipNavigationKeys, getIndexAfterChipRemoval } from '../utils/parts';
+import { mergePropsN } from '../../merge-props';
 
 /**
  * An individual chip that represents a value in a multiselectable input.
@@ -17,14 +18,8 @@ import { getChipNavigationKeys, getIndexAfterChipRemoval } from '../utils/parts'
  *
  * Documentation: [Base UI Combobox](https://base-ui.com/react/components/combobox)
  */
-export function ComboboxChip(componentProps: ComboboxChip.Props) {
-  const {
-    render: _render,
-    className: _className,
-    style: _style,
-    ...elementProps
-  } = componentProps;
-
+export const ComboboxChip = defineComponent(function (componentProps: ComboboxChip.Props) {
+  // ================= setup（只执行一次） =================
   const store = useComboboxRootContext();
   const chipsContext = useComboboxChipsContext();
   const { setHighlightedChipIndex, chipsRef } = chipsContext.value!;
@@ -37,7 +32,18 @@ export function ComboboxChip(componentProps: ComboboxChip.Props) {
   // `guess` seeds the index from render order: ActView's keyed diffs don't re-fire ref
   // callbacks, so the composite registry's post-flush index sync may lag or never run for
   // statically rendered chips.
-  const { ref, index } = useCompositeListItem({ guess: true });
+  const { ref: listItemRef, index } = useCompositeListItem({ guess: true });
+
+  const rootRef = ref<HTMLDivElement | null>(null);
+  const mergedRef = useMergedRefs(componentProps.ref, listItemRef, rootRef);
+
+  const state = computed<ComboboxChipState>(() => ({
+    disabled: disabled.value,
+  }));
+
+  const contextValue = computed<ComboboxChipContext>(() => ({
+    index: index.value,
+  }));
 
   function handleKeyDown(event: KeyboardEvent): number | undefined {
     let nextIndex: number | undefined = index.value;
@@ -94,14 +100,20 @@ export function ComboboxChip(componentProps: ComboboxChip.Props) {
     return nextIndex;
   }
 
-  const state = computed<ComboboxChipState>(() => ({
-    disabled: disabled.value,
-  }));
+  // ================= render（每次更新执行） =================
+  return () => {
+    const {
+      render,
+      className,
+      style,
+      ref: _ref,
+      ...elementProps
+    } = componentProps;
 
-  const getElement = useRenderElement('div', componentProps, {
-    ref: [componentProps.ref, ref],
-    state,
-    props: [
+    const stateValue = state.value;
+
+    const merged = mergePropsN([
+      elementProps,
       {
         tabIndex: -1,
         'aria-disabled': disabled.value || undefined,
@@ -121,21 +133,30 @@ export function ComboboxChip(componentProps: ComboboxChip.Props) {
             chipsRef.current[nextIndex]?.focus();
           }
         },
+        className: typeof className === 'function' ? className(stateValue) : className,
+        style: typeof style === 'function' ? style(stateValue) : style,
       },
-      elementProps,
-    ],
-  });
+    ]);
 
-  const contextValue = computed<ComboboxChipContext>(() => ({
-    index: index.value,
-  }));
+    // render 三形态
+    const element = (() => {
+      if (typeof render === 'function') {
+        return render({ ...merged, ...stateValue, ref: mergedRef });
+      }
+      if (render) {
+        const Tag = render.type as any;
+        return <Tag key={render.key} {...render.props} {...merged} ref={mergedRef} />;
+      }
+      return <div ref={mergedRef} {...merged} />;
+    })();
 
-  return (
-    <ComboboxChipContext.Provider value={contextValue}>
-      {getElement()}
-    </ComboboxChipContext.Provider>
-  );
-}
+    return (
+      <ComboboxChipContext.Provider value={contextValue.value}>
+        {element}
+      </ComboboxChipContext.Provider>
+    );
+  };
+}) as (props: ComboboxChip.Props) => any;
 
 export interface ComboboxChipState {
   /**

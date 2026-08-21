@@ -1,5 +1,5 @@
 import type { ComputedRef } from '@actview/core';
-import { createContext } from '../../internals/createContext';
+import { createContext } from 'actview';
 
 export interface ComboboxChipsContext {
   highlightedChipIndex: number | undefined;
@@ -7,11 +7,8 @@ export interface ComboboxChipsContext {
   chipsRef: { current: Array<HTMLButtonElement | null> };
 }
 
-export const ComboboxChipsContext = createContext<ComboboxChipsContext | undefined>(
-  'base-ui-combobox-chips-context',
-  undefined,
-);
+export const ComboboxChipsContext = createContext<ComboboxChipsContext | undefined>(undefined);
 
 export function useComboboxChipsContext(): ComputedRef<ComboboxChipsContext | undefined> {
-  return ComboboxChipsContext.use();
+  return ComboboxChipsContext.use() as ComputedRef<ComboboxChipsContext | undefined>;
 }
