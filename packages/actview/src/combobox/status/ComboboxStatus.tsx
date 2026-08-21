@@ -1,6 +1,8 @@
-import type { BaseUIComponentProps } from '../../internals/types';
-import { useRenderElement } from '../../internals/useRenderElement';
+import { defineComponent, ref } from 'actview';
+import { useMergedRefs } from '@base-ui/actview-utils/useMergedRefs';
+import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
 import { useInitialLiveRegionTextMutation } from '../utils/useInitialLiveRegionTextMutation';
+import { mergePropsN } from '../../merge-props';
 
 /**
  * Displays a status message whose content changes are announced politely to screen readers.
@@ -13,32 +15,47 @@ import { useInitialLiveRegionTextMutation } from '../utils/useInitialLiveRegionT
  *
  * Documentation: [Base UI Combobox](https://base-ui.com/react/components/combobox)
  */
-export function ComboboxStatus(componentProps: ComboboxStatus.Props) {
-  const {
-    render: _render,
-    className: _className,
-    style: _style,
-    children: childrenProp,
-    ...elementProps
-  } = componentProps;
-
+export const ComboboxStatus = defineComponent(function (componentProps: ComboboxStatus.Props) {
+  // ================= setup（只执行一次） =================
   const statusRef = useInitialLiveRegionTextMutation<HTMLDivElement>();
 
-  const getElement = useRenderElement('div', componentProps, {
-    ref: [componentProps.ref, statusRef],
-    props: [
+  const rootRef = ref<HTMLDivElement | null>(null);
+  const mergedRef = useMergedRefs(componentProps.ref, statusRef, rootRef);
+
+  // ================= render（每次更新执行） =================
+  return () => {
+    const {
+      render,
+      className,
+      style,
+      children: childrenProp,
+      ref: _ref,
+      ...elementProps
+    } = componentProps;
+
+    const merged = mergePropsN([
+      elementProps,
       {
         children: childrenProp,
         role: 'status',
         'aria-live': 'polite',
         'aria-atomic': true,
+        className: typeof className === 'function' ? className({} as any) : className,
+        style: typeof style === 'function' ? style({} as any) : style,
       },
-      elementProps,
-    ],
-  });
+    ]);
 
-  return <>{getElement()}</>;
-}
+    // render 三形态
+    if (typeof render === 'function') {
+      return render({ ...merged, ref: mergedRef });
+    }
+    if (render) {
+      const Tag = render.type as any;
+      return <Tag key={render.key} {...render.props} {...merged} ref={mergedRef} />;
+    }
+    return <div ref={mergedRef} {...merged} />;
+  };
+}) as (props: ComboboxStatus.Props) => any;
 
 export interface ComboboxStatusState {}
 

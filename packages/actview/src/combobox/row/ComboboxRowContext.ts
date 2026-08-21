@@ -1,8 +1,8 @@
 import type { ComputedRef } from '@actview/core';
-import { createContext } from '../../internals/createContext';
+import { createContext } from 'actview';
 
-export const ComboboxRowContext = createContext<boolean>('base-ui-combobox-row-context', false);
+export const ComboboxRowContext = createContext<boolean>(false);
 
 export function useComboboxRowContext(): ComputedRef<boolean> {
-  return ComboboxRowContext.use();
+  return ComboboxRowContext.use() as ComputedRef<boolean>;
 }

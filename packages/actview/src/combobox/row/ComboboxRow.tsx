@@ -1,6 +1,7 @@
-import type { BaseUIComponentProps } from '../../internals/types';
-import { useRenderElement } from '../../internals/useRenderElement';
+import { defineComponent, useRootElement } from 'actview';
+import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
 import { ComboboxRowContext } from './ComboboxRowContext';
+import { mergePropsN } from '../../merge-props';
 
 /**
  * Displays a single row of items in a grid list.
@@ -9,21 +10,47 @@ import { ComboboxRowContext } from './ComboboxRowContext';
  *
  * Documentation: [Base UI Combobox](https://base-ui.com/react/components/combobox)
  */
-export function ComboboxRow(componentProps: ComboboxRow.Props) {
-  const {
-    render: _render,
-    className: _className,
-    style: _style,
-    ...elementProps
-  } = componentProps;
+export const ComboboxRow = defineComponent(function (componentProps: ComboboxRow.Props) {
+  // ================= setup（只执行一次） =================
+  const rootRef = useRootElement();
 
-  const getElement = useRenderElement('div', componentProps, {
-    ref: componentProps.ref,
-    props: [(prev: any) => ({ ...prev, role: 'row' }), elementProps],
-  });
+  // ================= render（每次更新执行） =================
+  return () => {
+    const {
+      render,
+      className,
+      style,
+      ref: _ref,
+      ...elementProps
+    } = componentProps;
 
-  return <ComboboxRowContext.Provider value>{getElement()}</ComboboxRowContext.Provider>;
-}
+    const merged = mergePropsN([
+      elementProps,
+      {
+        role: 'row',
+        className: typeof className === 'function' ? className({} as any) : className,
+        style: typeof style === 'function' ? style({} as any) : style,
+      },
+    ]);
+
+    const element = (() => {
+      if (typeof render === 'function') {
+        return render({ ...merged, ref: rootRef });
+      }
+      if (render) {
+        const Tag = render.type as any;
+        return <Tag key={render.key} {...render.props} {...merged} ref={rootRef} />;
+      }
+      return <div ref={rootRef} {...merged} />;
+    })();
+
+    return (
+      <ComboboxRowContext.Provider value={true}>
+        {element}
+      </ComboboxRowContext.Provider>
+    );
+  };
+}) as (props: ComboboxRow.Props) => any;
 
 export interface ComboboxRowState {}
 

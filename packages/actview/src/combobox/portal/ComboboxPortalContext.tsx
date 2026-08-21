@@ -1,10 +1,7 @@
 import type { ComputedRef } from '@actview/core';
-import { createContext } from '../../internals/createContext';
+import { createContext } from 'actview';
 
-export const ComboboxPortalContext = createContext<boolean | undefined>(
-  'base-ui-combobox-portal-context',
-  undefined,
-);
+export const ComboboxPortalContext = createContext<boolean | undefined>(undefined);
 
 export function useComboboxPortalContext(): ComputedRef<boolean> {
   const context = ComboboxPortalContext.use();

@@ -1,3 +1,4 @@
+import { defineComponent } from 'actview';
 import { ListboxSeparator } from '../../utils/listbox-separator/ListboxSeparator';
 import type { BaseUIComponentProps, Orientation } from '../../internals/types';
 
@@ -25,7 +26,9 @@ export interface ComboboxSeparatorState {
  *
  * Documentation: [Base UI Combobox](https://base-ui.com/react/components/combobox)
  */
-export const ComboboxSeparator = ListboxSeparator as any;
+export const ComboboxSeparator = defineComponent(function (props: ComboboxSeparator.Props) {
+  return () => <ListboxSeparator {...props} />;
+}) as any;
 
 export namespace ComboboxSeparator {
   export type Props = ComboboxSeparatorProps;
