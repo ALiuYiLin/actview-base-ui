@@ -1,8 +1,10 @@
+import { defineComponent, useRootElement } from 'actview';
 import type { SwitchRootState } from '../root/SwitchRoot';
 import { useSwitchRootContext } from '../root/SwitchRootContext';
-import { useRenderElement } from '../../internals/useRenderElement';
 import type { BaseUIComponentProps } from '../../internals/types';
+import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
 import { stateAttributesMapping } from '../stateAttributesMapping';
+import { mergePropsN } from '../../merge-props';
 
 /**
  * The movable part of the switch that indicates whether the switch is on or off.
@@ -10,30 +12,40 @@ import { stateAttributesMapping } from '../stateAttributesMapping';
  *
  * Documentation: [Base UI Switch](https://base-ui.com/react/components/switch)
  */
-export function SwitchThumb(componentProps: SwitchThumb.Props) {
-  const getElementProps = () => {
-    const {
-      render: _render,
-      className: _className,
-      style: _style,
-      ...elementProps
-    } = componentProps;
-    return elementProps;
+export const SwitchThumb = defineComponent(function (componentProps: SwitchThumb.Props) {
+  // ================= setup（只执行一次） =================
+  const rootRef = useRootElement();
+
+  const context = useSwitchRootContext();
+
+  // ================= render（每次更新执行） =================
+  return () => {
+    const { render, className, style, ref: _ref, ...elementProps } = componentProps;
+
+    const stateValue = context.value;
+
+    const stateAttributes = getStateAttributesProps(stateValue, stateAttributesMapping);
+
+    const merged = mergePropsN([
+      stateAttributes,
+      elementProps,
+      {
+        className: typeof className === 'function' ? className(stateValue) : className,
+        style: typeof style === 'function' ? style(stateValue) : style,
+      },
+    ]);
+
+    // render 三形态
+    if (typeof render === 'function') {
+      return render({ ...merged, ...stateValue, ref: rootRef });
+    }
+    if (render) {
+      const Tag = render.type as any;
+      return <Tag key={render.key} {...render.props} {...merged} ref={rootRef} />;
+    }
+    return <span ref={rootRef} {...merged} />;
   };
-
-  const state = useSwitchRootContext();
-
-  const getElement = useRenderElement('span', componentProps, {
-    state,
-    ref: componentProps.ref,
-    stateAttributesMapping,
-    props: [getElementProps],
-  });
-
-  // Wrap in a Fragment so the ActView Babel transform recognizes this as a JSX
-  // return and converts the component to a `{ __setup }` VNode type (AI-003).
-  return <>{getElement()}</>;
-}
+}) as (props: SwitchThumb.Props) => any;
 
 export interface SwitchThumbProps extends BaseUIComponentProps<'span', SwitchThumbState> {}
 
