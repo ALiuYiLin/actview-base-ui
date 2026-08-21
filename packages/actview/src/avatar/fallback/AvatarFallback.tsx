@@ -1,10 +1,11 @@
-import { computed, ref, watch } from 'actview';
+import { computed, defineComponent, ref, useRootElement, watch } from 'actview';
 import { useTimeout } from '@base-ui/actview-utils/useTimeout';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { useRenderElement } from '../../internals/useRenderElement';
+import type { BaseUIComponentProps } from '../../internals/types';
+import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
 import { useAvatarRootContext } from '../root/AvatarRootContext';
 import type { AvatarRootState } from '../root/AvatarRoot';
 import { avatarStateAttributesMapping } from '../root/stateAttributesMapping';
+import { mergePropsN } from '../../merge-props';
 
 /**
  * Rendered when the image fails to load or when no image is provided.
@@ -12,7 +13,10 @@ import { avatarStateAttributesMapping } from '../root/stateAttributesMapping';
  *
  * Documentation: [Base UI Avatar](https://base-ui.com/react/components/avatar)
  */
-export function AvatarFallback(componentProps: AvatarFallback.Props) {
+export const AvatarFallback = defineComponent(function (componentProps: AvatarFallback.Props) {
+  // ================= setup（只执行一次） =================
+  const rootRef = useRootElement();
+
   const context = useAvatarRootContext();
 
   const delayPassed = ref((componentProps.delay ?? 0) === 0);
@@ -38,26 +42,44 @@ export function AvatarFallback(componentProps: AvatarFallback.Props) {
     imageLoadingStatus: context.value.imageLoadingStatus,
   }));
 
-  const getElementProps = (prev: HTMLProps): HTMLProps => {
-    const { className, render, delay, style, ...elementProps } = componentProps;
-    return { ...prev, ...elementProps };
-  };
-
-  const getElement = useRenderElement('span', componentProps, {
-    state,
-    ref: componentProps.ref,
-    props: [getElementProps],
-    stateAttributesMapping: avatarStateAttributesMapping,
-  });
-
   const enabled = computed(
     () =>
       context.value.imageLoadingStatus !== 'loaded' &&
       ((componentProps.delay ?? 0) === 0 || delayPassed.value),
   );
 
-  return <>{enabled.value ? getElement() : null}</>;
-}
+  // ================= render（每次更新执行） =================
+  return () => {
+    if (!enabled.value) {
+      return null;
+    }
+
+    const { render, className, delay: _delay, style, ref: _ref, ...elementProps } = componentProps;
+
+    const stateValue = state.value;
+
+    const stateAttributes = getStateAttributesProps(stateValue, avatarStateAttributesMapping);
+
+    const merged = mergePropsN([
+      stateAttributes,
+      elementProps,
+      {
+        className: typeof className === 'function' ? className(stateValue) : className,
+        style: typeof style === 'function' ? style(stateValue) : style,
+      },
+    ]);
+
+    // render 三形态
+    if (typeof render === 'function') {
+      return render({ ...merged, ...stateValue, ref: rootRef });
+    }
+    if (render) {
+      const Tag = render.type as any;
+      return <Tag key={render.key} {...render.props} {...merged} ref={rootRef} />;
+    }
+    return <span ref={rootRef} {...merged} />;
+  };
+}) as (props: AvatarFallback.Props) => any;
 
 export interface AvatarFallbackState extends AvatarRootState {}
 

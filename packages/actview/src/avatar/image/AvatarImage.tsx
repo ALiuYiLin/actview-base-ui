@@ -1,7 +1,7 @@
-import { computed, onUnmounted, watch } from 'actview';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
+import { computed, defineComponent, onUnmounted, useRootElement, watch } from 'actview';
+import type { BaseUIComponentProps } from '../../internals/types';
 import type { StateAttributesMapping } from '../../internals/getStateAttributesProps';
-import { useRenderElement } from '../../internals/useRenderElement';
+import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
 import { useAvatarRootContext } from '../root/AvatarRootContext';
 import type { AvatarRootState, ImageLoadingStatus } from '../root/AvatarRoot';
 import { avatarStateAttributesMapping } from '../root/stateAttributesMapping';
@@ -9,6 +9,7 @@ import { useOpenChangeComplete } from '../../internals/useOpenChangeComplete';
 import { transitionStatusMapping } from '../../internals/stateAttributesMapping';
 import { type TransitionStatus, useTransitionStatus } from '../../internals/useTransitionStatus';
 import { useImageLoadingStatus } from './useImageLoadingStatus';
+import { mergePropsN } from '../../merge-props';
 
 const stateAttributesMapping: StateAttributesMapping<AvatarImageState> = {
   ...avatarStateAttributesMapping,
@@ -21,14 +22,12 @@ const stateAttributesMapping: StateAttributesMapping<AvatarImageState> = {
  *
  * Documentation: [Base UI Avatar](https://base-ui.com/react/components/avatar)
  */
-export function AvatarImage(componentProps: AvatarImage.Props) {
+export const AvatarImage = defineComponent(function (componentProps: AvatarImage.Props) {
+  // ================= setup（只执行一次） =================
+  const rootRef = useRootElement();
+
   const context = useAvatarRootContext();
   const setImageLoadingStatus = context.value.setImageLoadingStatus;
-
-  const getElementProps = (prev: HTMLProps): HTMLProps => {
-    const { className, render, onLoadingStatusChange, style, ...elementProps } = componentProps;
-    return { ...prev, ...elementProps };
-  };
 
   const imageLoadingStatus = useImageLoadingStatus(
     computed(() => componentProps.src),
@@ -44,18 +43,12 @@ export function AvatarImage(componentProps: AvatarImage.Props) {
 
   const { mounted, transitionStatus, setMounted } = useTransitionStatus(isVisible);
 
-  const imageRef = { current: null as HTMLImageElement | null };
-
-  const handleLoadingStatusChange = (status: ImageLoadingStatus) => {
-    componentProps.onLoadingStatusChange?.(status);
-    setImageLoadingStatus(status);
-  };
-
   watch(
-    () => imageLoadingStatus.value,
+    imageLoadingStatus,
     (status) => {
       if (status !== 'idle') {
-        handleLoadingStatusChange(status);
+        componentProps.onLoadingStatusChange?.(status);
+        setImageLoadingStatus(status);
       }
     },
     { immediate: true },
@@ -67,7 +60,7 @@ export function AvatarImage(componentProps: AvatarImage.Props) {
 
   useOpenChangeComplete({
     open: isVisible,
-    ref: imageRef,
+    ref: rootRef,
     onComplete() {
       if (!isVisible.value) {
         setMounted(false);
@@ -80,15 +73,45 @@ export function AvatarImage(componentProps: AvatarImage.Props) {
     transitionStatus: transitionStatus.value,
   }));
 
-  const getElement = useRenderElement('img', componentProps, {
-    state,
-    ref: [componentProps.ref, imageRef],
-    props: [getElementProps],
-    stateAttributesMapping,
-  });
+  // ================= render（每次更新执行） =================
+  return () => {
+    if (!mounted.value) {
+      return null;
+    }
 
-  return <>{mounted.value ? getElement() : null}</>;
-}
+    const {
+      render,
+      className,
+      style,
+      onLoadingStatusChange: _onLoadingStatusChange,
+      ref: _ref,
+      ...elementProps
+    } = componentProps;
+
+    const stateValue = state.value;
+
+    const stateAttributes = getStateAttributesProps(stateValue, stateAttributesMapping);
+
+    const merged = mergePropsN([
+      stateAttributes,
+      elementProps,
+      {
+        className: typeof className === 'function' ? className(stateValue) : className,
+        style: typeof style === 'function' ? style(stateValue) : style,
+      },
+    ]);
+
+    // render 三形态
+    if (typeof render === 'function') {
+      return render({ ...merged, ...stateValue, ref: rootRef });
+    }
+    if (render) {
+      const Tag = render.type as any;
+      return <Tag key={render.key} {...render.props} {...merged} ref={rootRef} />;
+    }
+    return <img ref={rootRef} {...merged} />;
+  };
+}) as (props: AvatarImage.Props) => any;
 
 export interface AvatarImageState extends AvatarRootState {
   /**

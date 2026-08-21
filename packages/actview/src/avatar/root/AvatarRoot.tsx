@@ -1,8 +1,9 @@
-import { computed, ref } from 'actview';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { useRenderElement } from '../../internals/useRenderElement';
+import { computed, defineComponent, ref, useRootElement } from 'actview';
+import type { BaseUIComponentProps } from '../../internals/types';
+import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
 import { AvatarRootContext } from './AvatarRootContext';
 import { avatarStateAttributesMapping } from './stateAttributesMapping';
+import { mergePropsN } from '../../merge-props';
 
 /**
  * Displays a user's profile picture, initials, or fallback icon.
@@ -10,7 +11,10 @@ import { avatarStateAttributesMapping } from './stateAttributesMapping';
  *
  * Documentation: [Base UI Avatar](https://base-ui.com/react/components/avatar)
  */
-export function AvatarRoot(componentProps: AvatarRoot.Props) {
+export const AvatarRoot = defineComponent(function (componentProps: AvatarRoot.Props) {
+  // ================= setup（只执行一次） =================
+  const rootRef = useRootElement();
+
   const imageLoadingStatus = ref<ImageLoadingStatus>('idle');
   const setImageLoadingStatus = (status: ImageLoadingStatus) => {
     imageLoadingStatus.value = status;
@@ -25,20 +29,46 @@ export function AvatarRoot(componentProps: AvatarRoot.Props) {
     setImageLoadingStatus,
   }));
 
-  const getElementProps = (prev: HTMLProps): HTMLProps => {
-    const { className, render, style, ...elementProps } = componentProps;
-    return { ...prev, ...elementProps };
+  // ================= render（每次更新执行） =================
+  return () => {
+    const { render, className, style, ref: _ref, ...elementProps } = componentProps;
+
+    const stateValue = state.value;
+
+    const stateAttributes = getStateAttributesProps(stateValue, avatarStateAttributesMapping);
+
+    const merged = mergePropsN([
+      stateAttributes,
+      elementProps,
+      {
+        className: typeof className === 'function' ? className(stateValue) : className,
+        style: typeof style === 'function' ? style(stateValue) : style,
+      },
+    ]);
+
+    // render 三形态 + Provider 包裹（context 必须始终包裹子件）
+    if (typeof render === 'function') {
+      return (
+        <AvatarRootContext.Provider value={contextValue}>
+          {render({ ...merged, ...stateValue, ref: rootRef })}
+        </AvatarRootContext.Provider>
+      );
+    }
+    if (render) {
+      const Tag = render.type as any;
+      return (
+        <AvatarRootContext.Provider value={contextValue}>
+          <Tag key={render.key} {...render.props} {...merged} ref={rootRef} />
+        </AvatarRootContext.Provider>
+      );
+    }
+    return (
+      <AvatarRootContext.Provider value={contextValue}>
+        <span ref={rootRef} {...merged} />
+      </AvatarRootContext.Provider>
+    );
   };
-
-  const getElement = useRenderElement('span', componentProps, {
-    state,
-    ref: componentProps.ref,
-    props: [getElementProps],
-    stateAttributesMapping: avatarStateAttributesMapping,
-  });
-
-  return <AvatarRootContext.Provider value={contextValue}>{getElement()}</AvatarRootContext.Provider>;
-}
+}) as (props: AvatarRoot.Props) => any;
 
 export type ImageLoadingStatus = 'idle' | 'loading' | 'loaded' | 'error';
 
