@@ -88,6 +88,21 @@ describe('<Avatar.Image />', () => {
     restoreImage();
   });
 
+  it('renders an img element (refInstanceof: HTMLImageElement)', async () => {
+    function Demo() {
+      return (
+        <AvatarRoot>
+          <AvatarImage data-testid="image" src="test.png" />
+        </AvatarRoot>
+      );
+    }
+
+    const result = await render(Demo, {});
+
+    const image = result.getByTestId('image');
+    expect(image).toBeInstanceOf(HTMLImageElement);
+  });
+
   it('passes native image props to the rendered image', async () => {
     function Demo() {
       return (

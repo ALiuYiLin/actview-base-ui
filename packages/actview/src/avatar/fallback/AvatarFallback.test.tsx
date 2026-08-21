@@ -17,6 +17,27 @@ describe('<Avatar.Fallback />', () => {
     vi.clearAllMocks();
   });
 
+  it('renders a span element (refInstanceof: HTMLSpanElement)', async () => {
+    (useImageLoadingStatus as Mock).mockReturnValue(ref('error'));
+
+    function Demo() {
+      return (
+        <AvatarRoot>
+          <AvatarImage />
+          <AvatarFallback data-testid="fallback" />
+        </AvatarRoot>
+      );
+    }
+
+    const result = await render(Demo, {});
+
+    await waitFor(() => {
+      const fallback = result.queryByTestId('fallback');
+      expect(fallback).not.toBe(null);
+      expect(fallback).toBeInstanceOf(HTMLSpanElement);
+    });
+  });
+
   it('should not render the children if the image loaded', async () => {
     (useImageLoadingStatus as Mock).mockReturnValue(ref('loaded'));
 

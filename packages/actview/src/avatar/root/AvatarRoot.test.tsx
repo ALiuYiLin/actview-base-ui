@@ -5,7 +5,7 @@ import { createRenderer } from '../../../test/createRenderer';
 describe('<Avatar.Root />', () => {
   const { render } = createRenderer();
 
-  it('renders a span element', async () => {
+  it('renders a span element (refInstanceof: HTMLSpanElement)', async () => {
     function Demo() {
       return <AvatarRoot data-testid="root" />;
     }
@@ -28,5 +28,15 @@ describe('<Avatar.Root />', () => {
     const result = await render(Demo, {});
 
     expect(result.getByTestId('child')).not.toBe(null);
+  });
+
+  it('forwards custom props to the default element', async () => {
+    function Demo() {
+      return <AvatarRoot data-testid="root" aria-label="avatar" />;
+    }
+
+    const result = await render(Demo, {});
+
+    expect(result.getByTestId('root')).toHaveAttribute('aria-label', 'avatar');
   });
 });
