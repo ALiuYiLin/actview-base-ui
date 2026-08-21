@@ -1,13 +1,13 @@
-import { error } from '@base-ui/actview-utils/error';
-import { computed } from 'actview';
-import type { BaseUIComponentProps } from '../../internals/types';
-import { useRenderElement } from '../../internals/useRenderElement';
+import { computed, defineComponent, useRootElement } from 'actview';
+import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
+import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
 import type { FieldRoot } from '../../field/root/FieldRoot';
 import { useFieldRootContext } from '../../internals/field-root-context/FieldRootContext';
 import { fieldValidityMapping } from '../../internals/field-constants/constants';
 import { useLabel } from '../../internals/labelable-provider/useLabel';
 import { getDefaultLabelId } from '../../utils/resolveAriaLabelledBy';
 import { useComboboxRootContext } from '../root/ComboboxRootContext';
+import { mergePropsN } from '../../merge-props';
 
 /**
  * An accessible label that is automatically associated with the combobox trigger.
@@ -15,16 +15,9 @@ import { useComboboxRootContext } from '../root/ComboboxRootContext';
  *
  * Documentation: [Base UI Combobox](https://base-ui.com/react/components/combobox)
  */
-export function ComboboxLabel(componentProps: ComboboxLabel.Props) {
-  const {
-    render: _render,
-    className: _className,
-    style: _style,
-    ...elementProps
-  } = componentProps;
-  // Keep label id derived from the root and ignore runtime `id` overrides from untyped consumers.
-  const elementPropsWithoutId = elementProps as typeof elementProps & { id?: string | undefined };
-  delete elementPropsWithoutId.id;
+export const ComboboxLabel = defineComponent(function (componentProps: ComboboxLabel.Props) {
+  // ================= setup（只执行一次） =================
+  const rootRef = useRootElement();
 
   const fieldRootContext = useFieldRootContext();
   const store = useComboboxRootContext();
@@ -47,17 +40,53 @@ export function ComboboxLabel(componentProps: ComboboxLabel.Props) {
     },
   });
 
-  const getElement = useRenderElement('div', componentProps, {
-    ref: componentProps.ref,
-    state: computed(() => fieldRootContext.value.state),
-    props: [labelProps(), elementPropsWithoutId],
-    stateAttributesMapping: fieldValidityMapping,
-  });
+  const state = computed(() => fieldRootContext.value.state);
 
-  return <>{getElement()}</>;
-}
+  // ================= render（每次更新执行） =================
+  return () => {
+    const {
+      render,
+      className,
+      style,
+      ref: _ref,
+      ...elementProps
+    } = componentProps;
 
-export interface ComboboxLabelState extends FieldRoot.State {}export interface ComboboxLabelProps extends Omit<
+    // Keep label id derived from the root and ignore runtime `id` overrides from untyped consumers.
+    const elementPropsWithoutId = elementProps as typeof elementProps & { id?: string | undefined };
+    delete elementPropsWithoutId.id;
+
+    const stateValue = state.value;
+
+    const stateAttributes = getStateAttributesProps(stateValue, fieldValidityMapping);
+
+    const labelPropsResult = labelProps();
+
+    const merged = mergePropsN([
+      stateAttributes,
+      labelPropsResult,
+      elementPropsWithoutId,
+      {
+        className: typeof className === 'function' ? className(stateValue) : className,
+        style: typeof style === 'function' ? style(stateValue) : style,
+      },
+    ]);
+
+    // render 三形态
+    if (typeof render === 'function') {
+      return render({ ...merged, ...stateValue, ref: rootRef });
+    }
+    if (render) {
+      const Tag = render.type as any;
+      return <Tag key={render.key} {...render.props} {...merged} ref={rootRef} />;
+    }
+    return <div ref={rootRef} {...merged} />;
+  };
+}) as (props: ComboboxLabel.Props) => any;
+
+export interface ComboboxLabelState extends FieldRoot.State {}
+
+export interface ComboboxLabelProps extends Omit<
   BaseUIComponentProps<'div', ComboboxLabelState>,
   'id'
 > {}

@@ -1,5 +1,5 @@
 import type { ComputedRef } from '@actview/core';
-import { createContext } from '../../internals/createContext';
+import { createContext } from 'actview';
 
 export interface ComboboxGroupContext {
   labelId: string | undefined;
@@ -11,10 +11,7 @@ export interface ComboboxGroupContext {
   items?: readonly any[] | undefined;
 }
 
-export const ComboboxGroupContext = createContext<ComboboxGroupContext | undefined>(
-  'base-ui-combobox-group-context',
-  undefined,
-);
+export const ComboboxGroupContext = createContext<ComboboxGroupContext | undefined>(undefined);
 
 export function useComboboxGroupContext(): ComputedRef<ComboboxGroupContext> {
   const context = ComboboxGroupContext.use();

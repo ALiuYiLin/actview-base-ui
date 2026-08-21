@@ -1,5 +1,6 @@
-import type { BaseUIComponentProps } from '../../internals/types';
-import { useRenderElement } from '../../internals/useRenderElement';
+import { defineComponent, useRootElement } from 'actview';
+import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
+import { mergePropsN } from '../../merge-props';
 
 /**
  * An icon that indicates that the trigger button opens the popup.
@@ -7,27 +8,41 @@ import { useRenderElement } from '../../internals/useRenderElement';
  *
  * Documentation: [Base UI Combobox](https://base-ui.com/react/components/combobox)
  */
-export function ComboboxIcon(componentProps: ComboboxIcon.Props) {
-  const {
-    render: _render,
-    className: _className,
-    style: _style,
-    ...elementProps
-  } = componentProps;
+export const ComboboxIcon = defineComponent(function (componentProps: ComboboxIcon.Props) {
+  // ================= setup（只执行一次） =================
+  const rootRef = useRootElement();
 
-  const getElement = useRenderElement('span', componentProps, {
-    ref: componentProps.ref,
-    props: [
+  // ================= render（每次更新执行） =================
+  return () => {
+    const {
+      render,
+      className,
+      style,
+      ref: _ref,
+      ...elementProps
+    } = componentProps;
+
+    const merged = mergePropsN([
+      elementProps,
       {
         'aria-hidden': true,
         children: '▼',
+        className: typeof className === 'function' ? className({} as any) : className,
+        style: typeof style === 'function' ? style({} as any) : style,
       },
-      elementProps,
-    ],
-  });
+    ]);
 
-  return <>{getElement()}</>;
-}
+    // render 三形态
+    if (typeof render === 'function') {
+      return render({ ...merged, ref: rootRef });
+    }
+    if (render) {
+      const Tag = render.type as any;
+      return <Tag key={render.key} {...render.props} {...merged} ref={rootRef} />;
+    }
+    return <span ref={rootRef} {...merged} />;
+  };
+}) as (props: ComboboxIcon.Props) => any;
 
 export interface ComboboxIconState {}
 

@@ -1,8 +1,9 @@
-import { computed, ref } from 'actview';
-import type { BaseUIComponentProps } from '../../internals/types';
-import { useRenderElement } from '../../internals/useRenderElement';
+import { computed, defineComponent, ref } from 'actview';
+import { useMergedRefs } from '@base-ui/actview-utils/useMergedRefs';
+import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
 import { ComboboxGroupContext } from './ComboboxGroupContext';
 import { GroupCollectionProvider } from '../collection/GroupCollectionContext';
+import { mergePropsN } from '../../merge-props';
 
 /**
  * Groups related items with the corresponding label.
@@ -10,15 +11,8 @@ import { GroupCollectionProvider } from '../collection/GroupCollectionContext';
  *
  * Documentation: [Base UI Combobox](https://base-ui.com/react/components/combobox)
  */
-export function ComboboxGroup(componentProps: ComboboxGroup.Props) {
-  const {
-    render: _render,
-    className: _className,
-    style: _style,
-    items,
-    ...elementProps
-  } = componentProps;
-
+export const ComboboxGroup = defineComponent(function (componentProps: ComboboxGroup.Props) {
+  // ================= setup（只执行一次） =================
   const labelId = ref<string | undefined>(undefined);
   const setLabelId: ComboboxGroupContext['setLabelId'] = (next) => {
     labelId.value = typeof next === 'function' ? next(labelId.value) : next;
@@ -27,31 +21,57 @@ export function ComboboxGroup(componentProps: ComboboxGroup.Props) {
   const contextValue = computed<ComboboxGroupContext>(() => ({
     labelId: labelId.value,
     setLabelId,
-    items,
+    items: componentProps.items,
   }));
 
-  const getElement = useRenderElement('div', componentProps, {
-    ref: componentProps.ref,
-    props: [
-      (prev: any) => ({ ...prev, role: 'group', 'aria-labelledby': labelId.value }),
+  const rootRef = ref<HTMLDivElement | null>(null);
+  const mergedRef = useMergedRefs(componentProps.ref, rootRef);
+
+  // ================= render（每次更新执行） =================
+  return () => {
+    const {
+      render,
+      className,
+      style,
+      items: _items,
+      ref: _ref,
+      ...elementProps
+    } = componentProps;
+
+    const merged = mergePropsN([
       elementProps,
-    ],
-  });
+      {
+        role: 'group',
+        'aria-labelledby': labelId.value,
+        className: typeof className === 'function' ? className({} as any) : className,
+        style: typeof style === 'function' ? style({} as any) : style,
+      },
+    ]);
 
-  const wrappedElement = (
-    <ComboboxGroupContext.Provider value={contextValue}>
-      {getElement()}
-    </ComboboxGroupContext.Provider>
-  );
+    const element = (() => {
+      if (typeof render === 'function') {
+        return render({ ...merged, ref: mergedRef });
+      }
+      if (render) {
+        const Tag = render.type as any;
+        return <Tag key={render.key} {...render.props} {...merged} ref={mergedRef} />;
+      }
+      return <div ref={mergedRef} {...merged} />;
+    })();
 
-  if (items) {
-    return <GroupCollectionProvider items={items}>{wrappedElement}</GroupCollectionProvider>;
-  }
+    const wrappedElement = (
+      <ComboboxGroupContext.Provider value={contextValue.value}>
+        {element}
+      </ComboboxGroupContext.Provider>
+    );
 
-  // Must end with a JSX literal so the Babel transform wraps the component (AI-003):
-  // returning the `wrappedElement` variable would keep this a bare function.
-  return <>{wrappedElement}</>;
-}
+    if (componentProps.items) {
+      return <GroupCollectionProvider items={componentProps.items}>{wrappedElement}</GroupCollectionProvider>;
+    }
+
+    return <>{wrappedElement}</>;
+  };
+}) as (props: ComboboxGroup.Props) => any;
 
 export interface ComboboxGroupState {}
 
