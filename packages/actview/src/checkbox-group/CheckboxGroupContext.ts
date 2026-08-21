@@ -1,4 +1,4 @@
-import { createContext } from '../internals/createContext';
+import { createContext } from 'actview';
 import type { UseFieldValidationReturnValue } from '../field/root/useFieldValidation';
 import type { UseCheckboxGroupParentReturnValue } from './useCheckboxGroupParent';
 import type { BaseUIChangeEventDetails } from '../internals/createBaseUIEventDetails';
@@ -22,10 +22,7 @@ export interface CheckboxGroupContext {
   registerControlId: LabelableContext['registerControlId'];
 }
 
-export const CheckboxGroupContext = createContext<CheckboxGroupContext | undefined>(
-  'base-ui-checkbox-group-context',
-  undefined,
-);
+export const CheckboxGroupContext = createContext<CheckboxGroupContext | undefined>(undefined);
 
 export function useCheckboxGroupContext() {
   return CheckboxGroupContext.use();

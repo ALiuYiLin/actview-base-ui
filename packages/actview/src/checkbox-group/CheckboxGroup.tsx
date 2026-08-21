@@ -1,10 +1,9 @@
-import { computed } from 'actview';
+import { computed, defineComponent, useRootElement } from 'actview';
 import type { ComputedRef } from '@actview/core';
 import { useControlled } from '@base-ui/actview-utils/useControlled';
 import { EMPTY_ARRAY } from '@base-ui/actview-utils/empty';
 import { areArraysEqual } from '@base-ui/actview-utils/areArraysEqual';
 import { useBaseUiId } from '../internals/useBaseUiId';
-import { useRenderElement } from '../internals/useRenderElement';
 import { CheckboxGroupContext } from './CheckboxGroupContext';
 import type { FieldRootState } from '../field/root/FieldRoot';
 import { isEligibleInput } from '../field/root/useFieldValidation';
@@ -13,20 +12,24 @@ import { useRegisterFieldControl } from '../internals/field-register-control/use
 import { useLabelableContext } from '../internals/labelable-provider/LabelableContext';
 import { useLabelableId } from '../internals/labelable-provider/useLabelableId';
 import type { BaseUIComponentProps, HTMLProps } from '../internals/types';
+import { getStateAttributesProps } from '../internals/getStateAttributesProps';
 import { fieldValidityMapping } from '../internals/field-constants/constants';
 import { useCheckboxGroupParent } from './useCheckboxGroupParent';
 import type { BaseUIChangeEventDetails } from '../internals/createBaseUIEventDetails';
 import { REASONS } from '../internals/reasons';
 import { useFormContext } from '../internals/form-context/FormContext';
 import { useValueChanged } from '../internals/useValueChanged';
-import { mergeProps } from '../merge-props';
+import { mergePropsN } from '../merge-props';
 
 /**
  * Provides a shared state to a series of checkboxes.
  *
  * Documentation: [Base UI Checkbox Group](https://base-ui.com/react/components/checkbox-group)
  */
-export function CheckboxGroup(componentProps: CheckboxGroup.Props) {
+export const CheckboxGroup = defineComponent(function (componentProps: CheckboxGroup.Props) {
+  // ================= setup（只执行一次） =================
+  const rootRef = useRootElement();
+
   const fieldRootContext = useFieldRootContext();
   const labelableContext = useLabelableContext();
   const formContext = useFormContext();
@@ -73,7 +76,7 @@ export function CheckboxGroup(componentProps: CheckboxGroup.Props) {
   };
 
   const getFormValue = () => {
-    const formElement = formContext.value.elementRef.current;
+    const formElement = formContext.value.elementRef.value;
     if (!formElement) {
       return value.value;
     }
@@ -135,43 +138,66 @@ export function CheckboxGroup(componentProps: CheckboxGroup.Props) {
     registerControlId: labelableContext.value.registerControlId,
   }));
 
-  const getGroupProps = () => ({
-    id: componentProps.id,
-    role: 'group',
-    'aria-labelledby': labelableContext.value.labelId,
-  });
+  const getDescriptionProps = labelableContext.value.getDescriptionProps;
 
-  const getElementProps = (externalProps: HTMLProps): HTMLProps => {
+  // ================= render（每次更新执行） =================
+  return () => {
     const {
+      render,
+      className,
+      style,
       allValues: _allValues,
-      className: _className,
       defaultValue: _defaultValue,
       disabled: _disabled,
       id: _id,
       onValueChange: _onValueChange,
-      render: _render,
       value: _value,
-      style: _style,
+      ref: _ref,
       ...elementProps
     } = componentProps;
-    return mergeProps(externalProps, elementProps) as HTMLProps;
+
+    const stateValue = state.value;
+
+    const stateAttributes = getStateAttributesProps(stateValue, fieldValidityMapping);
+
+    const merged = getDescriptionProps(
+      mergePropsN([
+        stateAttributes,
+        elementProps,
+        {
+          id: componentProps.id,
+          role: 'group',
+          'aria-labelledby': labelableContext.value.labelId,
+          className: typeof className === 'function' ? className(stateValue) : className,
+          style: typeof style === 'function' ? style(stateValue) : style,
+        },
+      ]),
+    );
+
+    // render 三形态
+    const providerValue = contextValue.value;
+    if (typeof render === 'function') {
+      return (
+        <CheckboxGroupContext.Provider value={providerValue}>
+          {render({ ...merged, ...stateValue, ref: rootRef })}
+        </CheckboxGroupContext.Provider>
+      );
+    }
+    if (render) {
+      const Tag = render.type as any;
+      return (
+        <CheckboxGroupContext.Provider value={providerValue}>
+          <Tag key={render.key} {...render.props} {...merged} ref={rootRef} />
+        </CheckboxGroupContext.Provider>
+      );
+    }
+    return (
+      <CheckboxGroupContext.Provider value={providerValue}>
+        <div ref={rootRef} {...merged} />
+      </CheckboxGroupContext.Provider>
+    );
   };
-
-  const getDescriptionProps = labelableContext.value.getDescriptionProps;
-
-  const getElement = useRenderElement('div', componentProps, {
-    state,
-    ref: componentProps.ref,
-    props: [getGroupProps, getElementProps, getDescriptionProps],
-    stateAttributesMapping: fieldValidityMapping,
-  });
-
-  return (
-    <CheckboxGroupContext.Provider value={contextValue}>
-      {getElement()}
-    </CheckboxGroupContext.Provider>
-  );
-}
+}) as (props: CheckboxGroup.Props) => any;
 
 export interface CheckboxGroupState extends FieldRootState {
   /**

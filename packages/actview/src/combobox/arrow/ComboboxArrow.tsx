@@ -1,10 +1,12 @@
-import { computed } from 'actview';
+import { computed, defineComponent, ref, watch } from 'actview';
+import { useMergedRefs } from '@base-ui/actview-utils/useMergedRefs';
 import { useComboboxPositionerContext } from '../positioner/ComboboxPositionerContext';
 import { useComboboxRootContext } from '../root/ComboboxRootContext';
-import { useRenderElement } from '../../internals/useRenderElement';
 import type { Side, Align } from '../../internals/useAnchorPositioning';
-import type { BaseUIComponentProps } from '../../internals/types';
+import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
+import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
 import { popupStateMapping } from '../../utils/popupStateMapping';
+import { mergePropsN } from '../../merge-props';
 
 /**
  * Displays an element positioned against the anchor.
@@ -12,14 +14,8 @@ import { popupStateMapping } from '../../utils/popupStateMapping';
  *
  * Documentation: [Base UI Combobox](https://base-ui.com/react/components/combobox)
  */
-export function ComboboxArrow(componentProps: ComboboxArrow.Props) {
-  const {
-    render: _render,
-    className: _className,
-    style: _style,
-    ...elementProps
-  } = componentProps;
-
+export const ComboboxArrow = defineComponent(function (componentProps: ComboboxArrow.Props) {
+  // ================= setup（只执行一次） =================
   const store = useComboboxRootContext();
   const positioning = useComboboxPositionerContext();
   const { arrowRef, side, align, arrowUncentered, arrowStyles } = positioning.value;
@@ -33,19 +29,59 @@ export function ComboboxArrow(componentProps: ComboboxArrow.Props) {
     uncentered: arrowUncentered.value,
   }));
 
-  const getElement = useRenderElement('div', componentProps, {
-    ref: [arrowRef, componentProps.ref],
-    stateAttributesMapping: popupStateMapping,
-    state,
-    props: {
-      style: arrowStyles.value,
-      'aria-hidden': true,
-      ...elementProps,
-    },
-  });
+  const rootRef = ref<HTMLElement | null>(null);
+  const mergedRef = useMergedRefs(componentProps.ref, rootRef);
 
-  return <>{getElement()}</>;
-}
+  watch(
+    rootRef,
+    (node) => {
+      arrowRef.current = node;
+    },
+    { flush: 'sync', immediate: true },
+  );
+
+  // ================= render（每次更新执行） =================
+  return () => {
+    const {
+      render,
+      className,
+      style,
+      ref: _ref,
+      ...elementProps
+    } = componentProps;
+
+    const stateValue = state.value;
+
+    const stateAttributes = getStateAttributesProps(stateValue, popupStateMapping);
+
+    const arrowStyle = typeof arrowStyles.value === 'object' ? arrowStyles.value : {};
+    const resolvedStyle = typeof style === 'function' ? style(stateValue) : style;
+    const styleObj = typeof resolvedStyle === 'object' && resolvedStyle !== null ? resolvedStyle : {};
+
+    const merged = mergePropsN([
+      stateAttributes,
+      elementProps,
+      {
+        style: {
+          ...arrowStyle,
+          ...styleObj,
+        },
+        'aria-hidden': true,
+        className: typeof className === 'function' ? className(stateValue) : className,
+      },
+    ]);
+
+    // render 三形态
+    if (typeof render === 'function') {
+      return render({ ...merged, ...stateValue, ref: mergedRef });
+    }
+    if (render) {
+      const Tag = render.type as any;
+      return <Tag key={render.key} {...render.props} {...merged} ref={mergedRef} />;
+    }
+    return <div ref={mergedRef} {...merged} />;
+  };
+}) as (props: ComboboxArrow.Props) => any;
 
 export interface ComboboxArrowState {
   /**

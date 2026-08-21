@@ -1,13 +1,14 @@
-import { computed } from 'actview';
+import { computed, defineComponent, useRootElement } from 'actview';
 import { useCheckboxRootContext } from '../root/CheckboxRootContext';
-import { useRenderElement } from '../../internals/useRenderElement';
 import { getCheckboxStateAttributesMapping } from '../utils/getCheckboxStateAttributesMapping';
 import type { CheckboxRootState } from '../root/CheckboxRoot';
 import type { BaseUIComponentProps } from '../../internals/types';
 import { useOpenChangeComplete } from '../../internals/useOpenChangeComplete';
 import { type TransitionStatus, useTransitionStatus } from '../../internals/useTransitionStatus';
 import type { StateAttributesMapping } from '../../internals/getStateAttributesProps';
+import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
 import { transitionStatusMapping } from '../../internals/stateAttributesMapping';
+import { mergePropsN } from '../../merge-props';
 
 /**
  * Indicates whether the checkbox is ticked.
@@ -15,17 +16,9 @@ import { transitionStatusMapping } from '../../internals/stateAttributesMapping'
  *
  * Documentation: [Base UI Checkbox](https://base-ui.com/react/components/checkbox)
  */
-export function CheckboxIndicator(componentProps: CheckboxIndicator.Props) {
-  const getElementProps = () => {
-    const {
-      render: _render,
-      className: _className,
-      style: _style,
-      keepMounted: _keepMounted,
-      ...elementProps
-    } = componentProps;
-    return elementProps;
-  };
+export const CheckboxIndicator = defineComponent(function (componentProps: CheckboxIndicator.Props) {
+  // ================= setup（只执行一次） =================
+  const rootRef = useRootElement();
 
   const rootState = useCheckboxRootContext();
 
@@ -33,7 +26,15 @@ export function CheckboxIndicator(componentProps: CheckboxIndicator.Props) {
 
   const { mounted, transitionStatus, setMounted } = useTransitionStatus(rendered);
 
-  const indicatorRef = { current: null as HTMLSpanElement | null };
+  useOpenChangeComplete({
+    open: rendered,
+    ref: rootRef,
+    onComplete() {
+      if (!rendered.value) {
+        setMounted(false);
+      }
+    },
+  });
 
   const state = computed(
     () =>
@@ -43,16 +44,6 @@ export function CheckboxIndicator(componentProps: CheckboxIndicator.Props) {
       }) as CheckboxIndicatorState,
   );
 
-  useOpenChangeComplete({
-    open: rendered,
-    ref: indicatorRef,
-    onComplete() {
-      if (!rendered.value) {
-        setMounted(false);
-      }
-    },
-  });
-
   const baseStateAttributesMapping = getCheckboxStateAttributesMapping(rootState);
 
   const stateAttributesMapping: StateAttributesMapping<CheckboxIndicatorState> = {
@@ -60,15 +51,46 @@ export function CheckboxIndicator(componentProps: CheckboxIndicator.Props) {
     ...transitionStatusMapping,
   };
 
-  const getElement = useRenderElement('span', componentProps, {
-    ref: [componentProps.ref, indicatorRef],
-    state,
-    stateAttributesMapping,
-    props: [getElementProps],
-  });
+  // ================= render（每次更新执行） =================
+  return () => {
+    const keepMounted = componentProps.keepMounted ?? false;
+    if (!keepMounted && !mounted.value) {
+      return null;
+    }
 
-  return (componentProps.keepMounted || mounted.value) ? getElement() : null;
-}
+    const {
+      render,
+      className,
+      style,
+      keepMounted: _keepMounted,
+      ref: _ref,
+      ...elementProps
+    } = componentProps;
+
+    const stateValue = state.value;
+
+    const stateAttributes = getStateAttributesProps(stateValue, stateAttributesMapping);
+
+    const merged = mergePropsN([
+      stateAttributes,
+      elementProps,
+      {
+        className: typeof className === 'function' ? className(stateValue) : className,
+        style: typeof style === 'function' ? style(stateValue) : style,
+      },
+    ]);
+
+    // render 三形态
+    if (typeof render === 'function') {
+      return render({ ...merged, ...stateValue, ref: rootRef });
+    }
+    if (render) {
+      const Tag = render.type as any;
+      return <Tag key={render.key} {...render.props} {...merged} ref={rootRef} />;
+    }
+    return <span ref={rootRef} {...merged} />;
+  };
+}) as (props: CheckboxIndicator.Props) => any;
 
 export interface CheckboxIndicatorState extends CheckboxRootState {
   /**
