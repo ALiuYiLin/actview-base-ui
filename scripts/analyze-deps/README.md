@@ -29,6 +29,7 @@ node index.mjs --dir <目录> [选项] -- <后缀1> [后缀2 ...]
 | 参数 | 说明 | 默认值 |
 |------|------|--------|
 | `--dir <path>` | **（必填）** 要扫描的目录 | — |
+| `--exclude <glob>` | 排除模式，如 `"*.test.*"` 可重复使用 | 不排除 |
 | `--sort <asc\|desc>` | 排序方向 | `desc` |
 | `--by <metric>` | 排序依据：`out-degree`（出度）、`in-degree`（入度）、`total`（总依赖数） | `out-degree` |
 | `--top <n>` | 只显示前 N 条 | 不限制 |
@@ -43,6 +44,9 @@ node index.mjs --dir ./src -- .ts .tsx
 
 # 按入度从小到大排，只看前 10 个
 node index.mjs --dir ./packages --by in-degree --sort asc --top 10 -- .ts
+
+# 排除测试文件（.test.ts、.test.tsx、.spec.ts 等）
+node index.mjs --dir ./src --exclude "*.test.*" --exclude "*.spec.*" -- .ts .tsx
 
 # 输出 JSON 格式
 node index.mjs --dir ./src --json -- .ts
@@ -83,6 +87,7 @@ node index.mjs --file <文件> [选项] -- <后缀1> [后缀2 ...]
 | 参数 | 说明 | 默认值 |
 |------|------|--------|
 | `--file <path>` | **（必填）** 要分析的文件 | — |
+| `--exclude <glob>` | 排除模式，如 `"*.test.*"` 可重复使用 | 不排除 |
 | `--depth <n>` | 递归深度：`0`=仅直接依赖，`1`=再展开一层，... | `0` |
 | `--direct-only` | 等价于 `--depth 0` | — |
 | `--graph` | 以树形结构展示（`├── └──`） | 列表 |
@@ -101,6 +106,9 @@ node index.mjs --file src/components/Button.tsx --depth 1 --graph -- .tsx
 
 # 只看内部依赖，不显示 npm 包
 node index.mjs --file src/index.ts --direct-only --no-external -- .ts
+
+# 排除测试文件，只看业务代码的依赖
+node index.mjs --file src/App.tsx --exclude "*.test.*" --exclude "*.stories.*" --depth 1 --graph -- .ts .tsx
 ```
 
 ### 输出示例（列表模式）
@@ -162,7 +170,17 @@ node index.mjs --file src/index.ts --depth 3 --graph -- .ts .tsx
 node index.mjs --dir ./src --sort desc -- .ts .tsx
 ```
 
-### 4. 检测循环依赖
+### 4. 排除测试文件，只看业务代码
+
+```bash
+# 目录模式：排除 .test.、.spec.、.stories. 文件
+node index.mjs --dir ./src --exclude "*.test.*" --exclude "*.spec.*" --exclude "*.stories.*" --top 10 -- .ts .tsx
+
+# 单文件模式：排除测试文件
+node index.mjs --file src/components/Button.tsx --exclude "*.test.*" --depth 1 --graph -- .tsx
+```
+
+### 5. 检测循环依赖
 
 树形模式下，如果检测到循环依赖，节点会标记 `[circular]`：
 
@@ -198,6 +216,28 @@ src/hooks/useAuth.ts
 
 `--file` 模式在递归遍历时维护当前路径链，检测到重复节点后标记为 `[circular]` 并停止展开，避免死循环。
 
+### 文件排除（`--exclude`）
+
+`--exclude` 参数支持简单的 glob 通配符来排除不需要的文件：
+
+| 通配符 | 含义 | 示例 | 匹配 |
+|--------|------|------|------|
+| `*` | 匹配任意字符（不含路径分隔符） | `*.test.*` | `Button.test.tsx`、`utils.test.ts` |
+| `**` | 匹配任意字符（含路径分隔符） | `**/__tests__/*` | `src/__tests__/foo.ts` |
+| `?` | 匹配单个字符（不含路径分隔符） | `?.ts` | `a.ts`、`b.ts` |
+
+常见用法：
+- `--exclude "*.test.*"` — 排除所有测试文件
+- `--exclude "*.spec.*"` — 排除所有 spec 文件
+- `--exclude "*.stories.*"` — 排除 Storybook 故事文件
+- `--exclude "*.bench.*"` — 排除基准测试文件
+- `--exclude "**/__tests__/*"` — 排除 `__tests__` 目录下的文件
+
+多个排除模式可以重复使用 `--exclude`：
+```bash
+node index.mjs --dir ./src --exclude "*.test.*" --exclude "*.stories.*" -- .ts .tsx
+```
+
 ---
 
 ## 完整参数参考
@@ -210,6 +250,7 @@ src/hooks/useAuth.ts
 选项:
   --dir <path>       分析整个目录
   --file <path>      分析单个文件
+  --exclude <glob>   排除模式，如 "*.test.*" 可重复使用
   --sort <asc|desc>  排序方向 (默认: desc)
   --by <metric>      排序依据: out-degree|in-degree|total (默认: out-degree)
   --json             输出 JSON 格式

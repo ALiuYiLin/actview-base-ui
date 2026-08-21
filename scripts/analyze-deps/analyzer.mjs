@@ -9,6 +9,7 @@
 import path from 'node:path';
 import { parseImports } from './parser.mjs';
 import { resolveImport } from './resolver.mjs';
+import { isExcluded } from './scanner.mjs';
 
 /**
  * 目录模式：构建依赖图，返回每个文件的统计信息。
@@ -82,16 +83,17 @@ export function buildGraph(files, rootDir, extensions) {
 /**
  * 单文件模式：递归构建依赖树。
  *
- * @param {string}   filePath   - 目标文件的绝对路径
- * @param {string}   rootDir    - 项目根目录（process.cwd()）
- * @param {string[]} extensions - 只显示这些后缀的依赖（空数组=全部显示）
- * @param {number}   maxDepth   - 最大递归深度，0=仅直接依赖
- * @param {boolean}  noExternal - 是否排除外部依赖
+ * @param {string}   filePath       - 目标文件的绝对路径
+ * @param {string}   rootDir        - 项目根目录（process.cwd()）
+ * @param {string[]} extensions     - 只显示这些后缀的依赖（空数组=全部显示）
+ * @param {number}   maxDepth       - 最大递归深度，0=仅直接依赖
+ * @param {boolean}  noExternal     - 是否排除外部依赖
+ * @param {RegExp[]} [excludeREs]   - 排除模式的正则列表（编译后的）
  * @returns {{ rootFile: string, depth: number, children: DepTreeNode[] }}
  *
  * @typedef {{ path:string, absolutePath:string|null, type:'internal'|'external'|'circular', children: DepTreeNode[] }} DepTreeNode
  */
-export function buildDepTree(filePath, rootDir, extensions, maxDepth, noExternal) {
+export function buildDepTree(filePath, rootDir, extensions, maxDepth, noExternal, excludeREs = []) {
   const extSet = new Set(extensions);
   const visited = new Set(); // 当前递归路径，用于检测循环
 
@@ -146,6 +148,14 @@ export function buildDepTree(filePath, rootDir, extensions, maxDepth, noExternal
       const resolvedExt = path.extname(resolved);
       if (extSet.size > 0 && !extSet.has(resolvedExt)) {
         continue;
+      }
+
+      // 按排除模式过滤
+      if (excludeREs.length > 0) {
+        const rel = path.relative(rootDir, resolved);
+        if (isExcluded(rel, excludeREs)) {
+          continue;
+        }
       }
 
       // 递归或终止

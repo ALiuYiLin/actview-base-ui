@@ -10,6 +10,7 @@
  * 选项:
  *   --dir <path>       分析整个目录
  *   --file <path>      分析单个文件
+ *   --exclude <glob>   排除模式，如 "*.test.*" "*.spec.*" 可重复使用
  *   --sort <asc|desc>  排序方向 (默认: desc)
  *   --by <metric>      排序依据: out-degree|in-degree|total (默认: out-degree)
  *   --json             输出 JSON 格式
@@ -21,15 +22,15 @@
  *   -- <ext>           文件后缀列表，如 .ts .tsx
  *
  * 示例:
- *   node index.mjs --dir ./src --sort desc -- .ts
- *   node index.mjs --dir ./packages --by in-degree --top 10 -- .ts .tsx
+ *   node index.mjs --dir ./src --exclude "*.test.*" --sort desc -- .ts
+ *   node index.mjs --dir ./packages --exclude "*.test.*" "*.stories.*" --by in-degree --top 10 -- .ts .tsx
  *   node index.mjs --file src/components/Button.tsx --depth 1 --graph -- .tsx
  *   node index.mjs --file src/index.ts --direct-only --no-external -- .ts
  */
 
 import path from 'node:path';
 import fs from 'node:fs';
-import { scanDirectory } from './scanner.mjs';
+import { scanDirectory, compileGlob } from './scanner.mjs';
 import { parseImports } from './parser.mjs';
 import { resolveImport } from './resolver.mjs';
 import { buildGraph, buildDepTree } from './analyzer.mjs';
@@ -43,6 +44,7 @@ function parseArgs(argv) {
   const args = {
     dir: null,
     file: null,
+    exclude: [],
     sort: 'desc',
     by: 'out-degree',
     json: false,
@@ -85,6 +87,13 @@ function parseArgs(argv) {
         args.file = argv[++i];
         if (!args.file) {
           console.error('错误: --file 后需要指定文件路径');
+          process.exit(1);
+        }
+        break;
+      case '--exclude':
+        args.exclude.push(argv[++i]);
+        if (!args.exclude[args.exclude.length - 1]) {
+          console.error('错误: --exclude 后需要指定排除模式');
           process.exit(1);
         }
         break;
@@ -180,12 +189,18 @@ function directoryMode(args) {
     process.exit(1);
   }
 
+  // 编译排除模式
+  const excludeREs = args.exclude.map((p) => compileGlob(p));
+
   console.error(`扫描目录: ${rootDir}`);
   console.error(`后缀过滤: ${args.extensions.length > 0 ? args.extensions.join(', ') : '全部'}`);
+  if (excludeREs.length > 0) {
+    console.error(`排除模式: ${args.exclude.join(', ')}`);
+  }
   console.error('');
 
   // 扫描
-  const files = scanDirectory(rootDir, args.extensions);
+  const files = scanDirectory(rootDir, args.extensions, excludeREs, rootDir);
   if (files.length === 0) {
     console.error('没有找到匹配的文件');
     return;
@@ -229,6 +244,9 @@ function fileMode(args) {
     args.extensions.push(selfExt);
   }
 
+  // 编译排除模式
+  const excludeREs = args.exclude.map((p) => compileGlob(p));
+
   // 构建依赖树
   const tree = buildDepTree(
     filePath,
@@ -236,6 +254,7 @@ function fileMode(args) {
     args.extensions,
     args.depth,
     args.noExternal,
+    excludeREs,
   );
 
   // 输出
