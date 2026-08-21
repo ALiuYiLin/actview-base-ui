@@ -1,4 +1,4 @@
-import { computed } from 'actview';
+import { defineComponent } from 'actview';
 import { useComboboxInputValueContext } from '../../combobox/root/ComboboxRootContext';
 
 /**
@@ -7,24 +7,17 @@ import { useComboboxInputValueContext } from '../../combobox/root/ComboboxRootCo
  *
  * Documentation: [Base UI Autocomplete](https://base-ui.com/react/components/autocomplete)
  */
-export function AutocompleteValue(props: AutocompleteValue.Props) {
-  const { children } = props;
-
-  // `use()` must run in setup; the computed below reads the live context value so it
-  // stays reactive across renders.
+export const AutocompleteValue = defineComponent(function (props: AutocompleteValue.Props) {
   const inputValue = useComboboxInputValueContext();
 
-  const rendered = computed(() => {
-    if (typeof children === 'function') {
-      return children(String(inputValue.value));
-    } else if (children != null) {
-      return children;
-    }
-    return inputValue.value;
-  });
-
-  return <>{rendered.value}</>;
-}
+  return () => {
+    const { children } = props;
+    const rendered = typeof children === 'function'
+      ? children(String(inputValue.value))
+      : children ?? inputValue.value;
+    return <>{rendered}</>;
+  };
+}) as (props: AutocompleteValue.Props) => any;
 
 export interface AutocompleteValueState {}
 

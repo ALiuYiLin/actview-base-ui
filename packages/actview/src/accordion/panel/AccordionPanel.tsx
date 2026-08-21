@@ -1,6 +1,7 @@
-import { computed, watch } from 'actview';
+import { computed, defineComponent, watch } from 'actview';
 import { warn } from '@base-ui/actview-utils/warn';
 import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
+import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
 import { resolveStyle } from '../../utils/resolveStyle';
 import { useCollapsibleRootContext } from '../../collapsible/root/CollapsibleRootContext';
 import { useCollapsiblePanel } from '../../collapsible/panel/useCollapsiblePanel';
@@ -10,8 +11,8 @@ import type { AccordionItemState } from '../item/AccordionItem';
 import { useAccordionItemContext } from '../item/AccordionItemContext';
 import { accordionStateAttributesMapping } from '../item/stateAttributesMapping';
 import { AccordionPanelCssVars } from './AccordionPanelCssVars';
-import { useRenderElement } from '../../internals/useRenderElement';
 import type { TransitionStatus } from '../../internals/useTransitionStatus';
+import { mergePropsN } from '../../merge-props';
 
 /**
  * A collapsible panel with the accordion item contents.
@@ -19,7 +20,8 @@ import type { TransitionStatus } from '../../internals/useTransitionStatus';
  *
  * Documentation: [Base UI Accordion](https://base-ui.com/react/components/accordion)
  */
-export function AccordionPanel(componentProps: AccordionPanel.Props) {
+export const AccordionPanel = defineComponent(function (componentProps: AccordionPanel.Props) {
+  // ================= setup（只执行一次） =================
   const rootContext = useAccordionRootContext();
   const collapsibleContext = useCollapsibleRootContext();
   const itemContext = useAccordionItemContext();
@@ -59,7 +61,7 @@ export function AccordionPanel(componentProps: AccordionPanel.Props) {
 
   const {
     height,
-    props,
+    props: panelProps,
     ref,
     shouldPreventOpenAnimation,
     shouldRender,
@@ -83,72 +85,62 @@ export function AccordionPanel(componentProps: AccordionPanel.Props) {
     transitionStatus: panelTransitionStatus.value,
   }));
 
-  const resolvedStyle = computed(() => resolveStyle(componentProps.style, panelState.value));
-
   const triggerId = computed(() => itemContext.value.triggerId);
 
-  function getElementProps(prev: HTMLProps): HTMLProps {
+  // ================= render（每次更新执行） =================
+  return () => {
+    if (!shouldRender.value) {
+      return null;
+    }
+
     const {
-      render: _render,
-      className: _className,
+      render,
+      className,
+      style: _style,
       hiddenUntilFound: _hiddenUntilFound,
       keepMounted: _keepMounted,
       id: _id,
-      style: _style,
+      ref: _ref,
       ...elementProps
     } = componentProps;
-    // Keep the id managed by `useCollapsiblePanel` (via `props`), drop the prop copy.
-    return { ...prev, ...elementProps };
-  }
 
-  // Pass `style: undefined` to `useRenderElement` so it does not re-apply the public
-  // `style` after the props list below; `resolvedStyle` (resolved against the panel
-  // state) and the temporary `animationName: 'none'` must keep their merge order.
-  const renderComponentProps = {
-    get render() {
-      return componentProps.render;
-    },
-    get className() {
-      return componentProps.className;
-    },
-    style: undefined,
-  };
+    const stateValue = panelState.value;
+    const stateAttributes = getStateAttributesProps(stateValue, accordionStateAttributesMapping);
 
-  const getElement = useRenderElement('div', renderComponentProps, {
-    state: panelState,
-    ref,
-    props: [
-      props,
-      // Getter (not a static object): props must be re-evaluated on every render,
-      // otherwise `height`/`width`/`triggerId` are frozen at setup time (AD-17).
-      // Merge with `prev` (which carries `id`, `hidden`, data-* from `props`) since
-      // getters replace the accumulated props wholesale (AD-20).
-      (prev: HTMLProps) => ({
-        ...prev,
+    const resolvedStyle = resolveStyle(componentProps.style, stateValue);
+
+    const merged = mergePropsN([
+      stateAttributes,
+      elementProps,
+      panelProps(),
+      {
         'aria-labelledby': triggerId.value,
         role: 'region',
+        className: typeof className === 'function' ? className(stateValue) : className,
         style: {
           [AccordionPanelCssVars.accordionPanelHeight as string]:
             height.value === undefined ? 'auto' : `${height.value}px`,
           [AccordionPanelCssVars.accordionPanelWidth as string]:
             width.value === undefined ? 'auto' : `${width.value}px`,
         },
-      }),
-      getElementProps,
-      (prev: HTMLProps) =>
-        resolvedStyle.value ? { ...prev, style: resolvedStyle.value } : prev,
-      // Resolve the public `style` prop so temporary `animationName: 'none'`
-      // can still win after user's inline styles have been merged.
-      (prev: HTMLProps) =>
-        shouldPreventOpenAnimation.value
-          ? { ...prev, style: { animationName: 'none' } }
-          : prev,
-    ],
-    stateAttributesMapping: accordionStateAttributesMapping,
-  });
+      },
+      resolvedStyle ? (prev: HTMLProps) => ({ ...prev, style: resolvedStyle }) : undefined,
+      shouldPreventOpenAnimation.value
+        ? (prev: HTMLProps) => ({ ...prev, style: { animationName: 'none' } })
+        : undefined,
+    ]);
 
-  return shouldRender.value ? <>{getElement()}</> : null;
-}
+    // render 三形态
+    if (typeof render === 'function') {
+      return render({ ...merged, ...stateValue, ref });
+    }
+    if (render) {
+      const Tag = render.type as any;
+      return <Tag key={render.key} {...render.props} {...merged} ref={ref} />;
+    }
+    return <div ref={ref} {...merged} />;
+  };
+}) as (props: AccordionPanel.Props) => any;
 
 export interface AccordionPanelState extends AccordionItemState {
   /**

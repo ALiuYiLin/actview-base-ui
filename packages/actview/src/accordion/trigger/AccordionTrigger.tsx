@@ -1,11 +1,12 @@
-import { computed, watch } from 'actview';
+import { computed, defineComponent, watch } from 'actview';
 import { triggerOpenStateMapping } from '../../utils/collapsibleOpenStateMapping';
 import type { BaseUIComponentProps, HTMLProps, NativeButtonProps } from '../../internals/types';
+import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
 import { useButton } from '../../internals/use-button';
 import { useCollapsibleRootContext } from '../../collapsible/root/CollapsibleRootContext';
 import type { AccordionItemState } from '../item/AccordionItem';
 import { useAccordionItemContext } from '../item/AccordionItemContext';
-import { useRenderElement } from '../../internals/useRenderElement';
+import { mergePropsN } from '../../merge-props';
 
 /**
  * A button that opens and closes the corresponding panel.
@@ -13,7 +14,8 @@ import { useRenderElement } from '../../internals/useRenderElement';
  *
  * Documentation: [Base UI Accordion](https://base-ui.com/react/components/accordion)
  */
-export function AccordionTrigger(componentProps: AccordionTrigger.Props) {
+export const AccordionTrigger = defineComponent(function (componentProps: AccordionTrigger.Props) {
+  // ================= setup（只执行一次） =================
   const collapsibleContext = useCollapsibleRootContext();
   const itemContext = useAccordionItemContext();
 
@@ -44,45 +46,52 @@ export function AccordionTrigger(componentProps: AccordionTrigger.Props) {
     { immediate: true },
   );
 
-  function getElementProps(prev: HTMLProps): HTMLProps {
+  // ================= render（每次更新执行） =================
+  return () => {
     const {
-      render: _render,
-      className: _className,
+      render,
+      className,
+      style,
       disabled: _disabled,
       id: _idProp,
       nativeButton: _nativeButton,
-      style: _style,
+      ref: _ref,
       ...elementProps
     } = componentProps;
-    return { ...prev, ...elementProps };
-  }
 
-  const getElement = useRenderElement('button', componentProps, {
-    state,
-    ref: [componentProps.ref, buttonRef],
-    props: [
-      // Getter (not a static object): props must be re-evaluated on every render,
-      // otherwise `open`/`panelId` are frozen at setup time (plantform-diff.md AD-17).
-      () => ({
+    const stateValue = state.value;
+
+    const stateAttributes = getStateAttributesProps(stateValue, triggerOpenStateMapping);
+
+    const merged = mergePropsN([
+      stateAttributes,
+      elementProps,
+      {
         'aria-controls': collapsibleContext.value.open
           ? collapsibleContext.value.panelId
           : undefined,
-        // PD-01: ActView renders boolean-true attributes as empty strings; ARIA booleans
-        // are normalized to "true"/"false" like React does.
         'aria-expanded': collapsibleContext.value.open ? 'true' : 'false',
         id: id.value,
         onClick: collapsibleContext.value.handleTrigger,
-      }),
-      getElementProps,
-      getButtonProps,
-    ],
-    stateAttributesMapping: triggerOpenStateMapping,
-  });
+      },
+      {
+        className: typeof className === 'function' ? className(stateValue) : className,
+        style: typeof style === 'function' ? style(stateValue) : style,
+      },
+      (p: HTMLProps) => getButtonProps(p),
+    ]);
 
-  // Wrap in a Fragment so the ActView Babel transform recognizes this as a JSX
-  // return and converts the component to a `{ __setup }` VNode type (AI-003).
-  return <>{getElement()}</>;
-}
+    // render 三形态
+    if (typeof render === 'function') {
+      return render({ ...merged, ...stateValue, ref: buttonRef });
+    }
+    if (render) {
+      const Tag = render.type as any;
+      return <Tag key={render.key} {...render.props} {...merged} ref={buttonRef} />;
+    }
+    return <button ref={buttonRef} {...merged} />;
+  };
+}) as (props: AccordionTrigger.Props) => any;
 
 export interface AccordionTriggerState extends AccordionItemState {}
 
