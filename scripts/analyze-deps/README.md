@@ -1,0 +1,222 @@
+# analyze-deps — 依赖分析工具
+
+分析项目目录下指定文件后缀的依赖关系，支持**目录模式**（宏观统计）和**单文件模式**（微观追踪）。
+
+## 快速开始
+
+```bash
+# 目录模式：统计 src 下所有 .ts 文件的依赖数量，按出度从大到小排
+node index.mjs --dir ./src -- .ts
+
+# 单文件模式：查看某个文件依赖了哪些 .tsx 文件，树形展开 1 层
+node index.mjs --file src/components/Button.tsx --depth 1 --graph -- .tsx
+```
+
+---
+
+## 目录模式
+
+分析整个目录，统计每个文件的出度、入度、总依赖数，支持排序和筛选。
+
+### 用法
+
+```bash
+node index.mjs --dir <目录> [选项] -- <后缀1> [后缀2 ...]
+```
+
+### 参数
+
+| 参数 | 说明 | 默认值 |
+|------|------|--------|
+| `--dir <path>` | **（必填）** 要扫描的目录 | — |
+| `--sort <asc\|desc>` | 排序方向 | `desc` |
+| `--by <metric>` | 排序依据：`out-degree`（出度）、`in-degree`（入度）、`total`（总依赖数） | `out-degree` |
+| `--top <n>` | 只显示前 N 条 | 不限制 |
+| `--json` | 输出 JSON 格式 | 表格 |
+| `-- <ext>` | **（必填）** 文件后缀列表，如 `.ts .tsx` | — |
+
+### 示例
+
+```bash
+# 按出度从大到小排（默认）
+node index.mjs --dir ./src -- .ts .tsx
+
+# 按入度从小到大排，只看前 10 个
+node index.mjs --dir ./packages --by in-degree --sort asc --top 10 -- .ts
+
+# 输出 JSON 格式
+node index.mjs --dir ./src --json -- .ts
+```
+
+### 输出说明
+
+```
+File                           Out-Deg    In-Deg   Total   External
+───────────────────────────────────────────────────────────────────────
+src/components/Button.tsx         12         3       18         6
+src/hooks/useAuth.ts               8         5       10         2
+src/utils/format.ts                3        12        5         2
+...
+```
+
+| 列 | 含义 |
+|----|------|
+| **Out-Deg**（出度） | 该文件依赖了多少个内部文件 |
+| **In-Deg**（入度） | 有多少个内部文件依赖了该文件 |
+| **Total** | 总依赖数（内部 + 外部） |
+| **External** | 外部依赖数（npm 包） |
+
+---
+
+## 单文件模式
+
+查看单个文件依赖了哪些文件，支持递归展开和树形展示。
+
+### 用法
+
+```bash
+node index.mjs --file <文件> [选项] -- <后缀1> [后缀2 ...]
+```
+
+### 参数
+
+| 参数 | 说明 | 默认值 |
+|------|------|--------|
+| `--file <path>` | **（必填）** 要分析的文件 | — |
+| `--depth <n>` | 递归深度：`0`=仅直接依赖，`1`=再展开一层，... | `0` |
+| `--direct-only` | 等价于 `--depth 0` | — |
+| `--graph` | 以树形结构展示（`├── └──`） | 列表 |
+| `--no-external` | 不显示外部依赖（npm 包） | 显示 |
+| `--json` | 输出 JSON 格式 | 列表 |
+| `-- <ext>` | 只显示这些后缀的依赖文件，如 `.tsx` | 全部 |
+
+### 示例
+
+```bash
+# 查看 Button.tsx 直接依赖了哪些 .tsx 文件
+node index.mjs --file src/components/Button.tsx -- .tsx
+
+# 递归展开 1 层，树形展示
+node index.mjs --file src/components/Button.tsx --depth 1 --graph -- .tsx
+
+# 只看内部依赖，不显示 npm 包
+node index.mjs --file src/index.ts --direct-only --no-external -- .ts
+```
+
+### 输出示例（列表模式）
+
+```
+文件: src/components/Button.tsx
+仅直接依赖, 过滤后缀: .tsx
+
+内部依赖 (4):
+  src/hooks/useClick.tsx
+  src/hooks/useFocus.tsx
+  src/utils/cn.tsx
+  src/components/Icon.tsx
+
+外部依赖 (2):
+  react
+  @base-ui/utils/useTimeout
+```
+
+### 输出示例（树形模式）
+
+```
+src/components/Button.tsx  [递归深度: 1, 过滤后缀: .tsx]
+├── src/hooks/useClick.tsx
+│   ├── src/hooks/usePointer.tsx
+│   └── react  [external]
+├── src/hooks/useFocus.tsx
+│   └── react  [external]
+├── src/utils/cn.tsx
+│   └── clsx  [external]
+├── src/components/Icon.tsx
+│   ├── src/utils/assetPath.tsx
+│   └── react  [external]
+└── react-dom  [external]
+```
+
+---
+
+## 常见场景
+
+### 1. 重构决策 — 找出高耦合的文件
+
+```bash
+# 入度最高的文件 = 被最多文件依赖 = 修改影响面最大
+node index.mjs --dir ./src --by in-degree --top 10 -- .ts .tsx
+```
+
+### 2. 排查依赖链 — 为什么要引入这个包
+
+```bash
+# 从入口文件向下追踪，看哪个文件最终依赖了某个 npm 包
+node index.mjs --file src/index.ts --depth 3 --graph -- .ts .tsx
+```
+
+### 3. 分析模块边界 — 模块间依赖关系
+
+```bash
+# 按出度排序，出度高的文件往往是"集线器"式的导入入口
+node index.mjs --dir ./src --sort desc -- .ts .tsx
+```
+
+### 4. 检测循环依赖
+
+树形模式下，如果检测到循环依赖，节点会标记 `[circular]`：
+
+```
+src/hooks/useAuth.ts
+├── src/utils/api.ts
+│   └── src/hooks/useAuth.ts  [circular]
+```
+
+---
+
+## 技术细节
+
+### 依赖提取规则
+
+脚本通过正则提取以下语句中的模块路径（先剥离注释，避免误抓）：
+
+| 语法 | 示例 |
+|------|------|
+| ESM import | `import { foo } from './bar'` |
+| 重导出 | `export * from './bar'` |
+| CommonJS | `require('./bar')` |
+| 动态导入 | `import('./bar')` |
+
+### 路径解析策略
+
+1. **相对路径**（`./`、`../`）：相对于当前文件解析
+2. **后缀补全**：按 `.tsx` → `.ts` → `.jsx` → `.js` → `.mjs` → `.mts` → `.cjs` → `.cts` 顺序尝试
+3. **Index 文件**：`./foo` → `./foo/index.tsx` 等
+4. **非相对路径**：先尝试作为项目内路径（monorepo），否则标记为外部依赖
+
+### 循环依赖检测
+
+`--file` 模式在递归遍历时维护当前路径链，检测到重复节点后标记为 `[circular]` 并停止展开，避免死循环。
+
+---
+
+## 完整参数参考
+
+```
+用法:
+  目录模式:   node index.mjs --dir <目录> [选项] -- <后缀1> [后缀2 ...]
+  单文件模式: node index.mjs --file <文件> [选项] -- <后缀1> [后缀2 ...]
+
+选项:
+  --dir <path>       分析整个目录
+  --file <path>      分析单个文件
+  --sort <asc|desc>  排序方向 (默认: desc)
+  --by <metric>      排序依据: out-degree|in-degree|total (默认: out-degree)
+  --json             输出 JSON 格式
+  --top <n>          只显示前 N 条 (目录模式)
+  --depth <n>        递归深度 (单文件模式，0=仅直接依赖，默认: 0)
+  --direct-only      等价于 --depth 0
+  --no-external      不显示外部依赖 (单文件模式)
+  --graph            树形展示 (单文件模式)
+  -- <ext>           文件后缀列表，如 .ts .tsx
+```
