@@ -1,4 +1,4 @@
-import { defineComponent, ref, useRootElement } from 'actview';
+import { defineComponent, useRootElement } from 'actview';
 import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
 import type { AccordionItemState } from '@/accordion/item/AccordionItemContext';
 import { useAccordionItemContext } from '@/accordion/item/AccordionItemContext';
@@ -14,8 +14,11 @@ import { mergeClassNames, mergeStyles } from '@/utils/mergeClassNames';
  */
 export const AccordionHeader = defineComponent(function (componentProps: AccordionHeader.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  // 根是元素（<h3>）→ useRootElement() 自动绑定（MIGRATION.md case 6）
-  const rootRef = ref<HTMLElement | null>(null);
+  // 根是元素（<h3>）→ useRootElement()（MIGRATION.md case 6）：rootRef 经
+  // subTree.el 同步，恒为渲染根（render 分支/函数形态下也成立——conformance
+  // 的 ref 用例依赖此语义；手动 ref() 只在模板绑定处赋值，render 函数分支
+  // 用户覆盖 ref 时 rootRef 会停在 null）
+  const rootRef = useRootElement();
   // context hook 必须在 setup 顶层调用（AD-42）
   const itemContext = useAccordionItemContext();
 
