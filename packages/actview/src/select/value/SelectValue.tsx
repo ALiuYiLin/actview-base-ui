@@ -1,10 +1,12 @@
-import { computed } from 'actview';
+import { computed, defineComponent, ref } from 'actview';
+import { useMergedRefs } from '@base-ui/actview-utils/useMergedRefs';
+import type { HTMLProps } from '../../internals/types';
+import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
 import type { BaseUIComponentProps } from '../../internals/types';
-import { useRenderElement } from '../../internals/useRenderElement';
 import { useSelectRootContext } from '../root/SelectRootContext';
 import { resolveMultipleLabels, resolveSelectedLabel } from '../../internals/resolveValueLabel';
-import { selectors } from '../store';
 import type { StateAttributesMapping } from '../../internals/getStateAttributesProps';
+import { mergePropsN } from '../../merge-props';
 
 const stateAttributesMapping: StateAttributesMapping<SelectValueState> = {
   value: () => null,
@@ -16,16 +18,8 @@ const stateAttributesMapping: StateAttributesMapping<SelectValueState> = {
  *
  * Documentation: [Base UI Select](https://base-ui.com/react/components/select)
  */
-export function SelectValue(componentProps: SelectValue.Props) {
-  const {
-    className: _className,
-    render: _render,
-    children: childrenProp,
-    placeholder,
-    style: _style,
-    ...elementProps
-  } = componentProps;
-
+export const SelectValue = defineComponent(function (componentProps: SelectValue.Props) {
+  // ================= setup（只执行一次） =================
   const rootContext = useSelectRootContext().value!;
   const { store, valueRef } = rootContext;
 
@@ -35,7 +29,7 @@ export function SelectValue(componentProps: SelectValue.Props) {
   const hasSelectedValue = store.useState('hasSelectedValue');
 
   const shouldCheckNullItemLabel =
-    !hasSelectedValue.value && placeholder != null && childrenProp == null;
+    !hasSelectedValue.value && componentProps.placeholder != null && componentProps.children == null;
   const hasNullLabel = store.useState('hasNullItemLabel', shouldCheckNullItemLabel);
 
   const state = computed<SelectValueState>(() => ({
@@ -43,34 +37,62 @@ export function SelectValue(componentProps: SelectValue.Props) {
     placeholder: !hasSelectedValue.value,
   }));
 
-  const getChildren = () => {
-    if (typeof childrenProp === 'function') {
-      return childrenProp(value.value);
-    }
-    if (childrenProp != null) {
-      return childrenProp;
-    }
-    if (shouldCheckNullItemLabel && !hasNullLabel.value) {
-      return placeholder;
-    }
-    if (Array.isArray(value.value)) {
-      return resolveMultipleLabels(value.value, items.value, itemToStringLabel.value);
-    }
-    return resolveSelectedLabel(value.value, items.value, itemToStringLabel.value);
-  };
+  const rootRef = ref<HTMLSpanElement | null>(null);
+  const mergedRef = useMergedRefs(componentProps.ref, valueRef, rootRef);
 
-  const getElement = useRenderElement('span', componentProps, {
-    state,
-    ref: [componentProps.ref, valueRef],
-    props: [
-      (prev: any) => ({ ...prev, children: getChildren() }),
+  // ================= render（每次更新执行） =================
+  return () => {
+    const {
+      render,
+      className,
+      style,
+      children: childrenProp,
+      placeholder,
+      ref: _ref,
+      ...elementProps
+    } = componentProps;
+
+    const stateValue = state.value;
+
+    const stateAttributes = getStateAttributesProps(stateValue, stateAttributesMapping);
+
+    const getChildren = () => {
+      if (typeof childrenProp === 'function') {
+        return childrenProp(value.value);
+      }
+      if (childrenProp != null) {
+        return childrenProp;
+      }
+      if (shouldCheckNullItemLabel && !hasNullLabel.value) {
+        return placeholder;
+      }
+      if (Array.isArray(value.value)) {
+        return resolveMultipleLabels(value.value, items.value, itemToStringLabel.value);
+      }
+      return resolveSelectedLabel(value.value, items.value, itemToStringLabel.value);
+    };
+
+    const merged = mergePropsN([
+      stateAttributes,
       elementProps,
-    ],
-    stateAttributesMapping,
-  });
+      {
+        children: getChildren(),
+        className: typeof className === 'function' ? className(stateValue) : className,
+        style: typeof style === 'function' ? style(stateValue) : style,
+      },
+    ]);
 
-  return <>{getElement()}</>;
-}
+    // render 三形态
+    if (typeof render === 'function') {
+      return render({ ...merged, ...stateValue, ref: mergedRef });
+    }
+    if (render) {
+      const Tag = render.type as any;
+      return <Tag key={render.key} {...render.props} {...merged} ref={mergedRef} />;
+    }
+    return <span ref={mergedRef} {...merged} />;
+  };
+}) as (props: SelectValue.Props) => any;
 
 export interface SelectValueState {
   /**

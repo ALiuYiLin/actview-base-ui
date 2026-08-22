@@ -1,5 +1,5 @@
 import type { ComputedRef } from '@actview/core';
-import { createContext } from '../../internals/createContext';
+import { createContext } from 'actview';
 
 export type SelectGroupLabelId = string | undefined;
 
@@ -10,10 +10,7 @@ export interface SelectGroupContext {
   ) => void;
 }
 
-export const SelectGroupContext = createContext<SelectGroupContext | undefined>(
-  'base-ui-select-group-context',
-  undefined,
-);
+export const SelectGroupContext = createContext<SelectGroupContext | undefined>(undefined);
 
 export function useSelectGroupContext(): ComputedRef<SelectGroupContext> {
   const context = SelectGroupContext.use();

@@ -1,7 +1,8 @@
-import { computed, ref } from 'actview';
-import type { BaseUIComponentProps } from '../../internals/types';
+import { computed, defineComponent, ref } from 'actview';
+import { useMergedRefs } from '@base-ui/actview-utils/useMergedRefs';
+import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
 import { SelectGroupContext } from './SelectGroupContext';
-import { useRenderElement } from '../../internals/useRenderElement';
+import { mergePropsN } from '../../merge-props';
 
 /**
  * Groups related select items with the corresponding label.
@@ -9,32 +10,59 @@ import { useRenderElement } from '../../internals/useRenderElement';
  *
  * Documentation: [Base UI Select](https://base-ui.com/react/components/select)
  */
-export function SelectGroup(componentProps: SelectGroup.Props) {
-  const {
-    render: _render,
-    className: _className,
-    style: _style,
-    ...elementProps
-  } = componentProps;
-
+export const SelectGroup = defineComponent(function (componentProps: SelectGroup.Props) {
+  // ================= setup（只执行一次） =================
   const labelId = ref<string | undefined>(undefined);
   const setLabelId: SelectGroupContext['setLabelId'] = (id) => {
-    labelId.value = typeof id === 'function' ? id(labelId.value) : id;
-  };  const contextValue = computed<SelectGroupContext>(() => ({
+    labelId.value = typeof id === 'function' ? (id as (prev: string | undefined) => string | undefined)(labelId.value) : id;
+  };
+
+  const contextValue = computed<SelectGroupContext>(() => ({
     labelId: labelId.value,
     setLabelId,
   }));
 
-  const getElement = useRenderElement('div', componentProps, {
-    ref: componentProps.ref,
-    props: [
-      (prev: any) => ({ ...prev, role: 'group', 'aria-labelledby': labelId.value }),
-      elementProps,
-    ],
-  });
+  const rootRef = ref<HTMLDivElement | null>(null);
+  const mergedRef = useMergedRefs(componentProps.ref, rootRef);
 
-  return <SelectGroupContext.Provider value={contextValue}>{getElement()}</SelectGroupContext.Provider>;
-}
+  // ================= render（每次更新执行） =================
+  return () => {
+    const {
+      render,
+      className,
+      style,
+      ref: _ref,
+      ...elementProps
+    } = componentProps;
+
+    const merged = mergePropsN([
+      elementProps,
+      {
+        role: 'group',
+        'aria-labelledby': labelId.value,
+        className: typeof className === 'function' ? className({} as any) : className,
+        style: typeof style === 'function' ? style({} as any) : style,
+      },
+    ]);
+
+    const element = (() => {
+      if (typeof render === 'function') {
+        return render({ ...merged, ref: mergedRef });
+      }
+      if (render) {
+        const Tag = render.type as any;
+        return <Tag key={render.key} {...render.props} {...merged} ref={mergedRef} />;
+      }
+      return <div ref={mergedRef} {...merged} />;
+    })();
+
+    return (
+      <SelectGroupContext.Provider value={contextValue.value}>
+        {element}
+      </SelectGroupContext.Provider>
+    );
+  };
+}) as (props: SelectGroup.Props) => any;
 
 export interface SelectGroupState {}
 

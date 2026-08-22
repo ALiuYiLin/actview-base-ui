@@ -1,3 +1,4 @@
+import { defineComponent } from 'actview';
 import { ListboxSeparator } from '../../utils/listbox-separator/ListboxSeparator';
 import type { BaseUIComponentProps, Orientation } from '../../internals/types';
 
@@ -22,7 +23,9 @@ export interface SelectSeparatorState {
  *
  * Documentation: [Base UI Select](https://base-ui.com/react/components/select)
  */
-export const SelectSeparator = ListboxSeparator;
+export const SelectSeparator = defineComponent(function (props: SelectSeparator.Props) {
+  return () => <ListboxSeparator {...props} />;
+}) as any;
 
 export namespace SelectSeparator {
   export type Props = SelectSeparatorProps;

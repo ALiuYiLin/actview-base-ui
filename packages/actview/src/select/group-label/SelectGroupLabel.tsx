@@ -1,8 +1,8 @@
-import { watch } from 'actview';
-import type { BaseUIComponentProps } from '../../internals/types';
+import { defineComponent, useRootElement, watch } from 'actview';
+import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
 import { useBaseUiId } from '../../internals/useBaseUiId';
 import { useSelectGroupContext } from '../group/SelectGroupContext';
-import { useRenderElement } from '../../internals/useRenderElement';
+import { mergePropsN } from '../../merge-props';
 
 /**
  * An accessible label that is automatically associated with its parent group.
@@ -10,43 +10,58 @@ import { useRenderElement } from '../../internals/useRenderElement';
  *
  * Documentation: [Base UI Select](https://base-ui.com/react/components/select)
  */
-export function SelectGroupLabel(componentProps: SelectGroupLabel.Props) {
-  const {
-    render: _render,
-    className: _className,
-    style: _style,
-    id: idProp,
-    ...elementProps
-  } = componentProps;
+export const SelectGroupLabel = defineComponent(function (componentProps: SelectGroupLabel.Props) {
+  // ================= setup（只执行一次） =================
+  const rootRef = useRootElement();
 
   const groupContext = useSelectGroupContext().value;
   const { setLabelId } = groupContext;
 
-  const id = useBaseUiId(idProp);
+  const id = useBaseUiId(componentProps.id);
 
   watch(
-    id,
-    (currentId, _old, onCleanup) => {
-      setLabelId(currentId);
-      onCleanup(() => {
-        setLabelId((currentGroupLabelId) =>
-          currentGroupLabelId === currentId ? undefined : currentGroupLabelId,
+    () => id,
+    () => {
+      setLabelId(id);
+      return () => {
+        setLabelId((currentGroupLabelId: string | undefined) =>
+          currentGroupLabelId === id ? undefined : currentGroupLabelId,
         );
-      });
+      };
     },
     { immediate: true },
   );
 
-  const getElement = useRenderElement('div', componentProps, {
-    ref: componentProps.ref,
-    props: [
-      (prev: any) => ({ ...prev, id }),
-      elementProps,
-    ],
-  });
+  // ================= render（每次更新执行） =================
+  return () => {
+    const {
+      render,
+      className,
+      style,
+      id: _id,
+      ref: _ref,
+      ...elementProps
+    } = componentProps;
 
-  return <>{getElement()}</>;
-}
+    const merged = mergePropsN([
+      elementProps,
+      {
+        className: typeof className === 'function' ? className({} as any) : className,
+        style: typeof style === 'function' ? style({} as any) : style,
+      },
+    ]);
+
+    // render 三形态
+    if (typeof render === 'function') {
+      return render({ ...merged, id, ref: rootRef });
+    }
+    if (render) {
+      const Tag = render.type as any;
+      return <Tag key={render.key} {...render.props} {...merged} id={id} ref={rootRef} />;
+    }
+    return <div ref={rootRef} {...merged} id={id} />;
+  };
+}) as (props: SelectGroupLabel.Props) => any;
 
 export interface SelectGroupLabelState {}
 

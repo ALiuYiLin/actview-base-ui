@@ -1,9 +1,10 @@
-import { computed } from 'actview';
+import { computed, defineComponent, useRootElement } from 'actview';
+import type { HTMLProps } from '../../internals/types';
+import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
 import type { BaseUIComponentProps } from '../../internals/types';
-import { useRenderElement } from '../../internals/useRenderElement';
 import { useSelectRootContext } from '../root/SelectRootContext';
 import { triggerOpenStateMapping } from '../../utils/popupStateMapping';
-import { selectors } from '../store';
+import { mergePropsN } from '../../merge-props';
 
 /**
  * An icon that indicates that the trigger button opens a select popup.
@@ -11,13 +12,9 @@ import { selectors } from '../store';
  *
  * Documentation: [Base UI Select](https://base-ui.com/react/components/select)
  */
-export function SelectIcon(componentProps: SelectIcon.Props) {
-  const {
-    render: _render,
-    className: _className,
-    style: _style,
-    ...elementProps
-  } = componentProps;
+export const SelectIcon = defineComponent(function (componentProps: SelectIcon.Props) {
+  // ================= setup（只执行一次） =================
+  const rootRef = useRootElement();
 
   const rootContext = useSelectRootContext().value!;
   const { store } = rootContext;
@@ -27,18 +24,42 @@ export function SelectIcon(componentProps: SelectIcon.Props) {
     open: open.value,
   }));
 
-  const getElement = useRenderElement('span', componentProps, {
-    state,
-    ref: componentProps.ref,
-    props: [
-      (prev: any) => ({ ...prev, 'aria-hidden': true, children: '▼' }),
-      elementProps,
-    ],
-    stateAttributesMapping: triggerOpenStateMapping,
-  });
+  // ================= render（每次更新执行） =================
+  return () => {
+    const {
+      render,
+      className,
+      style,
+      ref: _ref,
+      ...elementProps
+    } = componentProps;
 
-  return <>{getElement()}</>;
-}
+    const stateValue = state.value;
+
+    const stateAttributes = getStateAttributesProps(stateValue, triggerOpenStateMapping);
+
+    const merged = mergePropsN([
+      stateAttributes,
+      elementProps,
+      {
+        'aria-hidden': true,
+        children: '▼',
+        className: typeof className === 'function' ? className(stateValue) : className,
+        style: typeof style === 'function' ? style(stateValue) : style,
+      },
+    ]);
+
+    // render 三形态
+    if (typeof render === 'function') {
+      return render({ ...merged, ...stateValue, ref: rootRef });
+    }
+    if (render) {
+      const Tag = render.type as any;
+      return <Tag key={render.key} {...render.props} {...merged} ref={rootRef} />;
+    }
+    return <span ref={rootRef} {...merged} />;
+  };
+}) as (props: SelectIcon.Props) => any;
 
 export interface SelectIconState {
   /**
