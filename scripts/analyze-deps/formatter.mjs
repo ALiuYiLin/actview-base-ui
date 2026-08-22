@@ -197,3 +197,65 @@ function renderTree(nodes, prefix) {
     }
   }
 }
+
+/**
+ * 外部依赖模式：汇总展示所有外部 npm 包的使用情况。
+ *
+ * @param {Map<string, {count:number, files:string[]}>} packageMap - collectExternalDeps 的结果
+ * @param {object|null} packageJson - 根目录下的 package.json 内容（或 null）
+ * @param {object} options
+ * @param {boolean} options.json - 是否输出 JSON
+ * @param {number}  options.top  - 只显示前 N 条（0=不限制）
+ */
+export function formatExternalResult(packageMap, packageJson, options) {
+  const { json = false, top = 0 } = options;
+
+  // 合并所有 package.json 依赖声明
+  const declaredDeps = {
+    ...(packageJson?.dependencies || {}),
+    ...(packageJson?.devDependencies || {}),
+    ...(packageJson?.peerDependencies || {}),
+    ...(packageJson?.optionalDependencies || {}),
+  };
+
+  // 按引用次数降序排列
+  const entries = [...packageMap.entries()].sort((a, b) => b[1].count - a[1].count);
+  const sliced = top > 0 ? entries.slice(0, top) : entries;
+
+  if (json) {
+    const result = sliced.map(([name, info]) => ({
+      package: name,
+      fileCount: info.count,
+      declared: name in declaredDeps,
+    }));
+    console.log(JSON.stringify(result, null, 2));
+    return;
+  }
+
+  // 表格输出
+  if (sliced.length === 0) {
+    console.log('（没有检测到外部依赖）');
+    return;
+  }
+
+  const pkgCol = 44;
+  console.log('External Package'.padEnd(pkgCol) + 'Files'.padStart(8) + '  Declared');
+  console.log('─'.repeat(pkgCol + 8 + 22));
+
+  for (const [name, info] of sliced) {
+    const declared = name in declaredDeps;
+    const pkgLabel = name.length > pkgCol - 1 ? '…' + name.slice(-(pkgCol - 1)) : name.padEnd(pkgCol);
+    const status = declared
+      ? '✅ 已声明'
+      : '❌ 未在 package.json 中找到';
+    console.log(`${pkgLabel}${String(info.count).padStart(8)}  ${status}`);
+  }
+
+  // 底部统计
+  const total = packageMap.size;
+  const declaredCount = [...packageMap.keys()].filter((k) => k in declaredDeps).length;
+  console.log('');
+  console.log(`总计: ${total} 个外部包`);
+  console.log(`已声明: ${declaredCount} 个`);
+  console.log(`未声明: ${total - declaredCount} 个`);
+}

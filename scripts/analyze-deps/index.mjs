@@ -19,6 +19,7 @@
  *   --depth <n>        递归深度 (单文件模式，0=仅直接依赖，默认: 0)
  *   --direct-only      等价于 --depth 0
  *   --no-external      不显示外部依赖 (单文件模式)
+ *   --external         汇总展示外部 npm 包（目录模式）
  *   --graph            树形展示 (单文件模式)
  *   -- <ext>           文件后缀列表，如 .ts .tsx
  *
@@ -35,8 +36,8 @@ import fs from 'node:fs';
 import { scanDirectory, compileGlob } from './scanner.mjs';
 import { parseImports } from './parser.mjs';
 import { resolveImport } from './resolver.mjs';
-import { buildGraph, buildDepTree } from './analyzer.mjs';
-import { formatDirectoryResult, formatFileResult } from './formatter.mjs';
+import { buildGraph, buildDepTree, collectExternalDeps } from './analyzer.mjs';
+import { formatDirectoryResult, formatFileResult, formatExternalResult } from './formatter.mjs';
 
 // ──────────────────────────────────────
 // CLI 参数解析
@@ -48,6 +49,7 @@ function parseArgs(argv) {
     file: null,
     exclude: [],
     alias: [],
+    external: false,
     sort: 'desc',
     by: 'out-degree',
     json: false,
@@ -147,6 +149,9 @@ function parseArgs(argv) {
         break;
       case '--graph':
         args.graph = true;
+        break;
+      case '--external':
+        args.external = true;
         break;
       default:
         if (arg.startsWith('--')) {
@@ -307,7 +312,35 @@ function directoryMode(args) {
   const stats = buildGraph(files, rootDir, args.extensions, aliases);
   console.error('分析完成\n');
 
-  // 输出
+  // 输出：外部依赖汇总模式
+  if (args.external) {
+    // 从 rootDir 往上找最近的 package.json
+    let packageJson = null;
+    let searchDir = rootDir;
+    while (true) {
+      const pkgPath = path.join(searchDir, 'package.json');
+      if (fs.existsSync(pkgPath)) {
+        try {
+          packageJson = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+        } catch {
+          // 解析失败忽略
+        }
+        break;
+      }
+      const parent = path.dirname(searchDir);
+      if (parent === searchDir) break; // 到根了
+      searchDir = parent;
+    }
+
+    const packageMap = collectExternalDeps(files, rootDir, args.extensions, aliases);
+    formatExternalResult(packageMap, packageJson, {
+      json: args.json,
+      top: args.top,
+    });
+    return;
+  }
+
+  // 输出：默认文件依赖统计
   formatDirectoryResult(stats, {
     sortBy: args.by,
     order: args.sort,

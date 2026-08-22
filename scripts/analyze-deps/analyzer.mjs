@@ -193,3 +193,84 @@ export function buildDepTree(filePath, rootDir, extensions, maxDepth, noExternal
     children,
   };
 }
+
+// ──────────────────────────────────────
+// 外部依赖统计
+// ──────────────────────────────────────
+
+/**
+ * 解析包名：从 import 路径中提取 npm 包名。
+ *
+ * 示例:
+ *   'react'                  → 'react'
+ *   'react-dom/client'       → 'react-dom'
+ *   '@base-ui/utils/store'   → '@base-ui/utils'
+ *   '@floating-ui/utils/dom' → '@floating-ui/utils'
+ *   'node:path'              → null（跳过）
+ *
+ * @param {string} importPath
+ * @returns {string|null}
+ */
+function extractPackageName(importPath) {
+  if (importPath.startsWith('node:')) return null;
+  if (importPath.startsWith('@')) {
+    const parts = importPath.split('/');
+    if (parts.length >= 2) {
+      return `${parts[0]}/${parts[1]}`;
+    }
+    return null;
+  }
+  const parts = importPath.split('/');
+  return parts[0] || null;
+}
+
+/**
+ * 扫描所有文件，收集外部 npm 包的使用情况。
+ *
+ * @param {string[]}   files      - 所有目标文件的绝对路径列表
+ * @param {string}     rootDir    - 项目根目录
+ * @param {string[]}   extensions - 允许的后缀列表
+ * @param {Array<{prefix:string, target:string}>} [aliases] - 路径别名
+ * @returns {Map<string, { count:number, files:string[] }>}
+ */
+export function collectExternalDeps(files, rootDir, extensions, aliases = []) {
+  const packageMap = new Map();
+
+  for (const filePath of files) {
+    const imports = parseImports(filePath);
+    const seen = new Set(); // 每个文件去重
+
+    for (const imp of imports) {
+      // 跳过相对路径
+      if (imp.startsWith('./') || imp.startsWith('../')) continue;
+      // 跳过绝对路径
+      if (path.isAbsolute(imp)) continue;
+      // 跳过 Node.js 内置模块
+      if (imp.startsWith('node:')) continue;
+      // 跳过别名匹配的路径（如 @/ → src/，属于内部路径）
+      let isAlias = false;
+      for (const alias of aliases) {
+        if (imp.startsWith(alias.prefix)) {
+          isAlias = true;
+          break;
+        }
+      }
+      if (isAlias) continue;
+
+      const pkgName = extractPackageName(imp);
+      if (!pkgName) continue;
+
+      if (!seen.has(pkgName)) {
+        seen.add(pkgName);
+        if (!packageMap.has(pkgName)) {
+          packageMap.set(pkgName, { count: 0, files: [] });
+        }
+        const entry = packageMap.get(pkgName);
+        entry.count++;
+        entry.files.push(path.relative(rootDir, filePath));
+      }
+    }
+  }
+
+  return packageMap;
+}

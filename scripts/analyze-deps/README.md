@@ -31,6 +31,7 @@ node index.mjs --dir <目录> [选项] -- <后缀1> [后缀2 ...]
 | `--dir <path>` | **（必填）** 要扫描的目录 | — |
 | `--exclude <glob>` | 排除模式，如 `"*.test.*"` 可重复使用 | 不排除 |
 | `--alias <map>` | 路径别名，如 `"@/=./src/"` 可重复使用 | 自动检测 tsconfig.json |
+| `--external` | 汇总展示外部 npm 包（取代默认文件统计） | 文件统计 |
 | `--sort <asc\|desc>` | 排序方向 | `desc` |
 | `--by <metric>` | 排序依据：`out-degree`（出度）、`in-degree`（入度）、`total`（总依赖数） | `out-degree` |
 | `--top <n>` | 只显示前 N 条 | 不限制 |
@@ -55,8 +56,14 @@ node index.mjs --dir ./src --alias "@/=./src/" -- .ts .tsx
 # 多个别名：@/ 指向 src/，@shared/ 指向 shared/src/
 node index.mjs --dir . --alias "@/=./src/" --alias "@shared/=./shared/src/" -- .ts .tsx
 
+# 查看所有外部 npm 包使用情况，与 package.json 对比
+node index.mjs --dir ./src --external -- .ts .tsx
+
+# 外部包排名，只看前 10
+node index.mjs --dir ./src --external --top 10 -- .ts .tsx
+
 # 输出 JSON 格式
-node index.mjs --dir ./src --json -- .ts
+node index.mjs --dir ./src --external --json -- .ts
 ```
 
 ### 输出说明
@@ -76,6 +83,38 @@ src/utils/format.ts                3        12        5         2
 | **In-Deg**（入度） | 有多少个内部文件依赖了该文件 |
 | **Total** | 总依赖数（内部 + 外部） |
 | **External** | 外部依赖数（npm 包） |
+
+### 外部依赖汇总模式（`--external`）
+
+分析目录中所有文件使用了哪些外部 npm 包，统计每个包被多少文件引用，并对比 `package.json` 检查是否已声明。
+
+```bash
+# 查看所有外部包，按引用次数排序
+node index.mjs --dir ./src --external -- .ts .tsx
+
+# 只看前 10 个引用最多的外部包
+node index.mjs --dir ./src --external --top 10 -- .ts .tsx
+```
+
+输出示例：
+
+```
+External Package                               Files  Declared
+──────────────────────────────────────────────────────────────────────────
+react                                            582  ✅ 已声明
+@base-ui/utils                                   269  ✅ 已声明
+@floating-ui/utils                                39  ✅ 已声明
+@base-ui/react                                   283  ❌ 未在 package.json 中找到
+#test-utils                                      305  ❌ 未在 package.json 中找到
+
+总计: 20 个外部包
+已声明: 13 个
+未声明: 7 个
+```
+
+> `✅ 已声明` 表示该包在 `package.json` 的 `dependencies`、`devDependencies`、`peerDependencies` 或 `optionalDependencies` 中能找到。
+>
+> `❌ 未在 package.json 中找到` 表示该包被代码引用但未声明——可能是 workspace 内部包、缺少声明的依赖，或需要检查是否应该添加声明。
 
 ---
 
@@ -295,6 +334,7 @@ node index.mjs --dir ./src --exclude "*.test.*" --exclude "*.stories.*" -- .ts .
   --file <path>      分析单个文件
   --exclude <glob>   排除模式，如 "*.test.*" 可重复使用
   --alias <map>      路径别名，如 "@/=./src/" 可重复使用
+  --external         汇总展示外部 npm 包（目录模式）
   --sort <asc|desc>  排序方向 (默认: desc)
   --by <metric>      排序依据: out-degree|in-degree|total (默认: out-degree)
   --json             输出 JSON 格式
