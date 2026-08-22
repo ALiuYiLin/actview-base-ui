@@ -1,5 +1,5 @@
 import type { ComputedRef } from '@actview/core';
-import { createContext } from '../../internals/createContext';
+import { createContext } from 'actview';
 import type { ProgressRootState } from './ProgressRoot';
 
 export type ProgressRootContext = {
@@ -16,17 +16,14 @@ export type ProgressRootContext = {
    * Value of the component.
    */
   value: number | null;
-  setLabelId: (id: string | undefined) => void;
+  setLabelId: (next: string | undefined | ((current: string | undefined) => string | undefined)) => void;
   state: ProgressRootState;
 };
 
 /**
  * @internal
  */
-export const ProgressRootContext = createContext<ProgressRootContext | undefined>(
-  'base-ui-progress-root-context',
-  undefined,
-);
+export const ProgressRootContext = createContext<ProgressRootContext | undefined>(undefined);
 
 export function useProgressRootContext() {
   const context = ProgressRootContext.use();

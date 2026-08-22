@@ -1,9 +1,11 @@
-import { computed } from 'actview';
-import { useRenderElement } from '../../internals/useRenderElement';
+import { computed, defineComponent, useRootElement } from 'actview';
+import type { HTMLProps } from '../../internals/types';
+import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
 import { useProgressRootContext } from '../root/ProgressRootContext';
 import { progressStateAttributesMapping } from '../root/stateAttributesMapping';
 import type { ProgressRootState } from '../root/ProgressRoot';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
+import type { BaseUIComponentProps } from '../../internals/types';
+import { mergePropsN } from '../../merge-props';
 
 /**
  * Contains the progress bar indicator.
@@ -11,25 +13,47 @@ import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
  *
  * Documentation: [Base UI Progress](https://base-ui.com/react/components/progress)
  */
-export function ProgressTrack(componentProps: ProgressTrack.Props) {
+export const ProgressTrack = defineComponent(function (componentProps: ProgressTrack.Props) {
+  // ================= setup（只执行一次） =================
+  const rootRef = useRootElement();
   const context = useProgressRootContext();
-
-  const getElementProps = (prev: HTMLProps): HTMLProps => {
-    const { render, className, style, ...elementProps } = componentProps;
-    return { ...prev, ...elementProps };
-  };
 
   const state = computed(() => context.value.state);
 
-  const getElement = useRenderElement('div', componentProps, {
-    state,
-    ref: componentProps.ref,
-    props: [getElementProps],
-    stateAttributesMapping: progressStateAttributesMapping,
-  });
+  // ================= render（每次更新执行） =================
+  return () => {
+    const {
+      render,
+      className,
+      style,
+      ref: _ref,
+      ...elementProps
+    } = componentProps;
 
-  return <>{getElement()}</>;
-}
+    const stateValue = state.value;
+
+    const stateAttributes = getStateAttributesProps(stateValue, progressStateAttributesMapping);
+
+    const merged = mergePropsN([
+      stateAttributes,
+      elementProps,
+      {
+        className: typeof className === 'function' ? className(stateValue) : className,
+        style: typeof style === 'function' ? style(stateValue) : style,
+      },
+    ]);
+
+    // render 三形态
+    if (typeof render === 'function') {
+      return render({ ...merged, ...stateValue, ref: rootRef });
+    }
+    if (render) {
+      const Tag = render.type as any;
+      return <Tag key={render.key} {...render.props} {...merged} ref={rootRef} />;
+    }
+    return <div ref={rootRef} {...merged} />;
+  };
+}) as (props: ProgressTrack.Props) => any;
 
 export interface ProgressTrackState extends ProgressRootState {}
 

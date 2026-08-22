@@ -1,12 +1,14 @@
-import { computed, ref } from 'actview';
+import { computed, defineComponent, ref } from 'actview';
+import { useMergedRefs } from '@base-ui/actview-utils/useMergedRefs';
 import { clamp } from '@base-ui/actview-utils/clamp';
 import { formatNumber } from '@base-ui/actview-utils/formatNumber';
 import { visuallyHidden } from '@base-ui/actview-utils/visuallyHidden';
 import { valueToPercent } from '../../utils/valueToPercent';
-import { useRenderElement } from '../../internals/useRenderElement';
 import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
+import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
 import { ProgressRootContext } from './ProgressRootContext';
 import { progressStateAttributesMapping } from './stateAttributesMapping';
+import { mergePropsN } from '../../merge-props';
 
 /**
  * Groups all parts of the progress bar and provides the task completion status to screen readers.
@@ -14,7 +16,8 @@ import { progressStateAttributesMapping } from './stateAttributesMapping';
  *
  * Documentation: [Base UI Progress](https://base-ui.com/react/components/progress)
  */
-export function ProgressRoot(componentProps: ProgressRoot.Props) {
+export const ProgressRoot = defineComponent(function (componentProps: ProgressRoot.Props) {
+  // ================= setup（只执行一次） =================
   const labelId = ref<string | undefined>(undefined);
   // 函数式更新（对齐 React）：useRegisteredLabelId 注销传函数，keyed remount 不误清
   const setLabelId = (
@@ -67,59 +70,74 @@ export function ProgressRoot(componentProps: ProgressRoot.Props) {
     };
   });
 
-  const getRootProps = (prev: HTMLProps): HTMLProps => {
-    const { getAriaValueText, value, children } = componentProps;
-    const derived = getDerived();
+  const rootRef = ref<HTMLDivElement | null>(null);
+  const mergedRef = useMergedRefs(componentProps.ref, rootRef);
 
-    return {
-      ...prev,
-      'aria-labelledby': labelId.value,
-      'aria-valuemax': componentProps.max ?? 100,
-      'aria-valuemin': componentProps.min ?? 0,
-      'aria-valuenow': derived.clampedValue ?? undefined,
-      'aria-valuetext': getAriaValueText
-        ? getAriaValueText(derived.formattedValue, value)
-        : derived.defaultAriaValueText,
-      role: 'progressbar',
-      children: (
-        <>
-          {children}
-          <span role="presentation" style={visuallyHidden}>
-            {/* force NVDA to read the label https://github.com/mui/base-ui/issues/4184 */}x
-          </span>
-        </>
-      ),
-    };
-  };
-
-  const getElementProps = (prev: HTMLProps): HTMLProps => {
+  // ================= render（每次更新执行） =================
+  return () => {
     const {
-      format,
+      render,
+      className,
+      style,
+      format: _format,
       getAriaValueText,
-      locale,
+      locale: _locale,
       max,
       min,
       value,
-      render,
-      className,
       children,
-      style,
+      ref: _ref,
       ...elementProps
     } = componentProps;
-    return { ...prev, ...elementProps };
+
+    const stateValue = state.value;
+    const derived = getDerived();
+
+    const stateAttributes = getStateAttributesProps(stateValue, progressStateAttributesMapping);
+
+    const merged = mergePropsN([
+      stateAttributes,
+      elementProps,
+      {
+        'aria-labelledby': labelId.value,
+        'aria-valuemax': max ?? 100,
+        'aria-valuemin': min ?? 0,
+        'aria-valuenow': derived.clampedValue ?? undefined,
+        'aria-valuetext': getAriaValueText
+          ? getAriaValueText(derived.formattedValue, value)
+          : derived.defaultAriaValueText,
+        role: 'progressbar',
+        children: (
+          <>
+            {children}
+            <span role="presentation" style={visuallyHidden}>
+              {/* force NVDA to read the label https://github.com/mui/base-ui/issues/4184 */}x
+            </span>
+          </>
+        ),
+        className: typeof className === 'function' ? className(stateValue) : className,
+        style: typeof style === 'function' ? style(stateValue) : style,
+      },
+    ]);
+
+    const element = (() => {
+      if (typeof render === 'function') {
+        return render({ ...merged, ...stateValue, ref: mergedRef });
+      }
+      if (render) {
+        const Tag = render.type as any;
+        return <Tag key={render.key} {...render.props} {...merged} ref={mergedRef} />;
+      }
+      return <div ref={mergedRef} {...merged} />;
+    })();
+
+    return (
+      <ProgressRootContext.Provider value={contextValue.value}>
+        {element}
+      </ProgressRootContext.Provider>
+    );
   };
-
-  const getElement = useRenderElement('div', componentProps, {
-    state,
-    ref: componentProps.ref,
-    props: [getRootProps, getElementProps],
-    stateAttributesMapping: progressStateAttributesMapping,
-  });
-
-  return (
-    <ProgressRootContext.Provider value={contextValue}>{getElement()}</ProgressRootContext.Provider>
-  );
-}
+}) as (props: ProgressRoot.Props) => any;
 
 export type ProgressStatus = 'indeterminate' | 'progressing' | 'complete';
 
