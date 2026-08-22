@@ -26,9 +26,10 @@ const EXT_ORDER = [
  * @param {string} importPath  - import 语句中的原始路径，如 './foo'、'react'
  * @param {string} currentFile - 当前文件的绝对路径
  * @param {string} rootDir     - 项目根目录，用于判断外部依赖
+ * @param {Array<{prefix:string, target:string}>} [aliases] - 路径别名列表
  * @returns {{ resolved: string|null, type: 'internal'|'external'|'unresolved' }}
  */
-export function resolveImport(importPath, currentFile, rootDir) {
+export function resolveImport(importPath, currentFile, rootDir, aliases = []) {
   // 相对路径：./ 或 ../ 开头
   if (importPath.startsWith('./') || importPath.startsWith('../')) {
     const currentDir = path.dirname(currentFile);
@@ -47,6 +48,20 @@ export function resolveImport(importPath, currentFile, rootDir) {
       return { resolved: found, type: 'internal' };
     }
     return { resolved: null, type: 'unresolved' };
+  }
+
+  // 路径别名：如 @/components/Button → src/components/Button
+  for (const alias of aliases) {
+    if (importPath.startsWith(alias.prefix)) {
+      const rest = importPath.slice(alias.prefix.length);
+      const trial = path.resolve(rootDir, alias.target, rest);
+      const found = tryResolveFile(trial);
+      if (found) {
+        return { resolved: found, type: 'internal' };
+      }
+      // 别名匹配但文件没找到 → 标记为 unresolved（不降级为 external）
+      return { resolved: null, type: 'unresolved' };
+    }
   }
 
   // 非相对路径：可能是 npm 包或 monorepo 内部包

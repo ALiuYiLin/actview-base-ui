@@ -30,6 +30,7 @@ node index.mjs --dir <目录> [选项] -- <后缀1> [后缀2 ...]
 |------|------|--------|
 | `--dir <path>` | **（必填）** 要扫描的目录 | — |
 | `--exclude <glob>` | 排除模式，如 `"*.test.*"` 可重复使用 | 不排除 |
+| `--alias <map>` | 路径别名，如 `"@/=./src/"` 可重复使用 | 自动检测 tsconfig.json |
 | `--sort <asc\|desc>` | 排序方向 | `desc` |
 | `--by <metric>` | 排序依据：`out-degree`（出度）、`in-degree`（入度）、`total`（总依赖数） | `out-degree` |
 | `--top <n>` | 只显示前 N 条 | 不限制 |
@@ -47,6 +48,12 @@ node index.mjs --dir ./packages --by in-degree --sort asc --top 10 -- .ts
 
 # 排除测试文件（.test.ts、.test.tsx、.spec.ts 等）
 node index.mjs --dir ./src --exclude "*.test.*" --exclude "*.spec.*" -- .ts .tsx
+
+# 使用路径别名（如 tsconfig 中配置了 @/ → src/）
+node index.mjs --dir ./src --alias "@/=./src/" -- .ts .tsx
+
+# 多个别名：@/ 指向 src/，@shared/ 指向 shared/src/
+node index.mjs --dir . --alias "@/=./src/" --alias "@shared/=./shared/src/" -- .ts .tsx
 
 # 输出 JSON 格式
 node index.mjs --dir ./src --json -- .ts
@@ -88,6 +95,7 @@ node index.mjs --file <文件> [选项] -- <后缀1> [后缀2 ...]
 |------|------|--------|
 | `--file <path>` | **（必填）** 要分析的文件 | — |
 | `--exclude <glob>` | 排除模式，如 `"*.test.*"` 可重复使用 | 不排除 |
+| `--alias <map>` | 路径别名，如 `"@/=./src/"` 可重复使用 | 自动检测 tsconfig.json |
 | `--depth <n>` | 递归深度：`0`=仅直接依赖，`1`=再展开一层，... | `0` |
 | `--direct-only` | 等价于 `--depth 0` | — |
 | `--graph` | 以树形结构展示（`├── └──`） | 列表 |
@@ -109,6 +117,9 @@ node index.mjs --file src/index.ts --direct-only --no-external -- .ts
 
 # 排除测试文件，只看业务代码的依赖
 node index.mjs --file src/App.tsx --exclude "*.test.*" --exclude "*.stories.*" --depth 1 --graph -- .ts .tsx
+
+# 使用路径别名（如 @/ → src/）
+node index.mjs --file src/App.tsx --alias "@/=./src/" --depth 1 --graph -- .ts .tsx
 ```
 
 ### 输出示例（列表模式）
@@ -210,7 +221,39 @@ src/hooks/useAuth.ts
 1. **相对路径**（`./`、`../`）：相对于当前文件解析
 2. **后缀补全**：按 `.tsx` → `.ts` → `.jsx` → `.js` → `.mjs` → `.mts` → `.cjs` → `.cts` 顺序尝试
 3. **Index 文件**：`./foo` → `./foo/index.tsx` 等
-4. **非相对路径**：先尝试作为项目内路径（monorepo），否则标记为外部依赖
+4. **路径别名**：匹配 `--alias` 或 `tsconfig.json` 中配置的别名前缀后替换为目标路径
+5. **非相对路径**：先尝试作为项目内路径（monorepo），否则标记为外部依赖
+
+### 路径别名（`--alias`）
+
+支持通过 `--alias` 参数或自动读取 `tsconfig.json` / `jsconfig.json` 中的 `compilerOptions.paths` 来解析路径别名。
+
+**手动指定**：
+```bash
+# 格式: prefix=target（target 相对于项目根目录）
+node index.mjs --dir ./src --alias "@/=./src/" -- .ts .tsx
+node index.mjs --file src/App.tsx --alias "@/=./src/" --depth 1 --graph -- .tsx
+```
+
+**自动检测**：如果项目根目录下有 `tsconfig.json` 或 `jsconfig.json`，且配置了 `compilerOptions.paths`，脚本会自动读取：
+
+```json
+{
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"],
+      "@shared/*": ["../shared/src/*"]
+    }
+  }
+}
+```
+
+上述配置等价于：
+```bash
+--alias "@/=./src/" --alias "@shared/=../shared/src/"
+```
+
+**优先级**：如果手动传了 `--alias`，则只使用手动指定的别名，不会读取 `tsconfig.json`。
 
 ### 循环依赖检测
 
@@ -251,6 +294,7 @@ node index.mjs --dir ./src --exclude "*.test.*" --exclude "*.stories.*" -- .ts .
   --dir <path>       分析整个目录
   --file <path>      分析单个文件
   --exclude <glob>   排除模式，如 "*.test.*" 可重复使用
+  --alias <map>      路径别名，如 "@/=./src/" 可重复使用
   --sort <asc|desc>  排序方向 (默认: desc)
   --by <metric>      排序依据: out-degree|in-degree|total (默认: out-degree)
   --json             输出 JSON 格式

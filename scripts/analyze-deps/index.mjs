@@ -11,6 +11,7 @@
  *   --dir <path>       分析整个目录
  *   --file <path>      分析单个文件
  *   --exclude <glob>   排除模式，如 "*.test.*" "*.spec.*" 可重复使用
+ *   --alias <map>      路径别名，如 "@/=./src/" 可重复使用
  *   --sort <asc|desc>  排序方向 (默认: desc)
  *   --by <metric>      排序依据: out-degree|in-degree|total (默认: out-degree)
  *   --json             输出 JSON 格式
@@ -26,6 +27,7 @@
  *   node index.mjs --dir ./packages --exclude "*.test.*" "*.stories.*" --by in-degree --top 10 -- .ts .tsx
  *   node index.mjs --file src/components/Button.tsx --depth 1 --graph -- .tsx
  *   node index.mjs --file src/index.ts --direct-only --no-external -- .ts
+ *   node index.mjs --dir ./src --alias "@/=./src/" -- .ts .tsx
  */
 
 import path from 'node:path';
@@ -45,6 +47,7 @@ function parseArgs(argv) {
     dir: null,
     file: null,
     exclude: [],
+    alias: [],
     sort: 'desc',
     by: 'out-degree',
     json: false,
@@ -94,6 +97,13 @@ function parseArgs(argv) {
         args.exclude.push(argv[++i]);
         if (!args.exclude[args.exclude.length - 1]) {
           console.error('错误: --exclude 后需要指定排除模式');
+          process.exit(1);
+        }
+        break;
+      case '--alias':
+        args.alias.push(argv[++i]);
+        if (!args.alias[args.alias.length - 1]) {
+          console.error('错误: --alias 后需要指定映射，如 @/=./src/');
           process.exit(1);
         }
         break;
@@ -173,6 +183,86 @@ function parseArgs(argv) {
 }
 
 // ──────────────────────────────────────
+// 路径别名检测
+// ──────────────────────────────────────
+
+/**
+ * 从 tsconfig.json / jsconfig.json 中读取 paths 配置，转换为别名列表。
+ *
+ * tsconfig paths 格式示例：
+ *   { "compilerOptions": { "paths": { "@/*": ["./src/*"] } } }
+ *   → [{ prefix: '@/', target: 'src/' }]
+ *
+ * @param {string} rootDir - 项目根目录
+ * @returns {Array<{prefix:string, target:string}>}
+ */
+function detectAliasesFromTsConfig(rootDir) {
+  const candidates = ['tsconfig.json', 'jsconfig.json'];
+  for (const name of candidates) {
+    const filePath = path.join(rootDir, name);
+    if (!fs.existsSync(filePath)) continue;
+
+    try {
+      const raw = fs.readFileSync(filePath, 'utf-8');
+      const config = JSON.parse(raw);
+      const paths = config?.compilerOptions?.paths;
+      if (!paths) continue;
+
+      const aliases = [];
+      for (const [key, values] of Object.entries(paths)) {
+        // key 示例: "@/*"  → prefix: "@/"
+        // value 示例: ["./src/*"]  → target: "src/"
+        if (!key.includes('*') || !Array.isArray(values) || values.length === 0) continue;
+        const prefix = key.replace('*', '');
+        const value = values[0].replace('*', '');
+        // target 相对于 rootDir 解析
+        const target = path.relative(rootDir, path.resolve(rootDir, value));
+        aliases.push({ prefix, target: target || '.' });
+      }
+
+      if (aliases.length > 0) {
+        console.error(`从 ${name} 检测到路径别名:`);
+        for (const a of aliases) {
+          console.error(`  ${a.prefix}* → ${a.target}/`);
+        }
+        return aliases;
+      }
+    } catch {
+      // 解析失败静默跳过
+    }
+  }
+  return [];
+}
+
+// ──────────────────────────────────────
+// 编译别名列表
+// ──────────────────────────────────────
+
+/**
+ * 将 CLI 传入的 --alias 字符串解析为别名对象。
+ *
+ * 格式: "prefix=target"，如 "@/=./src/"
+ * target 相对于 rootDir 解析。
+ *
+ * @param {string[]} rawAliases  - CLI 传入的原始别名字符串列表
+ * @param {string}   rootDir     - 项目根目录
+ * @returns {Array<{prefix:string, target:string}>}
+ */
+function compileAliases(rawAliases, rootDir) {
+  return rawAliases.map((raw) => {
+    const eqIdx = raw.indexOf('=');
+    if (eqIdx === -1) {
+      console.error(`错误: 别名格式无效 "${raw}"，应为 prefix=target，如 @/=./src/`);
+      process.exit(1);
+    }
+    const prefix = raw.slice(0, eqIdx);
+    const value = raw.slice(eqIdx + 1);
+    const target = path.relative(rootDir, path.resolve(rootDir, value));
+    return { prefix, target: target || '.' };
+  });
+}
+
+// ──────────────────────────────────────
 // 目录模式
 // ──────────────────────────────────────
 
@@ -192,6 +282,12 @@ function directoryMode(args) {
   // 编译排除模式
   const excludeREs = args.exclude.map((p) => compileGlob(p));
 
+  // 解析路径别名
+  const aliases =
+    args.alias.length > 0
+      ? compileAliases(args.alias, rootDir)
+      : detectAliasesFromTsConfig(rootDir);
+
   console.error(`扫描目录: ${rootDir}`);
   console.error(`后缀过滤: ${args.extensions.length > 0 ? args.extensions.join(', ') : '全部'}`);
   if (excludeREs.length > 0) {
@@ -208,7 +304,7 @@ function directoryMode(args) {
   console.error(`找到 ${files.length} 个文件，正在分析依赖...`);
 
   // 构建依赖图
-  const stats = buildGraph(files, rootDir, args.extensions);
+  const stats = buildGraph(files, rootDir, args.extensions, aliases);
   console.error('分析完成\n');
 
   // 输出
@@ -247,6 +343,12 @@ function fileMode(args) {
   // 编译排除模式
   const excludeREs = args.exclude.map((p) => compileGlob(p));
 
+  // 解析路径别名
+  const aliases =
+    args.alias.length > 0
+      ? compileAliases(args.alias, rootDir)
+      : detectAliasesFromTsConfig(rootDir);
+
   // 构建依赖树
   const tree = buildDepTree(
     filePath,
@@ -255,6 +357,7 @@ function fileMode(args) {
     args.depth,
     args.noExternal,
     excludeREs,
+    aliases,
   );
 
   // 输出

@@ -17,9 +17,10 @@ import { isExcluded } from './scanner.mjs';
  * @param {string[]}   files      - 所有目标文件的绝对路径列表
  * @param {string}     rootDir    - 项目根目录（用于计算相对路径）
  * @param {string[]}   extensions - 允许的后缀列表
+ * @param {Array<{prefix:string, target:string}>} [aliases] - 路径别名列表
  * @returns {Array<{ file:string, ext:string, outDegree:number, inDegree:number, totalDeps:number, externalDeps:number, dependencies:string[], dependents:string[] }>}
  */
-export function buildGraph(files, rootDir, extensions) {
+export function buildGraph(files, rootDir, extensions, aliases = []) {
   // 建立文件索引：绝对路径 → 节点下标
   const fileSet = new Set(files);
   const fileIndex = new Map(); // 绝对路径 → 节点
@@ -43,7 +44,7 @@ export function buildGraph(files, rootDir, extensions) {
     const imports = parseImports(filePath);
 
     for (const imp of imports) {
-      const { resolved, type } = resolveImport(imp, filePath, rootDir);
+      const { resolved, type } = resolveImport(imp, filePath, rootDir, aliases);
 
       if (type === 'internal' && resolved && fileSet.has(resolved)) {
         // 内部依赖，且目标文件在扫描范围内
@@ -89,11 +90,12 @@ export function buildGraph(files, rootDir, extensions) {
  * @param {number}   maxDepth       - 最大递归深度，0=仅直接依赖
  * @param {boolean}  noExternal     - 是否排除外部依赖
  * @param {RegExp[]} [excludeREs]   - 排除模式的正则列表（编译后的）
+ * @param {Array<{prefix:string, target:string}>} [aliases] - 路径别名列表
  * @returns {{ rootFile: string, depth: number, children: DepTreeNode[] }}
  *
  * @typedef {{ path:string, absolutePath:string|null, type:'internal'|'external'|'circular', children: DepTreeNode[] }} DepTreeNode
  */
-export function buildDepTree(filePath, rootDir, extensions, maxDepth, noExternal, excludeREs = []) {
+export function buildDepTree(filePath, rootDir, extensions, maxDepth, noExternal, excludeREs = [], aliases = []) {
   const extSet = new Set(extensions);
   const visited = new Set(); // 当前递归路径，用于检测循环
 
@@ -126,7 +128,7 @@ export function buildDepTree(filePath, rootDir, extensions, maxDepth, noExternal
     const children = [];
 
     for (const imp of imports) {
-      const { resolved, type } = resolveImport(imp, currentPath, rootDir);
+      const { resolved, type } = resolveImport(imp, currentPath, rootDir, aliases);
 
       if (type === 'external') {
         if (!noExternal) {
