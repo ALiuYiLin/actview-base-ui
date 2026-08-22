@@ -46,14 +46,14 @@ export const SwitchRoot = defineComponent(function (componentProps: SwitchRoot.P
   );
   const name = computed(() => fieldRootContext.value.name ?? componentProps.name);
 
-  const inputRef = { current: null as HTMLInputElement | null };
+  const inputRef = ref<HTMLInputElement | null>(null);
   const handleInputRef = useMergedRefs(
     inputRef,
     componentProps.inputRef,
     fieldRootContext.value.validation.inputRef,
   );
 
-  const switchRef = { current: null as HTMLButtonElement | null };
+  const switchRef = ref<HTMLButtonElement | null>(null);
 
   const id = useBaseUiId();
 
@@ -78,8 +78,8 @@ export const SwitchRoot = defineComponent(function (componentProps: SwitchRoot.P
   );
 
   useIsoLayoutEffect(() => {
-    if (inputRef.current) {
-      fieldRootContext.value.setFilled(inputRef.current.checked);
+    if (inputRef.value) {
+      fieldRootContext.value.setFilled(inputRef.value.checked);
     }
   });
 
@@ -163,7 +163,7 @@ export const SwitchRoot = defineComponent(function (componentProps: SwitchRoot.P
         }
       },
       onBlur() {
-        const element = inputRef.current;
+        const element = inputRef.value;
         if (!element || disabled.value) {
           return;
         }
@@ -182,7 +182,7 @@ export const SwitchRoot = defineComponent(function (componentProps: SwitchRoot.P
 
         event.preventDefault();
 
-        const input = inputRef.current;
+        const input = inputRef.value;
         if (!input) {
           return;
         }

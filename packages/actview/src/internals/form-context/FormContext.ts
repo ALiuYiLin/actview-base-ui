@@ -24,7 +24,7 @@ export interface FormContext {
          */
         validate: () => void;
         validityData: FieldValidityData;
-        controlRef: RefObject<HTMLElement | null>;
+        controlRef: Ref<HTMLElement | null>;
         getValue: () => unknown;
       }
     >;
