@@ -1,7 +1,7 @@
 import { defineComponent, useRootElement } from 'actview';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { ComboboxRowContext } from './ComboboxRowContext';
-import { mergePropsN } from '../../merge-props';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { ComboboxRowContext } from '@/combobox/row/ComboboxRowContext';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * Displays a single row of items in a grid list.

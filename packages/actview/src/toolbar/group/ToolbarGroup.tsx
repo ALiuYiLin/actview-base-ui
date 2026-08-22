@@ -1,9 +1,9 @@
 import { computed, defineComponent, ref } from 'actview';
-import { type BaseUIComponentProps, type HTMLProps } from '../../internals/types';
-import { useToolbarRootContext } from '../root/ToolbarRootContext';
-import type { ToolbarRootState } from '../root/ToolbarRoot';
-import { ToolbarGroupContext } from './ToolbarGroupContext';
-import { mergePropsN } from '../../merge-props';
+import { type BaseUIComponentProps, type HTMLProps } from '@/internals/types';
+import { useToolbarRootContext } from '@/toolbar/root/ToolbarRootContext';
+import type { ToolbarRootState } from '@/toolbar/root/ToolbarRoot';
+import { ToolbarGroupContext } from '@/toolbar/group/ToolbarGroupContext';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * Groups several toolbar items or toggles.

@@ -1,13 +1,13 @@
 import { computed, defineComponent } from 'actview';
-import type { BaseUIComponentProps, HTMLProps, NativeButtonProps } from '../../internals/types';
-import { useComboboxRootContext } from '../root/ComboboxRootContext';
-import { useComboboxChipContext } from '../chip/ComboboxChipContext';
-import { useButton } from '../../internals/use-button';
-import { stopEvent } from '../../floating-ui-actview/utils';
-import { createChangeEventDetails } from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
-import { findItemIndex } from '../../internals/itemEquality';
-import { mergePropsN } from '../../merge-props';
+import type { BaseUIComponentProps, HTMLProps, NativeButtonProps } from '@/internals/types';
+import { useComboboxRootContext } from '@/combobox/root/ComboboxRootContext';
+import { useComboboxChipContext } from '@/combobox/chip/ComboboxChipContext';
+import { useButton } from '@/internals/use-button';
+import { stopEvent } from '@/floating-ui-actview/utils';
+import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
+import { findItemIndex } from '@/internals/itemEquality';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * A button to remove a chip.

@@ -1,4 +1,4 @@
-import type { StyleValue } from '../internals/types';
+import type { StyleValue } from '@/internals/types';
 
 /**
  * If the provided style is an object, it will be returned as is.

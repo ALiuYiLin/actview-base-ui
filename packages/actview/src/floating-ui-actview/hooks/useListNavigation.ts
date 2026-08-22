@@ -4,28 +4,28 @@ import { ownerDocument } from '@base-ui/actview-utils/owner';
 import { useValueAsRef } from '@base-ui/actview-utils/useValueAsRef';
 import { platform } from '@base-ui/actview-utils/platform';
 import { isHTMLElement } from '@floating-ui/utils/dom';
-import { createChangeEventDetails } from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
-import { useFloatingParentNodeId, useFloatingTree } from '../components/FloatingTree';
-import { FloatingTreeStore } from '../components/FloatingTreeStore';
-import type { ElementProps, FloatingContext, FloatingRootContext } from '../types';
+import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
+import { useFloatingParentNodeId, useFloatingTree } from '@/floating-ui-actview/components/FloatingTree';
+import { FloatingTreeStore } from '@/floating-ui-actview/components/FloatingTreeStore';
+import type { ElementProps, FloatingContext, FloatingRootContext } from '@/floating-ui-actview/types';
 import {
   findNonDisabledListIndex,
   getMaxListIndex,
   getMinListIndex,
   isIndexOutOfListBounds,
-} from '../utils/composite';
-import type { gridNavigation } from './gridNavigation';
-import { ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT, ARROW_UP } from '../utils/constants';
+} from '@/floating-ui-actview/utils/composite';
+import type { gridNavigation } from '@/floating-ui-actview/hooks/gridNavigation';
+import { ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT, ARROW_UP } from '@/floating-ui-actview/utils/constants';
 import {
   activeElement,
   contains,
   getFloatingFocusElement,
   getTarget,
   isTypeableCombobox,
-} from '../utils/element';
-import { enqueueFocus } from '../utils/enqueueFocus';
-import { isVirtualClick, isVirtualPointerEvent, stopEvent } from '../utils/event';
+} from '@/floating-ui-actview/utils/element';
+import { enqueueFocus } from '@/floating-ui-actview/utils/enqueueFocus';
+import { isVirtualClick, isVirtualPointerEvent, stopEvent } from '@/floating-ui-actview/utils/event';
 
 export const ESCAPE = 'Escape';
 

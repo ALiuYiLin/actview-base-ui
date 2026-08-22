@@ -5,11 +5,11 @@ import { mergeRefsN } from '@base-ui/actview-utils/useMergedRefs';
 import { mergeObjects } from '@base-ui/actview-utils/mergeObjects';
 import { warn } from '@base-ui/actview-utils/warn';
 import { EMPTY_OBJECT } from '@base-ui/actview-utils/empty';
-import type { BaseUIComponentProps, ComponentRenderFn, HTMLProps, RefValue } from './types';
-import { getStateAttributesProps, StateAttributesMapping } from './getStateAttributesProps';
-import { resolveClassName } from '../utils/resolveClassName';
-import { resolveStyle } from '../utils/resolveStyle';
-import { mergeProps, mergePropsN, mergeClassNames } from '../merge-props';
+import type { BaseUIComponentProps, ComponentRenderFn, HTMLProps, RefValue } from '@/internals/types';
+import { getStateAttributesProps, StateAttributesMapping } from '@/internals/getStateAttributesProps';
+import { resolveClassName } from '@/utils/resolveClassName';
+import { resolveStyle } from '@/utils/resolveStyle';
+import { mergeProps, mergePropsN, mergeClassNames } from '@/merge-props';
 
 type IntrinsicTagName = keyof JSX.IntrinsicElements;
 

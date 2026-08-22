@@ -1,6 +1,6 @@
 import type { ComputedRef } from '@actview/core';
-import { createContext } from '../../internals/createContext';
-import type { SwitchRootState } from './SwitchRoot';
+import { createContext } from '@/internals/createContext';
+import type { SwitchRootState } from '@/switch/root/SwitchRoot';
 
 export type SwitchRootContext = SwitchRootState;
 

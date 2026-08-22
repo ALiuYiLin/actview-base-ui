@@ -1,4 +1,4 @@
-import type { MenuRoot } from '../root/MenuRoot';
+import type { MenuRoot } from '@/menu/root/MenuRoot';
 
 export interface MenuOpenEventDetails {
   open: boolean;

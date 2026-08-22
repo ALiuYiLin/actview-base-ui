@@ -7,25 +7,25 @@ import { addEventListener } from '@base-ui/actview-utils/addEventListener';
 import { mergeCleanups } from '@base-ui/actview-utils/mergeCleanups';
 import { useId } from '@base-ui/actview-utils/useId';
 import { EMPTY_OBJECT } from '@base-ui/actview-utils/empty';
-import { renderFocusGuard } from '../../utils/FocusGuard';
+import { renderFocusGuard } from '@/utils/FocusGuard';
 import {
   enableFocusInside,
   disableFocusInside,
   getPreviousTabbable,
   getNextTabbable,
   isOutsideEvent,
-} from '../utils/tabbable';
-import { createChangeEventDetails } from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
-import { createAttribute } from '../utils/createAttribute';
+} from '@/floating-ui-actview/utils/tabbable';
+import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
+import { createAttribute } from '@/floating-ui-actview/utils/createAttribute';
 import {
   useRenderElement,
   type UseRenderElementComponentProps,
-} from '../../internals/useRenderElement';
-import { ownerVisuallyHidden } from '../../internals/constants';
-import { createContext } from '../../internals/createContext';
-import type { HTMLProps, RefValue, ComponentRenderFn } from '../../types';
-import type { StyleValue } from '../../internals/types';
+} from '@/internals/useRenderElement';
+import { ownerVisuallyHidden } from '@/internals/constants';
+import { createContext } from '@/internals/createContext';
+import type { HTMLProps, RefValue, ComponentRenderFn } from '@/types';
+import type { StyleValue } from '@/internals/types';
 
 type FocusManagerState = null | {
   modal: boolean;

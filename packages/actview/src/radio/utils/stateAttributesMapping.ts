@@ -1,7 +1,7 @@
-import type { StateAttributesMapping } from '../../internals/getStateAttributesProps';
-import type { TransitionStatus } from '../../internals/useTransitionStatus';
-import { transitionStatusMapping } from '../../internals/stateAttributesMapping';
-import { fieldValidityMapping } from '../../internals/field-constants/constants';
+import type { StateAttributesMapping } from '@/internals/getStateAttributesProps';
+import type { TransitionStatus } from '@/internals/useTransitionStatus';
+import { transitionStatusMapping } from '@/internals/stateAttributesMapping';
+import { fieldValidityMapping } from '@/internals/field-constants/constants';
 
 export const stateAttributesMapping = {
   checked(value): Record<string, string> {

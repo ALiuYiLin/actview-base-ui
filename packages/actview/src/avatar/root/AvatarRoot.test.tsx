@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AvatarRoot } from './AvatarRoot';
+import { AvatarRoot } from '@/avatar/root/AvatarRoot';
 import { createRenderer } from '../../../test/createRenderer';
 
 describe('<Avatar.Root />', () => {

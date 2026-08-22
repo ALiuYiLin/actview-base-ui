@@ -1,18 +1,18 @@
 import { computed } from 'actview';
-import type { BaseUIComponentProps, HTMLProps, NativeButtonProps } from '../../internals/types';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { useButton } from '../../internals/use-button';
-import { isTouchLikePointerType, usePressAndHold } from '../../internals/usePressAndHold';
-import { parseNumber } from '../utils/parse';
+import type { BaseUIComponentProps, HTMLProps, NativeButtonProps } from '@/internals/types';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useButton } from '@/internals/use-button';
+import { isTouchLikePointerType, usePressAndHold } from '@/internals/usePressAndHold';
+import { parseNumber } from '@/number-field/utils/parse';
 import {
   createChangeEventDetails,
   createGenericEventDetails,
-} from '../../internals/createBaseUIEventDetails';
-import type { DirectionalChangeReason, EventWithOptionalKeyState } from '../utils/types';
-import type { NumberFieldRoot, NumberFieldRootState } from './NumberFieldRoot';
-import { REASONS } from '../../internals/reasons';
-import { useNumberFieldRootContext } from './NumberFieldRootContext';
-import { stateAttributesMapping } from '../utils/stateAttributesMapping';
+} from '@/internals/createBaseUIEventDetails';
+import type { DirectionalChangeReason, EventWithOptionalKeyState } from '@/number-field/utils/types';
+import type { NumberFieldRoot, NumberFieldRootState } from '@/number-field/root/NumberFieldRoot';
+import { REASONS } from '@/internals/reasons';
+import { useNumberFieldRootContext } from '@/number-field/root/NumberFieldRootContext';
+import { stateAttributesMapping } from '@/number-field/utils/stateAttributesMapping';
 
 const SELECT_NONE_STYLE = {
   WebkitUserSelect: 'none',

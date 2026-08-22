@@ -1,10 +1,10 @@
 import type { ActviewStore } from '@base-ui/actview-utils/store';
 import { EMPTY_OBJECT } from '@base-ui/actview-utils/empty';
-import type { FloatingRootContext } from '../../floating-ui-actview';
-import { FloatingRootStore } from '../../floating-ui-actview/components/FloatingRootStore';
-import type { TransitionStatus } from '../../internals/useTransitionStatus';
-import { PopupTriggerMap } from './popupTriggerMap';
-import type { HTMLProps, RefValue } from '../../internals/types';
+import type { FloatingRootContext } from '@/floating-ui-actview';
+import { FloatingRootStore } from '@/floating-ui-actview/components/FloatingRootStore';
+import type { TransitionStatus } from '@/internals/useTransitionStatus';
+import { PopupTriggerMap } from '@/utils/popups/popupTriggerMap';
+import type { HTMLProps, RefValue } from '@/internals/types';
 
 /**
  * State common to all popup stores.

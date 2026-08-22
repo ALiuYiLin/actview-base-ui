@@ -1,12 +1,12 @@
 import { EMPTY_OBJECT } from '@base-ui/actview-utils/empty';
-import { NOOP } from '../noop';
-import { DEFAULT_FIELD_ROOT_STATE, DEFAULT_VALIDITY_STATE } from '../field-constants/constants';
-import type { FieldValidityData, FieldRootState } from '../../field/root/FieldRoot';
-import type { Form } from '../../form';
-import type { UseFieldValidationReturnValue } from '../../field/root/useFieldValidation';
-import type { HTMLProps } from '../types';
-import type { FieldControlRegistration } from '../field-register-control/useFieldControlRegistration';
-import { createContext } from '../createContext';
+import { NOOP } from '@/internals/noop';
+import { DEFAULT_FIELD_ROOT_STATE, DEFAULT_VALIDITY_STATE } from '@/internals/field-constants/constants';
+import type { FieldValidityData, FieldRootState } from '@/field/root/FieldRoot';
+import type { Form } from '@/form';
+import type { UseFieldValidationReturnValue } from '@/field/root/useFieldValidation';
+import type { HTMLProps } from '@/internals/types';
+import type { FieldControlRegistration } from '@/internals/field-register-control/useFieldControlRegistration';
+import { createContext } from '@/internals/createContext';
 
 export interface FieldRootContext {
   invalid: boolean | undefined;

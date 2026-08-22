@@ -3,14 +3,14 @@ import {
   useComboboxRootContext,
   useComboboxHasItemsContext,
   useComboboxDerivedItemsContext,
-} from '../root/ComboboxRootContext';
-import { useCompositeListItem } from '../../internals/composite/list/useCompositeListItem';
-import type { BaseUIComponentProps, HTMLProps, NonNativeButtonProps } from '../../internals/types';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { ComboboxItemContext } from './ComboboxItemContext';
-import { useButton } from '../../internals/use-button';
-import { useComboboxRowContext } from '../row/ComboboxRowContext';
-import { compareItemEquality, findItemIndex } from '../../internals/itemEquality';
+} from '@/combobox/root/ComboboxRootContext';
+import { useCompositeListItem } from '@/internals/composite/list/useCompositeListItem';
+import type { BaseUIComponentProps, HTMLProps, NonNativeButtonProps } from '@/internals/types';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { ComboboxItemContext } from '@/combobox/item/ComboboxItemContext';
+import { useButton } from '@/internals/use-button';
+import { useComboboxRowContext } from '@/combobox/row/ComboboxRowContext';
+import { compareItemEquality, findItemIndex } from '@/internals/itemEquality';
 
 interface ComboboxItemInnerProps {
   componentProps: ComboboxItem.Props;

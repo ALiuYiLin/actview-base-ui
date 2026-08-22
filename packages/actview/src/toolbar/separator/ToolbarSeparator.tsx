@@ -1,7 +1,7 @@
 import { defineComponent } from 'actview';
-import type { Orientation } from '../../internals/types';
-import { Separator, type SeparatorState } from '../../separator';
-import { useToolbarRootContext } from '../root/ToolbarRootContext';
+import type { Orientation } from '@/internals/types';
+import { Separator, type SeparatorState } from '@/separator';
+import { useToolbarRootContext } from '@/toolbar/root/ToolbarRootContext';
 
 /**
  * A separator element accessible to screen readers.

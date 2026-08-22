@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ProgressIndicator } from './ProgressIndicator';
-import { ProgressRoot } from '../root/ProgressRoot';
+import { ProgressIndicator } from '@/progress/indicator/ProgressIndicator';
+import { ProgressRoot } from '@/progress/root/ProgressRoot';
 import { createRenderer } from '../../../test/createRenderer';
 
 describe('<Progress.Indicator />', () => {

@@ -1,13 +1,13 @@
 import { computed, defineComponent, useRootElement } from 'actview';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
-import type { FieldRoot } from '../../field/root/FieldRoot';
-import { useFieldRootContext } from '../../internals/field-root-context/FieldRootContext';
-import { fieldValidityMapping } from '../../internals/field-constants/constants';
-import { useLabel } from '../../internals/labelable-provider/useLabel';
-import { getDefaultLabelId } from '../../utils/resolveAriaLabelledBy';
-import { useComboboxRootContext } from '../root/ComboboxRootContext';
-import { mergePropsN } from '../../merge-props';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import type { FieldRoot } from '@/field/root/FieldRoot';
+import { useFieldRootContext } from '@/internals/field-root-context/FieldRootContext';
+import { fieldValidityMapping } from '@/internals/field-constants/constants';
+import { useLabel } from '@/internals/labelable-provider/useLabel';
+import { getDefaultLabelId } from '@/utils/resolveAriaLabelledBy';
+import { useComboboxRootContext } from '@/combobox/root/ComboboxRootContext';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * An accessible label that is automatically associated with the combobox trigger.

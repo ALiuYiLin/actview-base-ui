@@ -1,6 +1,6 @@
 import type { VNodeChild } from '@actview/jsx';
 import { error } from '@base-ui/actview-utils/error';
-import { serializeValue } from './serializeValue';
+import { serializeValue } from '@/internals/serializeValue';
 
 type ItemRecord = Record<string, VNodeChild>;
 type ItemsInput = ItemRecord | ReadonlyArray<LabeledItem> | ReadonlyArray<Group<any>> | undefined;

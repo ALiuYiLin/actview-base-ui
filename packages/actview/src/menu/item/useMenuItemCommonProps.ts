@@ -1,10 +1,10 @@
 import { platform } from '@base-ui/actview-utils/platform';
-import type { HTMLProps } from '../../internals/types';
-import type { MenuStore } from '../store/MenuStore';
-import { REASONS } from '../../internals/reasons';
-import { useContextMenuRootContext } from '../../context-menu/root/ContextMenuRootContext';
-import { dispatchClickWithModifiers } from '../../utils/dispatchClickWithModifiers';
-import type { UseMenuItemMetadata } from './useMenuItem';
+import type { HTMLProps } from '@/internals/types';
+import type { MenuStore } from '@/menu/store/MenuStore';
+import { REASONS } from '@/internals/reasons';
+import { useContextMenuRootContext } from '@/context-menu/root/ContextMenuRootContext';
+import { dispatchClickWithModifiers } from '@/utils/dispatchClickWithModifiers';
+import type { UseMenuItemMetadata } from '@/menu/item/useMenuItem';
 
 function resolveValue<T>(value: T | (() => T)): T {
   return typeof value === 'function' ? (value as () => T)() : value;

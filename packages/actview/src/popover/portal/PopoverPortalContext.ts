@@ -1,5 +1,5 @@
 import type { ComputedRef } from '@actview/core';
-import { createContext } from '../../internals/createContext';
+import { createContext } from '@/internals/createContext';
 
 export const PopoverPortalContext = createContext<boolean | undefined>(
   'base-ui-popover-portal-context',

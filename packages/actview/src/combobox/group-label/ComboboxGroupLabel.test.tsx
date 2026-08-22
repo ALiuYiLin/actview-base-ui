@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ComboboxGroupLabel } from './ComboboxGroupLabel';
-import { ComboboxGroupContext } from '../group/ComboboxGroupContext';
+import { ComboboxGroupLabel } from '@/combobox/group-label/ComboboxGroupLabel';
+import { ComboboxGroupContext } from '@/combobox/group/ComboboxGroupContext';
 import { createRenderer } from '../../../test/createRenderer';
 
 let labelId: string | undefined;

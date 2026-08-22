@@ -5,33 +5,33 @@ import { warn } from '@base-ui/actview-utils/warn';
 import { clamp } from '@base-ui/actview-utils/clamp';
 import { areArraysEqual } from '@base-ui/actview-utils/areArraysEqual';
 import { activeElement, contains } from '@base-ui/actview-utils/shadowDom';
-import type { BaseUIComponentProps, HTMLProps, Orientation, RefObject } from '../../internals/types';
+import type { BaseUIComponentProps, HTMLProps, Orientation, RefObject } from '@/internals/types';
 import {
   createChangeEventDetails,
   createGenericEventDetails,
   type BaseUIChangeEventDetails,
   type BaseUIGenericEventDetails,
-} from '../../internals/createBaseUIEventDetails';
-import { useValueChanged } from '../../internals/useValueChanged';
-import { useBaseUiId } from '../../internals/useBaseUiId';
-import { useRenderElement } from '../../internals/useRenderElement';
+} from '@/internals/createBaseUIEventDetails';
+import { useValueChanged } from '@/internals/useValueChanged';
+import { useBaseUiId } from '@/internals/useBaseUiId';
+import { useRenderElement } from '@/internals/useRenderElement';
 import {
   CompositeList,
   type CompositeMetadata,
-} from '../../internals/composite/list/CompositeList';
-import type { FieldRootState } from '../../field/root/FieldRoot';
-import { useFieldRootContext } from '../../internals/field-root-context/FieldRootContext';
-import { useRegisterFieldControl } from '../../internals/field-register-control/useRegisterFieldControl';
-import { useFormContext } from '../../internals/form-context/FormContext';
-import { useLabelableContext } from '../../internals/labelable-provider/LabelableContext';
-import { resolveAriaLabelledBy, getDefaultLabelId } from '../../utils/resolveAriaLabelledBy';
-import { asc } from '../utils/asc';
-import { getSliderValue } from '../utils/getSliderValue';
-import { validateMinimumDistance } from '../utils/validateMinimumDistance';
-import type { ThumbMetadata } from '../thumb/SliderThumb';
-import { sliderStateAttributesMapping } from './stateAttributesMapping';
-import { SliderRootContext } from './SliderRootContext';
-import { REASONS } from '../../internals/reasons';
+} from '@/internals/composite/list/CompositeList';
+import type { FieldRootState } from '@/field/root/FieldRoot';
+import { useFieldRootContext } from '@/internals/field-root-context/FieldRootContext';
+import { useRegisterFieldControl } from '@/internals/field-register-control/useRegisterFieldControl';
+import { useFormContext } from '@/internals/form-context/FormContext';
+import { useLabelableContext } from '@/internals/labelable-provider/LabelableContext';
+import { resolveAriaLabelledBy, getDefaultLabelId } from '@/utils/resolveAriaLabelledBy';
+import { asc } from '@/slider/utils/asc';
+import { getSliderValue } from '@/slider/utils/getSliderValue';
+import { validateMinimumDistance } from '@/slider/utils/validateMinimumDistance';
+import type { ThumbMetadata } from '@/slider/thumb/SliderThumb';
+import { sliderStateAttributesMapping } from '@/slider/root/stateAttributesMapping';
+import { SliderRootContext } from '@/slider/root/SliderRootContext';
+import { REASONS } from '@/internals/reasons';
 
 function areValuesEqual(
   newValue: number | readonly number[],

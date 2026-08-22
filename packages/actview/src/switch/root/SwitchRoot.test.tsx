@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
-import { SwitchRoot } from './SwitchRoot';
-import { SwitchThumb } from '../thumb/SwitchThumb';
-import { FieldRoot } from '../../field/root/FieldRoot';
-import { FieldLabel } from '../../field/label/FieldLabel';
-import { FieldDescription } from '../../field/description/FieldDescription';
-import { FieldError } from '../../field/error/FieldError';
-import { FieldControl } from '../../field/control/FieldControl';
-import { Form } from '../../form';
+import { SwitchRoot } from '@/switch/root/SwitchRoot';
+import { SwitchThumb } from '@/switch/thumb/SwitchThumb';
+import { FieldRoot } from '@/field/root/FieldRoot';
+import { FieldLabel } from '@/field/label/FieldLabel';
+import { FieldDescription } from '@/field/description/FieldDescription';
+import { FieldError } from '@/field/error/FieldError';
+import { FieldControl } from '@/field/control/FieldControl';
+import { Form } from '@/form';
 import { createRenderer } from '../../../test/createRenderer';
 
 describe('<Switch.Root />', () => {

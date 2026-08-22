@@ -1,5 +1,5 @@
-import { stringifyAsLabel } from '../../../internals/resolveValueLabel';
-import type { Filter } from './useFilter';
+import { stringifyAsLabel } from '@/internals/resolveValueLabel';
+import type { Filter } from '@/combobox/root/utils/useFilter';
 
 export type FilterItemToString = ((item: any) => string) & {
   selected?: ((value: any) => string) | undefined;

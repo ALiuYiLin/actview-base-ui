@@ -3,9 +3,9 @@ import type { Ref } from '@actview/core';
 import { ownerDocument } from '@base-ui/actview-utils/owner';
 import { clamp } from '@base-ui/actview-utils/clamp';
 import { contains, getTarget } from '@base-ui/actview-utils/shadowDom';
-import { findScrollableTouchTarget, hasScrollableAncestor, type ScrollAxis } from './scrollable';
-import { getElementAtPoint } from './getElementAtPoint';
-import { getElementTransform } from './getElementTransform';
+import { findScrollableTouchTarget, hasScrollableAncestor, type ScrollAxis } from '@/utils/scrollable';
+import { getElementAtPoint } from '@/utils/getElementAtPoint';
+import { getElementTransform } from '@/utils/getElementTransform';
 
 export type SwipeDirection = 'up' | 'down' | 'left' | 'right';
 

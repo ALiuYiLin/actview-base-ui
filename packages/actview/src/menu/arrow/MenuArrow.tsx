@@ -1,12 +1,12 @@
 import { computed, defineComponent, ref } from 'actview';
 import { useMergedRefs } from '@base-ui/actview-utils/useMergedRefs';
-import { useMenuPositionerContext } from '../positioner/MenuPositionerContext';
-import { useMenuRootContext } from '../root/MenuRootContext';
-import type { Side, Align } from '../../internals/useAnchorPositioning';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
-import { popupStateMapping } from '../../utils/popupStateMapping';
-import { mergePropsN } from '../../merge-props';
+import { useMenuPositionerContext } from '@/menu/positioner/MenuPositionerContext';
+import { useMenuRootContext } from '@/menu/root/MenuRootContext';
+import type { Side, Align } from '@/internals/useAnchorPositioning';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import { popupStateMapping } from '@/utils/popupStateMapping';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * Displays an element positioned against the menu anchor.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getPushedThumbValues } from './getPushedThumbValues';
+import { getPushedThumbValues } from '@/slider/utils/getPushedThumbValues';
 
 describe('getPushedThumbValues', () => {
   it('pushes the next thumb forward when moving past it', () => {

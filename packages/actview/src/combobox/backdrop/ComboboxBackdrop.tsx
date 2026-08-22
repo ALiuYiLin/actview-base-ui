@@ -1,12 +1,12 @@
 import { computed, defineComponent, useRootElement } from 'actview';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { useComboboxRootContext } from '../root/ComboboxRootContext';
-import { popupStateMapping } from '../../utils/popupStateMapping';
-import type { StateAttributesMapping } from '../../internals/getStateAttributesProps';
-import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
-import type { TransitionStatus } from '../../internals/useTransitionStatus';
-import { transitionStatusMapping } from '../../internals/stateAttributesMapping';
-import { mergePropsN } from '../../merge-props';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { useComboboxRootContext } from '@/combobox/root/ComboboxRootContext';
+import { popupStateMapping } from '@/utils/popupStateMapping';
+import type { StateAttributesMapping } from '@/internals/getStateAttributesProps';
+import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import type { TransitionStatus } from '@/internals/useTransitionStatus';
+import { transitionStatusMapping } from '@/internals/stateAttributesMapping';
+import { mergePropsN } from '@/merge-props';
 
 const stateAttributesMapping: StateAttributesMapping<ComboboxBackdropState> = {
   ...popupStateMapping,

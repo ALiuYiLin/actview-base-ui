@@ -1,7 +1,7 @@
 import type { ComputedRef } from '@actview/core';
-import type { BaseUIChangeEventDetails } from '../../internals/createBaseUIEventDetails';
-import type { MenuRoot } from '../../menu/root/MenuRoot';
-import { createContext } from '../../internals/createContext';
+import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import type { MenuRoot } from '@/menu/root/MenuRoot';
+import { createContext } from '@/internals/createContext';
 
 // The React version references `ContextMenuRoot.ChangeEventDetails`, but `ContextMenu.Root` is
 // itself a thin wrapper over `Menu.Root`, so the details are structurally identical to

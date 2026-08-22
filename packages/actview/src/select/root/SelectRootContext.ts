@@ -1,10 +1,10 @@
 import type { ComputedRef } from '@actview/core';
-import type { FloatingRootContext } from '../../floating-ui-actview';
-import type { SelectStore } from '../store';
-import type { UseFieldValidationReturnValue } from '../../field/root/useFieldValidation';
-import type { HTMLProps, RefObject } from '../../internals/types';
-import { createContext } from '../../internals/createContext';
-import type { SelectRoot } from './SelectRoot';
+import type { FloatingRootContext } from '@/floating-ui-actview';
+import type { SelectStore } from '@/select/store';
+import type { UseFieldValidationReturnValue } from '@/field/root/useFieldValidation';
+import type { HTMLProps, RefObject } from '@/internals/types';
+import { createContext } from '@/internals/createContext';
+import type { SelectRoot } from '@/select/root/SelectRoot';
 
 export interface SelectRootContext {
   store: SelectStore;

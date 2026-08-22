@@ -1,11 +1,11 @@
 import { computed, ref } from 'actview';
 import type { VNodeChild } from '@actview/jsx';
-import { AriaCombobox, type AriaComboboxState } from '../../combobox/root/AriaCombobox';
-import { useCoreFilter } from '../../combobox/root/utils/useFilter';
-import { type BaseUIChangeEventDetails } from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
-import { stringifyAsLabel, type Group } from '../../internals/resolveValueLabel';
-import { useValueChanged } from '../../internals/useValueChanged';
+import { AriaCombobox, type AriaComboboxState } from '@/combobox/root/AriaCombobox';
+import { useCoreFilter } from '@/combobox/root/utils/useFilter';
+import { type BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
+import { stringifyAsLabel, type Group } from '@/internals/resolveValueLabel';
+import { useValueChanged } from '@/internals/useValueChanged';
 
 /**
  * Groups all parts of the autocomplete.

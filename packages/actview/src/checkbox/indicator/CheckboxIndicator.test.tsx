@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { CheckboxRoot } from '../root/CheckboxRoot';
-import { CheckboxIndicator } from './CheckboxIndicator';
-import { CheckboxRootContext } from '../root/CheckboxRootContext';
-import type { CheckboxRootState } from '../root/CheckboxRoot';
+import { CheckboxRoot } from '@/checkbox/root/CheckboxRoot';
+import { CheckboxIndicator } from '@/checkbox/indicator/CheckboxIndicator';
+import { CheckboxRootContext } from '@/checkbox/root/CheckboxRootContext';
+import type { CheckboxRootState } from '@/checkbox/root/CheckboxRoot';
 import { createRenderer } from '../../../test/createRenderer';
 
 const isJSDOM = navigator.userAgent.includes('jsdom');

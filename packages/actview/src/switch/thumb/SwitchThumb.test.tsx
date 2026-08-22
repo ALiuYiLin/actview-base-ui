@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import { SwitchRoot } from '../root/SwitchRoot';
-import { SwitchThumb } from './SwitchThumb';
-import { SwitchRootContext } from '../root/SwitchRootContext';
+import { SwitchRoot } from '@/switch/root/SwitchRoot';
+import { SwitchThumb } from '@/switch/thumb/SwitchThumb';
+import { SwitchRootContext } from '@/switch/root/SwitchRootContext';
 import { createRenderer } from '../../../test/createRenderer';
 
 const testContext: SwitchRootContext = {

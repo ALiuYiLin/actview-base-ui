@@ -1,12 +1,12 @@
 import { computed, defineComponent, ref, watch } from 'actview';
 import { useMergedRefs } from '@base-ui/actview-utils/useMergedRefs';
-import { useComboboxPositionerContext } from '../positioner/ComboboxPositionerContext';
-import { useComboboxRootContext } from '../root/ComboboxRootContext';
-import type { Side, Align } from '../../internals/useAnchorPositioning';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
-import { popupStateMapping } from '../../utils/popupStateMapping';
-import { mergePropsN } from '../../merge-props';
+import { useComboboxPositionerContext } from '@/combobox/positioner/ComboboxPositionerContext';
+import { useComboboxRootContext } from '@/combobox/root/ComboboxRootContext';
+import type { Side, Align } from '@/internals/useAnchorPositioning';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import { popupStateMapping } from '@/utils/popupStateMapping';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * Displays an element positioned against the anchor.

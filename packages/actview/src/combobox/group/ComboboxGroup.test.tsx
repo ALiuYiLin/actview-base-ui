@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ComboboxGroup } from './ComboboxGroup';
+import { ComboboxGroup } from '@/combobox/group/ComboboxGroup';
 import { createRenderer } from '../../../test/createRenderer';
 
 describe('<Combobox.Group />', () => {

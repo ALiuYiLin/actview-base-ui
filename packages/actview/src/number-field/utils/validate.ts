@@ -1,6 +1,6 @@
 import { clamp } from '@base-ui/actview-utils/clamp';
 import { getFormatter } from '@base-ui/actview-utils/formatNumber';
-import { parseNumber } from './parse';
+import { parseNumber } from '@/number-field/utils/parse';
 
 // A relative factor scaled by the step size when snapping (`stepSize * STEP_EPSILON_FACTOR`).
 const STEP_EPSILON_FACTOR = 1e-10;

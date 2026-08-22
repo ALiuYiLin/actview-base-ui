@@ -2,14 +2,14 @@ import { computed, watch } from 'actview';
 import { addEventListener } from '@base-ui/actview-utils/addEventListener';
 import { contains, getTarget } from '@base-ui/actview-utils/shadowDom';
 import { useIsoLayoutEffect } from '@base-ui/actview-utils/useIsoLayoutEffect';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { useScrollAreaRootContext } from '../root/ScrollAreaRootContext';
-import { ScrollAreaScrollbarContext } from './ScrollAreaScrollbarContext';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { getOffset } from '../utils/getOffset';
-import { useDirection } from '../../internals/direction-context/DirectionContext';
-import { scrollAreaStateAttributesMapping } from '../root/stateAttributes';
-import type { ScrollAreaRootState } from '../root/ScrollAreaRoot';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { useScrollAreaRootContext } from '@/scroll-area/root/ScrollAreaRootContext';
+import { ScrollAreaScrollbarContext } from '@/scroll-area/scrollbar/ScrollAreaScrollbarContext';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { getOffset } from '@/scroll-area/utils/getOffset';
+import { useDirection } from '@/internals/direction-context/DirectionContext';
+import { scrollAreaStateAttributesMapping } from '@/scroll-area/root/stateAttributes';
+import type { ScrollAreaRootState } from '@/scroll-area/root/ScrollAreaRoot';
 
 /**
  * A vertical or horizontal scrollbar for the scroll area.

@@ -1,8 +1,8 @@
 import { computed } from 'actview';
-import type { BaseUIComponentProps } from '../../internals/types';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { useToastLabelPart, useToastLabelElement } from '../utils/useToastLabelPart';
-import { isRenderableNode } from '../utils/isRenderableNode';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useToastLabelPart, useToastLabelElement } from '@/toast/utils/useToastLabelPart';
+import { isRenderableNode } from '@/toast/utils/isRenderableNode';
 
 /**
  * A title that labels the toast.

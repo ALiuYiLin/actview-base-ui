@@ -1,6 +1,6 @@
 import type { ComputedRef } from '@actview/core';
-import { createContext } from '../../internals/createContext';
-import type { AccordionRoot } from './AccordionRoot';
+import { createContext } from '@/internals/createContext';
+import type { AccordionRoot } from '@/accordion/root/AccordionRoot';
 
 export interface AccordionRootContext<Value = any> {
   disabled: boolean;

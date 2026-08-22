@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import { onUpdated, ref } from 'actview';
 import { createElement } from '@actview/jsx';
-import { FieldRoot } from '../root/FieldRoot';
-import { FieldControl } from './FieldControl';
-import { FieldError } from '../error/FieldError';
-import { FieldLabel } from '../label/FieldLabel';
-import { Form } from '../../form';
+import { FieldRoot } from '@/field/root/FieldRoot';
+import { FieldControl } from '@/field/control/FieldControl';
+import { FieldError } from '@/field/error/FieldError';
+import { FieldLabel } from '@/field/label/FieldLabel';
+import { Form } from '@/form';
 import { createRenderer } from '../../../test/createRenderer';
 
 describe('<Field.Control />', () => {

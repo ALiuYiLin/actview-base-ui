@@ -1,7 +1,7 @@
 import { computed, onUnmounted, unref, watch } from 'actview';
 import type { Ref } from '@actview/core';
-import { useBaseUiId } from '../internals/useBaseUiId';
-import type { MaybeRef } from '../internals/types';
+import { useBaseUiId } from '@/internals/useBaseUiId';
+import type { MaybeRef } from '@/internals/types';
 
 // Tracks the most recently registered label id per `setLabelId` writer, so an older label's
 // cleanup does not clear a newer label's id. This mirrors the React functional update

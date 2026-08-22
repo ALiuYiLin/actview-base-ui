@@ -2,15 +2,15 @@ import { computed, defineComponent, ref, unref } from 'actview';
 import type { Ref } from '@actview/core';
 import type { VNodeChild } from '@actview/jsx';
 import { EMPTY_OBJECT } from '@base-ui/actview-utils/empty';
-import { CompositeList, type CompositeMetadata } from '../list/CompositeList';
-import { useCompositeRoot } from './useCompositeRoot';
-import { CompositeRootContext } from './CompositeRootContext';
-import type { BaseUIComponentProps, BaseUIEvent, MaybeRef } from '../../types';
-import type { ModifierKey } from '../composite';
-import type { CompositeGridNavigator } from './gridNavigation';
-import { useDirection } from '../../direction-context/DirectionContext';
-import { getStateAttributesProps, type StateAttributesMapping } from '../../getStateAttributesProps';
-import { mergePropsN } from '../../../merge-props';
+import { CompositeList, type CompositeMetadata } from '@/internals/composite/list/CompositeList';
+import { useCompositeRoot } from '@/internals/composite/root/useCompositeRoot';
+import { CompositeRootContext } from '@/internals/composite/root/CompositeRootContext';
+import type { BaseUIComponentProps, BaseUIEvent, MaybeRef } from '@/internals/types';
+import type { ModifierKey } from '@/internals/composite/composite';
+import type { CompositeGridNavigator } from '@/internals/composite/root/gridNavigation';
+import { useDirection } from '@/internals/direction-context/DirectionContext';
+import { getStateAttributesProps, type StateAttributesMapping } from '@/internals/getStateAttributesProps';
+import { mergePropsN } from '@/merge-props';
 
 export const CompositeRoot = defineComponent(function <
   Metadata extends {},

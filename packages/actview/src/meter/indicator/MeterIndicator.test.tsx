@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { MeterRoot } from '../root/MeterRoot';
-import { MeterTrack } from '../track/MeterTrack';
-import { MeterIndicator } from './MeterIndicator';
+import { MeterRoot } from '@/meter/root/MeterRoot';
+import { MeterTrack } from '@/meter/track/MeterTrack';
+import { MeterIndicator } from '@/meter/indicator/MeterIndicator';
 import { createRenderer } from '../../../test/createRenderer';
 
 const { render } = createRenderer();

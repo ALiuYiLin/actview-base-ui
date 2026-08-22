@@ -1,9 +1,9 @@
 import { defineComponent, unref } from '@actview/core';
 import type { Ref } from '@actview/core';
 import type { VNodeChild } from '@actview/jsx';
-import { useCompositeItem } from './useCompositeItem';
-import type { BaseUIComponentProps, RefValue } from '../../types';
-import { getStateAttributesProps, type StateAttributesMapping } from '../../getStateAttributesProps';
+import { useCompositeItem } from '@/internals/composite/item/useCompositeItem';
+import type { BaseUIComponentProps, RefValue } from '@/internals/types';
+import { getStateAttributesProps, type StateAttributesMapping } from '@/internals/getStateAttributesProps';
 import { mergePropsN } from '@base-ui/actview/merge-props';
 import { EMPTY_OBJECT } from '@base-ui/actview-utils/empty';
 

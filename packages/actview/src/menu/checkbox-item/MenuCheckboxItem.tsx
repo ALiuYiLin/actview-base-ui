@@ -1,19 +1,19 @@
 import { computed } from 'actview';
 import { NOOP } from '@base-ui/actview-utils/empty';
 import { useControlled } from '@base-ui/actview-utils/useControlled';
-import { MenuCheckboxItemContext } from './MenuCheckboxItemContext';
-import { REGULAR_ITEM, useMenuItem } from '../item/useMenuItem';
-import { useCompositeListItem } from '../../internals/composite/list/useCompositeListItem';
-import { useMenuRootContext } from '../root/MenuRootContext';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { useBaseUiId } from '../../internals/useBaseUiId';
-import type { BaseUIComponentProps, HTMLProps, NonNativeButtonProps } from '../../internals/types';
-import { itemMapping } from '../utils/stateAttributesMapping';
-import { useMenuPositionerContext } from '../positioner/MenuPositionerContext';
-import { createChangeEventDetails } from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
-import type { MenuRoot } from '../root/MenuRoot';
-import { mergeProps } from '../../merge-props';
+import { MenuCheckboxItemContext } from '@/menu/checkbox-item/MenuCheckboxItemContext';
+import { REGULAR_ITEM, useMenuItem } from '@/menu/item/useMenuItem';
+import { useCompositeListItem } from '@/internals/composite/list/useCompositeListItem';
+import { useMenuRootContext } from '@/menu/root/MenuRootContext';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useBaseUiId } from '@/internals/useBaseUiId';
+import type { BaseUIComponentProps, HTMLProps, NonNativeButtonProps } from '@/internals/types';
+import { itemMapping } from '@/menu/utils/stateAttributesMapping';
+import { useMenuPositionerContext } from '@/menu/positioner/MenuPositionerContext';
+import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
+import type { MenuRoot } from '@/menu/root/MenuRoot';
+import { mergeProps } from '@/merge-props';
 
 /**
  * A menu item that toggles a setting on or off.

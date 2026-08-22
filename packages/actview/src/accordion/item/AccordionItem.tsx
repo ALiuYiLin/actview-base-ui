@@ -1,21 +1,21 @@
 import { computed, ref, watch } from 'actview';
 import { useMergedRefs } from '@base-ui/actview-utils/useMergedRefs';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { useBaseUiId } from '../../internals/useBaseUiId';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { useBaseUiId } from '@/internals/useBaseUiId';
 import {
   useCollapsibleRoot,
   type UseCollapsibleRootParameters,
-} from '../../collapsible/root/useCollapsibleRoot';
-import type { CollapsibleRoot, CollapsibleRootState } from '../../collapsible/root/CollapsibleRoot';
-import { CollapsibleRootContext } from '../../collapsible/root/CollapsibleRootContext';
-import { useCompositeListItem } from '../../internals/composite/list/useCompositeListItem';
-import type { AccordionRootState } from '../root/AccordionRoot';
-import { useAccordionRootContext } from '../root/AccordionRootContext';
-import { AccordionItemContext } from './AccordionItemContext';
-import { accordionStateAttributesMapping } from './stateAttributesMapping';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { type BaseUIChangeEventDetails } from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
+} from '@/collapsible/root/useCollapsibleRoot';
+import type { CollapsibleRoot, CollapsibleRootState } from '@/collapsible/root/CollapsibleRoot';
+import { CollapsibleRootContext } from '@/collapsible/root/CollapsibleRootContext';
+import { useCompositeListItem } from '@/internals/composite/list/useCompositeListItem';
+import type { AccordionRootState } from '@/accordion/root/AccordionRoot';
+import { useAccordionRootContext } from '@/accordion/root/AccordionRootContext';
+import { AccordionItemContext } from '@/accordion/item/AccordionItemContext';
+import { accordionStateAttributesMapping } from '@/accordion/item/stateAttributesMapping';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { type BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
 
 /**
  * Groups an accordion header with the corresponding panel.

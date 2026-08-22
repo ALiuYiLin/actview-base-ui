@@ -1,5 +1,5 @@
 import { stringifyLocale } from '@base-ui/actview-utils/stringifyLocale';
-import { stringifyAsLabel } from './resolveValueLabel';
+import { stringifyAsLabel } from '@/internals/resolveValueLabel';
 
 const filterCache = new Map<string, Filter>();
 

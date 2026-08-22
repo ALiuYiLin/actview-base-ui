@@ -1,3 +1,3 @@
-export { Form } from './Form';
+export { Form } from '@/form/Form';
 
-export type * from './Form';
+export type * from '@/form/Form';

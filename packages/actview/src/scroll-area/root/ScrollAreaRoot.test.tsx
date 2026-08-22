@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ScrollAreaRoot } from './ScrollAreaRoot';
-import { ScrollAreaViewport } from '../viewport/ScrollAreaViewport';
-import { ScrollAreaScrollbar } from '../scrollbar/ScrollAreaScrollbar';
-import { ScrollAreaThumb } from '../thumb/ScrollAreaThumb';
-import { ScrollAreaCorner } from '../corner/ScrollAreaCorner';
+import { ScrollAreaRoot } from '@/scroll-area/root/ScrollAreaRoot';
+import { ScrollAreaViewport } from '@/scroll-area/viewport/ScrollAreaViewport';
+import { ScrollAreaScrollbar } from '@/scroll-area/scrollbar/ScrollAreaScrollbar';
+import { ScrollAreaThumb } from '@/scroll-area/thumb/ScrollAreaThumb';
+import { ScrollAreaCorner } from '@/scroll-area/corner/ScrollAreaCorner';
 import { createRenderer } from '../../../test/createRenderer';
-import { SCROLL_TIMEOUT } from '../constants';
+import { SCROLL_TIMEOUT } from '@/scroll-area/constants';
 
 describe('<ScrollArea.Root />', () => {
   const { render, fireEvent, act } = createRenderer();

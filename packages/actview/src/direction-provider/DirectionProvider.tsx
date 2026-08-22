@@ -2,7 +2,7 @@ import { computed, defineComponent } from 'actview';
 import {
   DirectionContext,
   type TextDirection,
-} from '../internals/direction-context/DirectionContext';
+} from '@/internals/direction-context/DirectionContext';
 
 /**
  * Enables RTL behavior for Base UI components.

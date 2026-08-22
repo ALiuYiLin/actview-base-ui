@@ -1,5 +1,5 @@
 import { defineComponent, ref } from 'actview';
-import type { BaseUIComponentProps, HTMLProps, Orientation } from '../internals/types';
+import type { BaseUIComponentProps, HTMLProps, Orientation } from '@/internals/types';
 
 /**
  * A separator element accessible to screen readers.

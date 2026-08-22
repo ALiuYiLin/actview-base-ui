@@ -1,13 +1,13 @@
 import { computed, defineComponent, ref } from 'actview';
 import { useMergedRefs } from '@base-ui/actview-utils/useMergedRefs';
-import { REGULAR_ITEM, useMenuItem } from './useMenuItem';
-import { useMenuRootContext } from '../root/MenuRootContext';
-import { useBaseUiId } from '../../internals/useBaseUiId';
-import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
-import type { BaseUIComponentProps, HTMLProps, NonNativeButtonProps } from '../../internals/types';
-import { useCompositeListItem } from '../../internals/composite/list/useCompositeListItem';
-import { useMenuPositionerContext } from '../positioner/MenuPositionerContext';
-import { mergePropsN } from '../../merge-props';
+import { REGULAR_ITEM, useMenuItem } from '@/menu/item/useMenuItem';
+import { useMenuRootContext } from '@/menu/root/MenuRootContext';
+import { useBaseUiId } from '@/internals/useBaseUiId';
+import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import type { BaseUIComponentProps, HTMLProps, NonNativeButtonProps } from '@/internals/types';
+import { useCompositeListItem } from '@/internals/composite/list/useCompositeListItem';
+import { useMenuPositionerContext } from '@/menu/positioner/MenuPositionerContext';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * An individual interactive item in the menu.

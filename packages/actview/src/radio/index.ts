@@ -1,4 +1,4 @@
-export * as Radio from './index.parts';
+export * as Radio from '@/radio/index.parts';
 
-export type * from './root/RadioRoot';
-export type * from './indicator/RadioIndicator';
+export type * from '@/radio/root/RadioRoot';
+export type * from '@/radio/indicator/RadioIndicator';

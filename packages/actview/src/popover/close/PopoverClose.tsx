@@ -1,10 +1,10 @@
-import type { BaseUIComponentProps, NativeButtonProps } from '../../internals/types';
-import { usePopoverRootContext } from '../root/PopoverRootContext';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { useButton } from '../../internals/use-button';
-import { createChangeEventDetails } from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
-import { useClosePartRegistration } from '../../utils/closePart';
+import type { BaseUIComponentProps, NativeButtonProps } from '@/internals/types';
+import { usePopoverRootContext } from '@/popover/root/PopoverRootContext';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useButton } from '@/internals/use-button';
+import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
+import { useClosePartRegistration } from '@/utils/closePart';
 
 /**
  * A button that closes the popover.

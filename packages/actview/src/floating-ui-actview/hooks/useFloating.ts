@@ -8,8 +8,8 @@ import {
   type Strategy,
 } from '@floating-ui/dom';
 import { isElement } from '@floating-ui/utils/dom';
-import { FloatingRootStore } from '../components/FloatingRootStore';
-import { useFloatingTree } from '../components/FloatingTree';
+import { FloatingRootStore } from '@/floating-ui-actview/components/FloatingRootStore';
+import { useFloatingTree } from '@/floating-ui-actview/components/FloatingTree';
 import type {
   ExtendedElements,
   ExtendedRefs,
@@ -19,8 +19,8 @@ import type {
   UseFloatingOptions,
   UseFloatingReturn,
   VirtualElement,
-} from '../types';
-import { useFloatingRootContext } from './useFloatingRootContext';
+} from '@/floating-ui-actview/types';
+import { useFloatingRootContext } from '@/floating-ui-actview/hooks/useFloatingRootContext';
 
 /**
  * Provides data to position a floating element and context to add interactions.

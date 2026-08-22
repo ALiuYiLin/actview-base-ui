@@ -1,5 +1,5 @@
 import { defineComponent } from 'actview';
-import { useComboboxInputValueContext } from '../../combobox/root/ComboboxRootContext';
+import { useComboboxInputValueContext } from '@/combobox/root/ComboboxRootContext';
 
 /**
  * The current value of the autocomplete.

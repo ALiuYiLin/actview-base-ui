@@ -1,13 +1,13 @@
 import { describe, expect, it, vi, beforeAll, afterEach } from 'vitest';
-import { AutocompleteRoot } from './root/AutocompleteRoot';
-import { AutocompleteTrigger } from './trigger/AutocompleteTrigger';
-import { AutocompleteValue } from './value/AutocompleteValue';
-import { AutocompleteItem } from './item/AutocompleteItem';
-import { ComboboxInput } from '../combobox/input/ComboboxInput';
-import { ComboboxPortal } from '../combobox/portal/ComboboxPortal';
-import { ComboboxPositioner } from '../combobox/positioner/ComboboxPositioner';
-import { ComboboxPopup } from '../combobox/popup/ComboboxPopup';
-import { ComboboxList } from '../combobox/list/ComboboxList';
+import { AutocompleteRoot } from '@/autocomplete/root/AutocompleteRoot';
+import { AutocompleteTrigger } from '@/autocomplete/trigger/AutocompleteTrigger';
+import { AutocompleteValue } from '@/autocomplete/value/AutocompleteValue';
+import { AutocompleteItem } from '@/autocomplete/item/AutocompleteItem';
+import { ComboboxInput } from '@/combobox/input/ComboboxInput';
+import { ComboboxPortal } from '@/combobox/portal/ComboboxPortal';
+import { ComboboxPositioner } from '@/combobox/positioner/ComboboxPositioner';
+import { ComboboxPopup } from '@/combobox/popup/ComboboxPopup';
+import { ComboboxList } from '@/combobox/list/ComboboxList';
 import { createRenderer } from '../../test/createRenderer';
 
 beforeAll(() => {

@@ -1,9 +1,9 @@
 import { computed, defineComponent } from 'actview';
 import { createElement } from '@actview/jsx';
-import { FloatingPortal } from '../../floating-ui-actview';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { useComboboxRootContext } from '../root/ComboboxRootContext';
-import { ComboboxPortalContext } from './ComboboxPortalContext';
+import { FloatingPortal } from '@/floating-ui-actview';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { useComboboxRootContext } from '@/combobox/root/ComboboxRootContext';
+import { ComboboxPortalContext } from '@/combobox/portal/ComboboxPortalContext';
 
 /**
  * A portal element that moves the popup to a different part of the DOM.

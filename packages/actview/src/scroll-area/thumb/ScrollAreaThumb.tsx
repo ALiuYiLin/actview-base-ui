@@ -1,8 +1,8 @@
 import { computed } from 'actview';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { useScrollAreaRootContext } from '../root/ScrollAreaRootContext';
-import { useScrollAreaScrollbarContext } from '../scrollbar/ScrollAreaScrollbarContext';
-import { useRenderElement } from '../../internals/useRenderElement';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { useScrollAreaRootContext } from '@/scroll-area/root/ScrollAreaRootContext';
+import { useScrollAreaScrollbarContext } from '@/scroll-area/scrollbar/ScrollAreaScrollbarContext';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * The draggable part of the scrollbar that indicates the current scroll position.

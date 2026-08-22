@@ -6,17 +6,17 @@ import { visuallyHidden, visuallyHiddenInput } from '@base-ui/actview-utils/visu
 import { ownerDocument } from '@base-ui/actview-utils/owner';
 import { platform } from '@base-ui/actview-utils/platform';
 import { formatNumber } from '@base-ui/actview-utils/formatNumber';
-import { activeElement } from '../../floating-ui-actview/utils';
-import { NumberFieldRootContext } from './NumberFieldRootContext';
-import type { InputMode } from './NumberFieldRootContext';
-import { useFieldRootContext } from '../../internals/field-root-context/FieldRootContext';
-import { useFormContext } from '../../internals/form-context/FormContext';
-import type { FieldRootState } from '../../field/root/FieldRoot';
-import { useLabelableId } from '../../internals/labelable-provider/useLabelableId';
-import type { BaseUIComponentProps, HTMLProps, RefObject } from '../../internals/types';
-import type { RefValue } from '../../types';
-import { stateAttributesMapping } from '../utils/stateAttributesMapping';
-import { useRenderElement } from '../../internals/useRenderElement';
+import { activeElement } from '@/floating-ui-actview/utils';
+import { NumberFieldRootContext } from '@/number-field/root/NumberFieldRootContext';
+import type { InputMode } from '@/number-field/root/NumberFieldRootContext';
+import { useFieldRootContext } from '@/internals/field-root-context/FieldRootContext';
+import { useFormContext } from '@/internals/form-context/FormContext';
+import type { FieldRootState } from '@/field/root/FieldRoot';
+import { useLabelableId } from '@/internals/labelable-provider/useLabelableId';
+import type { BaseUIComponentProps, HTMLProps, RefObject } from '@/internals/types';
+import type { RefValue } from '@/types';
+import { stateAttributesMapping } from '@/number-field/utils/stateAttributesMapping';
+import { useRenderElement } from '@/internals/useRenderElement';
 import {
   getFormatParts,
   getNumberLocaleDetails,
@@ -26,18 +26,18 @@ import {
   BASE_NON_NUMERIC_SYMBOLS,
   MINUS_SIGNS_WITH_ASCII,
   PLUS_SIGNS_WITH_ASCII,
-} from '../utils/parse';
-import { toValidatedNumber } from '../utils/validate';
-import type { EventWithOptionalKeyState } from '../utils/types';
-import type { ChangeEventCustomProperties, IncrementValueParameters } from '../utils/types';
+} from '@/number-field/utils/parse';
+import { toValidatedNumber } from '@/number-field/utils/validate';
+import type { EventWithOptionalKeyState } from '@/number-field/utils/types';
+import type { ChangeEventCustomProperties, IncrementValueParameters } from '@/number-field/utils/types';
 import {
   createChangeEventDetails,
   createGenericEventDetails,
   type BaseUIChangeEventDetails,
   type BaseUIGenericEventDetails,
   type ReasonToEvent,
-} from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
+} from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
 
 /**
  * Groups all parts of the number field and manages its state.

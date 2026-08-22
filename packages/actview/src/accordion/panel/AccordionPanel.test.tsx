@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { AccordionPanel } from './AccordionPanel';
-import { AccordionItemContext } from '../item/AccordionItemContext';
-import { CollapsibleRootContext } from '../../collapsible/root/CollapsibleRootContext';
-import { AccordionRootContext } from '../root/AccordionRootContext';
+import { AccordionPanel } from '@/accordion/panel/AccordionPanel';
+import { AccordionItemContext } from '@/accordion/item/AccordionItemContext';
+import { CollapsibleRootContext } from '@/collapsible/root/CollapsibleRootContext';
+import { AccordionRootContext } from '@/accordion/root/AccordionRootContext';
 import { createRenderer } from '../../../test/createRenderer';
 
 const rootContext = {

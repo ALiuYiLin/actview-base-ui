@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ComboboxStatus } from './ComboboxStatus';
+import { ComboboxStatus } from '@/combobox/status/ComboboxStatus';
 import { createRenderer } from '../../../test/createRenderer';
 
 describe('<Combobox.Status />', () => {

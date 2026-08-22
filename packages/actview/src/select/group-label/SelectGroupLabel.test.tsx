@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { SelectGroupLabel } from './SelectGroupLabel';
-import { SelectGroupContext } from '../group/SelectGroupContext';
+import { SelectGroupLabel } from '@/select/group-label/SelectGroupLabel';
+import { SelectGroupContext } from '@/select/group/SelectGroupContext';
 import { createRenderer } from '../../../test/createRenderer';
 
 let labelId: string | undefined;

@@ -1,9 +1,9 @@
 import { defineComponent } from 'actview';
 import type { VNodeChild } from '@actview/jsx';
-import type { BaseUIComponentProps } from '../../internals/types';
-import { useMeterRootContext } from '../root/MeterRootContext';
-import type { MeterRootState } from '../root/MeterRoot';
-import { mergePropsN } from '../../merge-props';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { useMeterRootContext } from '@/meter/root/MeterRootContext';
+import type { MeterRootState } from '@/meter/root/MeterRoot';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * A text element displaying the current value.

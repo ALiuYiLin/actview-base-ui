@@ -1,9 +1,9 @@
 import { computed, ref } from 'actview';
-import type { BaseUIComponentProps, NativeButtonProps, HTMLProps } from '../../internals/types';
-import { useToastRootContext } from '../root/ToastRootContext';
-import { useToastProviderContext } from '../provider/ToastProviderContext';
-import { useButton } from '../../internals/use-button/useButton';
-import { useRenderElement } from '../../internals/useRenderElement';
+import type { BaseUIComponentProps, NativeButtonProps, HTMLProps } from '@/internals/types';
+import { useToastRootContext } from '@/toast/root/ToastRootContext';
+import { useToastProviderContext } from '@/toast/provider/ToastProviderContext';
+import { useButton } from '@/internals/use-button/useButton';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * Closes the toast when clicked.

@@ -1,11 +1,11 @@
 import { ActviewStore } from '@base-ui/actview-utils/store';
 import { EMPTY_OBJECT, NOOP } from '@base-ui/actview-utils/empty';
 import type { InteractionType } from '@base-ui/actview-utils/useEnhancedClickHandler';
-import type { MenuParent, MenuRoot } from '../root/MenuRoot';
-import { FloatingTreeStore } from '../../floating-ui-actview/components/FloatingTreeStore';
-import { HTMLProps } from '../../internals/types';
-import { NullStore } from '../../utils/NullStore';
-import type { AdaptiveOriginMiddleware } from '../../utils/adaptiveOriginConstants';
+import type { MenuParent, MenuRoot } from '@/menu/root/MenuRoot';
+import { FloatingTreeStore } from '@/floating-ui-actview/components/FloatingTreeStore';
+import { HTMLProps } from '@/internals/types';
+import { NullStore } from '@/utils/NullStore';
+import type { AdaptiveOriginMiddleware } from '@/utils/adaptiveOriginConstants';
 import {
   createInitialPopupStoreState,
   PopupStoreContext,
@@ -13,7 +13,7 @@ import {
   PopupStoreState,
   PopupTriggerMap,
   type PopupTriggerStoreKeys,
-} from '../../utils/popups';
+} from '@/utils/popups';
 
 export type State<Payload> = PopupStoreState<Payload> & {
   disabled: boolean;

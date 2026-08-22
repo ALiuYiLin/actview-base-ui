@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { AutocompleteValue } from './AutocompleteValue';
-import { ComboboxInputValueContext } from '../../combobox/root/ComboboxRootContext';
+import { AutocompleteValue } from '@/autocomplete/value/AutocompleteValue';
+import { ComboboxInputValueContext } from '@/combobox/root/ComboboxRootContext';
 import { createRenderer } from '../../../test/createRenderer';
 
 describe('<Autocomplete.Value />', () => {

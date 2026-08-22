@@ -1,8 +1,8 @@
 import { computed } from 'actview';
 import type { ComputedRef } from '@actview/core';
-import { useComboboxDerivedItemsContext } from '../root/ComboboxRootContext';
-import { type ComboboxStore } from '../store';
-import type { Side } from '../../internals/useAnchorPositioning';
+import { useComboboxDerivedItemsContext } from '@/combobox/root/ComboboxRootContext';
+import { type ComboboxStore } from '@/combobox/store';
+import type { Side } from '@/internals/useAnchorPositioning';
 
 /**
  * The popup side is only meaningful while the positioner is mounted, as the store retains the

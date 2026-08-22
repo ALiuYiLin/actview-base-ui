@@ -1,7 +1,7 @@
 import type { Ref } from '@actview/core';
 import type { VNodeChild } from '@actview/jsx';
-import { useToastProviderContext } from './provider/ToastProviderContext';
-import type { ToastPositionerProps } from './positioner/ToastPositioner';
+import { useToastProviderContext } from '@/toast/provider/ToastProviderContext';
+import type { ToastPositionerProps } from '@/toast/positioner/ToastPositioner';
 
 /**
  * Returns the array of toasts and methods to manage them.

@@ -1,8 +1,8 @@
 import { watch } from 'actview';
 import type { VNode, VNodeChild } from '@actview/jsx';
 import { useId } from '@base-ui/actview-utils/useId';
-import { useToastRootContext, type ToastLabelIdSetter } from '../root/ToastRootContext';
-import { isRenderableNode } from './isRenderableNode';
+import { useToastRootContext, type ToastLabelIdSetter } from '@/toast/root/ToastRootContext';
+import { isRenderableNode } from '@/toast/utils/isRenderableNode';
 
 /**
  * Shared logic for `Toast.Title` and `Toast.Description`, which only differ by the rendered tag,

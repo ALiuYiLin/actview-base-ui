@@ -1,9 +1,9 @@
 import { computed, onUnmounted, ref, shallowRef, watch } from 'actview';
 import { addEventListener } from '@base-ui/actview-utils/addEventListener';
 import { getWindow } from '@floating-ui/utils/dom';
-import type { ContextData, ElementProps, FloatingContext, FloatingRootContext } from '../types';
-import { contains, getTarget } from '../utils/element';
-import { isMouseLikePointerType } from '../utils/event';
+import type { ContextData, ElementProps, FloatingContext, FloatingRootContext } from '@/floating-ui-actview/types';
+import { contains, getTarget } from '@/floating-ui-actview/utils/element';
+import { isMouseLikePointerType } from '@/floating-ui-actview/utils/event';
 
 function createVirtualElement(
   domElement: Element | null | undefined,

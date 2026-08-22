@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { ComboboxChip } from './ComboboxChip';
-import { ComboboxChipsContext } from '../chips/ComboboxChipsContext';
-import { ComboboxRootContext } from '../root/ComboboxRootContext';
-import { DirectionContext } from '../../internals/direction-context/DirectionContext';
+import { ComboboxChip } from '@/combobox/chip/ComboboxChip';
+import { ComboboxChipsContext } from '@/combobox/chips/ComboboxChipsContext';
+import { ComboboxRootContext } from '@/combobox/root/ComboboxRootContext';
+import { DirectionContext } from '@/internals/direction-context/DirectionContext';
 import { createRenderer } from '../../../test/createRenderer';
 
 const mockStore = {

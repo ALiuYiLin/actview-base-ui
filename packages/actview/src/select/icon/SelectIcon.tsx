@@ -1,10 +1,10 @@
 import { computed, defineComponent, useRootElement } from 'actview';
-import type { HTMLProps } from '../../internals/types';
-import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
-import type { BaseUIComponentProps } from '../../internals/types';
-import { useSelectRootContext } from '../root/SelectRootContext';
-import { triggerOpenStateMapping } from '../../utils/popupStateMapping';
-import { mergePropsN } from '../../merge-props';
+import type { HTMLProps } from '@/internals/types';
+import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { useSelectRootContext } from '@/select/root/SelectRootContext';
+import { triggerOpenStateMapping } from '@/utils/popupStateMapping';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * An icon that indicates that the trigger button opens a select popup.

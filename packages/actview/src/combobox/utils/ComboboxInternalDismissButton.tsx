@@ -1,9 +1,9 @@
 import { visuallyHiddenInput } from '@base-ui/actview-utils/visuallyHidden';
 import { useMergedRefs } from '@base-ui/actview-utils/useMergedRefs';
-import { useButton } from '../../internals/use-button';
-import { createChangeEventDetails } from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
-import { useComboboxRootContext } from '../root/ComboboxRootContext';
+import { useButton } from '@/internals/use-button';
+import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
+import { useComboboxRootContext } from '@/combobox/root/ComboboxRootContext';
 
 type DismissEvent = MouseEvent | KeyboardEvent;
 

@@ -1,4 +1,4 @@
-import type { FieldValidityData } from '../root/FieldRoot';
+import type { FieldValidityData } from '@/field/root/FieldRoot';
 
 /**
  * Combines the field's client-side, stateful validity data with the external invalid state to

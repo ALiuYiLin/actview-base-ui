@@ -1,3 +1,3 @@
-export { Separator } from './Separator';
+export { Separator } from '@/separator/Separator';
 
-export type * from './Separator';
+export type * from '@/separator/Separator';

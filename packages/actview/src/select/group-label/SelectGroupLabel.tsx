@@ -1,8 +1,8 @@
 import { defineComponent, useRootElement, watch } from 'actview';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { useBaseUiId } from '../../internals/useBaseUiId';
-import { useSelectGroupContext } from '../group/SelectGroupContext';
-import { mergePropsN } from '../../merge-props';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { useBaseUiId } from '@/internals/useBaseUiId';
+import { useSelectGroupContext } from '@/select/group/SelectGroupContext';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * An accessible label that is automatically associated with its parent group.

@@ -1,12 +1,12 @@
 import { computed, defineComponent, useRootElement, watch } from 'actview';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import type { RadioRootState } from '../root/RadioRoot';
-import { useRadioRootContext } from '../root/RadioRootContext';
-import { stateAttributesMapping } from '../utils/stateAttributesMapping';
-import { useOpenChangeComplete } from '../../internals/useOpenChangeComplete';
-import { type TransitionStatus, useTransitionStatus } from '../../internals/useTransitionStatus';
-import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
-import { mergePropsN } from '../../merge-props';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import type { RadioRootState } from '@/radio/root/RadioRoot';
+import { useRadioRootContext } from '@/radio/root/RadioRootContext';
+import { stateAttributesMapping } from '@/radio/utils/stateAttributesMapping';
+import { useOpenChangeComplete } from '@/internals/useOpenChangeComplete';
+import { type TransitionStatus, useTransitionStatus } from '@/internals/useTransitionStatus';
+import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * Indicates whether the radio button is selected.

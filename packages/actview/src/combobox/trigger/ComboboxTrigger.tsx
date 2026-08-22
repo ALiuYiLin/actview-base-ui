@@ -1,29 +1,29 @@
 import { computed, watch } from 'actview';
 import { useTimeout } from '@base-ui/actview-utils/useTimeout';
 import { ownerDocument } from '@base-ui/actview-utils/owner';
-import type { BaseUIComponentProps, HTMLProps, NativeButtonProps } from '../../internals/types';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { useButton } from '../../internals/use-button';
+import type { BaseUIComponentProps, HTMLProps, NativeButtonProps } from '@/internals/types';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useButton } from '@/internals/use-button';
 import {
   useComboboxFloatingContext,
   useComboboxInputValueContext,
   useComboboxRootContext,
-} from '../root/ComboboxRootContext';
-import { triggerStateAttributesMapping } from '../utils/stateAttributesMapping';
-import { useFieldRootContext } from '../../internals/field-root-context/FieldRootContext';
-import { useLabelableContext } from '../../internals/labelable-provider/LabelableContext';
-import { stopEvent, contains, getTarget } from '../../floating-ui-actview/utils';
-import { isMouseWithinBounds } from '../../utils/getPseudoElementBounds';
-import type { FieldRootState } from '../../field/root/FieldRoot';
-import { createChangeEventDetails } from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
-import { useClick, useTypeahead } from '../../floating-ui-actview';
-import type { Side } from '../../internals/useAnchorPositioning';
-import { useLabelableId } from '../../internals/labelable-provider/useLabelableId';
-import { resolveAriaLabelledBy } from '../../utils/resolveAriaLabelledBy';
-import { getComboboxPopupId } from '../root/utils';
-import { useListEmpty, usePopupSide } from '../utils/parts';
-import { mergeProps } from '../../merge-props';
+} from '@/combobox/root/ComboboxRootContext';
+import { triggerStateAttributesMapping } from '@/combobox/utils/stateAttributesMapping';
+import { useFieldRootContext } from '@/internals/field-root-context/FieldRootContext';
+import { useLabelableContext } from '@/internals/labelable-provider/LabelableContext';
+import { stopEvent, contains, getTarget } from '@/floating-ui-actview/utils';
+import { isMouseWithinBounds } from '@/utils/getPseudoElementBounds';
+import type { FieldRootState } from '@/field/root/FieldRoot';
+import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
+import { useClick, useTypeahead } from '@/floating-ui-actview';
+import type { Side } from '@/internals/useAnchorPositioning';
+import { useLabelableId } from '@/internals/labelable-provider/useLabelableId';
+import { resolveAriaLabelledBy } from '@/utils/resolveAriaLabelledBy';
+import { getComboboxPopupId } from '@/combobox/root/utils';
+import { useListEmpty, usePopupSide } from '@/combobox/utils/parts';
+import { mergeProps } from '@/merge-props';
 
 /**
  * A button that opens the popup.

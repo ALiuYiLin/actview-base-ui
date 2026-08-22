@@ -2,7 +2,7 @@ import { unref } from 'actview';
 import type { Ref } from '@actview/core';
 import { ownerDocument } from '@base-ui/actview-utils/owner';
 import { EMPTY_OBJECT } from '@base-ui/actview-utils/empty';
-import type { BaseUIEvent } from '../internals/types';
+import type { BaseUIEvent } from '@/internals/types';
 
 type MaybeRef<T> = T | Ref<T>;
 

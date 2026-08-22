@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { MenuGroupLabel } from './MenuGroupLabel';
-import { MenuGroupContext } from '../group/MenuGroupContext';
+import { MenuGroupLabel } from '@/menu/group-label/MenuGroupLabel';
+import { MenuGroupContext } from '@/menu/group/MenuGroupContext';
 import { createRenderer } from '../../../test/createRenderer';
 
 let labelId: string | undefined;

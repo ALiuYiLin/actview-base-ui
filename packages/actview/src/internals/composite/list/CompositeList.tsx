@@ -3,7 +3,7 @@ import { ref, watch } from 'actview';
 import type { VNodeChild } from '@actview/jsx';
 import { useRefWithInit } from '@base-ui/actview-utils/useRefWithInit';
 import { useIsoLayoutEffect } from '@base-ui/actview-utils/useIsoLayoutEffect';
-import { CompositeListContext, type CompositeListRegistration } from './CompositeListContext';
+import { CompositeListContext, type CompositeListRegistration } from '@/internals/composite/list/CompositeListContext';
 
 export type CompositeMetadata<CustomMetadata> = {
   index: number;

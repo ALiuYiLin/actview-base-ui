@@ -1,12 +1,12 @@
 import { computed, defineComponent, watch } from 'actview';
-import { triggerOpenStateMapping } from '../../utils/collapsibleOpenStateMapping';
-import type { BaseUIComponentProps, HTMLProps, NativeButtonProps } from '../../internals/types';
-import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
-import { useButton } from '../../internals/use-button';
-import { useCollapsibleRootContext } from '../../collapsible/root/CollapsibleRootContext';
-import type { AccordionItemState } from '../item/AccordionItem';
-import { useAccordionItemContext } from '../item/AccordionItemContext';
-import { mergePropsN } from '../../merge-props';
+import { triggerOpenStateMapping } from '@/utils/collapsibleOpenStateMapping';
+import type { BaseUIComponentProps, HTMLProps, NativeButtonProps } from '@/internals/types';
+import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import { useButton } from '@/internals/use-button';
+import { useCollapsibleRootContext } from '@/collapsible/root/CollapsibleRootContext';
+import type { AccordionItemState } from '@/accordion/item/AccordionItem';
+import { useAccordionItemContext } from '@/accordion/item/AccordionItemContext';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * A button that opens and closes the corresponding panel.

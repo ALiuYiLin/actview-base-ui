@@ -5,21 +5,21 @@ import { ownerDocument, ownerWindow } from '@base-ui/actview-utils/owner';
 import { useAnimationFrame } from '@base-ui/actview-utils/useAnimationFrame';
 import { clamp } from '@base-ui/actview-utils/clamp';
 import { activeElement, contains, getTarget } from '@base-ui/actview-utils/shadowDom';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
 import {
   createChangeEventDetails,
   createGenericEventDetails,
-} from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { useDirection } from '../../internals/direction-context/DirectionContext';
-import { useSliderRootContext } from '../root/SliderRootContext';
-import { sliderStateAttributesMapping } from '../root/stateAttributesMapping';
-import type { SliderRootState } from '../root/SliderRoot';
-import { getMidpoint } from '../utils/getMidpoint';
-import { roundValueToStep } from '../utils/roundValueToStep';
-import { validateMinimumDistance } from '../utils/validateMinimumDistance';
-import { resolveThumbCollision } from '../utils/resolveThumbCollision';
+} from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useDirection } from '@/internals/direction-context/DirectionContext';
+import { useSliderRootContext } from '@/slider/root/SliderRootContext';
+import { sliderStateAttributesMapping } from '@/slider/root/stateAttributesMapping';
+import type { SliderRootState } from '@/slider/root/SliderRoot';
+import { getMidpoint } from '@/slider/utils/getMidpoint';
+import { roundValueToStep } from '@/slider/utils/roundValueToStep';
+import { validateMinimumDistance } from '@/slider/utils/validateMinimumDistance';
+import { resolveThumbCollision } from '@/slider/utils/resolveThumbCollision';
 
 const INTENTIONAL_DRAG_COUNT_THRESHOLD = 2;
 

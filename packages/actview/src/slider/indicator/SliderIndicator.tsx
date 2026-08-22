@@ -1,11 +1,11 @@
 import { computed } from 'actview';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { valueToPercent } from '../../utils/valueToPercent';
-import { useIsHydrating } from '../../utils/useIsHydrating';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { useSliderRootContext } from '../root/SliderRootContext';
-import { sliderStateAttributesMapping } from '../root/stateAttributesMapping';
-import type { SliderRootState } from '../root/SliderRoot';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { valueToPercent } from '@/utils/valueToPercent';
+import { useIsHydrating } from '@/utils/useIsHydrating';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useSliderRootContext } from '@/slider/root/SliderRootContext';
+import { sliderStateAttributesMapping } from '@/slider/root/stateAttributesMapping';
+import type { SliderRootState } from '@/slider/root/SliderRoot';
 
 type StyleObject = Record<string, string | number | undefined>;
 

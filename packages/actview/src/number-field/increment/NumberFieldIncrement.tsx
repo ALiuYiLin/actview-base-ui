@@ -1,6 +1,6 @@
-import type { BaseUIComponentProps, NativeButtonProps } from '../../internals/types';
-import { useNumberFieldStepperButton } from '../root/useNumberFieldStepperButton';
-import type { NumberFieldRootState } from '../root/NumberFieldRoot';
+import type { BaseUIComponentProps, NativeButtonProps } from '@/internals/types';
+import { useNumberFieldStepperButton } from '@/number-field/root/useNumberFieldStepperButton';
+import type { NumberFieldRootState } from '@/number-field/root/NumberFieldRoot';
 
 /**
  * A stepper button that increases the field value when clicked.

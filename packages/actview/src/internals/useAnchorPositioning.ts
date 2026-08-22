@@ -30,8 +30,8 @@ import {
 import { ownerDocument, ownerWindow } from '@base-ui/actview-utils/owner';
 import { computed, ref, unref, watch } from 'actview';
 import type { ComputedRef, Ref } from '@actview/core';
-import { useDirection } from './direction-context/DirectionContext';
-import type { StyleValue } from './types';
+import { useDirection } from '@/internals/direction-context/DirectionContext';
+import type { StyleValue } from '@/internals/types';
 
 const AVAILABLE_WIDTH_VAR = '--available-width';
 const AVAILABLE_HEIGHT_VAR = '--available-height';

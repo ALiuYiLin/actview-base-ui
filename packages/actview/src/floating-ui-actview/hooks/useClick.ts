@@ -1,11 +1,11 @@
 import { useAnimationFrame } from '@base-ui/actview-utils/useAnimationFrame';
 import { useTimeout } from '@base-ui/actview-utils/useTimeout';
 import { EMPTY_OBJECT } from '@base-ui/actview-utils/empty';
-import type { ElementProps, FloatingContext, FloatingRootContext } from '../types';
-import { getTarget, isTypeableElement } from '../utils/element';
-import { isMouseLikePointerType, isVirtualPointerEvent } from '../utils/event';
-import { createChangeEventDetails } from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
+import type { ElementProps, FloatingContext, FloatingRootContext } from '@/floating-ui-actview/types';
+import { getTarget, isTypeableElement } from '@/floating-ui-actview/utils/element';
+import { isMouseLikePointerType, isVirtualPointerEvent } from '@/floating-ui-actview/utils/event';
+import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
 
 export interface UseClickProps {
   /**

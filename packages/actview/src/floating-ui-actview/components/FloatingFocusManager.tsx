@@ -10,7 +10,7 @@ import { platform } from '@base-ui/actview-utils/platform';
 import type { InteractionType } from '@base-ui/actview-utils/useEnhancedClickHandler';
 import { useAnimationFrame } from '@base-ui/actview-utils/useAnimationFrame';
 import { ownerDocument, ownerWindow } from '@base-ui/actview-utils/owner';
-import { renderFocusGuard } from '../../utils/FocusGuard';
+import { renderFocusGuard } from '@/utils/FocusGuard';
 import {
   activeElement,
   contains,
@@ -18,8 +18,8 @@ import {
   isTypeableCombobox,
   getFloatingFocusElement,
   isTypeableElement,
-} from '../utils/element';
-import { isVirtualClick, isVirtualPointerEvent, stopEvent } from '../utils/event';
+} from '@/floating-ui-actview/utils/element';
+import { isVirtualClick, isVirtualPointerEvent, stopEvent } from '@/floating-ui-actview/utils/event';
 import {
   tabbable,
   focusable,
@@ -28,21 +28,21 @@ import {
   getNextTabbable,
   getPreviousTabbable,
   type FocusableElement,
-} from '../utils/tabbable';
-import { getNodeAncestors, getNodeChildren } from '../utils/nodes';
-import { isElementVisible } from '../utils/composite';
-import type { FloatingContext, FloatingRootContext } from '../types';
-import { createChangeEventDetails } from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
-import { createAttribute } from '../utils/createAttribute';
-import { enqueueFocus } from '../utils/enqueueFocus';
-import { markOthers } from '../utils/markOthers';
-import { usePortalContext } from './FloatingPortal';
-import { useFloatingTree } from './FloatingTree';
-import { FloatingTreeStore } from '../components/FloatingTreeStore';
-import { CLICK_TRIGGER_IDENTIFIER } from '../../internals/constants';
-import type { FloatingUIOpenChangeDetails } from '../../internals/types';
-import { resolveRef } from '../../utils/resolveRef';
+} from '@/floating-ui-actview/utils/tabbable';
+import { getNodeAncestors, getNodeChildren } from '@/floating-ui-actview/utils/nodes';
+import { isElementVisible } from '@/floating-ui-actview/utils/composite';
+import type { FloatingContext, FloatingRootContext } from '@/floating-ui-actview/types';
+import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
+import { createAttribute } from '@/floating-ui-actview/utils/createAttribute';
+import { enqueueFocus } from '@/floating-ui-actview/utils/enqueueFocus';
+import { markOthers } from '@/floating-ui-actview/utils/markOthers';
+import { usePortalContext } from '@/floating-ui-actview/components/FloatingPortal';
+import { useFloatingTree } from '@/floating-ui-actview/components/FloatingTree';
+import { FloatingTreeStore } from '@/floating-ui-actview/components/FloatingTreeStore';
+import { CLICK_TRIGGER_IDENTIFIER } from '@/internals/constants';
+import type { FloatingUIOpenChangeDetails } from '@/internals/types';
+import { resolveRef } from '@/utils/resolveRef';
 
 function getEventType(event: Event, lastInteractionType?: InteractionType): InteractionType {
   const win = ownerWindow(getTarget(event));

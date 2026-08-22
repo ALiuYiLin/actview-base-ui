@@ -1,8 +1,8 @@
 import { defineComponent, useRootElement, watch } from 'actview';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { useBaseUiId } from '../../internals/useBaseUiId';
-import { useMenuGroupRootContext } from '../group/MenuGroupContext';
-import { mergePropsN } from '../../merge-props';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { useBaseUiId } from '@/internals/useBaseUiId';
+import { useMenuGroupRootContext } from '@/menu/group/MenuGroupContext';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * An accessible label that is automatically associated with its parent group.

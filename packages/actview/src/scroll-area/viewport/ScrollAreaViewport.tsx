@@ -3,17 +3,17 @@ import { platform } from '@base-ui/actview-utils/platform';
 import { useTimeout } from '@base-ui/actview-utils/useTimeout';
 import { clamp } from '@base-ui/actview-utils/clamp';
 import { useIsoLayoutEffect } from '@base-ui/actview-utils/useIsoLayoutEffect';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { useScrollAreaRootContext } from '../root/ScrollAreaRootContext';
-import { ScrollAreaViewportContext } from './ScrollAreaViewportContext';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { useDirection } from '../../internals/direction-context/DirectionContext';
-import { getOffset } from '../utils/getOffset';
-import { MIN_THUMB_SIZE } from '../constants';
-import { styleDisableScrollbar } from '../../utils/styles';
-import { scrollAreaStateAttributesMapping } from '../root/stateAttributes';
-import type { HiddenState, ScrollAreaRootState } from '../root/ScrollAreaRoot';
-import { normalizeScrollOffset } from '../../utils/scrollEdges';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { useScrollAreaRootContext } from '@/scroll-area/root/ScrollAreaRootContext';
+import { ScrollAreaViewportContext } from '@/scroll-area/viewport/ScrollAreaViewportContext';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useDirection } from '@/internals/direction-context/DirectionContext';
+import { getOffset } from '@/scroll-area/utils/getOffset';
+import { MIN_THUMB_SIZE } from '@/scroll-area/constants';
+import { styleDisableScrollbar } from '@/utils/styles';
+import { scrollAreaStateAttributesMapping } from '@/scroll-area/root/stateAttributes';
+import type { HiddenState, ScrollAreaRootState } from '@/scroll-area/root/ScrollAreaRoot';
+import { normalizeScrollOffset } from '@/utils/scrollEdges';
 
 // CSS variable names inlined so `ScrollAreaViewportCssVars` tree-shakes out.
 const OVERFLOW_EDGE_VARS = [

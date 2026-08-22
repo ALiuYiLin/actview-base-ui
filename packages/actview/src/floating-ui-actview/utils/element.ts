@@ -1,8 +1,8 @@
 import { isElement, isHTMLElement } from '@floating-ui/utils/dom';
 import { platform } from '@base-ui/actview-utils/platform';
 import { activeElement, contains, getTarget } from '@base-ui/actview-utils/shadowDom';
-import { FOCUSABLE_ATTRIBUTE, TYPEABLE_SELECTOR } from './constants';
-import type { PopupTriggerMap } from '../../utils/popups';
+import { FOCUSABLE_ATTRIBUTE, TYPEABLE_SELECTOR } from '@/floating-ui-actview/utils/constants';
+import type { PopupTriggerMap } from '@/utils/popups';
 
 export { activeElement, contains, getTarget };
 

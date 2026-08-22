@@ -1,6 +1,6 @@
 import type { ComputedRef } from '@actview/core';
-import type { ToastStore } from '../store';
-import { createContext } from '../../internals/createContext';
+import type { ToastStore } from '@/toast/store';
+import { createContext } from '@/internals/createContext';
 
 export type ToastContext = ToastStore;
 

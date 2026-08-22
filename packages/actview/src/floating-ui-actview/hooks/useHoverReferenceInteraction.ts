@@ -5,26 +5,26 @@ import { ownerDocument } from '@base-ui/actview-utils/owner';
 import { useOnMount } from '@base-ui/actview-utils/useOnMount';
 import { useValueAsRef } from '@base-ui/actview-utils/useValueAsRef';
 import { isElement } from '@floating-ui/utils/dom';
-import { createChangeEventDetails } from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
-import type { FloatingUIOpenChangeDetails, HTMLProps } from '../../internals/types';
-import { useFloatingTree } from '../components/FloatingTree';
-import type { FloatingTreeStore } from '../components/FloatingTreeStore';
-import type { Delay, FloatingContext, FloatingRootContext } from '../types';
-import { contains, getTarget } from '../utils/element';
-import { isMouseLikePointerType } from '../utils/event';
+import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
+import type { FloatingUIOpenChangeDetails, HTMLProps } from '@/internals/types';
+import { useFloatingTree } from '@/floating-ui-actview/components/FloatingTree';
+import type { FloatingTreeStore } from '@/floating-ui-actview/components/FloatingTreeStore';
+import type { Delay, FloatingContext, FloatingRootContext } from '@/floating-ui-actview/types';
+import { contains, getTarget } from '@/floating-ui-actview/utils/element';
+import { isMouseLikePointerType } from '@/floating-ui-actview/utils/event';
 import {
   applySafePolygonPointerEventsMutation,
   clearSafePolygonPointerEventsMutation,
   useHoverInteractionSharedState,
-} from './useHoverInteractionSharedState';
-import type { HandleClose, HandleCloseContextBase } from './useHoverShared';
+} from '@/floating-ui-actview/hooks/useHoverInteractionSharedState';
+import type { HandleClose, HandleCloseContextBase } from '@/floating-ui-actview/hooks/useHoverShared';
 import {
   getDelay,
   getRestMs,
   isClickLikeOpenEvent as isClickLikeOpenEventShared,
   isInsideEnabledTrigger,
-} from './useHoverShared';
+} from '@/floating-ui-actview/hooks/useHoverShared';
 
 export interface UseHoverReferenceInteractionProps {
   enabled?: boolean | undefined;

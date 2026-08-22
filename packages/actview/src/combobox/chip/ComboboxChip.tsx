@@ -1,16 +1,16 @@
 import { computed, defineComponent, ref } from 'actview';
 import { useMergedRefs } from '@base-ui/actview-utils/useMergedRefs';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { useComboboxChipsContext } from '../chips/ComboboxChipsContext';
-import { useComboboxRootContext } from '../root/ComboboxRootContext';
-import { useCompositeListItem } from '../../internals/composite/list/useCompositeListItem';
-import { ComboboxChipContext } from './ComboboxChipContext';
-import { stopEvent } from '../../floating-ui-actview/utils';
-import { createChangeEventDetails } from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
-import { useDirection } from '../../internals/direction-context/DirectionContext';
-import { getChipNavigationKeys, getIndexAfterChipRemoval } from '../utils/parts';
-import { mergePropsN } from '../../merge-props';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { useComboboxChipsContext } from '@/combobox/chips/ComboboxChipsContext';
+import { useComboboxRootContext } from '@/combobox/root/ComboboxRootContext';
+import { useCompositeListItem } from '@/internals/composite/list/useCompositeListItem';
+import { ComboboxChipContext } from '@/combobox/chip/ComboboxChipContext';
+import { stopEvent } from '@/floating-ui-actview/utils';
+import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
+import { useDirection } from '@/internals/direction-context/DirectionContext';
+import { getChipNavigationKeys, getIndexAfterChipRemoval } from '@/combobox/utils/parts';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * An individual chip that represents a value in a multiselectable input.

@@ -1,5 +1,5 @@
-import type { TransitionStatus } from './useTransitionStatus';
-import type { StateAttributesMapping } from './getStateAttributesProps';
+import type { TransitionStatus } from '@/internals/useTransitionStatus';
+import type { StateAttributesMapping } from '@/internals/getStateAttributesProps';
 
 export enum TransitionStatusDataAttributes {
   /**

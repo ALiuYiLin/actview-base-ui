@@ -1,8 +1,8 @@
 import { computed, defineComponent } from 'actview';
-import type { BaseUIComponentProps } from '../../internals/types';
-import type { ToolbarRoot } from '../root/ToolbarRoot';
-import { useToolbarRootContext } from '../root/ToolbarRootContext';
-import { CompositeItem } from '../../internals/composite/item/CompositeItem';
+import type { BaseUIComponentProps } from '@/internals/types';
+import type { ToolbarRoot } from '@/toolbar/root/ToolbarRoot';
+import { useToolbarRootContext } from '@/toolbar/root/ToolbarRootContext';
+import { CompositeItem } from '@/internals/composite/item/CompositeItem';
 
 const TOOLBAR_LINK_METADATA = {
   // Links cannot be disabled, but they still occupy a focusable composite item slot.

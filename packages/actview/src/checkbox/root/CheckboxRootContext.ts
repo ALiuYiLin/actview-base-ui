@@ -1,6 +1,6 @@
 import type { ComputedRef } from '@actview/core';
-import { createContext } from '../../internals/createContext';
-import type { CheckboxRootState } from './CheckboxRoot';
+import { createContext } from '@/internals/createContext';
+import type { CheckboxRootState } from '@/checkbox/root/CheckboxRoot';
 
 export type CheckboxRootContext = CheckboxRootState;
 

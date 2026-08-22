@@ -2,12 +2,12 @@ import { computed } from 'actview';
 import { useControlled } from '@base-ui/actview-utils/useControlled';
 import { warn } from '@base-ui/actview-utils/warn';
 import { EMPTY_ARRAY } from '@base-ui/actview-utils/empty';
-import type { BaseUIComponentProps, HTMLProps, Orientation } from '../../internals/types';
-import { CompositeList } from '../../internals/composite/list/CompositeList';
-import { AccordionRootContext } from './AccordionRootContext';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { type BaseUIChangeEventDetails } from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
+import type { BaseUIComponentProps, HTMLProps, Orientation } from '@/internals/types';
+import { CompositeList } from '@/internals/composite/list/CompositeList';
+import { AccordionRootContext } from '@/accordion/root/AccordionRootContext';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { type BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
 
 const rootStateAttributesMapping = {
   value: () => null,

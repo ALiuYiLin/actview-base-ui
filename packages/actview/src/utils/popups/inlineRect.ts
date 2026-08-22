@@ -1,6 +1,6 @@
 import type { Middleware, VirtualElement } from '@floating-ui/dom';
 import { isElement } from '@floating-ui/utils/dom';
-import type { HTMLProps } from '../../internals/types';
+import type { HTMLProps } from '@/internals/types';
 
 // Floating UI ships an `inline()` middleware. This local version mirrors its line-rect
 // selection while adding trigger identity checks, delayed-open hit-line reuse, and

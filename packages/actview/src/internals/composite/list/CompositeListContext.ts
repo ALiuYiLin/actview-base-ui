@@ -1,5 +1,5 @@
 import type { ComputedRef } from '@actview/core';
-import { createContext } from '../../createContext';
+import { createContext } from '@/internals/createContext';
 
 export interface CompositeListRegistration<Metadata> {
   metadata: Metadata | null;

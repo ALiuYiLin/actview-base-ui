@@ -1,7 +1,7 @@
-import type { FieldValidityData } from '../../field/root/FieldRoot';
-import { NOOP } from '../noop';
-import type { Form } from '../../form';
-import type { RefObject } from '../types';
+import type { FieldValidityData } from '@/field/root/FieldRoot';
+import { NOOP } from '@/internals/noop';
+import type { Form } from '@/form';
+import type { RefObject } from '@/internals/types';
 import { createContext } from 'actview';
 import type { Ref } from '@actview/core';
 

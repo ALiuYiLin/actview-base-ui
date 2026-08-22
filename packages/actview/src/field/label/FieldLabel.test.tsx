@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { FieldRoot } from '../root/FieldRoot';
-import { FieldLabel } from './FieldLabel';
-import { FieldControl } from '../control/FieldControl';
-import { FieldItem } from '../item/FieldItem';
+import { FieldRoot } from '@/field/root/FieldRoot';
+import { FieldLabel } from '@/field/label/FieldLabel';
+import { FieldControl } from '@/field/control/FieldControl';
+import { FieldItem } from '@/field/item/FieldItem';
 import { createRenderer } from '../../../test/createRenderer';
 
 describe('<Field.Label />', () => {

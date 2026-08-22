@@ -1,8 +1,8 @@
 import { onUnmounted, unref, watch } from 'actview';
-import { getCombinedFieldValidityData } from '../../field/utils/getCombinedFieldValidityData';
-import { useFormContext } from '../form-context/FormContext';
-import type { FieldValidityData } from '../../field/root/FieldRoot';
-import type { MaybeRef, RefObject } from '../types';
+import { getCombinedFieldValidityData } from '@/field/utils/getCombinedFieldValidityData';
+import { useFormContext } from '@/internals/form-context/FormContext';
+import type { FieldValidityData } from '@/field/root/FieldRoot';
+import type { MaybeRef, RefObject } from '@/internals/types';
 
 export interface FieldControlRegistration {
   controlRef: RefObject<any>;

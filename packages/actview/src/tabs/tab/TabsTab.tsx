@@ -1,20 +1,20 @@
 import { computed, watch } from 'actview';
 import type { Ref } from '@actview/core';
 import { ownerDocument } from '@base-ui/actview-utils/owner';
-import { useBaseUiId } from '../../internals/useBaseUiId';
-import { useRenderElement } from '../../internals/useRenderElement';
-import type { BaseUIComponentProps, NativeButtonProps } from '../../internals/types';
-import { useButton } from '../../internals/use-button';
-import { ACTIVE_COMPOSITE_ITEM } from '../../internals/composite/constants';
-import { useCompositeItem } from '../../internals/composite/item/useCompositeItem';
-import { useCompositeRootContext } from '../../internals/composite/root/CompositeRootContext';
-import type { TabsRoot } from '../root/TabsRoot';
-import { useTabsRootContext } from '../root/TabsRootContext';
-import { tabsStateAttributesMapping } from '../root/stateAttributesMapping';
-import { useTabsListContext } from '../list/TabsListContext';
-import { createChangeEventDetails } from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
-import { activeElement, contains } from '../../floating-ui-actview/utils';
+import { useBaseUiId } from '@/internals/useBaseUiId';
+import { useRenderElement } from '@/internals/useRenderElement';
+import type { BaseUIComponentProps, NativeButtonProps } from '@/internals/types';
+import { useButton } from '@/internals/use-button';
+import { ACTIVE_COMPOSITE_ITEM } from '@/internals/composite/constants';
+import { useCompositeItem } from '@/internals/composite/item/useCompositeItem';
+import { useCompositeRootContext } from '@/internals/composite/root/CompositeRootContext';
+import type { TabsRoot } from '@/tabs/root/TabsRoot';
+import { useTabsRootContext } from '@/tabs/root/TabsRootContext';
+import { tabsStateAttributesMapping } from '@/tabs/root/stateAttributesMapping';
+import { useTabsListContext } from '@/tabs/list/TabsListContext';
+import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
+import { activeElement, contains } from '@/floating-ui-actview/utils';
 
 /**
  * An individual interactive tab button that toggles the corresponding panel.

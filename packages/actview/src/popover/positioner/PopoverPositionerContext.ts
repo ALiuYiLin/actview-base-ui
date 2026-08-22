@@ -1,7 +1,7 @@
 import type { ComputedRef } from '@actview/core';
-import type { Align, Side } from '../../internals/useAnchorPositioning';
-import type { StyleValue } from '../../internals/types';
-import { createContext } from '../../internals/createContext';
+import type { Align, Side } from '@/internals/useAnchorPositioning';
+import type { StyleValue } from '@/internals/types';
+import { createContext } from '@/internals/createContext';
 
 export interface PopoverPositionerContext {
   side: Side;

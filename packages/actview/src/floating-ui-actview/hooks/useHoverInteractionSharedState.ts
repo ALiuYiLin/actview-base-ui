@@ -2,8 +2,8 @@ import { useOnMount } from '@base-ui/actview-utils/useOnMount';
 import { useRefWithInit } from '@base-ui/actview-utils/useRefWithInit';
 import { Timeout } from '@base-ui/actview-utils/useTimeout';
 
-import type { ContextData, FloatingRootContext, SafePolygonOptions } from '../types';
-import { isInteractiveElement } from '../utils';
+import type { ContextData, FloatingRootContext, SafePolygonOptions } from '@/floating-ui-actview/types';
+import { isInteractiveElement } from '@/floating-ui-actview/utils';
 
 export { isInteractiveElement };
 

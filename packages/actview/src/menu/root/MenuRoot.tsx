@@ -13,24 +13,24 @@ import {
   useListNavigation,
   useTypeahead,
   useSyncedFloatingRootContext,
-} from '../../floating-ui-actview';
-import { MenuRootContext, useMenuRootContext } from './MenuRootContext';
-import { MenubarContext, useMenubarContext } from '../../menubar/MenubarContext';
-import { TYPEAHEAD_RESET_MS } from '../../internals/constants';
-import { useDirection } from '../../internals/direction-context/DirectionContext';
-import { useOpenInteractionType } from '../../utils/useOpenInteractionType';
+} from '@/floating-ui-actview';
+import { MenuRootContext, useMenuRootContext } from '@/menu/root/MenuRootContext';
+import { MenubarContext, useMenubarContext } from '@/menubar/MenubarContext';
+import { TYPEAHEAD_RESET_MS } from '@/internals/constants';
+import { useDirection } from '@/internals/direction-context/DirectionContext';
+import { useOpenInteractionType } from '@/utils/useOpenInteractionType';
 import {
   createChangeEventDetails,
   type BaseUIChangeEventDetails,
-} from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
+} from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
 import {
   ContextMenuRootContext,
   useContextMenuRootContext,
-} from '../../context-menu/root/ContextMenuRootContext';
-import { mergeProps } from '../../merge-props';
-import { MenuStore, type State as MenuStoreState } from '../store/MenuStore';
-import { MenuHandle } from '../store/MenuHandle';
+} from '@/context-menu/root/ContextMenuRootContext';
+import { mergeProps } from '@/merge-props';
+import { MenuStore, type State as MenuStoreState } from '@/menu/store/MenuStore';
+import { MenuHandle } from '@/menu/store/MenuHandle';
 import {
   attachPreventUnmountOnClose,
   FOCUSABLE_POPUP_PROPS,
@@ -40,8 +40,8 @@ import {
   useImplicitActiveTrigger,
   useOpenStateTransitions,
   usePopupInteractionProps,
-} from '../../utils/popups';
-import { useMenuSubmenuRootContext } from '../submenu-root/MenuSubmenuRootContext';
+} from '@/utils/popups';
+import { useMenuSubmenuRootContext } from '@/menu/submenu-root/MenuSubmenuRootContext';
 
 /**
  * Groups all parts of the menu.

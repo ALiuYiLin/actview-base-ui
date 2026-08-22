@@ -1,25 +1,25 @@
 import { computed } from 'actview';
-import { usePopoverRootContext } from '../root/PopoverRootContext';
-import { useButton } from '../../internals/use-button';
-import type { BaseUIComponentProps, HTMLProps, NativeButtonProps } from '../../internals/types';
-import { mergeProps } from '../../merge-props';
+import { usePopoverRootContext } from '@/popover/root/PopoverRootContext';
+import { useButton } from '@/internals/use-button';
+import type { BaseUIComponentProps, HTMLProps, NativeButtonProps } from '@/internals/types';
+import { mergeProps } from '@/merge-props';
 import {
   triggerOpenStateMapping,
   pressableTriggerOpenStateMapping,
-} from '../../utils/popupStateMapping';
-import type { StateAttributesMapping } from '../../internals/getStateAttributesProps';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { CLICK_TRIGGER_IDENTIFIER } from '../../internals/constants';
-import { safePolygon, useClick, useHoverReferenceInteraction } from '../../floating-ui-actview';
-import { OPEN_DELAY } from '../utils/constants';
-import { PopoverHandle } from '../store/PopoverHandle';
-import { useBaseUiId } from '../../internals/useBaseUiId';
-import { renderFocusGuard } from '../../utils/FocusGuard';
-import { REASONS } from '../../internals/reasons';
-import { usePopupHandleStore, useTriggerDataForwarding } from '../../utils/popups';
-import { useTriggerFocusGuards } from '../../utils/popups/useTriggerFocusGuards';
-import { useOpenMethodTriggerProps } from '../../utils/useOpenInteractionType';
-import type { PopoverStore } from '../store/PopoverStore';
+} from '@/utils/popupStateMapping';
+import type { StateAttributesMapping } from '@/internals/getStateAttributesProps';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { CLICK_TRIGGER_IDENTIFIER } from '@/internals/constants';
+import { safePolygon, useClick, useHoverReferenceInteraction } from '@/floating-ui-actview';
+import { OPEN_DELAY } from '@/popover/utils/constants';
+import { PopoverHandle } from '@/popover/store/PopoverHandle';
+import { useBaseUiId } from '@/internals/useBaseUiId';
+import { renderFocusGuard } from '@/utils/FocusGuard';
+import { REASONS } from '@/internals/reasons';
+import { usePopupHandleStore, useTriggerDataForwarding } from '@/utils/popups';
+import { useTriggerFocusGuards } from '@/utils/popups/useTriggerFocusGuards';
+import { useOpenMethodTriggerProps } from '@/utils/useOpenInteractionType';
+import type { PopoverStore } from '@/popover/store/PopoverStore';
 
 /**
  * A button that opens the popover.

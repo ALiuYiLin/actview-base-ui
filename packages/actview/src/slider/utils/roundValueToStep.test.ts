@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getDecimalPrecision, roundValueToStep } from './roundValueToStep';
+import { getDecimalPrecision, roundValueToStep } from '@/slider/utils/roundValueToStep';
 
 describe('roundValueToStep', () => {
   describe('getDecimalPrecision', () => {

@@ -1,6 +1,6 @@
 import { computed, defineComponent } from 'actview';
-import { useComboboxRootContext } from '../root/ComboboxRootContext';
-import { resolveMultipleLabels, resolveSelectedLabel } from '../../internals/resolveValueLabel';
+import { useComboboxRootContext } from '@/combobox/root/ComboboxRootContext';
+import { resolveMultipleLabels, resolveSelectedLabel } from '@/internals/resolveValueLabel';
 
 /**
  * The current value of the combobox.

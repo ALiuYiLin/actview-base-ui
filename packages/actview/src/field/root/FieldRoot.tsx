@@ -1,19 +1,19 @@
 import { computed, defineComponent, onMounted, onUnmounted, ref, watch } from 'actview';
 import { createElement } from '@actview/jsx';
-import { FieldRootContext } from '../../internals/field-root-context/FieldRootContext';
+import { FieldRootContext } from '@/internals/field-root-context/FieldRootContext';
 import {
   DEFAULT_VALIDITY_STATE,
   fieldValidityMapping,
-} from '../../internals/field-constants/constants';
-import { useFieldsetRootContext } from '../../fieldset/root/FieldsetRootContext';
-import type { Form } from '../../form';
-import { useFormContext } from '../../internals/form-context/FormContext';
-import { LabelableProvider } from '../../internals/labelable-provider';
-import type { BaseUIComponentProps, RefObject } from '../../internals/types';
-import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
-import { useFieldValidation } from './useFieldValidation';
-import { useFieldControlRegistration } from '../../internals/field-register-control/useFieldControlRegistration';
-import { mergePropsN } from '../../merge-props';
+} from '@/internals/field-constants/constants';
+import { useFieldsetRootContext } from '@/fieldset/root/FieldsetRootContext';
+import type { Form } from '@/form';
+import { useFormContext } from '@/internals/form-context/FormContext';
+import { LabelableProvider } from '@/internals/labelable-provider';
+import type { BaseUIComponentProps, RefObject } from '@/internals/types';
+import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import { useFieldValidation } from '@/field/root/useFieldValidation';
+import { useFieldControlRegistration } from '@/internals/field-register-control/useFieldControlRegistration';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * @internal

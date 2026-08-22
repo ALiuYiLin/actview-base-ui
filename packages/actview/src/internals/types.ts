@@ -5,7 +5,7 @@ import type {
   ComponentRenderFn,
   HTMLProps,
   RefValue,
-} from '../types';
+} from '@/types';
 
 export type { HTMLProps, BaseUIEvent, ComponentRenderFn, RefValue, VNode };
 

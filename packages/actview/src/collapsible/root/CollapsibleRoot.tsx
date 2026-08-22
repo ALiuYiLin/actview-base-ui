@@ -1,12 +1,12 @@
 import { computed } from 'actview';
-import { BaseUIComponentProps } from '../../internals/types';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { useCollapsibleRoot } from './useCollapsibleRoot';
-import { CollapsibleRootContext } from './CollapsibleRootContext';
-import { collapsibleStateAttributesMapping } from './stateAttributesMapping';
-import type { BaseUIChangeEventDetails } from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
-import type { TransitionStatus } from '../../internals/useTransitionStatus';
+import { BaseUIComponentProps } from '@/internals/types';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useCollapsibleRoot } from '@/collapsible/root/useCollapsibleRoot';
+import { CollapsibleRootContext } from '@/collapsible/root/CollapsibleRootContext';
+import { collapsibleStateAttributesMapping } from '@/collapsible/root/stateAttributesMapping';
+import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
+import type { TransitionStatus } from '@/internals/useTransitionStatus';
 
 /**
  * Groups all parts of the collapsible.

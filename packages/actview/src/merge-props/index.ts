@@ -1,1 +1,1 @@
-export * from './mergeProps';
+export * from '@/merge-props/mergeProps';

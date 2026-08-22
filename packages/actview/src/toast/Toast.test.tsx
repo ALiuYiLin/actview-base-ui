@@ -1,14 +1,14 @@
 import { describe, expect, it, beforeAll, afterEach } from 'vitest';
-import { ToastProvider } from './provider/ToastProvider';
-import { ToastViewport } from './viewport/ToastViewport';
-import { ToastRoot } from './root/ToastRoot';
-import { ToastContent } from './content/ToastContent';
-import { ToastTitle } from './title/ToastTitle';
-import { ToastDescription } from './description/ToastDescription';
-import { ToastClose } from './close/ToastClose';
-import { ToastAction } from './action/ToastAction';
-import { useToastManager } from './useToastManager';
-import { createToastManager } from './createToastManager';
+import { ToastProvider } from '@/toast/provider/ToastProvider';
+import { ToastViewport } from '@/toast/viewport/ToastViewport';
+import { ToastRoot } from '@/toast/root/ToastRoot';
+import { ToastContent } from '@/toast/content/ToastContent';
+import { ToastTitle } from '@/toast/title/ToastTitle';
+import { ToastDescription } from '@/toast/description/ToastDescription';
+import { ToastClose } from '@/toast/close/ToastClose';
+import { ToastAction } from '@/toast/action/ToastAction';
+import { useToastManager } from '@/toast/useToastManager';
+import { createToastManager } from '@/toast/createToastManager';
 import { createRenderer } from '../../test/createRenderer';
 
 beforeAll(() => {

@@ -1,5 +1,5 @@
-import type { BaseUIComponentProps, Orientation } from '../../internals/types';
-import { useRenderElement } from '../../internals/useRenderElement';
+import type { BaseUIComponentProps, Orientation } from '@/internals/types';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * A visual separator between items.

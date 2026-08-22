@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ComboboxSeparator } from './ComboboxSeparator';
+import { ComboboxSeparator } from '@/combobox/separator/ComboboxSeparator';
 import { createRenderer } from '../../../test/createRenderer';
 
 describe('<Combobox.Separator />', () => {

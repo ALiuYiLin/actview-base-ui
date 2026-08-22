@@ -1,18 +1,18 @@
 import { computed } from 'actview';
 import { NOOP } from '@base-ui/actview-utils/empty';
-import { useMenuRootContext } from '../root/MenuRootContext';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { useBaseUiId } from '../../internals/useBaseUiId';
-import type { BaseUIComponentProps, HTMLProps, NonNativeButtonProps } from '../../internals/types';
-import { useMenuRadioGroupContext } from '../radio-group/MenuRadioGroupContext';
-import { MenuRadioItemContext } from './MenuRadioItemContext';
-import { itemMapping } from '../utils/stateAttributesMapping';
-import { useCompositeListItem } from '../../internals/composite/list/useCompositeListItem';
-import { REGULAR_ITEM, useMenuItem } from '../item/useMenuItem';
-import { useMenuPositionerContext } from '../positioner/MenuPositionerContext';
-import { createChangeEventDetails } from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
-import { mergeProps } from '../../merge-props';
+import { useMenuRootContext } from '@/menu/root/MenuRootContext';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useBaseUiId } from '@/internals/useBaseUiId';
+import type { BaseUIComponentProps, HTMLProps, NonNativeButtonProps } from '@/internals/types';
+import { useMenuRadioGroupContext } from '@/menu/radio-group/MenuRadioGroupContext';
+import { MenuRadioItemContext } from '@/menu/radio-item/MenuRadioItemContext';
+import { itemMapping } from '@/menu/utils/stateAttributesMapping';
+import { useCompositeListItem } from '@/internals/composite/list/useCompositeListItem';
+import { REGULAR_ITEM, useMenuItem } from '@/menu/item/useMenuItem';
+import { useMenuPositionerContext } from '@/menu/positioner/MenuPositionerContext';
+import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
+import { mergeProps } from '@/merge-props';
 
 /**
  * A menu item that works like a radio button in a given group.

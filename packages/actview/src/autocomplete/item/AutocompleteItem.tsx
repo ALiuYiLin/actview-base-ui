@@ -1,5 +1,5 @@
-import { ComboboxItem } from '../../combobox/item/ComboboxItem';
-import type { BaseUIComponentProps, NonNativeButtonProps } from '../../internals/types';
+import { ComboboxItem } from '@/combobox/item/ComboboxItem';
+import type { BaseUIComponentProps, NonNativeButtonProps } from '@/internals/types';
 
 /**
  * An individual item in the list.

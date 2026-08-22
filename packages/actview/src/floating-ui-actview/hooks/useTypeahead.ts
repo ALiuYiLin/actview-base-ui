@@ -2,10 +2,10 @@ import { watch } from 'actview';
 import { useTimeout } from '@base-ui/actview-utils/useTimeout';
 import { useValueAsRef } from '@base-ui/actview-utils/useValueAsRef';
 import { EMPTY_ARRAY } from '@base-ui/actview-utils/empty';
-import { isElementVisible, isListIndexDisabled, type DisabledIndices } from '../utils/composite';
-import type { ElementProps, FloatingContext, FloatingRootContext } from '../types';
-import { contains } from '../utils/element';
-import { stopEvent } from '../utils/event';
+import { isElementVisible, isListIndexDisabled, type DisabledIndices } from '@/floating-ui-actview/utils/composite';
+import type { ElementProps, FloatingContext, FloatingRootContext } from '@/floating-ui-actview/types';
+import { contains } from '@/floating-ui-actview/utils/element';
+import { stopEvent } from '@/floating-ui-actview/utils/event';
 
 export interface UseTypeaheadProps {
   /**

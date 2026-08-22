@@ -2,15 +2,15 @@ import { unref } from 'actview';
 import { EMPTY_OBJECT } from '@base-ui/actview-utils/empty';
 import { useTimeout } from '@base-ui/actview-utils/useTimeout';
 import { useRefWithInit } from '@base-ui/actview-utils/useRefWithInit';
-import { useLabelableContext } from '../../internals/labelable-provider/LabelableContext';
-import { mergeProps } from '../../merge-props';
-import { DEFAULT_VALIDITY_STATE } from '../../internals/field-constants/constants';
-import { useFormContext } from '../../internals/form-context/FormContext';
-import type { Form } from '../../form';
-import { getCombinedFieldValidityData } from '../utils/getCombinedFieldValidityData';
-import type { HTMLProps, MaybeRef, RefObject } from '../../internals/types';
+import { useLabelableContext } from '@/internals/labelable-provider/LabelableContext';
+import { mergeProps } from '@/merge-props';
+import { DEFAULT_VALIDITY_STATE } from '@/internals/field-constants/constants';
+import { useFormContext } from '@/internals/form-context/FormContext';
+import type { Form } from '@/form';
+import { getCombinedFieldValidityData } from '@/field/utils/getCombinedFieldValidityData';
+import type { HTMLProps, MaybeRef, RefObject } from '@/internals/types';
 import type { Ref } from '@actview/core';
-import type { FieldValidityData, FieldRootState } from './FieldRoot';
+import type { FieldValidityData, FieldRootState } from '@/field/root/FieldRoot';
 
 const validityKeys = Object.keys(DEFAULT_VALIDITY_STATE) as Array<keyof ValidityState>;
 

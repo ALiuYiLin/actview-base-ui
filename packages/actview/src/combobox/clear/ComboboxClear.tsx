@@ -1,17 +1,17 @@
 import { computed, defineComponent } from 'actview';
-import { useComboboxInputValueContext, useComboboxRootContext } from '../root/ComboboxRootContext';
-import type { BaseUIComponentProps, HTMLProps, NativeButtonProps } from '../../internals/types';
-import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
-import { useButton } from '../../internals/use-button';
-import { useFieldRootContext } from '../../internals/field-root-context/FieldRootContext';
-import { useTransitionStatus } from '../../internals/useTransitionStatus';
-import { transitionStatusMapping } from '../../internals/stateAttributesMapping';
-import type { StateAttributesMapping } from '../../internals/getStateAttributesProps';
-import { useOpenChangeComplete } from '../../internals/useOpenChangeComplete';
-import { createChangeEventDetails } from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
-import { triggerOpenStateMapping } from '../../utils/popupStateMapping';
-import { mergePropsN } from '../../merge-props';
+import { useComboboxInputValueContext, useComboboxRootContext } from '@/combobox/root/ComboboxRootContext';
+import type { BaseUIComponentProps, HTMLProps, NativeButtonProps } from '@/internals/types';
+import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import { useButton } from '@/internals/use-button';
+import { useFieldRootContext } from '@/internals/field-root-context/FieldRootContext';
+import { useTransitionStatus } from '@/internals/useTransitionStatus';
+import { transitionStatusMapping } from '@/internals/stateAttributesMapping';
+import type { StateAttributesMapping } from '@/internals/getStateAttributesProps';
+import { useOpenChangeComplete } from '@/internals/useOpenChangeComplete';
+import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
+import { triggerOpenStateMapping } from '@/utils/popupStateMapping';
+import { mergePropsN } from '@/merge-props';
 
 const stateAttributesMapping: StateAttributesMapping<ComboboxClearState> = {
   ...transitionStatusMapping,

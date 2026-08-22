@@ -1,8 +1,8 @@
 import { computed, defineComponent, ref } from 'actview';
-import { FieldsetRootContext, useFieldsetRootContext } from './FieldsetRootContext';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
-import { mergePropsN } from '../../merge-props';
+import { FieldsetRootContext, useFieldsetRootContext } from '@/fieldset/root/FieldsetRootContext';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * Groups a shared legend with related controls.

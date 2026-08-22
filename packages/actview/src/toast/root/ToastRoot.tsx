@@ -2,22 +2,22 @@ import { computed, onUnmounted, ref, watch } from 'actview';
 import { addEventListener } from '@base-ui/actview-utils/addEventListener';
 import { ownerDocument } from '@base-ui/actview-utils/owner';
 import { inertValue } from '@base-ui/actview-utils/inertValue';
-import { activeElement, contains, getTarget } from '../../floating-ui-actview/utils';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import type { ToastObject as ToastObjectType } from '../useToastManager';
-import { ToastRootContext } from './ToastRootContext';
-import { transitionStatusMapping } from '../../internals/stateAttributesMapping';
-import type { TransitionStatus } from '../../internals/useTransitionStatus';
-import { useToastProviderContext } from '../provider/ToastProviderContext';
-import { StateAttributesMapping } from '../../internals/getStateAttributesProps';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { useOpenChangeComplete } from '../../internals/useOpenChangeComplete';
+import { activeElement, contains, getTarget } from '@/floating-ui-actview/utils';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import type { ToastObject as ToastObjectType } from '@/toast/useToastManager';
+import { ToastRootContext } from '@/toast/root/ToastRootContext';
+import { transitionStatusMapping } from '@/internals/stateAttributesMapping';
+import type { TransitionStatus } from '@/internals/useTransitionStatus';
+import { useToastProviderContext } from '@/toast/provider/ToastProviderContext';
+import { StateAttributesMapping } from '@/internals/getStateAttributesProps';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useOpenChangeComplete } from '@/internals/useOpenChangeComplete';
 import {
   BASE_UI_SWIPE_IGNORE_SELECTOR,
   LEGACY_SWIPE_IGNORE_SELECTOR,
-} from '../../internals/constants';
-import { getDisplacement } from '../../utils/useSwipeDismiss';
-import { getElementTransform } from '../../utils/getElementTransform';
+} from '@/internals/constants';
+import { getDisplacement } from '@/utils/useSwipeDismiss';
+import { getElementTransform } from '@/utils/getElementTransform';
 
 export const toastRootStateAttributesMapping: StateAttributesMapping<ToastRootState> = {
   ...transitionStatusMapping,

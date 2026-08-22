@@ -1,10 +1,10 @@
 import { computed } from 'actview';
-import { useMenuRootContext } from '../root/MenuRootContext';
-import { useMenuPositionerContext } from '../positioner/MenuPositionerContext';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { popupViewportStateMapping, usePopupViewport } from '../../utils/usePopupViewport';
-import { mergeProps } from '../../merge-props';
+import { useMenuRootContext } from '@/menu/root/MenuRootContext';
+import { useMenuPositionerContext } from '@/menu/positioner/MenuPositionerContext';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { popupViewportStateMapping, usePopupViewport } from '@/utils/usePopupViewport';
+import { mergeProps } from '@/merge-props';
 
 /**
  * A viewport for displaying content transitions.

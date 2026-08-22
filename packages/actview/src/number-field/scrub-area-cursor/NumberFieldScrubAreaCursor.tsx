@@ -1,12 +1,12 @@
 import { Teleport, computed } from 'actview';
 import { platform } from '@base-ui/actview-utils/platform';
 import { ownerDocument } from '@base-ui/actview-utils/owner';
-import { useNumberFieldRootContext } from '../root/NumberFieldRootContext';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import type { NumberFieldRootState } from '../root/NumberFieldRoot';
-import { stateAttributesMapping } from '../utils/stateAttributesMapping';
-import { useNumberFieldScrubAreaContext } from '../scrub-area/NumberFieldScrubAreaContext';
-import { useRenderElement } from '../../internals/useRenderElement';
+import { useNumberFieldRootContext } from '@/number-field/root/NumberFieldRootContext';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import type { NumberFieldRootState } from '@/number-field/root/NumberFieldRoot';
+import { stateAttributesMapping } from '@/number-field/utils/stateAttributesMapping';
+import { useNumberFieldScrubAreaContext } from '@/number-field/scrub-area/NumberFieldScrubAreaContext';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 const CURSOR_STYLE = {
   position: 'fixed',

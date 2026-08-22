@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
-import { FieldRoot } from '../root/FieldRoot';
-import { FieldItem } from './FieldItem';
-import { FieldLabel } from '../label/FieldLabel';
-import { CheckboxRoot } from '../../checkbox/root/CheckboxRoot';
-import { CheckboxGroup } from '../../checkbox-group/CheckboxGroup';
-import { RadioRoot } from '../../radio/root/RadioRoot';
-import { RadioGroup } from '../../radio-group/RadioGroup';
+import { FieldRoot } from '@/field/root/FieldRoot';
+import { FieldItem } from '@/field/item/FieldItem';
+import { FieldLabel } from '@/field/label/FieldLabel';
+import { CheckboxRoot } from '@/checkbox/root/CheckboxRoot';
+import { CheckboxGroup } from '@/checkbox-group/CheckboxGroup';
+import { RadioRoot } from '@/radio/root/RadioRoot';
+import { RadioGroup } from '@/radio-group/RadioGroup';
 import { createRenderer } from '../../../test/createRenderer';
 
 describe('<Field.Item />', () => {

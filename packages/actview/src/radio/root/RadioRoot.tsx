@@ -7,26 +7,26 @@ import type {
   HTMLProps,
   NonNativeButtonProps,
   RefValue,
-} from '../../internals/types';
-import { createChangeEventDetails } from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
-import { stateAttributesMapping } from '../utils/stateAttributesMapping';
-import { dispatchClickWithModifiers } from '../../utils/dispatchClickWithModifiers';
-import { useBaseUiId } from '../../internals/useBaseUiId';
-import { useButton } from '../../internals/use-button';
-import { ACTIVE_COMPOSITE_ITEM } from '../../internals/composite/constants';
-import { CompositeItem } from '../../internals/composite/item/CompositeItem';
-import type { FieldRootState } from '../../field/root/FieldRoot';
-import { useFieldRootContext } from '../../internals/field-root-context/FieldRootContext';
-import { useFieldItemContext } from '../../field/item/FieldItemContext';
-import { useLabelableContext } from '../../internals/labelable-provider/LabelableContext';
-import { useAriaLabelledBy } from '../../internals/labelable-provider/useAriaLabelledBy';
-import { useLabelableId } from '../../internals/labelable-provider/useLabelableId';
-import { useRadioGroupContext } from '../../radio-group/RadioGroupContext';
-import { serializeValue } from '../../internals/serializeValue';
-import { RadioRootContext } from './RadioRootContext';
-import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
-import { mergePropsN } from '../../merge-props';
+} from '@/internals/types';
+import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
+import { stateAttributesMapping } from '@/radio/utils/stateAttributesMapping';
+import { dispatchClickWithModifiers } from '@/utils/dispatchClickWithModifiers';
+import { useBaseUiId } from '@/internals/useBaseUiId';
+import { useButton } from '@/internals/use-button';
+import { ACTIVE_COMPOSITE_ITEM } from '@/internals/composite/constants';
+import { CompositeItem } from '@/internals/composite/item/CompositeItem';
+import type { FieldRootState } from '@/field/root/FieldRoot';
+import { useFieldRootContext } from '@/internals/field-root-context/FieldRootContext';
+import { useFieldItemContext } from '@/field/item/FieldItemContext';
+import { useLabelableContext } from '@/internals/labelable-provider/LabelableContext';
+import { useAriaLabelledBy } from '@/internals/labelable-provider/useAriaLabelledBy';
+import { useLabelableId } from '@/internals/labelable-provider/useLabelableId';
+import { useRadioGroupContext } from '@/radio-group/RadioGroupContext';
+import { serializeValue } from '@/internals/serializeValue';
+import { RadioRootContext } from '@/radio/root/RadioRootContext';
+import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * Represents the radio button itself.

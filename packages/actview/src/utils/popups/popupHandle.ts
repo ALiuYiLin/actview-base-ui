@@ -2,9 +2,9 @@ import { AnimationFrame } from '@base-ui/actview-utils/useAnimationFrame';
 import {
   createChangeEventDetails,
   type BaseUIChangeEventDetails,
-} from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
-import type { PopupTriggerMap } from './popupTriggerMap';
+} from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
+import type { PopupTriggerMap } from '@/utils/popups/popupTriggerMap';
 
 /**
  * Minimal store contract exposed by popup handles to detached triggers.

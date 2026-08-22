@@ -1,3 +1,3 @@
-export { RadioGroup } from './RadioGroup';
+export { RadioGroup } from '@/radio-group/RadioGroup';
 
-export type * from './RadioGroup';
+export type * from '@/radio-group/RadioGroup';

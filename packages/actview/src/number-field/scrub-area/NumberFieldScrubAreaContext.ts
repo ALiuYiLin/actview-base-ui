@@ -1,5 +1,5 @@
-import type { RefObject } from '../../internals/types';
-import { createContext } from '../../internals/createContext';
+import type { RefObject } from '@/internals/types';
+import { createContext } from '@/internals/createContext';
 import type { ComputedRef } from '@actview/core';
 
 export interface NumberFieldScrubAreaContext {

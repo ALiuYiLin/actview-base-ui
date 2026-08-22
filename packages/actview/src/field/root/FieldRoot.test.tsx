@@ -1,16 +1,16 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ref, onUpdated } from 'actview';
-import { FieldRoot } from './FieldRoot';
-import { FieldLabel } from '../label/FieldLabel';
-import { FieldControl } from '../control/FieldControl';
-import { FieldDescription } from '../description/FieldDescription';
-import { FieldError } from '../error/FieldError';
-import { FieldItem } from '../item/FieldItem';
-import { Form } from '../../form';
-import { CheckboxRoot } from '../../checkbox/root/CheckboxRoot';
-import { CheckboxGroup } from '../../checkbox-group/CheckboxGroup';
-import { RadioRoot } from '../../radio/root/RadioRoot';
-import { RadioGroup } from '../../radio-group/RadioGroup';
+import { FieldRoot } from '@/field/root/FieldRoot';
+import { FieldLabel } from '@/field/label/FieldLabel';
+import { FieldControl } from '@/field/control/FieldControl';
+import { FieldDescription } from '@/field/description/FieldDescription';
+import { FieldError } from '@/field/error/FieldError';
+import { FieldItem } from '@/field/item/FieldItem';
+import { Form } from '@/form';
+import { CheckboxRoot } from '@/checkbox/root/CheckboxRoot';
+import { CheckboxGroup } from '@/checkbox-group/CheckboxGroup';
+import { RadioRoot } from '@/radio/root/RadioRoot';
+import { RadioGroup } from '@/radio-group/RadioGroup';
 import { createRenderer } from '../../../test/createRenderer';
 
 describe('<Field.Root />', () => {

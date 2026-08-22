@@ -1,4 +1,4 @@
-import * as REASONS from './reason-parts';
+import * as REASONS from '@/internals/reason-parts';
 
 export { REASONS };
 export type BaseUIEventReasons = typeof REASONS;

@@ -1,9 +1,9 @@
-import { createCollatorItemFilter, createSingleSelectionCollatorFilter } from './index';
+import { createCollatorItemFilter, createSingleSelectionCollatorFilter } from '@/combobox/root/utils';
 import {
   type Filter,
   type GetFilterParameters as UseFilterOptions,
   getFilter,
-} from '../../../internals/filter';
+} from '@/internals/filter';
 
 export type { Filter, UseFilterOptions };
 

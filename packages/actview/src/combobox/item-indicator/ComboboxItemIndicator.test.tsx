@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ComboboxItemIndicator } from './ComboboxItemIndicator';
-import { ComboboxItemContext } from '../item/ComboboxItemContext';
+import { ComboboxItemIndicator } from '@/combobox/item-indicator/ComboboxItemIndicator';
+import { ComboboxItemContext } from '@/combobox/item/ComboboxItemContext';
 import { createRenderer } from '../../../test/createRenderer';
 
 const itemContext = {

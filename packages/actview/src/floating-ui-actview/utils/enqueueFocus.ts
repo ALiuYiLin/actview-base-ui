@@ -1,5 +1,5 @@
 import { NOOP } from '@base-ui/actview-utils/empty';
-import type { FocusableElement } from './tabbable';
+import type { FocusableElement } from '@/floating-ui-actview/utils/tabbable';
 
 interface Options {
   preventScroll?: boolean | undefined;

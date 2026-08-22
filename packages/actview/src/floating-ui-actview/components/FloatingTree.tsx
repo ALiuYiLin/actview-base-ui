@@ -2,9 +2,9 @@ import { computed, onMounted, onUnmounted } from 'actview';
 import type { VNodeChild } from '@actview/jsx';
 import { useId } from '@base-ui/actview-utils/useId';
 import { useRefWithInit } from '@base-ui/actview-utils/useRefWithInit';
-import { createContext } from '../../internals/createContext';
-import type { FloatingNodeType, FloatingTreeType } from '../types';
-import { FloatingTreeStore } from './FloatingTreeStore';
+import { createContext } from '@/internals/createContext';
+import type { FloatingNodeType, FloatingTreeType } from '@/floating-ui-actview/types';
+import { FloatingTreeStore } from '@/floating-ui-actview/components/FloatingTreeStore';
 
 const FloatingNodeContext = createContext<FloatingNodeType | null>(
   'base-ui-floating-node-context',

@@ -1,16 +1,16 @@
 import { computed, defineComponent, ref, useRootElement, watch } from 'actview';
 import { error } from '@base-ui/actview-utils/error';
-import { useBaseUiId } from '../internals/useBaseUiId';
-import type { BaseUIComponentProps, NativeButtonProps } from '../internals/types';
-import { useToggleGroupContext } from '../toggle-group/ToggleGroupContext';
-import { CompositeItem } from '../internals/composite/item/CompositeItem';
+import { useBaseUiId } from '@/internals/useBaseUiId';
+import type { BaseUIComponentProps, NativeButtonProps } from '@/internals/types';
+import { useToggleGroupContext } from '@/toggle-group/ToggleGroupContext';
+import { CompositeItem } from '@/internals/composite/item/CompositeItem';
 import {
   type BaseUIChangeEventDetails,
   createChangeEventDetails,
-} from '../internals/createBaseUIEventDetails';
-import { REASONS } from '../internals/reasons';
-import { useButton } from '../internals/use-button/useButton';
-import { mergePropsN } from '../merge-props';
+} from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
+import { useButton } from '@/internals/use-button/useButton';
+import { mergePropsN } from '@/merge-props';
 
 
 /**

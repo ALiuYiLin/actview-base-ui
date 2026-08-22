@@ -1,15 +1,15 @@
 /**
  * @internal
  */
-export { FloatingDelayGroup, useDelayGroup } from './components/FloatingDelayGroup';
+export { FloatingDelayGroup, useDelayGroup } from '@/floating-ui-actview/components/FloatingDelayGroup';
 /**
  * @internal
  */
-export { FloatingFocusManager } from './components/FloatingFocusManager';
+export { FloatingFocusManager } from '@/floating-ui-actview/components/FloatingFocusManager';
 /**
  * @internal
  */
-export { FloatingPortal, useFloatingPortalNode } from './components/FloatingPortal';
+export { FloatingPortal, useFloatingPortalNode } from '@/floating-ui-actview/components/FloatingPortal';
 /**
  * @internal
  */
@@ -19,22 +19,22 @@ export {
   useFloatingNodeId,
   useFloatingParentNodeId,
   useFloatingTree,
-} from './components/FloatingTree';
-export { FloatingTreeStore } from './components/FloatingTreeStore';
-export { useClick } from './hooks/useClick';
-export { useClientPoint } from './hooks/useClientPoint';
-export { useDismiss } from './hooks/useDismiss';
-export { useFloating } from './hooks/useFloating';
-export { useFloatingRootContext } from './hooks/useFloatingRootContext';
-export { useSyncedFloatingRootContext } from './hooks/useSyncedFloatingRootContext';
-export { useFocus } from './hooks/useFocus';
-export { useHoverFloatingInteraction } from './hooks/useHoverFloatingInteraction';
-export { useHoverReferenceInteraction } from './hooks/useHoverReferenceInteraction';
-export { useHover } from './hooks/useHover';
-export { useListNavigation } from './hooks/useListNavigation';
-export { useTypeahead } from './hooks/useTypeahead';
-export { safePolygon } from './safePolygon';
-export type * from './types';
+} from '@/floating-ui-actview/components/FloatingTree';
+export { FloatingTreeStore } from '@/floating-ui-actview/components/FloatingTreeStore';
+export { useClick } from '@/floating-ui-actview/hooks/useClick';
+export { useClientPoint } from '@/floating-ui-actview/hooks/useClientPoint';
+export { useDismiss } from '@/floating-ui-actview/hooks/useDismiss';
+export { useFloating } from '@/floating-ui-actview/hooks/useFloating';
+export { useFloatingRootContext } from '@/floating-ui-actview/hooks/useFloatingRootContext';
+export { useSyncedFloatingRootContext } from '@/floating-ui-actview/hooks/useSyncedFloatingRootContext';
+export { useFocus } from '@/floating-ui-actview/hooks/useFocus';
+export { useHoverFloatingInteraction } from '@/floating-ui-actview/hooks/useHoverFloatingInteraction';
+export { useHoverReferenceInteraction } from '@/floating-ui-actview/hooks/useHoverReferenceInteraction';
+export { useHover } from '@/floating-ui-actview/hooks/useHover';
+export { useListNavigation } from '@/floating-ui-actview/hooks/useListNavigation';
+export { useTypeahead } from '@/floating-ui-actview/hooks/useTypeahead';
+export { safePolygon } from '@/floating-ui-actview/safePolygon';
+export type * from '@/floating-ui-actview/types';
 export {
   arrow,
   autoPlacement,

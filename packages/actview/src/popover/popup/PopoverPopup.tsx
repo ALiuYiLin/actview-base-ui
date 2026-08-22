@@ -1,22 +1,22 @@
 import { computed, watch } from 'actview';
 import type { InteractionType } from '@base-ui/actview-utils/useEnhancedClickHandler';
 import { isHTMLElement } from '@floating-ui/utils/dom';
-import { FloatingFocusManager, useHoverFloatingInteraction } from '../../floating-ui-actview';
-import { usePopoverRootContext } from '../root/PopoverRootContext';
-import { usePopoverPositionerContext } from '../positioner/PopoverPositionerContext';
-import type { Side, Align } from '../../internals/useAnchorPositioning';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { mergeProps } from '../../merge-props';
-import type { TransitionStatus } from '../../internals/useTransitionStatus';
-import { popupTransitionStateMapping } from '../../utils/popupStateMapping';
-import { useOpenChangeComplete } from '../../internals/useOpenChangeComplete';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { REASONS } from '../../internals/reasons';
-import { COMPOSITE_KEYS } from '../../internals/composite/composite';
-import { useToolbarRootContext } from '../../toolbar/root/ToolbarRootContext';
-import { getDisabledMountTransitionStyles } from '../../internals/getDisabledMountTransitionStyles';
-import { ClosePartContext, useClosePartCount } from '../../utils/closePart';
-import { FOCUSABLE_POPUP_PROPS, createDefaultInitialFocus } from '../../utils/popups';
+import { FloatingFocusManager, useHoverFloatingInteraction } from '@/floating-ui-actview';
+import { usePopoverRootContext } from '@/popover/root/PopoverRootContext';
+import { usePopoverPositionerContext } from '@/popover/positioner/PopoverPositionerContext';
+import type { Side, Align } from '@/internals/useAnchorPositioning';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { mergeProps } from '@/merge-props';
+import type { TransitionStatus } from '@/internals/useTransitionStatus';
+import { popupTransitionStateMapping } from '@/utils/popupStateMapping';
+import { useOpenChangeComplete } from '@/internals/useOpenChangeComplete';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { REASONS } from '@/internals/reasons';
+import { COMPOSITE_KEYS } from '@/internals/composite/composite';
+import { useToolbarRootContext } from '@/toolbar/root/ToolbarRootContext';
+import { getDisabledMountTransitionStyles } from '@/internals/getDisabledMountTransitionStyles';
+import { ClosePartContext, useClosePartCount } from '@/utils/closePart';
+import { FOCUSABLE_POPUP_PROPS, createDefaultInitialFocus } from '@/utils/popups';
 
 /**
  * A container for the popover contents.

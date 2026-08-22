@@ -1,8 +1,8 @@
 import { defineComponent } from 'actview';
-import type { BaseUIComponentProps } from '../../internals/types';
-import type { MeterRootState } from '../root/MeterRoot';
-import { useMeterRootContext } from '../root/MeterRootContext';
-import { mergePropsN } from '../../merge-props';
+import type { BaseUIComponentProps } from '@/internals/types';
+import type { MeterRootState } from '@/meter/root/MeterRoot';
+import { useMeterRootContext } from '@/meter/root/MeterRootContext';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * Visualizes the position of the value along the range.

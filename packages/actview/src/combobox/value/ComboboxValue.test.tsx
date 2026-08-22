@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ComboboxValue } from './ComboboxValue';
-import { ComboboxRootContext } from '../root/ComboboxRootContext';
+import { ComboboxValue } from '@/combobox/value/ComboboxValue';
+import { ComboboxRootContext } from '@/combobox/root/ComboboxRootContext';
 import { createRenderer } from '../../../test/createRenderer';
 
 const mockStore = {

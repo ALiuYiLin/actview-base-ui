@@ -7,10 +7,10 @@ import {
   ToastManagerPromiseOptions,
   ToastManagerUpdateOptions,
   ToastObject,
-} from './useToastManager';
-import { resolvePromiseOptions } from './utils/resolvePromiseOptions';
-import { activeElement, contains, getTarget } from '../floating-ui-actview/utils';
-import { isFocusVisible } from './utils/focusVisible';
+} from '@/toast/useToastManager';
+import { resolvePromiseOptions } from '@/toast/utils/resolvePromiseOptions';
+import { activeElement, contains, getTarget } from '@/floating-ui-actview/utils';
+import { isFocusVisible } from '@/toast/utils/focusVisible';
 
 type ToastInternalUpdateOptions<Data extends object> = Partial<
   Omit<ToastObject<Data>, 'id' | 'updateKey' | 'data'>

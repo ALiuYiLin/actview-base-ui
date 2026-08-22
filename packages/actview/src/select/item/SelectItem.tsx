@@ -1,21 +1,21 @@
 import { computed, watch } from 'actview';
 import { useIsoLayoutEffect } from '@base-ui/actview-utils/useIsoLayoutEffect';
-import { useSelectRootContext } from '../root/SelectRootContext';
-import { useCompositeListItem } from '../../internals/composite/list/useCompositeListItem';
+import { useSelectRootContext } from '@/select/root/SelectRootContext';
+import { useCompositeListItem } from '@/internals/composite/list/useCompositeListItem';
 import type {
   BaseUIComponentProps,
   BaseUIEvent,
   HTMLProps,
   NonNativeButtonProps,
-} from '../../internals/types';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { SelectItemContext } from './SelectItemContext';
-import { selectors } from '../store';
-import { useButton } from '../../internals/use-button';
-import { createChangeEventDetails } from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
-import { compareItemEquality, removeItem } from '../../internals/itemEquality';
-import { isVirtualClick } from '../../floating-ui-actview/utils/event';
+} from '@/internals/types';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { SelectItemContext } from '@/select/item/SelectItemContext';
+import { selectors } from '@/select/store';
+import { useButton } from '@/internals/use-button';
+import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
+import { compareItemEquality, removeItem } from '@/internals/itemEquality';
+import { isVirtualClick } from '@/floating-ui-actview/utils/event';
 
 /**
  * An individual option in the select popup.

@@ -1,6 +1,6 @@
 import type { ComputedRef } from '@actview/core';
-import type { UseAnchorPositioningReturnValue } from '../../internals/useAnchorPositioning';
-import { createContext } from '../../internals/createContext';
+import type { UseAnchorPositioningReturnValue } from '@/internals/useAnchorPositioning';
+import { createContext } from '@/internals/createContext';
 
 export type ToastPositionerContext = Pick<
   UseAnchorPositioningReturnValue,

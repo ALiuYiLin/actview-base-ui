@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { MeterRoot } from '../root/MeterRoot';
-import { MeterTrack } from './MeterTrack';
+import { MeterRoot } from '@/meter/root/MeterRoot';
+import { MeterTrack } from '@/meter/track/MeterTrack';
 import { createRenderer } from '../../../test/createRenderer';
 
 const { render } = createRenderer();

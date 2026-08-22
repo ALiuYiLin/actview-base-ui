@@ -3,15 +3,15 @@ import type { Ref } from '@actview/core';
 import type { VNodeChild } from '@actview/jsx';
 import { useTimeout, Timeout } from '@base-ui/actview-utils/useTimeout';
 import { useValueAsRef } from '@base-ui/actview-utils/useValueAsRef';
-import { createContext } from '../../internals/createContext';
+import { createContext } from '@/internals/createContext';
 
-import { getDelay } from '../hooks/useHoverShared';
-import type { FloatingRootContext, Delay, FloatingContext } from '../types';
+import { getDelay } from '@/floating-ui-actview/hooks/useHoverShared';
+import type { FloatingRootContext, Delay, FloatingContext } from '@/floating-ui-actview/types';
 import {
   type BaseUIChangeEventDetails,
   createChangeEventDetails,
-} from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
+} from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
 
 interface ContextValue {
   hasProvider: boolean;

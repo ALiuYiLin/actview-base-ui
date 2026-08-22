@@ -1,9 +1,9 @@
 import { computed, ref } from 'actview';
 import type { VNodeChild } from '@actview/jsx';
 import { useRefWithInit } from '@base-ui/actview-utils/useRefWithInit';
-import type { HTMLProps } from '../types';
-import { useBaseUiId } from '../useBaseUiId';
-import { LabelableContext, useLabelableContext } from './LabelableContext';
+import type { HTMLProps } from '@/internals/types';
+import { useBaseUiId } from '@/internals/useBaseUiId';
+import { LabelableContext, useLabelableContext } from '@/internals/labelable-provider/LabelableContext';
 
 export function LabelableProvider(props: LabelableProvider.Props) {
   const defaultId = useBaseUiId();

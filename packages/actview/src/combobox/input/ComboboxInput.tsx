@@ -1,37 +1,37 @@
 import { computed, ref, watch } from 'actview';
 import { platform } from '@base-ui/actview-utils/platform';
-import type { BaseUIComponentProps } from '../../internals/types';
-import { useBaseUiId } from '../../internals/useBaseUiId';
-import { useRenderElement } from '../../internals/useRenderElement';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { useBaseUiId } from '@/internals/useBaseUiId';
+import { useRenderElement } from '@/internals/useRenderElement';
 import {
   useComboboxInputValueContext,
   useComboboxRootContext,
-} from '../root/ComboboxRootContext';
-import { triggerStateAttributesMapping } from '../utils/stateAttributesMapping';
-import type { FieldRootState } from '../../field/root/FieldRoot';
+} from '@/combobox/root/ComboboxRootContext';
+import { triggerStateAttributesMapping } from '@/combobox/utils/stateAttributesMapping';
+import type { FieldRootState } from '@/field/root/FieldRoot';
 import {
   DEFAULT_FIELD_ROOT_CONTEXT,
   FieldRootContext,
   useFieldRootContext,
-} from '../../internals/field-root-context/FieldRootContext';
-import { DEFAULT_FIELD_STATE_ATTRIBUTES } from '../../internals/field-constants/constants';
-import { useLabelableContext } from '../../internals/labelable-provider/LabelableContext';
-import { useComboboxChipsContext } from '../chips/ComboboxChipsContext';
-import { stopEvent } from '../../floating-ui-actview/utils';
-import { useComboboxPositionerContext } from '../positioner/ComboboxPositionerContext';
-import { createChangeEventDetails } from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
-import type { Side } from '../../internals/useAnchorPositioning';
-import { useDirection } from '../../internals/direction-context/DirectionContext';
-import { ComboboxInternalDismissButton } from '../utils/ComboboxInternalDismissButton';
+} from '@/internals/field-root-context/FieldRootContext';
+import { DEFAULT_FIELD_STATE_ATTRIBUTES } from '@/internals/field-constants/constants';
+import { useLabelableContext } from '@/internals/labelable-provider/LabelableContext';
+import { useComboboxChipsContext } from '@/combobox/chips/ComboboxChipsContext';
+import { stopEvent } from '@/floating-ui-actview/utils';
+import { useComboboxPositionerContext } from '@/combobox/positioner/ComboboxPositionerContext';
+import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
+import type { Side } from '@/internals/useAnchorPositioning';
+import { useDirection } from '@/internals/direction-context/DirectionContext';
+import { ComboboxInternalDismissButton } from '@/combobox/utils/ComboboxInternalDismissButton';
 import {
   clickHighlightedItem,
   getChipNavigationKeys,
   getIndexAfterChipRemoval,
   useListEmpty,
   usePopupSide,
-} from '../utils/parts';
-import { mergeProps } from '../../merge-props';
+} from '@/combobox/utils/parts';
+import { mergeProps } from '@/merge-props';
 
 /**
  * A text input to search for items in the list.

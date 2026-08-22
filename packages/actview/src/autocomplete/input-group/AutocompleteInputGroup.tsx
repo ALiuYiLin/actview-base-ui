@@ -1,7 +1,7 @@
-import { ComboboxInputGroup } from '../../combobox/input-group/ComboboxInputGroup';
-import type { FieldRootState } from '../../field/root/FieldRoot';
-import type { Side } from '../../internals/useAnchorPositioning';
-import type { BaseUIComponentProps } from '../../internals/types';
+import { ComboboxInputGroup } from '@/combobox/input-group/ComboboxInputGroup';
+import type { FieldRootState } from '@/field/root/FieldRoot';
+import type { Side } from '@/internals/useAnchorPositioning';
+import type { BaseUIComponentProps } from '@/internals/types';
 
 /**
  * A wrapper for the input and its associated controls.

@@ -1,9 +1,9 @@
 import { describe, expect, it, vi, beforeAll } from 'vitest';
-import { NumberFieldRoot } from './root/NumberFieldRoot';
-import { NumberFieldInput } from './input/NumberFieldInput';
-import { NumberFieldIncrement } from './increment/NumberFieldIncrement';
-import { NumberFieldDecrement } from './decrement/NumberFieldDecrement';
-import { NumberFieldGroup } from './group/NumberFieldGroup';
+import { NumberFieldRoot } from '@/number-field/root/NumberFieldRoot';
+import { NumberFieldInput } from '@/number-field/input/NumberFieldInput';
+import { NumberFieldIncrement } from '@/number-field/increment/NumberFieldIncrement';
+import { NumberFieldDecrement } from '@/number-field/decrement/NumberFieldDecrement';
+import { NumberFieldGroup } from '@/number-field/group/NumberFieldGroup';
 import { createRenderer } from '../../test/createRenderer';
 
 beforeAll(() => {

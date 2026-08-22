@@ -1,5 +1,5 @@
 import { visuallyHidden } from '@base-ui/actview-utils/visuallyHidden';
-import type { HTMLProps, RefValue } from '../internals/types';
+import type { HTMLProps, RefValue } from '@/internals/types';
 
 /**
  * Renders an invisible focus guard `<span>`.

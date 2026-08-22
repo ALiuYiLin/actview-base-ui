@@ -4,24 +4,24 @@ import { mergeCleanups } from '@base-ui/actview-utils/mergeCleanups';
 import { ownerDocument } from '@base-ui/actview-utils/owner';
 import { useTimeout } from '@base-ui/actview-utils/useTimeout';
 import { isElement } from '@floating-ui/utils/dom';
-import { createChangeEventDetails } from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
-import { useFloatingParentNodeId, useFloatingTree } from '../components/FloatingTree';
-import type { FloatingContext, FloatingRootContext } from '../types';
-import { contains, getTarget } from '../utils/element';
-import { getNodeChildren } from '../utils/nodes';
+import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
+import { useFloatingParentNodeId, useFloatingTree } from '@/floating-ui-actview/components/FloatingTree';
+import type { FloatingContext, FloatingRootContext } from '@/floating-ui-actview/types';
+import { contains, getTarget } from '@/floating-ui-actview/utils/element';
+import { getNodeChildren } from '@/floating-ui-actview/utils/nodes';
 import {
   applySafePolygonPointerEventsMutation,
   clearSafePolygonPointerEventsMutation,
   isInteractiveElement,
   useHoverInteractionSharedState,
-} from './useHoverInteractionSharedState';
+} from '@/floating-ui-actview/hooks/useHoverInteractionSharedState';
 import {
   getDelay,
   isClickLikeOpenEvent as isClickLikeOpenEventShared,
   isHoverOpenEvent,
   isInsideEnabledTrigger,
-} from './useHoverShared';
+} from '@/floating-ui-actview/hooks/useHoverShared';
 
 export type UseHoverFloatingInteractionProps = {
   /**

@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ComboboxChipRemove } from './ComboboxChipRemove';
-import { ComboboxChipContext } from '../chip/ComboboxChipContext';
-import { ComboboxRootContext } from '../root/ComboboxRootContext';
-import { FieldRootContext } from '../../internals/field-root-context/FieldRootContext';
+import { ComboboxChipRemove } from '@/combobox/chip-remove/ComboboxChipRemove';
+import { ComboboxChipContext } from '@/combobox/chip/ComboboxChipContext';
+import { ComboboxRootContext } from '@/combobox/root/ComboboxRootContext';
+import { FieldRootContext } from '@/internals/field-root-context/FieldRootContext';
 import { createRenderer } from '../../../test/createRenderer';
 
 const mockStore = {

@@ -1,10 +1,10 @@
 import { defineComponent, useRootElement } from 'actview';
-import type { SwitchRootState } from '../root/SwitchRoot';
-import { useSwitchRootContext } from '../root/SwitchRootContext';
-import type { BaseUIComponentProps } from '../../internals/types';
-import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
-import { stateAttributesMapping } from '../stateAttributesMapping';
-import { mergePropsN } from '../../merge-props';
+import type { SwitchRootState } from '@/switch/root/SwitchRoot';
+import { useSwitchRootContext } from '@/switch/root/SwitchRootContext';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import { stateAttributesMapping } from '@/switch/stateAttributesMapping';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * The movable part of the switch that indicates whether the switch is on or off.

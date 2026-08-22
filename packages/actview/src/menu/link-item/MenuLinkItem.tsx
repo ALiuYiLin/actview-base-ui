@@ -1,13 +1,13 @@
 import { computed } from 'actview';
-import { useMenuRootContext } from '../root/MenuRootContext';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { useBaseUiId } from '../../internals/useBaseUiId';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';import { useCompositeListItem } from '../../internals/composite/list/useCompositeListItem';
-import { useMenuPositionerContext } from '../positioner/MenuPositionerContext';
-import { useMenuItemCommonProps } from '../item/useMenuItemCommonProps';
-import { REGULAR_ITEM } from '../item/useMenuItem';
-import { useButton } from '../../internals/use-button';
-import { mergeProps } from '../../merge-props';
+import { useMenuRootContext } from '@/menu/root/MenuRootContext';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useBaseUiId } from '@/internals/useBaseUiId';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';import { useCompositeListItem } from '@/internals/composite/list/useCompositeListItem';
+import { useMenuPositionerContext } from '@/menu/positioner/MenuPositionerContext';
+import { useMenuItemCommonProps } from '@/menu/item/useMenuItemCommonProps';
+import { REGULAR_ITEM } from '@/menu/item/useMenuItem';
+import { useButton } from '@/internals/use-button';
+import { mergeProps } from '@/merge-props';
 
 /**
  * A link in the menu that can be used to navigate to a different page or section.

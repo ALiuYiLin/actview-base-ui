@@ -1,6 +1,6 @@
-import type { StateAttributesMapping } from '../../internals/getStateAttributesProps';
-import type { SliderRootState } from './SliderRoot';
-import { fieldValidityMapping } from '../../internals/field-constants/constants';
+import type { StateAttributesMapping } from '@/internals/getStateAttributesProps';
+import type { SliderRootState } from '@/slider/root/SliderRoot';
+import { fieldValidityMapping } from '@/internals/field-constants/constants';
 
 const nullMapping = () => null;
 

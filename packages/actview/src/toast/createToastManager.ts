@@ -4,7 +4,7 @@ import type {
   ToastManagerAddOptions,
   ToastManagerPromiseOptions,
   ToastManagerUpdateOptions,
-} from './useToastManager';
+} from '@/toast/useToastManager';
 
 /**
  * Creates a new toast manager.

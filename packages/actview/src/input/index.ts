@@ -1,3 +1,3 @@
-export { Input } from './Input';
+export { Input } from '@/input/Input';
 
-export type * from './Input';
+export type * from '@/input/Input';

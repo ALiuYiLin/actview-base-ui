@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { FieldRoot } from '../root/FieldRoot';
-import { FieldControl } from '../control/FieldControl';
-import { FieldError } from './FieldError';
-import { Form } from '../../form';
+import { FieldRoot } from '@/field/root/FieldRoot';
+import { FieldControl } from '@/field/control/FieldControl';
+import { FieldError } from '@/field/error/FieldError';
+import { Form } from '@/form';
 import { createRenderer } from '../../../test/createRenderer';
 
 describe('<Field.Error />', () => {

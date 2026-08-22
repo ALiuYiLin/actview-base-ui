@@ -1,5 +1,5 @@
 import { computed, defineComponent } from 'actview';
-import { CSPContext, type CSPContextValue } from '../internals/csp-context/CspContext';
+import { CSPContext, type CSPContextValue } from '@/internals/csp-context/CspContext';
 
 /**
  * Provides a default Content Security Policy (CSP) configuration for Base UI components that

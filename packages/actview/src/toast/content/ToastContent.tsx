@@ -1,7 +1,7 @@
 import { computed, ref, watch } from 'actview';
-import type { BaseUIComponentProps } from '../../internals/types';
-import { useToastRootContext } from '../root/ToastRootContext';
-import { useRenderElement } from '../../internals/useRenderElement';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { useToastRootContext } from '@/toast/root/ToastRootContext';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * A container for the contents of a toast.

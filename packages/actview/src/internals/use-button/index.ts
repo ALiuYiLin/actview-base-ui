@@ -1,1 +1,1 @@
-export { useButton } from './useButton';
+export { useButton } from '@/internals/use-button/useButton';

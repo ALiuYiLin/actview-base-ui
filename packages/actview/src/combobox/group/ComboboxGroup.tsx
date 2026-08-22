@@ -1,9 +1,9 @@
 import { computed, defineComponent, ref } from 'actview';
 import { useMergedRefs } from '@base-ui/actview-utils/useMergedRefs';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { ComboboxGroupContext } from './ComboboxGroupContext';
-import { GroupCollectionProvider } from '../collection/GroupCollectionContext';
-import { mergePropsN } from '../../merge-props';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { ComboboxGroupContext } from '@/combobox/group/ComboboxGroupContext';
+import { GroupCollectionProvider } from '@/combobox/collection/GroupCollectionContext';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * Groups related items with the corresponding label.

@@ -1,11 +1,11 @@
 import { computed } from 'actview';
 import type { VNodeChild } from '@actview/jsx';
 import { formatNumber } from '@base-ui/actview-utils/formatNumber';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { useSliderRootContext } from '../root/SliderRootContext';
-import { sliderStateAttributesMapping } from '../root/stateAttributesMapping';
-import type { SliderRootState } from '../root/SliderRoot';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useSliderRootContext } from '@/slider/root/SliderRootContext';
+import { sliderStateAttributesMapping } from '@/slider/root/stateAttributesMapping';
+import type { SliderRootState } from '@/slider/root/SliderRoot';
 
 /**
  * Displays the current value of the slider as text.

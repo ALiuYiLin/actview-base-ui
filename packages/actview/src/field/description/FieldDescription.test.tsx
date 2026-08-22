@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { FieldRoot } from '../root/FieldRoot';
-import { FieldDescription } from './FieldDescription';
-import { FieldControl } from '../control/FieldControl';
-import { FieldItem } from '../item/FieldItem';
+import { FieldRoot } from '@/field/root/FieldRoot';
+import { FieldDescription } from '@/field/description/FieldDescription';
+import { FieldControl } from '@/field/control/FieldControl';
+import { FieldItem } from '@/field/item/FieldItem';
 import { createRenderer } from '../../../test/createRenderer';
 
 describe('<Field.Description />', () => {

@@ -1,15 +1,15 @@
 import { computed, defineComponent, watch } from 'actview';
 import { warn } from '@base-ui/actview-utils/warn';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
-import { resolveStyle } from '../../utils/resolveStyle';
-import { useCollapsibleRootContext } from '../root/CollapsibleRootContext';
-import type { CollapsibleRootState } from '../root/CollapsibleRoot';
-import { collapsibleStateAttributesMapping } from '../root/stateAttributesMapping';
-import { useCollapsiblePanel } from './useCollapsiblePanel';
-import { CollapsiblePanelCssVars } from './CollapsiblePanelCssVars';
-import type { TransitionStatus } from '../../internals/useTransitionStatus';
-import { mergePropsN } from '../../merge-props';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import { resolveStyle } from '@/utils/resolveStyle';
+import { useCollapsibleRootContext } from '@/collapsible/root/CollapsibleRootContext';
+import type { CollapsibleRootState } from '@/collapsible/root/CollapsibleRoot';
+import { collapsibleStateAttributesMapping } from '@/collapsible/root/stateAttributesMapping';
+import { useCollapsiblePanel } from '@/collapsible/panel/useCollapsiblePanel';
+import { CollapsiblePanelCssVars } from '@/collapsible/panel/CollapsiblePanelCssVars';
+import type { TransitionStatus } from '@/internals/useTransitionStatus';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * A panel with the collapsible contents.

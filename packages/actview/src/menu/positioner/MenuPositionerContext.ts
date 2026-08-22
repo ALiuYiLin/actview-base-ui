@@ -1,7 +1,7 @@
 import type { ComputedRef } from '@actview/core';
-import type { StyleValue } from '../../internals/types';
-import type { Align, Side } from '../../internals/useAnchorPositioning';
-import { createContext } from '../../internals/createContext';
+import type { StyleValue } from '@/internals/types';
+import type { Align, Side } from '@/internals/useAnchorPositioning';
+import { createContext } from '@/internals/createContext';
 
 // The React version picks `context` from `UseAnchorPositioningReturnValue` (a FloatingTree node
 // context). ActView's `useAnchorPositioning` drops that (its `context` is always `undefined`), so

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import { AvatarRoot } from '../root/AvatarRoot';
-import { AvatarImage } from './AvatarImage';
-import { AvatarFallback } from '../fallback/AvatarFallback';
+import { AvatarRoot } from '@/avatar/root/AvatarRoot';
+import { AvatarImage } from '@/avatar/image/AvatarImage';
+import { AvatarFallback } from '@/avatar/fallback/AvatarFallback';
 import { createRenderer } from '../../../test/createRenderer';
 
 type MockImage = {

@@ -1,9 +1,9 @@
 import { computed, defineComponent } from 'actview';
-import { useMeterRootContext } from '../root/MeterRootContext';
-import type { MeterRootState } from '../root/MeterRoot';
-import type { BaseUIComponentProps } from '../../internals/types';
-import { useRegisteredLabelId } from '../../utils/useRegisteredLabelId';
-import { mergePropsN } from '../../merge-props';
+import { useMeterRootContext } from '@/meter/root/MeterRootContext';
+import type { MeterRootState } from '@/meter/root/MeterRoot';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { useRegisteredLabelId } from '@/utils/useRegisteredLabelId';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * An accessible label for the meter.

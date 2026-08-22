@@ -1,2 +1,2 @@
-export * from './temporal-adapter';
-export * from './temporal';
+export * from '@/internals/temporal/temporal-adapter';
+export * from '@/internals/temporal/temporal';

@@ -1,8 +1,8 @@
 import { defineComponent, ref } from 'actview';
 import { useMergedRefs } from '@base-ui/actview-utils/useMergedRefs';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { useInitialLiveRegionTextMutation } from '../utils/useInitialLiveRegionTextMutation';
-import { mergePropsN } from '../../merge-props';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { useInitialLiveRegionTextMutation } from '@/combobox/utils/useInitialLiveRegionTextMutation';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * Displays a status message whose content changes are announced politely to screen readers.

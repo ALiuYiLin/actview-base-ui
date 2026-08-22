@@ -1,1 +1,1 @@
-export { CSPProvider } from './CSPProvider';
+export { CSPProvider } from '@/csp-provider/CSPProvider';

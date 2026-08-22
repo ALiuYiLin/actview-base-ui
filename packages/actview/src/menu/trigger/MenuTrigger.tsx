@@ -11,29 +11,29 @@ import {
   useHoverReferenceInteraction,
   useFloatingNodeId,
   useFloatingParentNodeId,
-} from '../../floating-ui-actview';
-import { FloatingTreeStore } from '../../floating-ui-actview/components/FloatingTreeStore';
-import { contains } from '../../floating-ui-actview/utils';
-import { useMenuRootContext } from '../root/MenuRootContext';
-import { pressableTriggerOpenStateMapping } from '../../utils/popupStateMapping';
-import { useRenderElement } from '../../internals/useRenderElement';
-import type { BaseUIComponentProps, HTMLProps, NativeButtonProps } from '../../internals/types';
-import { useButton } from '../../internals/use-button/useButton';
-import { isMouseWithinBounds } from '../../utils/getPseudoElementBounds';
-import { CompositeItem } from '../../internals/composite/item/CompositeItem';
-import { useCompositeRootContext } from '../../internals/composite/root/CompositeRootContext';
-import { findRootOwnerId } from '../utils/findRootOwnerId';
-import { usePopupHandleStore, useTriggerDataForwarding } from '../../utils/popups';
-import { useTriggerFocusGuards } from '../../utils/popups/useTriggerFocusGuards';
-import { useBaseUiId } from '../../internals/useBaseUiId';
-import { REASONS } from '../../internals/reasons';
-import { useMixedToggleClickHandler } from '../../utils/useMixedToggleClickHandler';
-import { MenuHandle } from '../store/MenuHandle';
-import { useMenubarContext } from '../../menubar/MenubarContext';
-import type { MenuParent } from '../root/MenuRoot';
-import { PATIENT_CLICK_THRESHOLD } from '../../internals/constants';
-import { renderFocusGuard } from '../../utils/FocusGuard';
-import { mergeProps } from '../../merge-props';
+} from '@/floating-ui-actview';
+import { FloatingTreeStore } from '@/floating-ui-actview/components/FloatingTreeStore';
+import { contains } from '@/floating-ui-actview/utils';
+import { useMenuRootContext } from '@/menu/root/MenuRootContext';
+import { pressableTriggerOpenStateMapping } from '@/utils/popupStateMapping';
+import { useRenderElement } from '@/internals/useRenderElement';
+import type { BaseUIComponentProps, HTMLProps, NativeButtonProps } from '@/internals/types';
+import { useButton } from '@/internals/use-button/useButton';
+import { isMouseWithinBounds } from '@/utils/getPseudoElementBounds';
+import { CompositeItem } from '@/internals/composite/item/CompositeItem';
+import { useCompositeRootContext } from '@/internals/composite/root/CompositeRootContext';
+import { findRootOwnerId } from '@/menu/utils/findRootOwnerId';
+import { usePopupHandleStore, useTriggerDataForwarding } from '@/utils/popups';
+import { useTriggerFocusGuards } from '@/utils/popups/useTriggerFocusGuards';
+import { useBaseUiId } from '@/internals/useBaseUiId';
+import { REASONS } from '@/internals/reasons';
+import { useMixedToggleClickHandler } from '@/utils/useMixedToggleClickHandler';
+import { MenuHandle } from '@/menu/store/MenuHandle';
+import { useMenubarContext } from '@/menubar/MenubarContext';
+import type { MenuParent } from '@/menu/root/MenuRoot';
+import { PATIENT_CLICK_THRESHOLD } from '@/internals/constants';
+import { renderFocusGuard } from '@/utils/FocusGuard';
+import { mergeProps } from '@/merge-props';
 
 /**
  * A button that opens the menu.

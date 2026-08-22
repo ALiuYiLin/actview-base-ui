@@ -1,6 +1,6 @@
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { useScrollAreaRootContext } from '../root/ScrollAreaRootContext';
-import { useRenderElement } from '../../internals/useRenderElement';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { useScrollAreaRootContext } from '@/scroll-area/root/ScrollAreaRootContext';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * A small rectangular area that appears at the intersection of horizontal and vertical scrollbars.

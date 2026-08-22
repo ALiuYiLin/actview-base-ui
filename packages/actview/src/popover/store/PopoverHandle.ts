@@ -1,5 +1,5 @@
-import { PopoverStore, createNullPopoverStore, type PopoverHandleStore } from './PopoverStore';
-import { BasePopupHandle } from '../../utils/popups/popupHandle';
+import { PopoverStore, createNullPopoverStore, type PopoverHandleStore } from '@/popover/store/PopoverStore';
+import { BasePopupHandle } from '@/utils/popups/popupHandle';
 
 /**
  * Controls a Popover imperatively and associates detached `Popover.Trigger` components with a

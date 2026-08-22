@@ -1,8 +1,8 @@
 import { onUnmounted, unref, watch } from 'actview';
 import { useRefWithInit } from '@base-ui/actview-utils/useRefWithInit';
-import { useFieldRootContext } from '../field-root-context/FieldRootContext';
-import type { FieldControlRegistration } from './useFieldControlRegistration';
-import type { MaybeRef } from '../types';
+import { useFieldRootContext } from '@/internals/field-root-context/FieldRootContext';
+import type { FieldControlRegistration } from '@/internals/field-register-control/useFieldControlRegistration';
+import type { MaybeRef } from '@/internals/types';
 
 export function useRegisterFieldControl(
   controlRef: FieldControlRegistration['controlRef'],

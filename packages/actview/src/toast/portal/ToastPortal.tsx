@@ -1,5 +1,5 @@
-import { FloatingPortalLite } from '../../utils/FloatingPortalLite';
-import { type BaseUIComponentProps } from '../../internals/types';
+import { FloatingPortalLite } from '@/utils/FloatingPortalLite';
+import { type BaseUIComponentProps } from '@/internals/types';
 
 /**
  * A portal element that moves the viewport to a different part of the DOM.

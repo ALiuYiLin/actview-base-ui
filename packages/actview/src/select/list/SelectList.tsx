@@ -1,11 +1,11 @@
 import { computed } from 'actview';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { useSelectRootContext } from '../root/SelectRootContext';
-import { useSelectPositionerContext } from '../positioner/SelectPositionerContext';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { styleDisableScrollbar } from '../../utils/styles';
-import { LIST_FUNCTIONAL_STYLES } from '../popup/utils';
-import { selectors } from '../store';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { useSelectRootContext } from '@/select/root/SelectRootContext';
+import { useSelectPositionerContext } from '@/select/positioner/SelectPositionerContext';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { styleDisableScrollbar } from '@/utils/styles';
+import { LIST_FUNCTIONAL_STYLES } from '@/select/popup/utils';
+import { selectors } from '@/select/store';
 
 /**
  * A container for the select items.

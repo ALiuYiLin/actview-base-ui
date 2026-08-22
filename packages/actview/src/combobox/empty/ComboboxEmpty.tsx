@@ -1,12 +1,12 @@
 import { defineComponent, ref } from 'actview';
 import { useMergedRefs } from '@base-ui/actview-utils/useMergedRefs';
-import type { BaseUIComponentProps } from '../../internals/types';
+import type { BaseUIComponentProps } from '@/internals/types';
 import {
   useComboboxDerivedItemsContext,
   useComboboxRootContext,
-} from '../root/ComboboxRootContext';
-import { useInitialLiveRegionTextMutation } from '../utils/useInitialLiveRegionTextMutation';
-import { mergePropsN } from '../../merge-props';
+} from '@/combobox/root/ComboboxRootContext';
+import { useInitialLiveRegionTextMutation } from '@/combobox/utils/useInitialLiveRegionTextMutation';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * Renders its children only when the list is empty.

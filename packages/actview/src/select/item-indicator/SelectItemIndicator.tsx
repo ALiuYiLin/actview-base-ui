@@ -1,10 +1,10 @@
 import { computed } from 'actview';
-import type { BaseUIComponentProps } from '../../internals/types';
-import { useSelectItemContext } from '../item/SelectItemContext';
-import { useTransitionStatus, type TransitionStatus } from '../../internals/useTransitionStatus';
-import { useOpenChangeComplete } from '../../internals/useOpenChangeComplete';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { transitionStatusMapping } from '../../internals/stateAttributesMapping';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { useSelectItemContext } from '@/select/item/SelectItemContext';
+import { useTransitionStatus, type TransitionStatus } from '@/internals/useTransitionStatus';
+import { useOpenChangeComplete } from '@/internals/useOpenChangeComplete';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { transitionStatusMapping } from '@/internals/stateAttributesMapping';
 
 /**
  * Indicates whether the select item is selected.

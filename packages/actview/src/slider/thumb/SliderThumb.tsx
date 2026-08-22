@@ -5,13 +5,13 @@ import { ownerWindow } from '@base-ui/actview-utils/owner';
 import { clamp } from '@base-ui/actview-utils/clamp';
 import { formatNumber } from '@base-ui/actview-utils/formatNumber';
 import { contains } from '@base-ui/actview-utils/shadowDom';
-import { script as prehydrationScript } from './prehydrationScript.min';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { mergeProps } from '../../merge-props';
-import { useBaseUiId } from '../../internals/useBaseUiId';
-import { useIsHydrating } from '../../utils/useIsHydrating';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { valueToPercent } from '../../utils/valueToPercent';
+import { script as prehydrationScript } from '@/slider/thumb/prehydrationScript.min';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { mergeProps } from '@/merge-props';
+import { useBaseUiId } from '@/internals/useBaseUiId';
+import { useIsHydrating } from '@/utils/useIsHydrating';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { valueToPercent } from '@/utils/valueToPercent';
 import {
   ARROW_DOWN,
   ARROW_UP,
@@ -22,19 +22,19 @@ import {
   COMPOSITE_KEYS,
   PAGE_UP,
   PAGE_DOWN,
-} from '../../internals/composite/composite';
-import { useCompositeListItem } from '../../internals/composite/list/useCompositeListItem';
-import { useDirection } from '../../internals/direction-context/DirectionContext';
-import { PrehydrationScript } from '../../internals/PrehydrationScript';
-import { useFieldRootContext } from '../../internals/field-root-context/FieldRootContext';
-import { matchesFocusVisible } from '../../floating-ui-actview/utils/element';
-import { useLabelableId } from '../../internals/labelable-provider/useLabelableId';
-import { getMidpoint } from '../utils/getMidpoint';
-import { getSliderValue } from '../utils/getSliderValue';
-import { getDecimalPrecision, roundValueToStep } from '../utils/roundValueToStep';
-import type { SliderRootState } from '../root/SliderRoot';
-import { useSliderRootContext } from '../root/SliderRootContext';
-import { sliderStateAttributesMapping } from '../root/stateAttributesMapping';
+} from '@/internals/composite/composite';
+import { useCompositeListItem } from '@/internals/composite/list/useCompositeListItem';
+import { useDirection } from '@/internals/direction-context/DirectionContext';
+import { PrehydrationScript } from '@/internals/PrehydrationScript';
+import { useFieldRootContext } from '@/internals/field-root-context/FieldRootContext';
+import { matchesFocusVisible } from '@/floating-ui-actview/utils/element';
+import { useLabelableId } from '@/internals/labelable-provider/useLabelableId';
+import { getMidpoint } from '@/slider/utils/getMidpoint';
+import { getSliderValue } from '@/slider/utils/getSliderValue';
+import { getDecimalPrecision, roundValueToStep } from '@/slider/utils/roundValueToStep';
+import type { SliderRootState } from '@/slider/root/SliderRoot';
+import { useSliderRootContext } from '@/slider/root/SliderRootContext';
+import { sliderStateAttributesMapping } from '@/slider/root/stateAttributesMapping';
 
 const ALL_KEYS = new Set([...COMPOSITE_KEYS, PAGE_UP, PAGE_DOWN]);
 

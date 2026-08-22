@@ -1,3 +1,3 @@
-export { ToggleGroup } from './ToggleGroup';
+export { ToggleGroup } from '@/toggle-group/ToggleGroup';
 
-export type * from './ToggleGroup';
+export type * from '@/toggle-group/ToggleGroup';

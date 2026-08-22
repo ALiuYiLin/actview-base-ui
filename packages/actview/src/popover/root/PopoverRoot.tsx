@@ -1,14 +1,14 @@
 import { computed, onUnmounted, watch } from 'actview';
 import type { VNodeChild } from '@actview/jsx';
-import { useDismiss, FloatingTree } from '../../floating-ui-actview';
-import { PopoverRootContext, usePopoverRootContext } from './PopoverRootContext';
-import { PopoverStore, type State as PopoverStoreState } from '../store/PopoverStore';
-import { PopoverHandle } from '../store/PopoverHandle';
+import { useDismiss, FloatingTree } from '@/floating-ui-actview';
+import { PopoverRootContext, usePopoverRootContext } from '@/popover/root/PopoverRootContext';
+import { PopoverStore, type State as PopoverStoreState } from '@/popover/store/PopoverStore';
+import { PopoverHandle } from '@/popover/store/PopoverHandle';
 import {
   createChangeEventDetails,
   type BaseUIChangeEventDetails,
-} from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
+} from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
 import {
   useImplicitActiveTrigger,
   usePopupRootStore,
@@ -16,8 +16,8 @@ import {
   usePopupInteractionProps,
   usePopupRootSync,
   type PayloadChildRenderFunction,
-} from '../../utils/popups';
-import type { RefObject } from '../../internals/types';
+} from '@/utils/popups';
+import type { RefObject } from '@/internals/types';
 
 /**
  * Groups all parts of the popover.

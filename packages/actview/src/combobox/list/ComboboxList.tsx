@@ -1,16 +1,16 @@
 import { computed } from 'actview';
-import type { BaseUIComponentProps } from '../../internals/types';
-import { useRenderElement } from '../../internals/useRenderElement';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { useRenderElement } from '@/internals/useRenderElement';
 import {
   useComboboxDerivedItemsContext,
   useComboboxFloatingContext,
   useComboboxRootContext,
-} from '../root/ComboboxRootContext';
-import { useComboboxPositionerContext } from '../positioner/ComboboxPositionerContext';
-import { ComboboxCollection } from '../collection/ComboboxCollection';
-import { CompositeList } from '../../internals/composite/list/CompositeList';
-import { stopEvent } from '../../floating-ui-actview/utils';
-import { clickHighlightedItem } from '../utils/parts';
+} from '@/combobox/root/ComboboxRootContext';
+import { useComboboxPositionerContext } from '@/combobox/positioner/ComboboxPositionerContext';
+import { ComboboxCollection } from '@/combobox/collection/ComboboxCollection';
+import { CompositeList } from '@/internals/composite/list/CompositeList';
+import { stopEvent } from '@/floating-ui-actview/utils';
+import { clickHighlightedItem } from '@/combobox/utils/parts';
 
 /**
  * A list container for the items.

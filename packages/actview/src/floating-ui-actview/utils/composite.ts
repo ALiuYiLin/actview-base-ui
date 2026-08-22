@@ -1,9 +1,9 @@
 import { floor } from '@floating-ui/utils';
 import { getComputedStyle } from '@floating-ui/utils/dom';
 
-import type { Dimensions } from '../types';
-import { stopEvent } from './event';
-import { ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT, ARROW_UP } from './constants';
+import type { Dimensions } from '@/floating-ui-actview/types';
+import { stopEvent } from '@/floating-ui-actview/utils/event';
+import { ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT, ARROW_UP } from '@/floating-ui-actview/utils/constants';
 
 export type DisabledIndices = ReadonlyArray<number> | ((index: number) => boolean);
 

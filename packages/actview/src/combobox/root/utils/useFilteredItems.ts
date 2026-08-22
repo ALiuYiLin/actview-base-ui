@@ -1,4 +1,4 @@
-import { useComboboxDerivedItemsContext } from '../ComboboxRootContext';
+import { useComboboxDerivedItemsContext } from '@/combobox/root/ComboboxRootContext';
 
 /**
  * Returns the internally filtered items.

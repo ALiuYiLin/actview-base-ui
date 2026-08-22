@@ -1,2 +1,2 @@
-export { FieldRootContext, useFieldRootContext } from './FieldRootContext';
-export type { FieldRootContext as FieldRootContextType } from './FieldRootContext';
+export { FieldRootContext, useFieldRootContext } from '@/internals/field-root-context/FieldRootContext';
+export type { FieldRootContext as FieldRootContextType } from '@/internals/field-root-context/FieldRootContext';

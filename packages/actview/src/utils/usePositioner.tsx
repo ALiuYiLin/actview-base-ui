@@ -1,13 +1,13 @@
 import { unref } from 'actview';
 import type { Ref } from '@actview/core';
-import { popupStateMapping } from './popupStateMapping';
+import { popupStateMapping } from '@/utils/popupStateMapping';
 import {
   useRenderElement,
   type UseRenderElementComponentProps,
-} from '../internals/useRenderElement';
-import { getDisabledMountTransitionStyles } from '../internals/getDisabledMountTransitionStyles';
-import type { TransitionStatus } from '../internals/useTransitionStatus';
-import type { HTMLProps, RefValue } from '../internals/types';
+} from '@/internals/useRenderElement';
+import { getDisabledMountTransitionStyles } from '@/internals/getDisabledMountTransitionStyles';
+import type { TransitionStatus } from '@/internals/useTransitionStatus';
+import type { HTMLProps, RefValue } from '@/internals/types';
 
 type MaybeRef<T> = T | Ref<T>;
 

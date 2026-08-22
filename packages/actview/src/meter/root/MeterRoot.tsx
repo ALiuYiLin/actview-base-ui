@@ -2,10 +2,10 @@ import { computed, defineComponent, ref } from 'actview';
 import { clamp } from '@base-ui/actview-utils/clamp';
 import { formatNumber } from '@base-ui/actview-utils/formatNumber';
 import { visuallyHidden } from '@base-ui/actview-utils/visuallyHidden';
-import { MeterRootContext } from './MeterRootContext';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { valueToPercent } from '../../utils/valueToPercent';
-import { mergePropsN } from '../../merge-props';
+import { MeterRootContext } from '@/meter/root/MeterRootContext';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { valueToPercent } from '@/utils/valueToPercent';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * Groups all parts of the meter and provides the value for screen readers.

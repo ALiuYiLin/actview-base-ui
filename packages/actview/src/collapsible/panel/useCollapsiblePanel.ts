@@ -6,14 +6,14 @@ import { AnimationFrame } from '@base-ui/actview-utils/useAnimationFrame';
 import { useValueAsRef } from '@base-ui/actview-utils/useValueAsRef';
 import { warn } from '@base-ui/actview-utils/warn';
 import { ownerWindow } from '@base-ui/actview-utils/owner';
-import { HTMLProps, RefValue } from '../../internals/types';
-import { createChangeEventDetails } from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
-import { useOpenChangeComplete } from '../../internals/useOpenChangeComplete';
-import { useAnimationsFinished } from '../../internals/useAnimationsFinished';
-import { CollapsiblePanelDataAttributes } from './CollapsiblePanelDataAttributes';
-import type { CollapsibleRoot } from '../root/CollapsibleRoot';
-import type { TransitionStatus } from '../../internals/useTransitionStatus';
+import { HTMLProps, RefValue } from '@/internals/types';
+import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
+import { useOpenChangeComplete } from '@/internals/useOpenChangeComplete';
+import { useAnimationsFinished } from '@/internals/useAnimationsFinished';
+import { CollapsiblePanelDataAttributes } from '@/collapsible/panel/CollapsiblePanelDataAttributes';
+import type { CollapsibleRoot } from '@/collapsible/root/CollapsibleRoot';
+import type { TransitionStatus } from '@/internals/useTransitionStatus';
 
 type MaybeRefOrGetter<T> = T | Ref<T> | (() => T);
 

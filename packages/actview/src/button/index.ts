@@ -1,3 +1,3 @@
-export { Button } from './Button';
+export { Button } from '@/button/Button';
 
-export type * from './Button';
+export type * from '@/button/Button';

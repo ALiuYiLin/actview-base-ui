@@ -1,3 +1,3 @@
-export { CSPProvider } from './index.parts';
+export { CSPProvider } from '@/csp-provider/index.parts';
 
-export type * from './CSPProvider';
+export type * from '@/csp-provider/CSPProvider';

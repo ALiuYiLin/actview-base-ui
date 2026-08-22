@@ -1,6 +1,6 @@
 import type { ComputedRef } from '@actview/core';
-import type { MenuRoot } from '../menu/root/MenuRoot';
-import { createContext } from '../internals/createContext';
+import type { MenuRoot } from '@/menu/root/MenuRoot';
+import { createContext } from '@/internals/createContext';
 
 export interface MenubarContext {
   modal: boolean;

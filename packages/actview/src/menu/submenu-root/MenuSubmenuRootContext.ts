@@ -1,6 +1,6 @@
 import type { ComputedRef } from '@actview/core';
-import { createContext } from '../../internals/createContext';
-import type { MenuStore } from '../store/MenuStore';
+import { createContext } from '@/internals/createContext';
+import type { MenuStore } from '@/menu/store/MenuStore';
 
 export const MenuSubmenuRootContext = createContext<MenuSubmenuRootContext | undefined>(
   'base-ui-menu-submenu-root-context',

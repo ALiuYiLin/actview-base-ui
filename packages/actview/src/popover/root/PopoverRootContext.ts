@@ -1,6 +1,6 @@
 import type { ComputedRef } from '@actview/core';
-import type { PopoverStore } from '../store/PopoverStore';
-import { createContext } from '../../internals/createContext';
+import type { PopoverStore } from '@/popover/store/PopoverStore';
+import { createContext } from '@/internals/createContext';
 
 export type PopoverRootContext<Payload = unknown> = PopoverStore<Payload>;
 

@@ -1,12 +1,12 @@
 import { computed, defineComponent, ref } from 'actview';
 import { useMergedRefs } from '@base-ui/actview-utils/useMergedRefs';
-import type { HTMLProps } from '../../internals/types';
-import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
-import type { BaseUIComponentProps } from '../../internals/types';
-import { useSelectRootContext } from '../root/SelectRootContext';
-import { resolveMultipleLabels, resolveSelectedLabel } from '../../internals/resolveValueLabel';
-import type { StateAttributesMapping } from '../../internals/getStateAttributesProps';
-import { mergePropsN } from '../../merge-props';
+import type { HTMLProps } from '@/internals/types';
+import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { useSelectRootContext } from '@/select/root/SelectRootContext';
+import { resolveMultipleLabels, resolveSelectedLabel } from '@/internals/resolveValueLabel';
+import type { StateAttributesMapping } from '@/internals/getStateAttributesProps';
+import { mergePropsN } from '@/merge-props';
 
 const stateAttributesMapping: StateAttributesMapping<SelectValueState> = {
   value: () => null,

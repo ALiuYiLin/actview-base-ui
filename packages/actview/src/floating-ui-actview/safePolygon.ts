@@ -1,9 +1,9 @@
 import { isElement } from '@floating-ui/utils/dom';
 import { Timeout } from '@base-ui/actview-utils/useTimeout';
-import type { Rect, Side } from './types';
-import type { HandleClose, HandleCloseOptions } from './hooks/useHoverShared';
-import { contains, getTarget } from './utils/element';
-import { getNodeChildren } from './utils/nodes';
+import type { Rect, Side } from '@/floating-ui-actview/types';
+import type { HandleClose, HandleCloseOptions } from '@/floating-ui-actview/hooks/useHoverShared';
+import { contains, getTarget } from '@/floating-ui-actview/utils/element';
+import { getNodeChildren } from '@/floating-ui-actview/utils/nodes';
 
 /* eslint-disable no-nested-ternary */
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { SelectIcon } from './SelectIcon';
-import { SelectRootContext } from '../root/SelectRootContext';
+import { SelectIcon } from '@/select/icon/SelectIcon';
+import { SelectRootContext } from '@/select/root/SelectRootContext';
 import { createRenderer } from '../../../test/createRenderer';
 
 const mockRootContext = {

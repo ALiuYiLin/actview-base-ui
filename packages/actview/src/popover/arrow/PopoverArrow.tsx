@@ -1,10 +1,10 @@
 import { computed } from 'actview';
-import { usePopoverPositionerContext } from '../positioner/PopoverPositionerContext';
-import { usePopoverRootContext } from '../root/PopoverRootContext';
-import type { Align, Side } from '../../internals/useAnchorPositioning';
-import type { BaseUIComponentProps } from '../../internals/types';
-import { popupStateMapping } from '../../utils/popupStateMapping';
-import { useRenderElement } from '../../internals/useRenderElement';
+import { usePopoverPositionerContext } from '@/popover/positioner/PopoverPositionerContext';
+import { usePopoverRootContext } from '@/popover/root/PopoverRootContext';
+import type { Align, Side } from '@/internals/useAnchorPositioning';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { popupStateMapping } from '@/utils/popupStateMapping';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * Displays an element positioned against the popover anchor.

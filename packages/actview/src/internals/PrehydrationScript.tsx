@@ -1,4 +1,4 @@
-import { useCSPContext } from './csp-context/CspContext';
+import { useCSPContext } from '@/internals/csp-context/CspContext';
 
 /**
  * Renders an inline script that runs before a framework hydrates, used by components that

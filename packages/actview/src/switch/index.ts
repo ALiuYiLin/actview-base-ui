@@ -1,4 +1,4 @@
-export * as Switch from './index.parts';
+export * as Switch from '@/switch/index.parts';
 
-export type * from './root/SwitchRoot';
-export type * from './thumb/SwitchThumb';
+export type * from '@/switch/root/SwitchRoot';
+export type * from '@/switch/thumb/SwitchThumb';

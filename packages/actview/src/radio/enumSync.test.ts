@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { stateAttributesMapping } from './utils/stateAttributesMapping';
-import { RadioRootDataAttributes } from './root/RadioRootDataAttributes';
+import { stateAttributesMapping } from '@/radio/utils/stateAttributesMapping';
+import { RadioRootDataAttributes } from '@/radio/root/RadioRootDataAttributes';
 
 // The state-attribute mapping inlines these enum members as string literals so
 // `RadioRootDataAttributes` tree-shakes out of the bundle (it is kept for

@@ -1,5 +1,5 @@
 import type { ComputedRef } from '@actview/core';
-import type { Orientation } from '../../internals/types';
+import type { Orientation } from '@/internals/types';
 import { createContext } from 'actview';
 
 export interface ToolbarRootContext {

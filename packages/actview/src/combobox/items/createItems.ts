@@ -1,8 +1,8 @@
 import { EMPTY_ARRAY } from '@base-ui/actview-utils/empty';
 import { error } from '@base-ui/actview-utils/error';
-import { flattenLeafItems, stringifyAsLabel } from '../../internals/resolveValueLabel';
-import type { ItemEqualityComparer } from '../../internals/itemEquality';
-import { findCollectionItem, type ComboboxItemCollection } from './itemCollection';
+import { flattenLeafItems, stringifyAsLabel } from '@/internals/resolveValueLabel';
+import type { ItemEqualityComparer } from '@/internals/itemEquality';
+import { findCollectionItem, type ComboboxItemCollection } from '@/combobox/items/itemCollection';
 
 export type ComboboxPrimitiveValue = string | number | bigint | boolean;
 

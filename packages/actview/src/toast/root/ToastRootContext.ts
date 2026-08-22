@@ -1,6 +1,6 @@
 import type { ComputedRef } from '@actview/core';
-import type { ToastObject } from '../useToastManager';
-import { createContext } from '../../internals/createContext';
+import type { ToastObject } from '@/toast/useToastManager';
+import { createContext } from '@/internals/createContext';
 
 export type ToastLabelIdSetter = (
   next: string | undefined | ((current: string | undefined) => string | undefined),

@@ -1,12 +1,12 @@
 import { Mock, vi, describe, expect, it, afterEach } from 'vitest';
 import { ref } from 'actview';
-import { AvatarRoot } from '../root/AvatarRoot';
-import { AvatarImage } from '../image/AvatarImage';
-import { AvatarFallback } from './AvatarFallback';
-import { useImageLoadingStatus } from '../image/useImageLoadingStatus';
+import { AvatarRoot } from '@/avatar/root/AvatarRoot';
+import { AvatarImage } from '@/avatar/image/AvatarImage';
+import { AvatarFallback } from '@/avatar/fallback/AvatarFallback';
+import { useImageLoadingStatus } from '@/avatar/image/useImageLoadingStatus';
 import { createRenderer } from '../../../test/createRenderer';
 
-vi.mock('../image/useImageLoadingStatus', () => ({
+vi.mock('@/avatar/image/useImageLoadingStatus', () => ({
   useImageLoadingStatus: vi.fn(),
 }));
 

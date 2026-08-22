@@ -1,8 +1,8 @@
 import { computed, defineComponent, ref } from 'actview';
 import { useMergedRefs } from '@base-ui/actview-utils/useMergedRefs';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { SelectGroupContext } from './SelectGroupContext';
-import { mergePropsN } from '../../merge-props';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { SelectGroupContext } from '@/select/group/SelectGroupContext';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * Groups related select items with the corresponding label.

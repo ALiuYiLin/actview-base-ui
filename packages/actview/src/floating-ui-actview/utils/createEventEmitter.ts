@@ -1,4 +1,4 @@
-import type { FloatingEvents } from '../types';
+import type { FloatingEvents } from '@/floating-ui-actview/types';
 
 export function createEventEmitter(): FloatingEvents {
   const map = new Map<string, Set<(data: any) => void>>();

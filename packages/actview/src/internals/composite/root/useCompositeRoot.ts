@@ -3,7 +3,7 @@ import { isElementDisabled } from '@base-ui/actview-utils/isElementDisabled';
 import { useIsoLayoutEffect } from '@base-ui/actview-utils/useIsoLayoutEffect';
 import { EMPTY_ARRAY } from '@base-ui/actview-utils/empty';
 import { getTarget } from '@base-ui/actview-utils/shadowDom';
-import type { TextDirection } from '../../direction-context/DirectionContext';
+import type { TextDirection } from '@/internals/direction-context/DirectionContext';
 import {
   COMPOSITE_KEYS,
   ARROW_DOWN,
@@ -21,12 +21,12 @@ import {
   isNativeInput,
   scrollIntoViewIfNeeded,
   type ModifierKey,
-} from '../composite';
-import { ACTIVE_COMPOSITE_ITEM } from '../constants';
+} from '@/internals/composite/composite';
+import { ACTIVE_COMPOSITE_ITEM } from '@/internals/composite/constants';
 import type { Ref } from '@actview/core';
-import type { CompositeMetadata } from '../list/CompositeList';
-import type { HTMLProps, MaybeRef } from '../../types';
-import type { CompositeGridNavigator } from './gridNavigation';
+import type { CompositeMetadata } from '@/internals/composite/list/CompositeList';
+import type { HTMLProps, MaybeRef } from '@/internals/types';
+import type { CompositeGridNavigator } from '@/internals/composite/root/gridNavigation';
 
 export interface UseCompositeRootParameters {
   orientation?: 'horizontal' | 'vertical' | 'both' | undefined;

@@ -1,14 +1,14 @@
 import { computed } from 'actview';
-import type { BaseUIComponentProps } from '../../internals/types';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { useFieldRootContext } from '../../internals/field-root-context/FieldRootContext';
-import type { FieldRoot } from '../../field/root/FieldRoot';
-import { useComboboxRootContext } from '../root/ComboboxRootContext';
-import type { Side } from '../../internals/useAnchorPositioning';
-import { triggerStateAttributesMapping } from '../utils/stateAttributesMapping';
-import { handleInputPress } from '../utils/handleInputPress';
-import { useListEmpty, usePopupSide } from '../utils/parts';
-import { contains } from '../../floating-ui-actview/utils/element';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useFieldRootContext } from '@/internals/field-root-context/FieldRootContext';
+import type { FieldRoot } from '@/field/root/FieldRoot';
+import { useComboboxRootContext } from '@/combobox/root/ComboboxRootContext';
+import type { Side } from '@/internals/useAnchorPositioning';
+import { triggerStateAttributesMapping } from '@/combobox/utils/stateAttributesMapping';
+import { handleInputPress } from '@/combobox/utils/handleInputPress';
+import { useListEmpty, usePopupSide } from '@/combobox/utils/parts';
+import { contains } from '@/floating-ui-actview/utils/element';
 
 /**
  * A wrapper for the input and its associated controls.

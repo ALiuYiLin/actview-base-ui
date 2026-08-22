@@ -1,7 +1,7 @@
-import { usePopoverRootContext } from '../root/PopoverRootContext';
-import type { BaseUIComponentProps } from '../../internals/types';
-import { useBaseUiId } from '../../internals/useBaseUiId';
-import { useRenderElement } from '../../internals/useRenderElement';
+import { usePopoverRootContext } from '@/popover/root/PopoverRootContext';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { useBaseUiId } from '@/internals/useBaseUiId';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * A paragraph with additional information about the popover.

@@ -3,14 +3,14 @@ import type { Ref } from '@actview/core';
 import { isElement } from '@floating-ui/utils/dom';
 import { useId } from '@base-ui/actview-utils/useId';
 import { useRefWithInit } from '@base-ui/actview-utils/useRefWithInit';
-import { PopupTriggerMap } from '../../utils/popups';
-import type { BaseUIChangeEventDetails } from '../../internals/createBaseUIEventDetails';
-import { useFloatingParentNodeId } from '../components/FloatingTree';
+import { PopupTriggerMap } from '@/utils/popups';
+import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import { useFloatingParentNodeId } from '@/floating-ui-actview/components/FloatingTree';
 import {
   FloatingRootStore,
   type FloatingRootState as State,
-} from '../components/FloatingRootStore';
-import type { ReferenceType } from '../types';
+} from '@/floating-ui-actview/components/FloatingRootStore';
+import type { ReferenceType } from '@/floating-ui-actview/types';
 
 export interface UseFloatingRootContextOptions {
   open?: boolean | Ref<boolean> | undefined;

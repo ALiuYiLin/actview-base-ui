@@ -1,6 +1,6 @@
 import { computed, ref } from 'actview';
 import { useIsoLayoutEffect } from '@base-ui/actview-utils/useIsoLayoutEffect';
-import { createContext } from '../internals/createContext';
+import { createContext } from '@/internals/createContext';
 
 interface ClosePartContextValue {
   register: () => () => void;

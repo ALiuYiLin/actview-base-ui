@@ -1,19 +1,19 @@
 import { computed } from 'actview';
 import { platform } from '@base-ui/actview-utils/platform';
 import { useIsoLayoutEffect } from '@base-ui/actview-utils/useIsoLayoutEffect';
-import { safePolygon, useClick, useHoverReferenceInteraction } from '../../floating-ui-actview';
-import type { BaseUIComponentProps, HTMLProps, NonNativeButtonProps } from '../../internals/types';
-import { useMenuRootContext } from '../root/MenuRootContext';
-import { useBaseUiId } from '../../internals/useBaseUiId';
-import { triggerOpenStateMapping } from '../../utils/popupStateMapping';
-import { useCompositeListItem } from '../../internals/composite/list/useCompositeListItem';
-import { useMenuItem } from '../item/useMenuItem';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { useMenuPositionerContext } from '../positioner/MenuPositionerContext';
-import { useTriggerRegistration } from '../../utils/popups';
-import { useMenuSubmenuRootContext } from '../submenu-root/MenuSubmenuRootContext';
-import { REASONS } from '../../internals/reasons';
-import { mergeProps } from '../../merge-props';
+import { safePolygon, useClick, useHoverReferenceInteraction } from '@/floating-ui-actview';
+import type { BaseUIComponentProps, HTMLProps, NonNativeButtonProps } from '@/internals/types';
+import { useMenuRootContext } from '@/menu/root/MenuRootContext';
+import { useBaseUiId } from '@/internals/useBaseUiId';
+import { triggerOpenStateMapping } from '@/utils/popupStateMapping';
+import { useCompositeListItem } from '@/internals/composite/list/useCompositeListItem';
+import { useMenuItem } from '@/menu/item/useMenuItem';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useMenuPositionerContext } from '@/menu/positioner/MenuPositionerContext';
+import { useTriggerRegistration } from '@/utils/popups';
+import { useMenuSubmenuRootContext } from '@/menu/submenu-root/MenuSubmenuRootContext';
+import { REASONS } from '@/internals/reasons';
+import { mergeProps } from '@/merge-props';
 
 const VOICE_OVER_EXPANDED_PROPS = { 'aria-expanded': undefined };
 

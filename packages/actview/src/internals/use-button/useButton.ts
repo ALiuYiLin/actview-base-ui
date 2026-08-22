@@ -2,11 +2,11 @@ import { isHTMLElement } from '@floating-ui/utils/dom';
 import { error } from '@base-ui/actview-utils/error';
 import { computed, onMounted, onUpdated, ref, unref, useRootElement } from 'actview';
 import type { Ref } from '@actview/core';
-import { makeEventPreventable, mergeProps } from '../../merge-props';
-import { useCompositeRootContext } from '../composite/root/CompositeRootContext';
-import type { BaseUIEvent, HTMLProps, MaybeRef } from '../types';
-import { useFocusableWhenDisabled } from '../../utils/useFocusableWhenDisabled';
-import { dispatchClickWithModifiers } from '../../utils/dispatchClickWithModifiers';
+import { makeEventPreventable, mergeProps } from '@/merge-props';
+import { useCompositeRootContext } from '@/internals/composite/root/CompositeRootContext';
+import type { BaseUIEvent, HTMLProps, MaybeRef } from '@/internals/types';
+import { useFocusableWhenDisabled } from '@/utils/useFocusableWhenDisabled';
+import { dispatchClickWithModifiers } from '@/utils/dispatchClickWithModifiers';
 
 // ============================================================
 // useButton — ActView 版（Base UI useButton 移植）

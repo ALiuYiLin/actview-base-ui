@@ -1,15 +1,15 @@
 import { describe, expect, it, vi, beforeAll, afterEach } from 'vitest';
-import { PopoverRoot } from './root/PopoverRoot';
-import { PopoverTrigger } from './trigger/PopoverTrigger';
-import { PopoverPortal } from './portal/PopoverPortal';
-import { PopoverPositioner } from './positioner/PopoverPositioner';
-import { PopoverPopup } from './popup/PopoverPopup';
-import { PopoverArrow } from './arrow/PopoverArrow';
-import { PopoverTitle } from './title/PopoverTitle';
-import { PopoverDescription } from './description/PopoverDescription';
-import { PopoverClose } from './close/PopoverClose';
-import { PopoverViewport } from './viewport/PopoverViewport';
-import { createPopoverHandle } from './store/PopoverHandle';
+import { PopoverRoot } from '@/popover/root/PopoverRoot';
+import { PopoverTrigger } from '@/popover/trigger/PopoverTrigger';
+import { PopoverPortal } from '@/popover/portal/PopoverPortal';
+import { PopoverPositioner } from '@/popover/positioner/PopoverPositioner';
+import { PopoverPopup } from '@/popover/popup/PopoverPopup';
+import { PopoverArrow } from '@/popover/arrow/PopoverArrow';
+import { PopoverTitle } from '@/popover/title/PopoverTitle';
+import { PopoverDescription } from '@/popover/description/PopoverDescription';
+import { PopoverClose } from '@/popover/close/PopoverClose';
+import { PopoverViewport } from '@/popover/viewport/PopoverViewport';
+import { createPopoverHandle } from '@/popover/store/PopoverHandle';
 import { createRenderer } from '../../test/createRenderer';
 
 beforeAll(() => {

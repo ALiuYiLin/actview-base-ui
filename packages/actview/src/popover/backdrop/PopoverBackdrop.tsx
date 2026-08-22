@@ -1,10 +1,10 @@
 import { computed } from 'actview';
-import { usePopoverRootContext } from '../root/PopoverRootContext';
-import type { BaseUIComponentProps } from '../../internals/types';
-import { popupTransitionStateMapping } from '../../utils/popupStateMapping';
-import type { TransitionStatus } from '../../internals/useTransitionStatus';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { REASONS } from '../../internals/reasons';
+import { usePopoverRootContext } from '@/popover/root/PopoverRootContext';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { popupTransitionStateMapping } from '@/utils/popupStateMapping';
+import type { TransitionStatus } from '@/internals/useTransitionStatus';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { REASONS } from '@/internals/reasons';
 
 /**
  * An overlay displayed beneath the popover.

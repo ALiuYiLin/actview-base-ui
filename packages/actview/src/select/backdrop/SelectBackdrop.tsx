@@ -1,12 +1,12 @@
 import { computed } from 'actview';
-import type { BaseUIComponentProps } from '../../internals/types';
-import { useSelectRootContext } from '../root/SelectRootContext';
-import { popupStateMapping } from '../../utils/popupStateMapping';
-import type { StateAttributesMapping } from '../../internals/getStateAttributesProps';
-import type { TransitionStatus } from '../../internals/useTransitionStatus';
-import { transitionStatusMapping } from '../../internals/stateAttributesMapping';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { selectors } from '../store';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { useSelectRootContext } from '@/select/root/SelectRootContext';
+import { popupStateMapping } from '@/utils/popupStateMapping';
+import type { StateAttributesMapping } from '@/internals/getStateAttributesProps';
+import type { TransitionStatus } from '@/internals/useTransitionStatus';
+import { transitionStatusMapping } from '@/internals/stateAttributesMapping';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { selectors } from '@/select/store';
 
 const stateAttributesMapping: StateAttributesMapping<SelectBackdropState> = {
   ...popupStateMapping,

@@ -1,8 +1,8 @@
 import { computed, defineComponent, ref } from 'actview';
 import { useMergedRefs } from '@base-ui/actview-utils/useMergedRefs';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { MenuGroupContext } from './MenuGroupContext';
-import { mergePropsN } from '../../merge-props';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { MenuGroupContext } from '@/menu/group/MenuGroupContext';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * Groups related menu items with the corresponding label.

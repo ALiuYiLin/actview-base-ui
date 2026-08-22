@@ -2,7 +2,7 @@ import {
   getGridNavigatedIndex,
   isIndexOutOfListBounds,
   type DisabledIndices,
-} from '../utils/composite';
+} from '@/floating-ui-actview/utils/composite';
 
 /**
  * Positional arguments are deliberate: property names of an options object

@@ -2,12 +2,12 @@ import type { HTMLAttributes, VNode } from '@actview/jsx';
 import type {
   BaseUIChangeEventDetails,
   BaseUIGenericEventDetails,
-} from '../internals/createBaseUIEventDetails';
+} from '@/internals/createBaseUIEventDetails';
 
 export type {
   BaseUIChangeEventDetails,
   BaseUIGenericEventDetails,
-} from '../internals/createBaseUIEventDetails';
+} from '@/internals/createBaseUIEventDetails';
 
 export type { VNode };
 

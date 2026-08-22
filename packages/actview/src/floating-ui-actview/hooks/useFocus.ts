@@ -5,8 +5,8 @@ import { ownerDocument } from '@base-ui/actview-utils/owner';
 import { useOnMount } from '@base-ui/actview-utils/useOnMount';
 import { useTimeout } from '@base-ui/actview-utils/useTimeout';
 import { getWindow, isElement, isHTMLElement } from '@floating-ui/utils/dom';
-import type { ElementProps, FloatingContext, FloatingRootContext } from '../types';
-import { createAttribute } from '../utils/createAttribute';
+import type { ElementProps, FloatingContext, FloatingRootContext } from '@/floating-ui-actview/types';
+import { createAttribute } from '@/floating-ui-actview/utils/createAttribute';
 import {
   activeElement,
   contains,
@@ -14,10 +14,10 @@ import {
   isTargetInsideEnabledTrigger,
   isTypeableElement,
   matchesFocusVisible,
-} from '../utils/element';
-import { createChangeEventDetails } from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
-import type { FloatingUIOpenChangeDetails } from '../../internals/types';
+} from '@/floating-ui-actview/utils/element';
+import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
+import type { FloatingUIOpenChangeDetails } from '@/internals/types';
 
 const isMacSafari = platform.os.mac && platform.engine.webkit;
 

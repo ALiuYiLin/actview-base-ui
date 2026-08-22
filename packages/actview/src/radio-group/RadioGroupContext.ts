@@ -1,8 +1,8 @@
 import type { ComputedRef } from '@actview/core';
-import type { UseFieldValidationReturnValue } from '../field/root/useFieldValidation';
-import type { BaseUIChangeEventDetails } from '../internals/createBaseUIEventDetails';
-import type { BaseUIEventReasons } from '../internals/reasons';
-import { createContext } from '../internals/createContext';
+import type { UseFieldValidationReturnValue } from '@/field/root/useFieldValidation';
+import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import type { BaseUIEventReasons } from '@/internals/reasons';
+import { createContext } from '@/internals/createContext';
 
 export interface RadioGroupContext<Value> {
   disabled: boolean | undefined;

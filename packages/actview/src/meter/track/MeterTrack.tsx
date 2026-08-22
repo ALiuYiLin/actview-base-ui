@@ -1,7 +1,7 @@
 import { defineComponent } from 'actview';
-import type { MeterRootState } from '../root/MeterRoot';
-import type { BaseUIComponentProps } from '../../internals/types';
-import { mergePropsN } from '../../merge-props';
+import type { MeterRootState } from '@/meter/root/MeterRoot';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * Contains the meter indicator and represents the entire range of the meter.

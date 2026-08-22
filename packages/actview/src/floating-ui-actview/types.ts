@@ -6,27 +6,27 @@ import type {
   Strategy,
   VirtualElement,
 } from '@floating-ui/dom';
-import type { BaseUIChangeEventDetails } from '../internals/createBaseUIEventDetails';
-import type { HTMLProps } from '../types';
-import type { FloatingTreeStore } from './components/FloatingTreeStore';
-import type { FloatingRootStore } from './components/FloatingRootStore';
+import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import type { HTMLProps } from '@/types';
+import type { FloatingTreeStore } from '@/floating-ui-actview/components/FloatingTreeStore';
+import type { FloatingRootStore } from '@/floating-ui-actview/components/FloatingRootStore';
 
 export * from '.';
-export type { FloatingDelayGroupProps } from './components/FloatingDelayGroup';
-export type { FloatingFocusManagerProps } from './components/FloatingFocusManager';
-export type { UseFloatingPortalNodeProps } from './components/FloatingPortal';
-export type { UseClientPointProps } from './hooks/useClientPoint';
-export type { UseDismissProps } from './hooks/useDismiss';
-export type { UseFocusProps } from './hooks/useFocus';
-export type { UseHoverProps } from './hooks/useHover';
-export type { HandleCloseContext, HandleClose } from './hooks/useHoverShared';
-export type { UseHoverFloatingInteractionProps } from './hooks/useHoverFloatingInteraction';
-export type { UseHoverReferenceInteractionProps } from './hooks/useHoverReferenceInteraction';
-export type { UseListNavigationProps } from './hooks/useListNavigation';
-export type { UseTypeaheadProps } from './hooks/useTypeahead';
-export type { UseFloatingRootContextOptions } from './hooks/useFloatingRootContext';
-export type { SafePolygonOptions } from './safePolygon';
-export type { FloatingTreeProps, FloatingNodeProps } from './components/FloatingTree';
+export type { FloatingDelayGroupProps } from '@/floating-ui-actview/components/FloatingDelayGroup';
+export type { FloatingFocusManagerProps } from '@/floating-ui-actview/components/FloatingFocusManager';
+export type { UseFloatingPortalNodeProps } from '@/floating-ui-actview/components/FloatingPortal';
+export type { UseClientPointProps } from '@/floating-ui-actview/hooks/useClientPoint';
+export type { UseDismissProps } from '@/floating-ui-actview/hooks/useDismiss';
+export type { UseFocusProps } from '@/floating-ui-actview/hooks/useFocus';
+export type { UseHoverProps } from '@/floating-ui-actview/hooks/useHover';
+export type { HandleCloseContext, HandleClose } from '@/floating-ui-actview/hooks/useHoverShared';
+export type { UseHoverFloatingInteractionProps } from '@/floating-ui-actview/hooks/useHoverFloatingInteraction';
+export type { UseHoverReferenceInteractionProps } from '@/floating-ui-actview/hooks/useHoverReferenceInteraction';
+export type { UseListNavigationProps } from '@/floating-ui-actview/hooks/useListNavigation';
+export type { UseTypeaheadProps } from '@/floating-ui-actview/hooks/useTypeahead';
+export type { UseFloatingRootContextOptions } from '@/floating-ui-actview/hooks/useFloatingRootContext';
+export type { SafePolygonOptions } from '@/floating-ui-actview/safePolygon';
+export type { FloatingTreeProps, FloatingNodeProps } from '@/floating-ui-actview/components/FloatingTree';
 export type {
   AlignedPlacement,
   Alignment,

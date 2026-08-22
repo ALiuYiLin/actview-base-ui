@@ -1,10 +1,10 @@
 import { computed } from 'actview';
 import { useMergedRefs } from '@base-ui/actview-utils/useMergedRefs';
-import { useButton } from '../../internals/use-button';
-import { mergeProps } from '../../merge-props';
-import type { HTMLProps } from '../../internals/types';
-import type { MenuStore } from '../store/MenuStore';
-import { useMenuItemCommonProps } from './useMenuItemCommonProps';
+import { useButton } from '@/internals/use-button';
+import { mergeProps } from '@/merge-props';
+import type { HTMLProps } from '@/internals/types';
+import type { MenuStore } from '@/menu/store/MenuStore';
+import { useMenuItemCommonProps } from '@/menu/item/useMenuItemCommonProps';
 
 export const REGULAR_ITEM = {
   type: 'regular-item' as const,

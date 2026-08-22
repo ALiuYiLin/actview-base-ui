@@ -1,4 +1,4 @@
-import { CommonTriggerDataAttributes } from '../../utils/popupStateMapping';
+import { CommonTriggerDataAttributes } from '@/utils/popupStateMapping';
 
 export enum MenuSubmenuTriggerDataAttributes {
   /**

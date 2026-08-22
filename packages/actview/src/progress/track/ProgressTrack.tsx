@@ -1,11 +1,11 @@
 import { computed, defineComponent, useRootElement } from 'actview';
-import type { HTMLProps } from '../../internals/types';
-import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
-import { useProgressRootContext } from '../root/ProgressRootContext';
-import { progressStateAttributesMapping } from '../root/stateAttributesMapping';
-import type { ProgressRootState } from '../root/ProgressRoot';
-import type { BaseUIComponentProps } from '../../internals/types';
-import { mergePropsN } from '../../merge-props';
+import type { HTMLProps } from '@/internals/types';
+import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import { useProgressRootContext } from '@/progress/root/ProgressRootContext';
+import { progressStateAttributesMapping } from '@/progress/root/stateAttributesMapping';
+import type { ProgressRootState } from '@/progress/root/ProgressRoot';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * Contains the progress bar indicator.

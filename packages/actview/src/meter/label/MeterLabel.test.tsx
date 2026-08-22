@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ref } from 'actview';
-import { MeterRoot } from '../root/MeterRoot';
-import { MeterLabel } from './MeterLabel';
+import { MeterRoot } from '@/meter/root/MeterRoot';
+import { MeterLabel } from '@/meter/label/MeterLabel';
 import { createRenderer } from '../../../test/createRenderer';
 
 const { render, fireEvent, act } = createRenderer();

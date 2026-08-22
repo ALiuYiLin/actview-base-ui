@@ -1,11 +1,11 @@
 import { computed, defineComponent } from 'actview';
 import { EMPTY_OBJECT } from '@base-ui/actview-utils/empty';
-import { type BaseUIComponentProps, type NativeButtonProps } from '../../internals/types';
-import { useButton } from '../../internals/use-button';
-import type { ToolbarRoot, ToolbarRootState } from '../root/ToolbarRoot';
-import { useToolbarRootContext } from '../root/ToolbarRootContext';
-import { useToolbarGroupContext } from '../group/ToolbarGroupContext';
-import { CompositeItem } from '../../internals/composite/item/CompositeItem';
+import { type BaseUIComponentProps, type NativeButtonProps } from '@/internals/types';
+import { useButton } from '@/internals/use-button';
+import type { ToolbarRoot, ToolbarRootState } from '@/toolbar/root/ToolbarRoot';
+import { useToolbarRootContext } from '@/toolbar/root/ToolbarRootContext';
+import { useToolbarGroupContext } from '@/toolbar/group/ToolbarGroupContext';
+import { CompositeItem } from '@/internals/composite/item/CompositeItem';
 
 /**
  * A button that can be used as-is or as a trigger for other components.

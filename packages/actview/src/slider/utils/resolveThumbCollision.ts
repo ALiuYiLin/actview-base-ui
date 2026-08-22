@@ -1,6 +1,6 @@
 import { clamp } from '@base-ui/actview-utils/clamp';
-import { getPushedThumbValues } from './getPushedThumbValues';
-import type { SliderRootContext } from '../root/SliderRootContext';
+import { getPushedThumbValues } from '@/slider/utils/getPushedThumbValues';
+import type { SliderRootContext } from '@/slider/root/SliderRootContext';
 
 export interface ResolveThumbCollisionResult {
   value: number | number[];

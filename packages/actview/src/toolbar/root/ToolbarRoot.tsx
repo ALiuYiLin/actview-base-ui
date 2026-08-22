@@ -3,10 +3,10 @@ import {
   type BaseUIComponentProps,
   type Orientation as BaseOrientation,
   type HTMLProps,
-} from '../../internals/types';
-import { CompositeRoot } from '../../internals/composite/root/CompositeRoot';
-import type { CompositeMetadata } from '../../internals/composite/list/CompositeList';
-import { ToolbarRootContext } from './ToolbarRootContext';
+} from '@/internals/types';
+import { CompositeRoot } from '@/internals/composite/root/CompositeRoot';
+import type { CompositeMetadata } from '@/internals/composite/list/CompositeList';
+import { ToolbarRootContext } from '@/toolbar/root/ToolbarRootContext';
 
 /**
  * A container for grouping a set of controls, such as buttons, toggle groups, or menus.

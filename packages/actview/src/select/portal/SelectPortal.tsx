@@ -1,9 +1,9 @@
 import { computed } from 'actview';
 import { createElement } from '@actview/jsx';
-import { FloatingPortal } from '../../floating-ui-actview';
-import type { BaseUIComponentProps } from '../../internals/types';
-import { useSelectRootContext } from '../root/SelectRootContext';
-import { selectors } from '../store';
+import { FloatingPortal } from '@/floating-ui-actview';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { useSelectRootContext } from '@/select/root/SelectRootContext';
+import { selectors } from '@/select/store';
 
 /**
  * A portal element that moves the popup to a different part of the DOM.

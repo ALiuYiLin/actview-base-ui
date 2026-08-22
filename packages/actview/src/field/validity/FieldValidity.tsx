@@ -1,9 +1,9 @@
 import { computed } from 'actview';
-import { useFieldRootContext } from '../../internals/field-root-context/FieldRootContext';
-import { getCombinedFieldValidityData } from '../utils/getCombinedFieldValidityData';
-import type { FieldValidityData } from '../root/FieldRoot';
-import { type TransitionStatus, useTransitionStatus } from '../../internals/useTransitionStatus';
-import type { VNode } from '../../internals/types';
+import { useFieldRootContext } from '@/internals/field-root-context/FieldRootContext';
+import { getCombinedFieldValidityData } from '@/field/utils/getCombinedFieldValidityData';
+import type { FieldValidityData } from '@/field/root/FieldRoot';
+import { type TransitionStatus, useTransitionStatus } from '@/internals/useTransitionStatus';
+import type { VNode } from '@/internals/types';
 
 /**
  * Used to display a custom message based on the field's validity.

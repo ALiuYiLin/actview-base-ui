@@ -1,7 +1,7 @@
 import { shallowRef, watch } from 'actview';
 import type { Ref } from '@actview/core';
 import { NOOP } from '@base-ui/actview-utils/empty';
-import type { PopupHandleStoreProvider } from './popupHandle';
+import type { PopupHandleStoreProvider } from '@/utils/popups/popupHandle';
 
 /**
  * Reads the store currently exposed by a popup handle and subscribes to store-pointer changes.

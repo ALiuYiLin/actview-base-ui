@@ -1,6 +1,6 @@
 import type { ComputedRef } from '@actview/core';
 import { createContext } from 'actview';
-import type { ProgressRootState } from './ProgressRoot';
+import type { ProgressRootState } from '@/progress/root/ProgressRoot';
 
 export type ProgressRootContext = {
   /**

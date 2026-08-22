@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { Input } from './Input';
+import { Input } from '@/input/Input';
 import { createRenderer } from '../../test/createRenderer';
 
 describe('<Input />', () => {

@@ -1,7 +1,7 @@
-import { ComboboxTrigger } from '../../combobox/trigger/ComboboxTrigger';
-import type { FieldRootState } from '../../field/root/FieldRoot';
-import type { Side } from '../../internals/useAnchorPositioning';
-import type { BaseUIComponentProps, NativeButtonProps } from '../../internals/types';
+import { ComboboxTrigger } from '@/combobox/trigger/ComboboxTrigger';
+import type { FieldRootState } from '@/field/root/FieldRoot';
+import type { Side } from '@/internals/useAnchorPositioning';
+import type { BaseUIComponentProps, NativeButtonProps } from '@/internals/types';
 
 /**
  * A button that opens the popup.

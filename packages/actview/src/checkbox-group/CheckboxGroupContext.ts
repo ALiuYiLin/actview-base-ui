@@ -1,9 +1,9 @@
 import { createContext } from 'actview';
-import type { UseFieldValidationReturnValue } from '../field/root/useFieldValidation';
-import type { UseCheckboxGroupParentReturnValue } from './useCheckboxGroupParent';
-import type { BaseUIChangeEventDetails } from '../internals/createBaseUIEventDetails';
-import type { BaseUIEventReasons } from '../internals/reasons';
-import type { LabelableContext } from '../internals/labelable-provider/LabelableContext';
+import type { UseFieldValidationReturnValue } from '@/field/root/useFieldValidation';
+import type { UseCheckboxGroupParentReturnValue } from '@/checkbox-group/useCheckboxGroupParent';
+import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import type { BaseUIEventReasons } from '@/internals/reasons';
+import type { LabelableContext } from '@/internals/labelable-provider/LabelableContext';
 
 export interface CheckboxGroupContext {
   value: string[];

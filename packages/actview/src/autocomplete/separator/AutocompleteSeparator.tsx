@@ -1,5 +1,5 @@
-import { ListboxSeparator } from '../../utils/listbox-separator/ListboxSeparator';
-import type { BaseUIComponentProps, Orientation } from '../../internals/types';
+import { ListboxSeparator } from '@/utils/listbox-separator/ListboxSeparator';
+import type { BaseUIComponentProps, Orientation } from '@/internals/types';
 
 export interface AutocompleteSeparatorProps extends BaseUIComponentProps<
   'div',

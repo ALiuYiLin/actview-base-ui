@@ -1,7 +1,7 @@
-import type { BaseUIComponentProps } from '../../internals/types';
-import { useSelectRootContext } from '../root/SelectRootContext';
-import { useSelectItemContext } from '../item/SelectItemContext';
-import { useRenderElement } from '../../internals/useRenderElement';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { useSelectRootContext } from '@/select/root/SelectRootContext';
+import { useSelectItemContext } from '@/select/item/SelectItemContext';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * A text label of the select item.

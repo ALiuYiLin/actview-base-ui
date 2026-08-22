@@ -1,22 +1,22 @@
 import { computed, watch } from 'actview';
 import { inertValue } from '@base-ui/actview-utils/inertValue';
-import { FloatingNode, useFloatingNodeId } from '../../floating-ui-actview';
-import { usePopoverRootContext } from '../root/PopoverRootContext';
-import { PopoverPositionerContext } from './PopoverPositionerContext';
+import { FloatingNode, useFloatingNodeId } from '@/floating-ui-actview';
+import { usePopoverRootContext } from '@/popover/root/PopoverRootContext';
+import { PopoverPositionerContext } from '@/popover/positioner/PopoverPositionerContext';
 import {
   useAnchorPositioning,
   type Side,
   type Align,
   type UseAnchorPositioningSharedParameters,
-} from '../../internals/useAnchorPositioning';
-import type { BaseUIComponentProps } from '../../internals/types';
-import { usePopoverPortalContext } from '../portal/PopoverPortalContext';
-import { InternalBackdrop } from '../../utils/InternalBackdrop';
-import { REASONS } from '../../internals/reasons';
-import { POPUP_COLLISION_AVOIDANCE } from '../../internals/constants';
-import { useAnimationsFinished } from '../../internals/useAnimationsFinished';
-import { usePositioner } from '../../utils/usePositioner';
-import { useAnchoredPopupScrollLock } from '../../utils/useAnchoredPopupScrollLock';
+} from '@/internals/useAnchorPositioning';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { usePopoverPortalContext } from '@/popover/portal/PopoverPortalContext';
+import { InternalBackdrop } from '@/utils/InternalBackdrop';
+import { REASONS } from '@/internals/reasons';
+import { POPUP_COLLISION_AVOIDANCE } from '@/internals/constants';
+import { useAnimationsFinished } from '@/internals/useAnimationsFinished';
+import { usePositioner } from '@/utils/usePositioner';
+import { useAnchoredPopupScrollLock } from '@/utils/useAnchoredPopupScrollLock';
 
 /**
  * Positions the popover against the trigger.

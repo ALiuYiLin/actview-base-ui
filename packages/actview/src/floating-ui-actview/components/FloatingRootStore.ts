@@ -1,11 +1,11 @@
 import { ActviewStore } from '@base-ui/actview-utils/store';
-import type { FloatingEvents, ContextData, ReferenceType } from '../types';
-import type { BaseUIChangeEventDetails } from '../../internals/createBaseUIEventDetails';
-import { createEventEmitter } from '../utils/createEventEmitter';
-import type { FloatingUIOpenChangeDetails } from '../../internals/types';
-import type { PopupTriggerMap } from '../../utils/popups';
-import { isClickLikeEvent } from '../utils';
-import type { TransitionStatus } from '../../internals/useTransitionStatus';
+import type { FloatingEvents, ContextData, ReferenceType } from '@/floating-ui-actview/types';
+import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import { createEventEmitter } from '@/floating-ui-actview/utils/createEventEmitter';
+import type { FloatingUIOpenChangeDetails } from '@/internals/types';
+import type { PopupTriggerMap } from '@/utils/popups';
+import { isClickLikeEvent } from '@/floating-ui-actview/utils';
+import type { TransitionStatus } from '@/internals/useTransitionStatus';
 
 export interface FloatingRootState {
   open: boolean;

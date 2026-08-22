@@ -5,7 +5,7 @@ import {
   type InteractionType,
 } from '@base-ui/actview-utils/useEnhancedClickHandler';
 import { platform } from '@base-ui/actview-utils/platform';
-import { useValueChanged } from '../internals/useValueChanged';
+import { useValueChanged } from '@/internals/useValueChanged';
 
 type MaybeRef<T> = T | Ref<T>;
 

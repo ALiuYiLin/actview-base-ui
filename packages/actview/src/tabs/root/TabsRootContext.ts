@@ -1,8 +1,8 @@
-import { createContext } from '../../internals/createContext';
+import { createContext } from '@/internals/createContext';
 import type { ComputedRef } from '@actview/core';
-import type { CompositeMetadata } from '../../internals/composite/list/CompositeList';
-import type { TabsTab } from '../tab/TabsTab';
-import type { TabsRoot } from './TabsRoot';
+import type { CompositeMetadata } from '@/internals/composite/list/CompositeList';
+import type { TabsTab } from '@/tabs/tab/TabsTab';
+import type { TabsRoot } from '@/tabs/root/TabsRoot';
 
 export interface TabsRootContext {
   /**

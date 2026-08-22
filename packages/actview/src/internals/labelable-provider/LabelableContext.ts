@@ -1,6 +1,6 @@
-import { NOOP } from '../noop';
-import type { HTMLProps } from '../types';
-import { createContext } from '../createContext';
+import { NOOP } from '@/internals/noop';
+import type { HTMLProps } from '@/internals/types';
+import { createContext } from '@/internals/createContext';
 
 export interface LabelableContext {
   /**

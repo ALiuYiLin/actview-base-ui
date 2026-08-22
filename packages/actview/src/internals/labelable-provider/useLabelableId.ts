@@ -1,10 +1,10 @@
 import { computed, onUnmounted, unref, watch } from 'actview';
 import type { ComputedRef } from '@actview/core';
 import { useRefWithInit } from '@base-ui/actview-utils/useRefWithInit';
-import { NOOP } from '../noop';
-import { useBaseUiId } from '../useBaseUiId';
-import { useLabelableContext } from './LabelableContext';
-import type { MaybeRef } from '../types';
+import { NOOP } from '@/internals/noop';
+import { useBaseUiId } from '@/internals/useBaseUiId';
+import { useLabelableContext } from '@/internals/labelable-provider/LabelableContext';
+import type { MaybeRef } from '@/internals/types';
 
 export function useLabelableId(
   params: UseLabelableIdParameters = {},

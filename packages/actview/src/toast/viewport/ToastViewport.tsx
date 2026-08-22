@@ -4,12 +4,12 @@ import { mergeCleanups } from '@base-ui/actview-utils/mergeCleanups';
 import { ownerDocument, ownerWindow } from '@base-ui/actview-utils/owner';
 import { visuallyHidden } from '@base-ui/actview-utils/visuallyHidden';
 import { useTimeout } from '@base-ui/actview-utils/useTimeout';
-import { activeElement, contains, getTarget } from '../../floating-ui-actview/utils';
-import { renderFocusGuard } from '../../utils/FocusGuard';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { useToastProviderContext } from '../provider/ToastProviderContext';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { isFocusVisible } from '../utils/focusVisible';
+import { activeElement, contains, getTarget } from '@/floating-ui-actview/utils';
+import { renderFocusGuard } from '@/utils/FocusGuard';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { useToastProviderContext } from '@/toast/provider/ToastProviderContext';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { isFocusVisible } from '@/toast/utils/focusVisible';
 
 /**
  * A container viewport for toasts.

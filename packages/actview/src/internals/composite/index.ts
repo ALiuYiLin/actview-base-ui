@@ -1,19 +1,19 @@
-export { CompositeItem } from './item/CompositeItem';
-export { CompositeList } from './list/CompositeList';
-export type { CompositeMetadata } from './list/CompositeList';
-export { CompositeListContext, useCompositeListContext } from './list/CompositeListContext';
-export type { CompositeListContextValue } from './list/CompositeListContext';
-export { CompositeRoot } from './root/CompositeRoot';
-export { useCompositeListItem } from './list/useCompositeListItem';
-export type { UseCompositeListItemParameters } from './list/useCompositeListItem';
-export { useCompositeRoot } from './root/useCompositeRoot';
-export type { UseCompositeRootParameters } from './root/useCompositeRoot';
-export { gridNavigation } from './root/gridNavigation';
+export { CompositeItem } from '@/internals/composite/item/CompositeItem';
+export { CompositeList } from '@/internals/composite/list/CompositeList';
+export type { CompositeMetadata } from '@/internals/composite/list/CompositeList';
+export { CompositeListContext, useCompositeListContext } from '@/internals/composite/list/CompositeListContext';
+export type { CompositeListContextValue } from '@/internals/composite/list/CompositeListContext';
+export { CompositeRoot } from '@/internals/composite/root/CompositeRoot';
+export { useCompositeListItem } from '@/internals/composite/list/useCompositeListItem';
+export type { UseCompositeListItemParameters } from '@/internals/composite/list/useCompositeListItem';
+export { useCompositeRoot } from '@/internals/composite/root/useCompositeRoot';
+export type { UseCompositeRootParameters } from '@/internals/composite/root/useCompositeRoot';
+export { gridNavigation } from '@/internals/composite/root/gridNavigation';
 export type {
   CompositeGridConfig,
   CompositeGridItemSize,
   CompositeGridNavigationState,
   CompositeGridNavigator,
-} from './root/gridNavigation';
-export { scrollIntoViewIfNeeded } from './composite';
-export { findNonDisabledListIndex, isListIndexDisabled } from './compositeUtils';
+} from '@/internals/composite/root/gridNavigation';
+export { scrollIntoViewIfNeeded } from '@/internals/composite/composite';
+export { findNonDisabledListIndex, isListIndexDisabled } from '@/internals/composite/compositeUtils';

@@ -1,11 +1,11 @@
 import { computed } from 'actview';
-import { useMenuCheckboxItemContext } from '../checkbox-item/MenuCheckboxItemContext';
-import { useRenderElement } from '../../internals/useRenderElement';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { itemMapping } from '../utils/stateAttributesMapping';
-import { useTransitionStatus, type TransitionStatus } from '../../internals/useTransitionStatus';
-import { useOpenChangeComplete } from '../../internals/useOpenChangeComplete';
-import { mergeProps } from '../../merge-props';
+import { useMenuCheckboxItemContext } from '@/menu/checkbox-item/MenuCheckboxItemContext';
+import { useRenderElement } from '@/internals/useRenderElement';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { itemMapping } from '@/menu/utils/stateAttributesMapping';
+import { useTransitionStatus, type TransitionStatus } from '@/internals/useTransitionStatus';
+import { useOpenChangeComplete } from '@/internals/useOpenChangeComplete';
+import { mergeProps } from '@/merge-props';
 
 /**
  * Indicates whether the checkbox item is ticked.

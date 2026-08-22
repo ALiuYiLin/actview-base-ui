@@ -2,9 +2,9 @@ import { isHTMLElement } from '@floating-ui/utils/dom';
 import { ownerDocument } from '@base-ui/actview-utils/owner';
 import { computed } from 'actview';
 import { getTarget } from '@base-ui/actview-utils/shadowDom';
-import { useRegisteredLabelId } from '../../utils/useRegisteredLabelId';
-import { useLabelableContext } from './LabelableContext';
-import type { HTMLProps } from '../types';
+import { useRegisteredLabelId } from '@/utils/useRegisteredLabelId';
+import { useLabelableContext } from '@/internals/labelable-provider/LabelableContext';
+import type { HTMLProps } from '@/internals/types';
 
 export function useLabel(params: UseLabelParameters = {}): () => UseLabelReturnValue {
   const {

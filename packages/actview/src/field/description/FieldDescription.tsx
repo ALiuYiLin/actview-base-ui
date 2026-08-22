@@ -1,13 +1,13 @@
 import { computed, defineComponent, onMounted, onUnmounted, useRootElement } from 'actview';
-import { type FieldRootState } from '../root/FieldRoot';
-import { useFieldRootContext } from '../../internals/field-root-context/FieldRootContext';
-import { useLabelableContext } from '../../internals/labelable-provider/LabelableContext';
-import { fieldValidityMapping } from '../../internals/field-constants/constants';
-import type { BaseUIComponentProps } from '../../internals/types';
-import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
-import { useBaseUiId } from '../../internals/useBaseUiId';
-import { useFieldItemContext } from '../item/FieldItemContext';
-import { mergePropsN } from '../../merge-props';
+import { type FieldRootState } from '@/field/root/FieldRoot';
+import { useFieldRootContext } from '@/internals/field-root-context/FieldRootContext';
+import { useLabelableContext } from '@/internals/labelable-provider/LabelableContext';
+import { fieldValidityMapping } from '@/internals/field-constants/constants';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import { useBaseUiId } from '@/internals/useBaseUiId';
+import { useFieldItemContext } from '@/field/item/FieldItemContext';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * A paragraph with additional information about the field.

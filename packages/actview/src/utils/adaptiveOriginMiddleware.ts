@@ -1,7 +1,7 @@
 import { ownerDocument, ownerWindow } from '@base-ui/actview-utils/owner';
 import { getSide } from '@floating-ui/utils';
 import type { Middleware } from '@floating-ui/dom';
-import { DEFAULT_SIDES } from './adaptiveOriginConstants';
+import { DEFAULT_SIDES } from '@/utils/adaptiveOriginConstants';
 
 export const adaptiveOrigin: Middleware = {
   name: 'adaptiveOrigin',

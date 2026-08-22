@@ -4,13 +4,13 @@ import {
   getTabbableAfterElement,
   getTabbableBeforeElement,
   isOutsideEvent,
-} from '../../floating-ui-actview/utils/tabbable';
-import { contains } from '../../floating-ui-actview/utils/element';
+} from '@/floating-ui-actview/utils/tabbable';
+import { contains } from '@/floating-ui-actview/utils/element';
 import {
   type BaseUIChangeEventDetails,
   createChangeEventDetails,
-} from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
+} from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
 
 /**
  * Minimal store interface required by the focus guard hook.

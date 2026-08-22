@@ -1,4 +1,4 @@
-import { TransitionStatusDataAttributes } from '../../internals/stateAttributesMapping';
+import { TransitionStatusDataAttributes } from '@/internals/stateAttributesMapping';
 
 export enum CollapsiblePanelDataAttributes {
   /**

@@ -1,7 +1,7 @@
 import { ref, unref, watch } from 'actview';
 import type { Ref } from '@actview/core';
-import type { MaybeRef } from '../../internals/types';
-import type { ImageLoadingStatus } from '../root/AvatarRoot';
+import type { MaybeRef } from '@/internals/types';
+import type { ImageLoadingStatus } from '@/avatar/root/AvatarRoot';
 
 interface UseImageLoadingStatusOptions {
   referrerPolicy?: MaybeRef<string | undefined>;

@@ -1,8 +1,8 @@
 import { computed, ref, unref } from 'actview';
 import { EMPTY_ARRAY } from '@base-ui/actview-utils/empty';
-import type { BaseUIChangeEventDetails } from '../internals/createBaseUIEventDetails';
-import type { BaseUIEventReasons } from '../internals/reasons';
-import type { MaybeRef, RefObject } from '../internals/types';
+import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import type { BaseUIEventReasons } from '@/internals/reasons';
+import type { MaybeRef, RefObject } from '@/internals/types';
 
 export function useCheckboxGroupParent(
   params: UseCheckboxGroupParentParameters,

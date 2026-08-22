@@ -1,5 +1,5 @@
-import { MenuStore, createNullMenuStore, type MenuHandleStore } from './MenuStore';
-import { BasePopupHandle } from '../../utils/popups/popupHandle';
+import { MenuStore, createNullMenuStore, type MenuHandleStore } from '@/menu/store/MenuStore';
+import { BasePopupHandle } from '@/utils/popups/popupHandle';
 
 /**
  * Controls a Menu imperatively and associates detached `Menu.Trigger` components with a `Menu.Root`.

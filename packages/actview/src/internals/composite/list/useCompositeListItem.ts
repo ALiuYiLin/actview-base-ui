@@ -1,8 +1,8 @@
 import { computed, ref as createRef, unref } from 'actview';
 import type { ComputedRef } from '@actview/core';
-import type { MaybeRef } from '../../types';
+import type { MaybeRef } from '@/internals/types';
 import { useIsoLayoutEffect } from '@base-ui/actview-utils/useIsoLayoutEffect';
-import { useCompositeListContext } from './CompositeListContext';
+import { useCompositeListContext } from '@/internals/composite/list/CompositeListContext';
 
 export interface UseCompositeListItemParameters<Metadata> {
   /**

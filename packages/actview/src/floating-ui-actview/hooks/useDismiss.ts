@@ -14,16 +14,16 @@ import {
   isShadowRoot,
 } from '@floating-ui/utils/dom';
 import { platform } from '@base-ui/actview-utils/platform';
-import { useFloatingTree } from '../components/FloatingTree';
-import { FloatingTreeStore } from '../components/FloatingTreeStore';
-import type { ElementProps, FloatingContext, FloatingRootContext } from '../types';
-import { createChangeEventDetails } from '../../internals/createBaseUIEventDetails';
-import type { FloatingUIOpenChangeDetails } from '../../internals/types';
-import { REASONS } from '../../internals/reasons';
-import { createAttribute } from '../utils/createAttribute';
-import { contains, getTarget, isEventTargetWithin, isRootElement } from '../utils/element';
-import { isVirtualClick } from '../utils/event';
-import { getNodeChildren } from '../utils/nodes';
+import { useFloatingTree } from '@/floating-ui-actview/components/FloatingTree';
+import { FloatingTreeStore } from '@/floating-ui-actview/components/FloatingTreeStore';
+import type { ElementProps, FloatingContext, FloatingRootContext } from '@/floating-ui-actview/types';
+import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import type { FloatingUIOpenChangeDetails } from '@/internals/types';
+import { REASONS } from '@/internals/reasons';
+import { createAttribute } from '@/floating-ui-actview/utils/createAttribute';
+import { contains, getTarget, isEventTargetWithin, isRootElement } from '@/floating-ui-actview/utils/element';
+import { isVirtualClick } from '@/floating-ui-actview/utils/event';
+import { getNodeChildren } from '@/floating-ui-actview/utils/nodes';
 
 type PressType = 'intentional' | 'sloppy';
 

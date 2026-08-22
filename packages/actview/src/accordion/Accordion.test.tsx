@@ -1,9 +1,9 @@
 import { describe, expect, it, vi, beforeAll } from 'vitest';
-import { AccordionRoot } from './root/AccordionRoot';
-import { AccordionItem } from './item/AccordionItem';
-import { AccordionHeader } from './header/AccordionHeader';
-import { AccordionTrigger } from './trigger/AccordionTrigger';
-import { AccordionPanel } from './panel/AccordionPanel';
+import { AccordionRoot } from '@/accordion/root/AccordionRoot';
+import { AccordionItem } from '@/accordion/item/AccordionItem';
+import { AccordionHeader } from '@/accordion/header/AccordionHeader';
+import { AccordionTrigger } from '@/accordion/trigger/AccordionTrigger';
+import { AccordionPanel } from '@/accordion/panel/AccordionPanel';
 import { createRenderer } from '../../test/createRenderer';
 
 beforeAll(() => {

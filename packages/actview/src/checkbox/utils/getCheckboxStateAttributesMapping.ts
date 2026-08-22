@@ -1,8 +1,8 @@
 import { unref } from 'actview';
-import type { StateAttributesMapping } from '../../internals/getStateAttributesProps';
-import type { CheckboxRootState } from '../root/CheckboxRoot';
-import type { MaybeRef } from '../../internals/types';
-import { fieldValidityMapping } from '../../internals/field-constants/constants';
+import type { StateAttributesMapping } from '@/internals/getStateAttributesProps';
+import type { CheckboxRootState } from '@/checkbox/root/CheckboxRoot';
+import type { MaybeRef } from '@/internals/types';
+import { fieldValidityMapping } from '@/internals/field-constants/constants';
 
 export function getCheckboxStateAttributesMapping(
   state: MaybeRef<CheckboxRootState>,

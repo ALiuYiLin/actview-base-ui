@@ -1,9 +1,9 @@
-export * as NumberField from './index.parts';
+export * as NumberField from '@/number-field/index.parts';
 
-export type * from './root/NumberFieldRoot';
-export type * from './group/NumberFieldGroup';
-export type * from './increment/NumberFieldIncrement';
-export type * from './decrement/NumberFieldDecrement';
-export type * from './input/NumberFieldInput';
-export type * from './scrub-area/NumberFieldScrubArea';
-export type * from './scrub-area-cursor/NumberFieldScrubAreaCursor';
+export type * from '@/number-field/root/NumberFieldRoot';
+export type * from '@/number-field/group/NumberFieldGroup';
+export type * from '@/number-field/increment/NumberFieldIncrement';
+export type * from '@/number-field/decrement/NumberFieldDecrement';
+export type * from '@/number-field/input/NumberFieldInput';
+export type * from '@/number-field/scrub-area/NumberFieldScrubArea';
+export type * from '@/number-field/scrub-area-cursor/NumberFieldScrubAreaCursor';

@@ -1,21 +1,21 @@
 import { computed, watch } from 'actview';
 import type { InteractionType } from '@base-ui/actview-utils/useEnhancedClickHandler';
-import { FloatingFocusManager } from '../../floating-ui-actview';
-import type { BaseUIComponentProps } from '../../internals/types';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { useComboboxFloatingContext, useComboboxRootContext } from '../root/ComboboxRootContext';
-import { popupStateMapping } from '../../utils/popupStateMapping';
-import { useComboboxPositionerContext } from '../positioner/ComboboxPositionerContext';
-import type { Side, Align } from '../../internals/useAnchorPositioning';
-import { useOpenChangeComplete } from '../../internals/useOpenChangeComplete';
-import type { TransitionStatus } from '../../internals/useTransitionStatus';
-import { transitionStatusMapping } from '../../internals/stateAttributesMapping';
-import type { StateAttributesMapping } from '../../internals/getStateAttributesProps';
-import { contains, getTarget } from '../../floating-ui-actview/utils';
-import { getDisabledMountTransitionStyles } from '../../internals/getDisabledMountTransitionStyles';
-import { ComboboxInternalDismissButton } from '../utils/ComboboxInternalDismissButton';
-import { getComboboxPopupId } from '../root/utils';
-import { useListEmpty } from '../utils/parts';
+import { FloatingFocusManager } from '@/floating-ui-actview';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useComboboxFloatingContext, useComboboxRootContext } from '@/combobox/root/ComboboxRootContext';
+import { popupStateMapping } from '@/utils/popupStateMapping';
+import { useComboboxPositionerContext } from '@/combobox/positioner/ComboboxPositionerContext';
+import type { Side, Align } from '@/internals/useAnchorPositioning';
+import { useOpenChangeComplete } from '@/internals/useOpenChangeComplete';
+import type { TransitionStatus } from '@/internals/useTransitionStatus';
+import { transitionStatusMapping } from '@/internals/stateAttributesMapping';
+import type { StateAttributesMapping } from '@/internals/getStateAttributesProps';
+import { contains, getTarget } from '@/floating-ui-actview/utils';
+import { getDisabledMountTransitionStyles } from '@/internals/getDisabledMountTransitionStyles';
+import { ComboboxInternalDismissButton } from '@/combobox/utils/ComboboxInternalDismissButton';
+import { getComboboxPopupId } from '@/combobox/root/utils';
+import { useListEmpty } from '@/combobox/utils/parts';
 
 const stateAttributesMapping: StateAttributesMapping<ComboboxPopupState> = {
   ...popupStateMapping,

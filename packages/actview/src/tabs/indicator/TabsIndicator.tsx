@@ -1,17 +1,17 @@
 import { computed, onMounted, onUnmounted, ref } from 'actview';
 import { getParentNode, isHTMLElement, isLastTraversableNode } from '@floating-ui/utils/dom';
 import { ownerWindow } from '@base-ui/actview-utils/owner';
-import { script as prehydrationScript } from './prehydrationScript.min';
-import { PrehydrationScript } from '../../internals/PrehydrationScript';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { getCssDimensions } from '../../utils/getCssDimensions';
-import { getElementTransform } from '../../utils/getElementTransform';
-import type { BaseUIComponentProps } from '../../internals/types';
-import type { TabsRoot, TabsRootState } from '../root/TabsRoot';
-import { useTabsRootContext } from '../root/TabsRootContext';
-import { tabsStateAttributesMapping } from '../root/stateAttributesMapping';
-import { useTabsListContext } from '../list/TabsListContext';
-import type { TabsTab } from '../tab/TabsTab';
+import { script as prehydrationScript } from '@/tabs/indicator/prehydrationScript.min';
+import { PrehydrationScript } from '@/internals/PrehydrationScript';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { getCssDimensions } from '@/utils/getCssDimensions';
+import { getElementTransform } from '@/utils/getElementTransform';
+import type { BaseUIComponentProps } from '@/internals/types';
+import type { TabsRoot, TabsRootState } from '@/tabs/root/TabsRoot';
+import { useTabsRootContext } from '@/tabs/root/TabsRootContext';
+import { tabsStateAttributesMapping } from '@/tabs/root/stateAttributesMapping';
+import { useTabsListContext } from '@/tabs/list/TabsListContext';
+import type { TabsTab } from '@/tabs/tab/TabsTab';
 
 const stateAttributesMapping = {
   ...tabsStateAttributesMapping,

@@ -1,13 +1,13 @@
 import { describe, expect, it, vi, beforeAll } from 'vitest';
-import { FieldRoot } from './root/FieldRoot';
-import { FieldLabel } from './label/FieldLabel';
-import { FieldError } from './error/FieldError';
-import { FieldDescription } from './description/FieldDescription';
-import { FieldControl } from './control/FieldControl';
-import { FieldValidity } from './validity/FieldValidity';
-import { FieldItem } from './item/FieldItem';
-import { CheckboxRoot } from '../checkbox/root/CheckboxRoot';
-import { Form } from '../form';
+import { FieldRoot } from '@/field/root/FieldRoot';
+import { FieldLabel } from '@/field/label/FieldLabel';
+import { FieldError } from '@/field/error/FieldError';
+import { FieldDescription } from '@/field/description/FieldDescription';
+import { FieldControl } from '@/field/control/FieldControl';
+import { FieldValidity } from '@/field/validity/FieldValidity';
+import { FieldItem } from '@/field/item/FieldItem';
+import { CheckboxRoot } from '@/checkbox/root/CheckboxRoot';
+import { Form } from '@/form';
 import { createRenderer } from '../../test/createRenderer';
 
 beforeAll(() => {

@@ -1,6 +1,6 @@
 import { unref, watch } from 'actview';
 import type { Ref } from '@actview/core';
-import { useAnimationsFinished } from './useAnimationsFinished';
+import { useAnimationsFinished } from '@/internals/useAnimationsFinished';
 
 type MaybeRef<T> = T | Ref<T>;
 

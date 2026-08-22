@@ -1,6 +1,6 @@
 import type { ComputedRef } from '@actview/core';
-import type { BaseUIChangeEventDetails } from '../internals/createBaseUIEventDetails';
-import type { BaseUIEventReasons } from '../internals/reasons';
+import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import type { BaseUIEventReasons } from '@/internals/reasons';
 import { createContext } from 'actview'   // 框架 API（替代 ../internals/createContext）
 
 export interface ToggleGroupContext<Value> {

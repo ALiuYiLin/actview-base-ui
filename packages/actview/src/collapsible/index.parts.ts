@@ -1,3 +1,3 @@
-export { CollapsibleRoot as Root } from './root/CollapsibleRoot';
-export { CollapsibleTrigger as Trigger } from './trigger/CollapsibleTrigger';
-export { CollapsiblePanel as Panel } from './panel/CollapsiblePanel';
+export { CollapsibleRoot as Root } from '@/collapsible/root/CollapsibleRoot';
+export { CollapsibleTrigger as Trigger } from '@/collapsible/trigger/CollapsibleTrigger';
+export { CollapsiblePanel as Panel } from '@/collapsible/panel/CollapsiblePanel';

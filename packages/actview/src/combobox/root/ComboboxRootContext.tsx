@@ -1,8 +1,8 @@
 import { computed } from 'actview';
 import type { ComputedRef } from '@actview/core';
-import type { ComboboxStore } from '../store';
-import type { FloatingRootContext } from '../../floating-ui-actview';
-import { createContext } from '../../internals/createContext';
+import type { ComboboxStore } from '@/combobox/store';
+import type { FloatingRootContext } from '@/floating-ui-actview';
+import { createContext } from '@/internals/createContext';
 
 export interface ComboboxDerivedItemsContext {
   query: string;

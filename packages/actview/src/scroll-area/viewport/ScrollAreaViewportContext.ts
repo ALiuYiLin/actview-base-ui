@@ -1,5 +1,5 @@
 import type { ComputedRef } from '@actview/core';
-import { createContext } from '../../internals/createContext';
+import { createContext } from '@/internals/createContext';
 
 export interface ScrollAreaViewportContext {
   computeThumbPosition: () => void;

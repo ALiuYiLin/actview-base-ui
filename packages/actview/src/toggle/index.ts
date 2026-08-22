@@ -1,3 +1,3 @@
-export { Toggle } from './Toggle';
+export { Toggle } from '@/toggle/Toggle';
 
-export type * from './Toggle';
+export type * from '@/toggle/Toggle';

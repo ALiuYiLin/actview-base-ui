@@ -1,14 +1,14 @@
 import { computed, defineComponent, useRootElement } from 'actview';
-import { useCheckboxRootContext } from '../root/CheckboxRootContext';
-import { getCheckboxStateAttributesMapping } from '../utils/getCheckboxStateAttributesMapping';
-import type { CheckboxRootState } from '../root/CheckboxRoot';
-import type { BaseUIComponentProps } from '../../internals/types';
-import { useOpenChangeComplete } from '../../internals/useOpenChangeComplete';
-import { type TransitionStatus, useTransitionStatus } from '../../internals/useTransitionStatus';
-import type { StateAttributesMapping } from '../../internals/getStateAttributesProps';
-import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
-import { transitionStatusMapping } from '../../internals/stateAttributesMapping';
-import { mergePropsN } from '../../merge-props';
+import { useCheckboxRootContext } from '@/checkbox/root/CheckboxRootContext';
+import { getCheckboxStateAttributesMapping } from '@/checkbox/utils/getCheckboxStateAttributesMapping';
+import type { CheckboxRootState } from '@/checkbox/root/CheckboxRoot';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { useOpenChangeComplete } from '@/internals/useOpenChangeComplete';
+import { type TransitionStatus, useTransitionStatus } from '@/internals/useTransitionStatus';
+import type { StateAttributesMapping } from '@/internals/getStateAttributesProps';
+import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import { transitionStatusMapping } from '@/internals/stateAttributesMapping';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * Indicates whether the checkbox is ticked.

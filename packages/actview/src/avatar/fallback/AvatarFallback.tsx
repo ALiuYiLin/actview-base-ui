@@ -1,11 +1,11 @@
 import { computed, defineComponent, ref, useRootElement, watch } from 'actview';
 import { useTimeout } from '@base-ui/actview-utils/useTimeout';
-import type { BaseUIComponentProps } from '../../internals/types';
-import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
-import { useAvatarRootContext } from '../root/AvatarRootContext';
-import type { AvatarRootState } from '../root/AvatarRoot';
-import { avatarStateAttributesMapping } from '../root/stateAttributesMapping';
-import { mergePropsN } from '../../merge-props';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import { useAvatarRootContext } from '@/avatar/root/AvatarRootContext';
+import type { AvatarRootState } from '@/avatar/root/AvatarRoot';
+import { avatarStateAttributesMapping } from '@/avatar/root/stateAttributesMapping';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * Rendered when the image fails to load or when no image is provided.

@@ -1,9 +1,9 @@
 import { computed } from 'actview';
-import { MenuRoot } from '../root/MenuRoot';
-import { useMenuRootContext } from '../root/MenuRootContext';
-import { MenuSubmenuRootContext } from './MenuSubmenuRootContext';
+import { MenuRoot } from '@/menu/root/MenuRoot';
+import { useMenuRootContext } from '@/menu/root/MenuRootContext';
+import { MenuSubmenuRootContext } from '@/menu/submenu-root/MenuSubmenuRootContext';
 
-export { useMenuSubmenuRootContext } from './MenuSubmenuRootContext';
+export { useMenuSubmenuRootContext } from '@/menu/submenu-root/MenuSubmenuRootContext';
 
 /**
  * Groups all parts of a submenu.

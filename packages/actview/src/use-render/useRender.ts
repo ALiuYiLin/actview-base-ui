@@ -1,10 +1,10 @@
 import type { ComponentType } from '@actview/jsx';
 import type { VNode } from '@actview/jsx';
-import type { ComponentRenderFn, RefValue } from '../internals/types';
-import { HTMLProps } from '../internals/types';
-import { useRenderElement } from '../internals/useRenderElement';
-import { StateAttributesMapping } from '../internals/getStateAttributesProps';
-import type { StyleValue } from '../internals/types';
+import type { ComponentRenderFn, RefValue } from '@/internals/types';
+import { HTMLProps } from '@/internals/types';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { StateAttributesMapping } from '@/internals/getStateAttributesProps';
+import type { StyleValue } from '@/internals/types';
 
 /**
  * Renders a Base UI element.

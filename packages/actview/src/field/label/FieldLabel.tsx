@@ -1,14 +1,14 @@
 import { computed, defineComponent, onUpdated, useRootElement } from 'actview';
 import { error } from '@base-ui/actview-utils/error';
-import type { FieldRootState } from '../root/FieldRoot';
-import { useFieldRootContext } from '../../internals/field-root-context/FieldRootContext';
-import { fieldValidityMapping } from '../../internals/field-constants/constants';
-import type { BaseUIComponentProps } from '../../internals/types';
-import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
-import { useLabelableContext } from '../../internals/labelable-provider/LabelableContext';
-import { useLabel } from '../../internals/labelable-provider/useLabel';
-import { useFieldItemContext } from '../item/FieldItemContext';
-import { mergePropsN } from '../../merge-props';
+import type { FieldRootState } from '@/field/root/FieldRoot';
+import { useFieldRootContext } from '@/internals/field-root-context/FieldRootContext';
+import { fieldValidityMapping } from '@/internals/field-constants/constants';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import { useLabelableContext } from '@/internals/labelable-provider/LabelableContext';
+import { useLabel } from '@/internals/labelable-provider/useLabel';
+import { useFieldItemContext } from '@/field/item/FieldItemContext';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * An accessible label that is automatically associated with the field control.

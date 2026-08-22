@@ -2,11 +2,11 @@ import type { VNodeChild } from '@actview/jsx';
 import { ActviewStore } from '@base-ui/actview-utils/store';
 import { EMPTY_OBJECT } from '@base-ui/actview-utils/empty';
 import type { InteractionType } from '@base-ui/actview-utils/useEnhancedClickHandler';
-import type { TransitionStatus } from '../internals/useTransitionStatus';
-import type { HTMLProps } from '../internals/types';
-import type { Side } from '../internals/useAnchorPositioning';
-import { defaultItemEquality, compareItemEquality } from '../internals/itemEquality';
-import { type Group, hasNullItemLabel, stringifyAsValue } from '../internals/resolveValueLabel';
+import type { TransitionStatus } from '@/internals/useTransitionStatus';
+import type { HTMLProps } from '@/internals/types';
+import type { Side } from '@/internals/useAnchorPositioning';
+import { defaultItemEquality, compareItemEquality } from '@/internals/itemEquality';
+import { type Group, hasNullItemLabel, stringifyAsValue } from '@/internals/resolveValueLabel';
 
 export type State = {
   id: string | undefined;

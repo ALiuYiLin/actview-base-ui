@@ -1,4 +1,4 @@
-import type { FloatingNodeType } from '../types';
+import type { FloatingNodeType } from '@/floating-ui-actview/types';
 
 /* eslint-disable @typescript-eslint/no-loop-func */
 

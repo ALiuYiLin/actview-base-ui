@@ -1,12 +1,12 @@
 import { computed, watch } from 'actview';
 import { warn } from '@base-ui/actview-utils/warn';
 import { formatNumber } from '@base-ui/actview-utils/formatNumber';
-import { useNumberFieldRootContext } from '../root/NumberFieldRootContext';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { useFieldRootContext } from '../../internals/field-root-context/FieldRootContext';
-import { useRegisterFieldControl } from '../../internals/field-register-control/useRegisterFieldControl';
-import { useFormContext } from '../../internals/form-context/FormContext';
-import { useLabelableContext } from '../../internals/labelable-provider/LabelableContext';
+import { useNumberFieldRootContext } from '@/number-field/root/NumberFieldRootContext';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { useFieldRootContext } from '@/internals/field-root-context/FieldRootContext';
+import { useRegisterFieldControl } from '@/internals/field-register-control/useRegisterFieldControl';
+import { useFormContext } from '@/internals/form-context/FormContext';
+import { useLabelableContext } from '@/internals/labelable-provider/LabelableContext';
 import {
   getNumberLocaleDetails,
   isNumeralChar,
@@ -16,17 +16,17 @@ import {
   ANY_MINUS_DETECT_RE,
   ANY_PLUS_DETECT_RE,
   FORMAT_CONTROL_DETECT_RE,
-} from '../utils/parse';
-import type { NumberFieldRootState } from '../root/NumberFieldRoot';
-import { stateAttributesMapping } from '../utils/stateAttributesMapping';
-import { useRenderElement } from '../../internals/useRenderElement';
+} from '@/number-field/utils/parse';
+import type { NumberFieldRootState } from '@/number-field/root/NumberFieldRoot';
+import { stateAttributesMapping } from '@/number-field/utils/stateAttributesMapping';
+import { useRenderElement } from '@/internals/useRenderElement';
 import {
   createChangeEventDetails,
   createGenericEventDetails,
-} from '../../internals/createBaseUIEventDetails';
-import { useValueChanged } from '../../internals/useValueChanged';
-import { REASONS } from '../../internals/reasons';
-import { hasNumberFormatRoundingOptions, removeFloatingPointErrors } from '../utils/validate';
+} from '@/internals/createBaseUIEventDetails';
+import { useValueChanged } from '@/internals/useValueChanged';
+import { REASONS } from '@/internals/reasons';
+import { hasNumberFormatRoundingOptions, removeFloatingPointErrors } from '@/number-field/utils/validate';
 
 const NAVIGATE_KEYS = new Set([
   'Backspace',

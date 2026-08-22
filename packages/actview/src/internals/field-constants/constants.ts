@@ -1,4 +1,4 @@
-import type { FieldRootState } from '../../field/root/FieldRoot';
+import type { FieldRootState } from '@/field/root/FieldRoot';
 
 export const DEFAULT_VALIDITY_STATE = {
   badInput: false,

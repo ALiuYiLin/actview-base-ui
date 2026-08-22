@@ -6,21 +6,21 @@ import { useOnMount } from '@base-ui/actview-utils/useOnMount';
 import { useTimeout } from '@base-ui/actview-utils/useTimeout';
 import { useValueAsRef } from '@base-ui/actview-utils/useValueAsRef';
 import { isElement } from '@floating-ui/utils/dom';
-import { createChangeEventDetails } from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
-import type { FloatingUIOpenChangeDetails } from '../../internals/types';
-import { useFloatingParentNodeId, useFloatingTree } from '../components/FloatingTree';
-import type { Delay, ElementProps, FloatingContext, FloatingRootContext } from '../types';
-import { contains, getTarget, isInteractiveElement } from '../utils/element';
-import type { HandleClose } from './useHoverShared';
+import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
+import type { FloatingUIOpenChangeDetails } from '@/internals/types';
+import { useFloatingParentNodeId, useFloatingTree } from '@/floating-ui-actview/components/FloatingTree';
+import type { Delay, ElementProps, FloatingContext, FloatingRootContext } from '@/floating-ui-actview/types';
+import { contains, getTarget, isInteractiveElement } from '@/floating-ui-actview/utils/element';
+import type { HandleClose } from '@/floating-ui-actview/hooks/useHoverShared';
 import {
   getDelay,
   getRestMs,
   isClickLikeOpenEvent as isClickLikeOpenEventShared,
   isHoverOpenEvent,
-} from './useHoverShared';
+} from '@/floating-ui-actview/hooks/useHoverShared';
 
-export type { HandleCloseContext, HandleClose } from './useHoverShared';
+export type { HandleCloseContext, HandleClose } from '@/floating-ui-actview/hooks/useHoverShared';
 
 export interface UseHoverProps {
   /**

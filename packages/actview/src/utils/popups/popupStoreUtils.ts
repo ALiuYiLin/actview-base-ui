@@ -6,26 +6,26 @@ import type { InteractionType } from '@base-ui/actview-utils/useEnhancedClickHan
 import { useId } from '@base-ui/actview-utils/useId';
 import { useRefWithInit } from '@base-ui/actview-utils/useRefWithInit';
 import type { VNodeChild } from '@actview/jsx';
-import { FOCUSABLE_ATTRIBUTE } from '../../floating-ui-actview/utils/constants';
-import { useFloatingParentNodeId } from '../../floating-ui-actview/components/FloatingTree';
+import { FOCUSABLE_ATTRIBUTE } from '@/floating-ui-actview/utils/constants';
+import { useFloatingParentNodeId } from '@/floating-ui-actview/components/FloatingTree';
 import {
   useSyncedFloatingRootContext,
   type SyncedFloatingRootContextStore,
-} from '../../floating-ui-actview/hooks/useSyncedFloatingRootContext';
-import { useTransitionStatus } from '../../internals/useTransitionStatus';
-import { useOpenChangeComplete } from '../../internals/useOpenChangeComplete';
-import type { HTMLProps, RefValue } from '../../internals/types';
+} from '@/floating-ui-actview/hooks/useSyncedFloatingRootContext';
+import { useTransitionStatus } from '@/internals/useTransitionStatus';
+import { useOpenChangeComplete } from '@/internals/useOpenChangeComplete';
+import type { HTMLProps, RefValue } from '@/internals/types';
 import {
   createChangeEventDetails,
   type BaseUIChangeEventDetails,
-} from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
+} from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
 import {
   PopupStoreState,
   PopupStoreContext,
   popupStoreSelectors,
   PopupTriggerDataStore,
-} from './store';
+} from '@/utils/popups/store';
 
 export const FOCUSABLE_POPUP_PROPS = {
   tabIndex: -1,

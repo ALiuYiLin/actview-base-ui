@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import { Form } from './Form';
-import { FieldRoot } from '../field/root/FieldRoot';
-import { FieldControl } from '../field/control/FieldControl';
-import { FieldError } from '../field/error/FieldError';
-import { useFormContext } from '../internals/form-context/FormContext';
+import { Form } from '@/form/Form';
+import { FieldRoot } from '@/field/root/FieldRoot';
+import { FieldControl } from '@/field/control/FieldControl';
+import { FieldError } from '@/field/error/FieldError';
+import { useFormContext } from '@/internals/form-context/FormContext';
 import { createRenderer } from '../../test/createRenderer';
 
 const { render, fireEvent, act } = createRenderer();

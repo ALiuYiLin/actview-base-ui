@@ -1,13 +1,13 @@
 import { computed, defineComponent } from 'actview';
-import { triggerOpenStateMapping } from '../../utils/collapsibleOpenStateMapping';
-import type { StateAttributesMapping } from '../../internals/getStateAttributesProps';
-import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
-import { transitionStatusMapping } from '../../internals/stateAttributesMapping';
-import type { BaseUIComponentProps, HTMLProps, NativeButtonProps } from '../../internals/types';
-import { useButton } from '../../internals/use-button';
-import { useCollapsibleRootContext } from '../root/CollapsibleRootContext';
-import { type CollapsibleRootState } from '../root/CollapsibleRoot';
-import { mergePropsN } from '../../merge-props';
+import { triggerOpenStateMapping } from '@/utils/collapsibleOpenStateMapping';
+import type { StateAttributesMapping } from '@/internals/getStateAttributesProps';
+import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import { transitionStatusMapping } from '@/internals/stateAttributesMapping';
+import type { BaseUIComponentProps, HTMLProps, NativeButtonProps } from '@/internals/types';
+import { useButton } from '@/internals/use-button';
+import { useCollapsibleRootContext } from '@/collapsible/root/CollapsibleRootContext';
+import { type CollapsibleRootState } from '@/collapsible/root/CollapsibleRoot';
+import { mergePropsN } from '@/merge-props';
 
 const stateAttributesMapping: StateAttributesMapping<CollapsibleRootState> = {
   ...triggerOpenStateMapping,

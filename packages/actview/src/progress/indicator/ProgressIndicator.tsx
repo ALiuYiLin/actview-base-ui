@@ -1,11 +1,11 @@
 import { computed, defineComponent, useRootElement } from 'actview';
-import type { HTMLProps } from '../../internals/types';
-import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
-import type { ProgressRootState } from '../root/ProgressRoot';
-import { useProgressRootContext } from '../root/ProgressRootContext';
-import { progressStateAttributesMapping } from '../root/stateAttributesMapping';
-import type { BaseUIComponentProps } from '../../internals/types';
-import { mergePropsN } from '../../merge-props';
+import type { HTMLProps } from '@/internals/types';
+import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import type { ProgressRootState } from '@/progress/root/ProgressRoot';
+import { useProgressRootContext } from '@/progress/root/ProgressRootContext';
+import { progressStateAttributesMapping } from '@/progress/root/stateAttributesMapping';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * Visualizes the completion status of the task.

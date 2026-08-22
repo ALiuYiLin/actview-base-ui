@@ -1,4 +1,4 @@
-import type { ToastManagerUpdateOptions } from '../useToastManager';
+import type { ToastManagerUpdateOptions } from '@/toast/useToastManager';
 
 export function resolvePromiseOptions<T, Data extends object>(
   options:

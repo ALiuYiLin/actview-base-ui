@@ -1,6 +1,6 @@
 import type { ComputedRef } from '@actview/core';
-import { createContext } from '../../internals/createContext';
-import type { ImageLoadingStatus } from './AvatarRoot';
+import { createContext } from '@/internals/createContext';
+import type { ImageLoadingStatus } from '@/avatar/root/AvatarRoot';
 
 export interface AvatarRootContext {
   imageLoadingStatus: ImageLoadingStatus;

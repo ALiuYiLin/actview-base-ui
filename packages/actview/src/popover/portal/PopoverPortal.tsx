@@ -1,9 +1,9 @@
 import { computed } from 'actview';
 import { createElement } from '@actview/jsx';
-import { FloatingPortal } from '../../floating-ui-actview';
-import type { BaseUIComponentProps } from '../../internals/types';
-import { usePopoverRootContext } from '../root/PopoverRootContext';
-import { PopoverPortalContext } from './PopoverPortalContext';
+import { FloatingPortal } from '@/floating-ui-actview';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { usePopoverRootContext } from '@/popover/root/PopoverRootContext';
+import { PopoverPortalContext } from '@/popover/portal/PopoverPortalContext';
 
 /**
  * A portal element that moves the popup to a different part of the DOM.

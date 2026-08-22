@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { ComboboxLabel } from './ComboboxLabel';
-import { ComboboxRootContext } from '../root/ComboboxRootContext';
-import { FieldRootContext } from '../../internals/field-root-context/FieldRootContext';
+import { ComboboxLabel } from '@/combobox/label/ComboboxLabel';
+import { ComboboxRootContext } from '@/combobox/root/ComboboxRootContext';
+import { FieldRootContext } from '@/internals/field-root-context/FieldRootContext';
 import { createRenderer } from '../../../test/createRenderer';
 
 const mockStore = {

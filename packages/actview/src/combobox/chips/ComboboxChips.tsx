@@ -1,11 +1,11 @@
 import { computed, defineComponent, ref, watch } from 'actview';
 import { useMergedRefs } from '@base-ui/actview-utils/useMergedRefs';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { ComboboxChipsContext } from './ComboboxChipsContext';
-import { CompositeList } from '../../internals/composite/list/CompositeList';
-import { useComboboxRootContext } from '../root/ComboboxRootContext';
-import { handleInputPress } from '../utils/handleInputPress';
-import { mergePropsN } from '../../merge-props';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { ComboboxChipsContext } from '@/combobox/chips/ComboboxChipsContext';
+import { CompositeList } from '@/internals/composite/list/CompositeList';
+import { useComboboxRootContext } from '@/combobox/root/ComboboxRootContext';
+import { handleInputPress } from '@/combobox/utils/handleInputPress';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * A container for the chips in a multiselectable input.

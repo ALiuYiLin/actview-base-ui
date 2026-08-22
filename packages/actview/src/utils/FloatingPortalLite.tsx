@@ -1,7 +1,7 @@
 import { type Ref } from '@actview/core';
 import { type VNode } from '@actview/jsx';
-import type { BaseUIComponentProps, HTMLProps, RefValue } from '../internals/types';
-import { useFloatingPortalNode } from '../floating-ui-actview/components/FloatingPortal';
+import type { BaseUIComponentProps, HTMLProps, RefValue } from '@/internals/types';
+import { useFloatingPortalNode } from '@/floating-ui-actview/components/FloatingPortal';
 
 type PortalContainer =
   | HTMLElement

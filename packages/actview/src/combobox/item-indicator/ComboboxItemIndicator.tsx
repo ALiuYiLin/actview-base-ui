@@ -1,12 +1,12 @@
 import { computed, defineComponent, ref } from 'actview';
 import { useMergedRefs } from '@base-ui/actview-utils/useMergedRefs';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
-import { useComboboxItemContext } from '../item/ComboboxItemContext';
-import { useTransitionStatus, type TransitionStatus } from '../../internals/useTransitionStatus';
-import { useOpenChangeComplete } from '../../internals/useOpenChangeComplete';
-import { transitionStatusMapping } from '../../internals/stateAttributesMapping';
-import { mergePropsN } from '../../merge-props';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import { useComboboxItemContext } from '@/combobox/item/ComboboxItemContext';
+import { useTransitionStatus, type TransitionStatus } from '@/internals/useTransitionStatus';
+import { useOpenChangeComplete } from '@/internals/useOpenChangeComplete';
+import { transitionStatusMapping } from '@/internals/stateAttributesMapping';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * Indicates whether the item is selected.

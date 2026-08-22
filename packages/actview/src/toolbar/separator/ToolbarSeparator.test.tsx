@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ToolbarRoot } from '../root/ToolbarRoot';
-import { ToolbarSeparator } from './ToolbarSeparator';
+import { ToolbarRoot } from '@/toolbar/root/ToolbarRoot';
+import { ToolbarSeparator } from '@/toolbar/separator/ToolbarSeparator';
 import { createRenderer } from '../../../test/createRenderer';
 
 const { render } = createRenderer();

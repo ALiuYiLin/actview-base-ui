@@ -1,9 +1,9 @@
 import { computed, defineComponent, useRootElement } from 'actview';
-import { useFieldsetRootContext } from '../root/FieldsetRootContext';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
-import { useRegisteredLabelId } from '../../utils/useRegisteredLabelId';
-import { mergePropsN } from '../../merge-props';
+import { useFieldsetRootContext } from '@/fieldset/root/FieldsetRootContext';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import { useRegisteredLabelId } from '@/utils/useRegisteredLabelId';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * An accessible label that is automatically associated with the fieldset.

@@ -1,5 +1,5 @@
-import type { FloatingNodeType, FloatingEvents } from '../types';
-import { createEventEmitter } from '../utils/createEventEmitter';
+import type { FloatingNodeType, FloatingEvents } from '@/floating-ui-actview/types';
+import { createEventEmitter } from '@/floating-ui-actview/utils/createEventEmitter';
 
 /**
  * Stores and manages floating elements in a tree structure.

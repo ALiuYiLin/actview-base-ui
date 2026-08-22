@@ -1,8 +1,8 @@
 import type { ComputedRef } from '@actview/core';
-import { createContext } from '../../internals/createContext';
-import type { UseCollapsibleRootReturnValue } from './useCollapsibleRoot';
-import type { TransitionStatus } from '../../internals/useTransitionStatus';
-import type { CollapsibleRoot, CollapsibleRootState } from './CollapsibleRoot';
+import { createContext } from '@/internals/createContext';
+import type { UseCollapsibleRootReturnValue } from '@/collapsible/root/useCollapsibleRoot';
+import type { TransitionStatus } from '@/internals/useTransitionStatus';
+import type { CollapsibleRoot, CollapsibleRootState } from '@/collapsible/root/CollapsibleRoot';
 
 /**
  * The context value shared with `Collapsible.Trigger`/`Collapsible.Panel`.

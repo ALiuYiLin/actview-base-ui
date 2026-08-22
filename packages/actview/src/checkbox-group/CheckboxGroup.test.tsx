@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { CheckboxGroup } from './CheckboxGroup';
-import { FieldRootContext } from '../internals/field-root-context/FieldRootContext';
-import { LabelableContext } from '../internals/labelable-provider/LabelableContext';
-import { FormContext } from '../internals/form-context/FormContext';
+import { CheckboxGroup } from '@/checkbox-group/CheckboxGroup';
+import { FieldRootContext } from '@/internals/field-root-context/FieldRootContext';
+import { LabelableContext } from '@/internals/labelable-provider/LabelableContext';
+import { FormContext } from '@/internals/form-context/FormContext';
 import { createRenderer } from '../../test/createRenderer';
 
 const fieldRootContext = {

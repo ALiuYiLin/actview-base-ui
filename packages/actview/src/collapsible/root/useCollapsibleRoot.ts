@@ -1,11 +1,11 @@
 import { computed, ref, toValue } from 'actview';
 import type { ComputedRef, Ref } from '@actview/core';
 import { useControlled } from '@base-ui/actview-utils/useControlled';
-import { useBaseUiId } from '../../internals/useBaseUiId';
-import { createChangeEventDetails } from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
-import { useTransitionStatus, type TransitionStatus } from '../../internals/useTransitionStatus';
-import type { CollapsibleRoot } from './CollapsibleRoot';
+import { useBaseUiId } from '@/internals/useBaseUiId';
+import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
+import { useTransitionStatus, type TransitionStatus } from '@/internals/useTransitionStatus';
+import type { CollapsibleRoot } from '@/collapsible/root/CollapsibleRoot';
 
 type MaybeRefOrGetter<T> = T | Ref<T> | (() => T);
 

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { ref } from 'actview';
-import { FieldsetRoot } from './FieldsetRoot';
-import { FieldRoot } from '../../field/root/FieldRoot';
-import { FieldControl } from '../../field/control/FieldControl';
+import { FieldsetRoot } from '@/fieldset/root/FieldsetRoot';
+import { FieldRoot } from '@/field/root/FieldRoot';
+import { FieldControl } from '@/field/control/FieldControl';
 import { createRenderer } from '../../../test/createRenderer';
 
 const { render, fireEvent, act } = createRenderer();
@@ -125,13 +125,13 @@ describe('<Fieldset.Root />', () => {
   // actview 现状跑不通：RadioGroup 的 disabled computed 不含 fieldsetContext、
   // Checkbox/Slider 不消费 fieldset context（且 RadioGroup 无 aria-disabled 输出）。
   // 导入（取消注释时启用）：
-  //   import { RadioGroup } from '../../radio-group/RadioGroup';
-  //   import { CheckboxGroup } from '../../checkbox-group/CheckboxGroup';
-  //   import { CheckboxRoot } from '../../checkbox/root/CheckboxRoot';
-  //   import { SliderRoot } from '../../slider/root/SliderRoot';
-  //   import { SliderControl } from '../../slider/control/SliderControl';
-  //   import { SliderTrack } from '../../slider/track/SliderTrack';
-  //   import { SliderThumb } from '../../slider/thumb/SliderThumb';
+  //   import { RadioGroup } from '@/radio-group/RadioGroup';
+  //   import { CheckboxGroup } from '@/checkbox-group/CheckboxGroup';
+  //   import { CheckboxRoot } from '@/checkbox/root/CheckboxRoot';
+  //   import { SliderRoot } from '@/slider/root/SliderRoot';
+  //   import { SliderControl } from '@/slider/control/SliderControl';
+  //   import { SliderTrack } from '@/slider/track/SliderTrack';
+  //   import { SliderThumb } from '@/slider/thumb/SliderThumb';
   /*
   it('passes disabled to rendered Base UI roots', async () => {
     function Demo() {

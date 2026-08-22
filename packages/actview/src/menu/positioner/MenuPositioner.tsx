@@ -2,28 +2,28 @@ import { computed, watch } from 'actview';
 import { inertValue } from '@base-ui/actview-utils/inertValue';
 import { useIsoLayoutEffect } from '@base-ui/actview-utils/useIsoLayoutEffect';
 import { useTimeout } from '@base-ui/actview-utils/useTimeout';
-import { FloatingNode } from '../../floating-ui-actview';
-import { MenuPositionerContext } from './MenuPositionerContext';
-import { useMenuRootContext } from '../root/MenuRootContext';
-import type { MenuRoot } from '../root/MenuRoot';
+import { FloatingNode } from '@/floating-ui-actview';
+import { MenuPositionerContext } from '@/menu/positioner/MenuPositionerContext';
+import { useMenuRootContext } from '@/menu/root/MenuRootContext';
+import type { MenuRoot } from '@/menu/root/MenuRoot';
 import {
   useAnchorPositioning,
   type Align,
   type Side,
   type UseAnchorPositioningSharedParameters,
-} from '../../internals/useAnchorPositioning';
-import type { BaseUIComponentProps } from '../../internals/types';
-import { CompositeList } from '../../internals/composite/list/CompositeList';
-import { InternalBackdrop } from '../../utils/InternalBackdrop';
-import { useMenuPortalContext } from '../portal/MenuPortalContext';
-import { DROPDOWN_COLLISION_AVOIDANCE, POPUP_COLLISION_AVOIDANCE } from '../../internals/constants';
-import { useContextMenuRootContext } from '../../context-menu/root/ContextMenuRootContext';
-import { createChangeEventDetails } from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
-import type { MenuOpenEventDetails } from '../utils/types';
-import { useAnimationsFinished } from '../../internals/useAnimationsFinished';
-import { usePositioner } from '../../utils/usePositioner';
-import { useAnchoredPopupScrollLock } from '../../utils/useAnchoredPopupScrollLock';
+} from '@/internals/useAnchorPositioning';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { CompositeList } from '@/internals/composite/list/CompositeList';
+import { InternalBackdrop } from '@/utils/InternalBackdrop';
+import { useMenuPortalContext } from '@/menu/portal/MenuPortalContext';
+import { DROPDOWN_COLLISION_AVOIDANCE, POPUP_COLLISION_AVOIDANCE } from '@/internals/constants';
+import { useContextMenuRootContext } from '@/context-menu/root/ContextMenuRootContext';
+import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
+import type { MenuOpenEventDetails } from '@/menu/utils/types';
+import { useAnimationsFinished } from '@/internals/useAnimationsFinished';
+import { usePositioner } from '@/utils/usePositioner';
+import { useAnchoredPopupScrollLock } from '@/utils/useAnchoredPopupScrollLock';
 
 /**
  * Positions the menu popup against the trigger.

@@ -1,7 +1,7 @@
-import type { RefObject } from '../../internals/types';
-import type { NumberFieldRoot, NumberFieldRootState } from './NumberFieldRoot';
-import type { EventWithOptionalKeyState, IncrementValueParameters } from '../utils/types';
-import { createContext } from '../../internals/createContext';
+import type { RefObject } from '@/internals/types';
+import type { NumberFieldRoot, NumberFieldRootState } from '@/number-field/root/NumberFieldRoot';
+import type { EventWithOptionalKeyState, IncrementValueParameters } from '@/number-field/utils/types';
+import { createContext } from '@/internals/createContext';
 import type { ComputedRef } from '@actview/core';
 
 export type InputMode = 'numeric' | 'decimal' | 'text';

@@ -1,5 +1,5 @@
 import { EMPTY_OBJECT } from '@base-ui/actview-utils/empty';
-import { REASONS } from './reasons';
+import { REASONS } from '@/internals/reasons';
 
 interface ReasonToEventMap {
   [REASONS.none]: Event;

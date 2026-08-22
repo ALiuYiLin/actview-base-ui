@@ -1,4 +1,4 @@
-export * as Fieldset from './index.parts';
+export * as Fieldset from '@/fieldset/index.parts';
 
-export type * from './root/FieldsetRoot';
-export type * from './legend/FieldsetLegend';
+export type * from '@/fieldset/root/FieldsetRoot';
+export type * from '@/fieldset/legend/FieldsetLegend';

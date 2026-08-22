@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { ref } from 'actview';
-import { RadioGroup } from '../../radio-group/RadioGroup';
-import { RadioRoot } from '../root/RadioRoot';
-import { RadioIndicator } from './RadioIndicator';
+import { RadioGroup } from '@/radio-group/RadioGroup';
+import { RadioRoot } from '@/radio/root/RadioRoot';
+import { RadioIndicator } from '@/radio/indicator/RadioIndicator';
 import { createRenderer } from '../../../test/createRenderer';
 
 const { render, fireEvent, act } = createRenderer();

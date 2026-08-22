@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import { MeterRoot } from './MeterRoot';
-import { MeterLabel } from '../label/MeterLabel';
-import { MeterTrack } from '../track/MeterTrack';
-import { MeterIndicator } from '../indicator/MeterIndicator';
-import { MeterValue } from '../value/MeterValue';
+import { MeterRoot } from '@/meter/root/MeterRoot';
+import { MeterLabel } from '@/meter/label/MeterLabel';
+import { MeterTrack } from '@/meter/track/MeterTrack';
+import { MeterIndicator } from '@/meter/indicator/MeterIndicator';
+import { MeterValue } from '@/meter/value/MeterValue';
 import { createRenderer } from '../../../test/createRenderer';
 
 const { render, act } = createRenderer();

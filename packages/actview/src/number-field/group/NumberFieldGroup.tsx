@@ -1,9 +1,9 @@
 import { computed } from 'actview';
-import { useNumberFieldRootContext } from '../root/NumberFieldRootContext';
-import type { NumberFieldRootState } from '../root/NumberFieldRoot';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { stateAttributesMapping } from '../utils/stateAttributesMapping';
-import { useRenderElement } from '../../internals/useRenderElement';
+import { useNumberFieldRootContext } from '@/number-field/root/NumberFieldRootContext';
+import type { NumberFieldRootState } from '@/number-field/root/NumberFieldRoot';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { stateAttributesMapping } from '@/number-field/utils/stateAttributesMapping';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * Groups the input with the increment and decrement buttons.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MenuGroup } from './MenuGroup';
+import { MenuGroup } from '@/menu/group/MenuGroup';
 import { createRenderer } from '../../../test/createRenderer';
 
 describe('<Menu.Group />', () => {

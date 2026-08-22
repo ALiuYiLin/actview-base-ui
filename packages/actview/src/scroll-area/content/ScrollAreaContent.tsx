@@ -1,11 +1,11 @@
 import { computed } from 'actview';
 import { useIsoLayoutEffect } from '@base-ui/actview-utils/useIsoLayoutEffect';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { useScrollAreaViewportContext } from '../viewport/ScrollAreaViewportContext';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { useScrollAreaRootContext } from '../root/ScrollAreaRootContext';
-import { scrollAreaStateAttributesMapping } from '../root/stateAttributes';
-import type { ScrollAreaRootState } from '../root/ScrollAreaRoot';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { useScrollAreaViewportContext } from '@/scroll-area/viewport/ScrollAreaViewportContext';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useScrollAreaRootContext } from '@/scroll-area/root/ScrollAreaRootContext';
+import { scrollAreaStateAttributesMapping } from '@/scroll-area/root/stateAttributes';
+import type { ScrollAreaRootState } from '@/scroll-area/root/ScrollAreaRoot';
 
 /**
  * A container for the content of the scroll area.

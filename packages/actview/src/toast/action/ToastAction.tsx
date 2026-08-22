@@ -1,9 +1,9 @@
 import { computed } from 'actview';
-import type { BaseUIComponentProps, NativeButtonProps } from '../../internals/types';
-import { useToastRootContext } from '../root/ToastRootContext';
-import { useButton } from '../../internals/use-button/useButton';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { hasRenderableChildren } from '../utils/isRenderableNode';
+import type { BaseUIComponentProps, NativeButtonProps } from '@/internals/types';
+import { useToastRootContext } from '@/toast/root/ToastRootContext';
+import { useButton } from '@/internals/use-button/useButton';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { hasRenderableChildren } from '@/toast/utils/isRenderableNode';
 
 /**
  * Performs an action when clicked.

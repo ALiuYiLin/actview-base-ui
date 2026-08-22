@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeAll } from 'vitest';
-import * as Tabs from './index.parts';
+import * as Tabs from '@/tabs/index.parts';
 import { createRenderer } from '../../test/createRenderer';
 
 beforeAll(() => {

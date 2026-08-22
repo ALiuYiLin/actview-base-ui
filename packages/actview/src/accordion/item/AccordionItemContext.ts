@@ -1,6 +1,6 @@
 import type { ComputedRef } from '@actview/core';
-import { createContext } from '../../internals/createContext';
-import type { AccordionItemState } from './AccordionItem';
+import { createContext } from '@/internals/createContext';
+import type { AccordionItemState } from '@/accordion/item/AccordionItem';
 
 export interface AccordionItemContext {
   defaultTriggerId?: string | undefined;

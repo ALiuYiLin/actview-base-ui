@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { AccordionTrigger } from './AccordionTrigger';
-import { AccordionItemContext } from '../item/AccordionItemContext';
-import { CollapsibleRootContext } from '../../collapsible/root/CollapsibleRootContext';
+import { AccordionTrigger } from '@/accordion/trigger/AccordionTrigger';
+import { AccordionItemContext } from '@/accordion/item/AccordionItemContext';
+import { CollapsibleRootContext } from '@/collapsible/root/CollapsibleRootContext';
 import { createRenderer } from '../../../test/createRenderer';
 
 const collapsibleContext = {

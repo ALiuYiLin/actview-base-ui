@@ -3,8 +3,8 @@ import type { Ref } from '@actview/core';
 import { useAnimationFrame } from '@base-ui/actview-utils/useAnimationFrame';
 import { NOOP, EMPTY_OBJECT } from '@base-ui/actview-utils/empty';
 import type { Dimensions } from '@floating-ui/dom';
-import { useAnimationsFinished } from '../internals/useAnimationsFinished';
-import { getCssDimensions } from './getCssDimensions';
+import { useAnimationsFinished } from '@/internals/useAnimationsFinished';
+import { getCssDimensions } from '@/utils/getCssDimensions';
 
 type MaybeRef<T> = T | Ref<T>;
 

@@ -1,9 +1,9 @@
 import { computed, defineComponent, ref, useRootElement } from 'actview';
-import type { BaseUIComponentProps } from '../../internals/types';
-import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
-import { AvatarRootContext } from './AvatarRootContext';
-import { avatarStateAttributesMapping } from './stateAttributesMapping';
-import { mergePropsN } from '../../merge-props';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import { AvatarRootContext } from '@/avatar/root/AvatarRootContext';
+import { avatarStateAttributesMapping } from '@/avatar/root/stateAttributesMapping';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * Displays a user's profile picture, initials, or fallback icon.

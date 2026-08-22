@@ -1,20 +1,20 @@
 import { describe, expect, it, vi, beforeAll, afterEach } from 'vitest';
-import { SelectRoot } from './root/SelectRoot';
-import { SelectTrigger } from './trigger/SelectTrigger';
-import { SelectValue } from './value/SelectValue';
-import { SelectIcon } from './icon/SelectIcon';
-import { SelectPortal } from './portal/SelectPortal';
-import { SelectPositioner } from './positioner/SelectPositioner';
-import { SelectPopup } from './popup/SelectPopup';
-import { SelectList } from './list/SelectList';
-import { SelectItem } from './item/SelectItem';
-import { SelectItemText } from './item-text/SelectItemText';
-import { SelectItemIndicator } from './item-indicator/SelectItemIndicator';
-import { SelectArrow } from './arrow/SelectArrow';
-import { SelectBackdrop } from './backdrop/SelectBackdrop';
-import { SelectGroup } from './group/SelectGroup';
-import { SelectGroupLabel } from './group-label/SelectGroupLabel';
-import { SelectSeparator } from './separator/SelectSeparator';
+import { SelectRoot } from '@/select/root/SelectRoot';
+import { SelectTrigger } from '@/select/trigger/SelectTrigger';
+import { SelectValue } from '@/select/value/SelectValue';
+import { SelectIcon } from '@/select/icon/SelectIcon';
+import { SelectPortal } from '@/select/portal/SelectPortal';
+import { SelectPositioner } from '@/select/positioner/SelectPositioner';
+import { SelectPopup } from '@/select/popup/SelectPopup';
+import { SelectList } from '@/select/list/SelectList';
+import { SelectItem } from '@/select/item/SelectItem';
+import { SelectItemText } from '@/select/item-text/SelectItemText';
+import { SelectItemIndicator } from '@/select/item-indicator/SelectItemIndicator';
+import { SelectArrow } from '@/select/arrow/SelectArrow';
+import { SelectBackdrop } from '@/select/backdrop/SelectBackdrop';
+import { SelectGroup } from '@/select/group/SelectGroup';
+import { SelectGroupLabel } from '@/select/group-label/SelectGroupLabel';
+import { SelectSeparator } from '@/select/separator/SelectSeparator';
 import { createRenderer } from '../../test/createRenderer';
 
 beforeAll(() => {

@@ -1,12 +1,12 @@
 import { computed, onMounted, onUnmounted, ref, shallowRef } from 'actview';
 import { createElement } from '@actview/jsx';
 import { EMPTY_ARRAY } from '@base-ui/actview-utils/empty';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import type { TabsRootState } from '../root/TabsRoot';
-import { CompositeRoot } from '../../internals/composite/root/CompositeRoot';
-import { tabsStateAttributesMapping } from '../root/stateAttributesMapping';
-import { useTabsRootContext } from '../root/TabsRootContext';
-import { TabsListContext } from './TabsListContext';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import type { TabsRootState } from '@/tabs/root/TabsRoot';
+import { CompositeRoot } from '@/internals/composite/root/CompositeRoot';
+import { tabsStateAttributesMapping } from '@/tabs/root/stateAttributesMapping';
+import { useTabsRootContext } from '@/tabs/root/TabsRootContext';
+import { TabsListContext } from '@/tabs/list/TabsListContext';
 
 /**
  * Groups the individual tab buttons.

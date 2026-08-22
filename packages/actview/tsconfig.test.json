@@ -10,7 +10,10 @@
     "rootDir": ".",
     "outDir": "build-tests",
     "jsxImportSource": "@actview/jsx",
-    "types": ["vitest/globals", "@testing-library/jest-dom", "node"]
+    "types": ["vitest/globals", "@testing-library/jest-dom", "node"],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
   "include": [
     "vitest-env.d.ts",

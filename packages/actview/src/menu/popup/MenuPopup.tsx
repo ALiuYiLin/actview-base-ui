@@ -1,22 +1,22 @@
 import { computed, watch } from 'actview';
 import type { VNode } from '@actview/jsx';
 import type { InteractionType } from '@base-ui/actview-utils/useEnhancedClickHandler';
-import { FloatingFocusManager, useHoverFloatingInteraction } from '../../floating-ui-actview';
-import { useMenuRootContext } from '../root/MenuRootContext';
-import type { MenuRoot } from '../root/MenuRoot';
-import { useMenuPositionerContext } from '../positioner/MenuPositionerContext';
-import { useRenderElement } from '../../internals/useRenderElement';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import type { Side, Align } from '../../internals/useAnchorPositioning';
-import type { TransitionStatus } from '../../internals/useTransitionStatus';
-import { popupTransitionStateMapping } from '../../utils/popupStateMapping';
-import { useOpenChangeComplete } from '../../internals/useOpenChangeComplete';
-import { createChangeEventDetails } from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
-import { useToolbarRootContext } from '../../toolbar/root/ToolbarRootContext';
-import { COMPOSITE_KEYS } from '../../internals/composite/composite';
-import { getDisabledMountTransitionStyles } from '../../internals/getDisabledMountTransitionStyles';
-import { mergeProps } from '../../merge-props';
+import { FloatingFocusManager, useHoverFloatingInteraction } from '@/floating-ui-actview';
+import { useMenuRootContext } from '@/menu/root/MenuRootContext';
+import type { MenuRoot } from '@/menu/root/MenuRoot';
+import { useMenuPositionerContext } from '@/menu/positioner/MenuPositionerContext';
+import { useRenderElement } from '@/internals/useRenderElement';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import type { Side, Align } from '@/internals/useAnchorPositioning';
+import type { TransitionStatus } from '@/internals/useTransitionStatus';
+import { popupTransitionStateMapping } from '@/utils/popupStateMapping';
+import { useOpenChangeComplete } from '@/internals/useOpenChangeComplete';
+import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
+import { useToolbarRootContext } from '@/toolbar/root/ToolbarRootContext';
+import { COMPOSITE_KEYS } from '@/internals/composite/composite';
+import { getDisabledMountTransitionStyles } from '@/internals/getDisabledMountTransitionStyles';
+import { mergeProps } from '@/merge-props';
 
 /**
  * A container for the menu items.

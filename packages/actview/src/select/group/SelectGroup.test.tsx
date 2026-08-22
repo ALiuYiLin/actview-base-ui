@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SelectGroup } from './SelectGroup';
+import { SelectGroup } from '@/select/group/SelectGroup';
 import { createRenderer } from '../../../test/createRenderer';
 
 describe('<Select.Group />', () => {

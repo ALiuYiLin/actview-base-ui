@@ -1,24 +1,24 @@
 import { computed, ref, unref, watch } from 'actview';
 import { inertValue } from '@base-ui/actview-utils/inertValue';
-import { useSelectRootContext } from '../root/SelectRootContext';
-import { CompositeList } from '../../internals/composite/list/CompositeList';
-import type { BaseUIComponentProps } from '../../internals/types';
+import { useSelectRootContext } from '@/select/root/SelectRootContext';
+import { CompositeList } from '@/internals/composite/list/CompositeList';
+import type { BaseUIComponentProps } from '@/internals/types';
 import {
   useAnchorPositioning,
   type Align,
   type Side,
   type UseAnchorPositioningSharedParameters,
-} from '../../internals/useAnchorPositioning';
-import { SelectPositionerContext } from './SelectPositionerContext';
-import { InternalBackdrop } from '../../utils/InternalBackdrop';
-import { DROPDOWN_COLLISION_AVOIDANCE } from '../../internals/constants';
-import { clearStyles } from '../popup/utils';
-import { selectors } from '../store';
-import { createChangeEventDetails } from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
-import { findItemIndex } from '../../internals/itemEquality';
-import { usePositioner } from '../../utils/usePositioner';
-import { useAnchoredPopupScrollLock } from '../../utils/useAnchoredPopupScrollLock';
+} from '@/internals/useAnchorPositioning';
+import { SelectPositionerContext } from '@/select/positioner/SelectPositionerContext';
+import { InternalBackdrop } from '@/utils/InternalBackdrop';
+import { DROPDOWN_COLLISION_AVOIDANCE } from '@/internals/constants';
+import { clearStyles } from '@/select/popup/utils';
+import { selectors } from '@/select/store';
+import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
+import { findItemIndex } from '@/internals/itemEquality';
+import { usePositioner } from '@/utils/usePositioner';
+import { useAnchoredPopupScrollLock } from '@/utils/useAnchoredPopupScrollLock';
 
 const FIXED: Record<string, string> = { position: 'fixed' };
 

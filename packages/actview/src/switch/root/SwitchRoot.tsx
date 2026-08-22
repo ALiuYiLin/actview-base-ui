@@ -9,25 +9,25 @@ import type {
   HTMLProps,
   NonNativeButtonProps,
   RefValue,
-} from '../../internals/types';
-import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
-import { useBaseUiId } from '../../internals/useBaseUiId';
-import { useButton } from '../../internals/use-button';
-import { SwitchRootContext } from './SwitchRootContext';
-import { stateAttributesMapping } from '../stateAttributesMapping';
-import { dispatchClickWithModifiers } from '../../utils/dispatchClickWithModifiers';
-import type { FieldRootState } from '../../field/root/FieldRoot';
-import { useFieldRootContext } from '../../internals/field-root-context/FieldRootContext';
-import { useRegisterFieldControl } from '../../internals/field-register-control/useRegisterFieldControl';
-import { useFormContext } from '../../internals/form-context/FormContext';
-import { useLabelableContext } from '../../internals/labelable-provider/LabelableContext';
-import { useAriaLabelledBy } from '../../internals/labelable-provider/useAriaLabelledBy';
-import { useLabelableId } from '../../internals/labelable-provider/useLabelableId';
-import { createChangeEventDetails } from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
-import type { BaseUIChangeEventDetails } from '../../types';
-import { useValueChanged } from '../../internals/useValueChanged';
-import { mergePropsN } from '../../merge-props';
+} from '@/internals/types';
+import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import { useBaseUiId } from '@/internals/useBaseUiId';
+import { useButton } from '@/internals/use-button';
+import { SwitchRootContext } from '@/switch/root/SwitchRootContext';
+import { stateAttributesMapping } from '@/switch/stateAttributesMapping';
+import { dispatchClickWithModifiers } from '@/utils/dispatchClickWithModifiers';
+import type { FieldRootState } from '@/field/root/FieldRoot';
+import { useFieldRootContext } from '@/internals/field-root-context/FieldRootContext';
+import { useRegisterFieldControl } from '@/internals/field-register-control/useRegisterFieldControl';
+import { useFormContext } from '@/internals/form-context/FormContext';
+import { useLabelableContext } from '@/internals/labelable-provider/LabelableContext';
+import { useAriaLabelledBy } from '@/internals/labelable-provider/useAriaLabelledBy';
+import { useLabelableId } from '@/internals/labelable-provider/useLabelableId';
+import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
+import type { BaseUIChangeEventDetails } from '@/types';
+import { useValueChanged } from '@/internals/useValueChanged';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * Represents the switch itself.

@@ -1,19 +1,19 @@
 import { computed, ref, shallowRef, watch } from 'actview';
 import type { Ref } from '@actview/core';
 import { useControlled } from '@base-ui/actview-utils/useControlled';
-import type { BaseUIComponentProps, HTMLProps, Orientation as BaseOrientation } from '../../internals/types';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { CompositeList } from '../../internals/composite/list/CompositeList';
-import type { CompositeMetadata } from '../../internals/composite/list/CompositeList';
-import { TabsRootContext } from './TabsRootContext';
-import { tabsStateAttributesMapping } from './stateAttributesMapping';
-import type { TabsTab } from '../tab/TabsTab';
-import type { TabsPanel } from '../panel/TabsPanel';
+import type { BaseUIComponentProps, HTMLProps, Orientation as BaseOrientation } from '@/internals/types';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { CompositeList } from '@/internals/composite/list/CompositeList';
+import type { CompositeMetadata } from '@/internals/composite/list/CompositeList';
+import { TabsRootContext } from '@/tabs/root/TabsRootContext';
+import { tabsStateAttributesMapping } from '@/tabs/root/stateAttributesMapping';
+import type { TabsTab } from '@/tabs/tab/TabsTab';
+import type { TabsPanel } from '@/tabs/panel/TabsPanel';
 import {
   createChangeEventDetails,
   type BaseUIChangeEventDetails,
-} from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
+} from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
 
 /**
  * Groups the tabs and the corresponding panels.

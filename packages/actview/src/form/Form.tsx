@@ -3,11 +3,11 @@ import { EMPTY_OBJECT } from '@base-ui/actview-utils/empty';
 import {
   createGenericEventDetails,
   type BaseUIGenericEventDetails,
-} from '../internals/createBaseUIEventDetails';
-import { REASONS } from '../internals/reasons';
-import type { BaseUIComponentProps, HTMLProps, RefObject } from '../internals/types';
-import { FormContext } from '../internals/form-context/FormContext';
-import { mergePropsN } from '../merge-props';
+} from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
+import type { BaseUIComponentProps, HTMLProps, RefObject } from '@/internals/types';
+import { FormContext } from '@/internals/form-context/FormContext';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * A native form element with consolidated error handling.

@@ -1,7 +1,7 @@
 import { computed, nextTick, onMounted, onUpdated, ref, unref } from 'actview';
 import type { ComputedRef, Ref } from '@actview/core';
-import { useBaseUiId } from '../useBaseUiId';
-import type { MaybeRef } from '../types';
+import { useBaseUiId } from '@/internals/useBaseUiId';
+import type { MaybeRef } from '@/internals/types';
 
 export function useAriaLabelledBy(
   explicitAriaLabelledBy: MaybeRef<string | undefined>,

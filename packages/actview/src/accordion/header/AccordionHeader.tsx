@@ -1,10 +1,10 @@
 import { computed, defineComponent, useRootElement } from 'actview';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import type { AccordionItemState } from '../item/AccordionItem';
-import { useAccordionItemContext } from '../item/AccordionItemContext';
-import { accordionStateAttributesMapping } from '../item/stateAttributesMapping';
-import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
-import { mergePropsN } from '../../merge-props';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import type { AccordionItemState } from '@/accordion/item/AccordionItem';
+import { useAccordionItemContext } from '@/accordion/item/AccordionItemContext';
+import { accordionStateAttributesMapping } from '@/accordion/item/stateAttributesMapping';
+import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * A heading that labels the corresponding panel.

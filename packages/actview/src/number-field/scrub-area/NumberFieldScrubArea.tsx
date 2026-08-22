@@ -4,16 +4,16 @@ import { mergeCleanups } from '@base-ui/actview-utils/mergeCleanups';
 import { ownerWindow, ownerDocument } from '@base-ui/actview-utils/owner';
 import { platform } from '@base-ui/actview-utils/platform';
 import { useTimeout } from '@base-ui/actview-utils/useTimeout';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { useNumberFieldRootContext } from '../root/NumberFieldRootContext';
-import type { NumberFieldRootState } from '../root/NumberFieldRoot';
-import { stateAttributesMapping } from '../utils/stateAttributesMapping';
-import { NumberFieldScrubAreaContext } from './NumberFieldScrubAreaContext';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { getViewportRect } from '../utils/getViewportRect';
-import { createGenericEventDetails } from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
-import { getTarget } from '../../floating-ui-actview/utils';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { useNumberFieldRootContext } from '@/number-field/root/NumberFieldRootContext';
+import type { NumberFieldRootState } from '@/number-field/root/NumberFieldRoot';
+import { stateAttributesMapping } from '@/number-field/utils/stateAttributesMapping';
+import { NumberFieldScrubAreaContext } from '@/number-field/scrub-area/NumberFieldScrubAreaContext';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { getViewportRect } from '@/number-field/utils/getViewportRect';
+import { createGenericEventDetails } from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
+import { getTarget } from '@/floating-ui-actview/utils';
 
 const SCRUB_AREA_STYLE = {
   touchAction: 'none',

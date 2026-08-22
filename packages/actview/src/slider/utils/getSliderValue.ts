@@ -1,5 +1,5 @@
 import { clamp } from '@base-ui/actview-utils/clamp';
-import { asc } from './asc';
+import { asc } from '@/slider/utils/asc';
 
 export function getSliderValue(
   valueInput: number,

@@ -1,11 +1,11 @@
 import { computed } from 'actview';
-import { useMenuRadioItemContext } from '../radio-item/MenuRadioItemContext';
-import { useRenderElement } from '../../internals/useRenderElement';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { itemMapping } from '../utils/stateAttributesMapping';
-import { useTransitionStatus, type TransitionStatus } from '../../internals/useTransitionStatus';
-import { useOpenChangeComplete } from '../../internals/useOpenChangeComplete';
-import { mergeProps } from '../../merge-props';
+import { useMenuRadioItemContext } from '@/menu/radio-item/MenuRadioItemContext';
+import { useRenderElement } from '@/internals/useRenderElement';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { itemMapping } from '@/menu/utils/stateAttributesMapping';
+import { useTransitionStatus, type TransitionStatus } from '@/internals/useTransitionStatus';
+import { useOpenChangeComplete } from '@/internals/useOpenChangeComplete';
+import { mergeProps } from '@/merge-props';
 
 /**
  * Indicates whether the radio item is selected.

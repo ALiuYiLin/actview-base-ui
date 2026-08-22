@@ -1,12 +1,12 @@
 import { computed } from 'actview';
-import { useMenuRootContext } from '../root/MenuRootContext';
-import { useRenderElement } from '../../internals/useRenderElement';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { popupTransitionStateMapping } from '../../utils/popupStateMapping';
-import type { TransitionStatus } from '../../internals/useTransitionStatus';
-import { useContextMenuRootContext } from '../../context-menu/root/ContextMenuRootContext';
-import { REASONS } from '../../internals/reasons';
-import { mergeProps } from '../../merge-props';
+import { useMenuRootContext } from '@/menu/root/MenuRootContext';
+import { useRenderElement } from '@/internals/useRenderElement';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { popupTransitionStateMapping } from '@/utils/popupStateMapping';
+import type { TransitionStatus } from '@/internals/useTransitionStatus';
+import { useContextMenuRootContext } from '@/context-menu/root/ContextMenuRootContext';
+import { REASONS } from '@/internals/reasons';
+import { mergeProps } from '@/merge-props';
 
 /**
  * An overlay displayed beneath the menu popup.

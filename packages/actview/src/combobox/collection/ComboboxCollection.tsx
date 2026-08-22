@@ -1,6 +1,6 @@
 import { computed } from 'actview';
-import { useComboboxDerivedItemsContext } from '../root/ComboboxRootContext';
-import { useGroupCollectionContext } from './GroupCollectionContext';
+import { useComboboxDerivedItemsContext } from '@/combobox/root/ComboboxRootContext';
+import { useGroupCollectionContext } from '@/combobox/collection/GroupCollectionContext';
 
 /**
  * Renders filtered list items.

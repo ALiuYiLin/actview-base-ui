@@ -1,13 +1,13 @@
 import { computed, defineComponent, ref } from 'actview';
 import { EMPTY_ARRAY } from '@base-ui/actview-utils/empty';
-import type { BaseUIComponentProps, Orientation } from '../internals/types';
-import { CompositeRoot } from '../internals/composite/root/CompositeRoot';
-import { useToolbarRootContext } from '../toolbar/root/ToolbarRootContext';
-import { useToolbarGroupContext } from '../toolbar/group/ToolbarGroupContext';
-import { ToggleGroupContext } from './ToggleGroupContext';
-import type { BaseUIChangeEventDetails } from '../internals/createBaseUIEventDetails';
-import { REASONS } from '../internals/reasons';
-import { mergePropsN } from '../merge-props';
+import type { BaseUIComponentProps, Orientation } from '@/internals/types';
+import { CompositeRoot } from '@/internals/composite/root/CompositeRoot';
+import { useToolbarRootContext } from '@/toolbar/root/ToolbarRootContext';
+import { useToolbarGroupContext } from '@/toolbar/group/ToolbarGroupContext';
+import { ToggleGroupContext } from '@/toggle-group/ToggleGroupContext';
+import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * Provides a shared state to a series of toggle buttons.

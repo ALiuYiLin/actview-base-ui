@@ -15,31 +15,31 @@ import {
   useFloatingRootContext,
   useListNavigation,
   useTypeahead,
-} from '../../floating-ui-actview';
-import { SelectRootContext } from './SelectRootContext';
-import { useFieldRootContext } from '../../internals/field-root-context/FieldRootContext';
-import { useRegisterFieldControl } from '../../internals/field-register-control/useRegisterFieldControl';
-import { useLabelableId } from '../../internals/labelable-provider/useLabelableId';
-import { useTransitionStatus } from '../../internals/useTransitionStatus';
-import { selectors, SelectStore } from '../store';
+} from '@/floating-ui-actview';
+import { SelectRootContext } from '@/select/root/SelectRootContext';
+import { useFieldRootContext } from '@/internals/field-root-context/FieldRootContext';
+import { useRegisterFieldControl } from '@/internals/field-register-control/useRegisterFieldControl';
+import { useLabelableId } from '@/internals/labelable-provider/useLabelableId';
+import { useTransitionStatus } from '@/internals/useTransitionStatus';
+import { selectors, SelectStore } from '@/select/store';
 import {
   type BaseUIChangeEventDetails,
   createChangeEventDetails,
-} from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
-import { useOpenChangeComplete } from '../../internals/useOpenChangeComplete';
-import { useFormContext } from '../../internals/form-context/FormContext';
-import { stringifyAsLabel, stringifyAsValue } from '../../internals/resolveValueLabel';
+} from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
+import { useOpenChangeComplete } from '@/internals/useOpenChangeComplete';
+import { useFormContext } from '@/internals/form-context/FormContext';
+import { stringifyAsLabel, stringifyAsValue } from '@/internals/resolveValueLabel';
 import {
   defaultItemEquality,
   findItemIndex,
   isSelectedValueDirty,
-} from '../../internals/itemEquality';
-import { useValueChanged } from '../../internals/useValueChanged';
-import { useOpenInteractionType } from '../../utils/useOpenInteractionType';
-import { getMaxScrollOffset, normalizeScrollOffset } from '../../utils/scrollEdges';
-import { FOCUSABLE_POPUP_PROPS } from '../../utils/popups';
-import { mergeProps } from '../../merge-props';
+} from '@/internals/itemEquality';
+import { useValueChanged } from '@/internals/useValueChanged';
+import { useOpenInteractionType } from '@/utils/useOpenInteractionType';
+import { getMaxScrollOffset, normalizeScrollOffset } from '@/utils/scrollEdges';
+import { FOCUSABLE_POPUP_PROPS } from '@/utils/popups';
+import { mergeProps } from '@/merge-props';
 
 /**
  * Groups all parts of the select.

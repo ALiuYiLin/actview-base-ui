@@ -1,7 +1,7 @@
-export * as Accordion from './index.parts';
+export * as Accordion from '@/accordion/index.parts';
 
-export type * from './root/AccordionRoot';
-export type * from './item/AccordionItem';
-export type * from './header/AccordionHeader';
-export type * from './trigger/AccordionTrigger';
-export type * from './panel/AccordionPanel';
+export type * from '@/accordion/root/AccordionRoot';
+export type * from '@/accordion/item/AccordionItem';
+export type * from '@/accordion/header/AccordionHeader';
+export type * from '@/accordion/trigger/AccordionTrigger';
+export type * from '@/accordion/panel/AccordionPanel';

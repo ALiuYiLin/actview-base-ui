@@ -5,8 +5,8 @@ import type {
   OverflowEdges,
   Size,
   ScrollAreaRootState,
-} from './ScrollAreaRoot';
-import { createContext } from '../../internals/createContext';
+} from '@/scroll-area/root/ScrollAreaRoot';
+import { createContext } from '@/internals/createContext';
 
 export interface ScrollAreaRootContext {
   cornerSize: Size;

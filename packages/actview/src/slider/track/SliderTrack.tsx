@@ -1,9 +1,9 @@
 import { computed } from 'actview';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { useSliderRootContext } from '../root/SliderRootContext';
-import type { SliderRootState } from '../root/SliderRoot';
-import { sliderStateAttributesMapping } from '../root/stateAttributesMapping';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useSliderRootContext } from '@/slider/root/SliderRootContext';
+import type { SliderRootState } from '@/slider/root/SliderRoot';
+import { sliderStateAttributesMapping } from '@/slider/root/stateAttributesMapping';
 
 /**
  * Contains the slider indicator and represents the entire range of the slider.

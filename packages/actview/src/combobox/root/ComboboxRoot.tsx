@@ -1,5 +1,5 @@
 import type { VNodeChild } from '@actview/jsx';
-import { AriaCombobox, type AriaComboboxState } from './AriaCombobox';
+import { AriaCombobox, type AriaComboboxState } from '@/combobox/root/AriaCombobox';
 
 /**
  * Groups all parts of the combobox.

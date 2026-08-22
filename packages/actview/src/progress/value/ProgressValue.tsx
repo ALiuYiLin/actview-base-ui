@@ -1,12 +1,12 @@
 import { computed, defineComponent, useRootElement } from 'actview';
 import type { VNodeChild } from '@actview/jsx';
-import type { HTMLProps } from '../../internals/types';
-import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
-import { useProgressRootContext } from '../root/ProgressRootContext';
-import type { ProgressRootState } from '../root/ProgressRoot';
-import { progressStateAttributesMapping } from '../root/stateAttributesMapping';
-import type { BaseUIComponentProps } from '../../internals/types';
-import { mergePropsN } from '../../merge-props';
+import type { HTMLProps } from '@/internals/types';
+import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import { useProgressRootContext } from '@/progress/root/ProgressRootContext';
+import type { ProgressRootState } from '@/progress/root/ProgressRoot';
+import { progressStateAttributesMapping } from '@/progress/root/stateAttributesMapping';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * A text element displaying the current value.

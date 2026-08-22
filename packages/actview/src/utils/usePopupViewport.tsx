@@ -8,11 +8,11 @@ import { ownerDocument } from '@base-ui/actview-utils/owner';
 import type { ActviewStore } from '@base-ui/actview-utils/store';
 import { createElement, type VNode, type VNodeChild } from '@actview/jsx';
 import type { Dimensions } from '@floating-ui/dom';
-import { useAnimationsFinished } from '../internals/useAnimationsFinished';
-import type { StateAttributesMapping } from '../internals/getStateAttributesProps';
-import { usePopupAutoResize, type Side } from './usePopupAutoResize';
-import { useDirection } from '../direction-provider';
-import { adaptiveOrigin } from './adaptiveOriginMiddleware';
+import { useAnimationsFinished } from '@/internals/useAnimationsFinished';
+import type { StateAttributesMapping } from '@/internals/getStateAttributesProps';
+import { usePopupAutoResize, type Side } from '@/utils/usePopupAutoResize';
+import { useDirection } from '@/direction-provider';
+import { adaptiveOrigin } from '@/utils/adaptiveOriginMiddleware';
 
 export const popupViewportStateMapping: StateAttributesMapping<{
   activationDirection: string | undefined;

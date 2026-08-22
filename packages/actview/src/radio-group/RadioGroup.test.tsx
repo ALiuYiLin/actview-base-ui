@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ref } from 'actview';
-import { RadioGroup } from './RadioGroup';
-import { Field } from '../field';
-import { Fieldset } from '../fieldset';
-import { Form } from '../form';
-import { Radio } from '../radio';
-import { DirectionProvider } from '../direction-provider';
+import { RadioGroup } from '@/radio-group/RadioGroup';
+import { Field } from '@/field';
+import { Fieldset } from '@/fieldset';
+import { Form } from '@/form';
+import { Radio } from '@/radio';
+import { DirectionProvider } from '@/direction-provider';
 import { createRenderer } from '../../test/createRenderer';
 
 const { render, fireEvent, act } = createRenderer();

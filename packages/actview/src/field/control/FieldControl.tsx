@@ -2,21 +2,21 @@ import { computed, defineComponent, ref, watch } from 'actview';
 import { useControlled } from '@base-ui/actview-utils/useControlled';
 import { useIsoLayoutEffect } from '@base-ui/actview-utils/useIsoLayoutEffect';
 import { ownerDocument } from '@base-ui/actview-utils/owner';
-import { type FieldRootState } from '../root/FieldRoot';
-import { useFieldRootContext } from '../../internals/field-root-context/FieldRootContext';
-import { useRegisterFieldControl } from '../../internals/field-register-control/useRegisterFieldControl';
-import { useFormContext } from '../../internals/form-context/FormContext';
-import { useLabelableContext } from '../../internals/labelable-provider/LabelableContext';
-import { useLabelableId } from '../../internals/labelable-provider/useLabelableId';
-import { fieldValidityMapping } from '../../internals/field-constants/constants';
-import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { useValueChanged } from '../../internals/useValueChanged';
-import { createChangeEventDetails } from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
-import type { BaseUIChangeEventDetails } from '../../internals/createBaseUIEventDetails';
-import { activeElement } from '../../floating-ui-actview/utils';
-import { mergePropsN } from '../../merge-props';
+import { type FieldRootState } from '@/field/root/FieldRoot';
+import { useFieldRootContext } from '@/internals/field-root-context/FieldRootContext';
+import { useRegisterFieldControl } from '@/internals/field-register-control/useRegisterFieldControl';
+import { useFormContext } from '@/internals/form-context/FormContext';
+import { useLabelableContext } from '@/internals/labelable-provider/LabelableContext';
+import { useLabelableId } from '@/internals/labelable-provider/useLabelableId';
+import { fieldValidityMapping } from '@/internals/field-constants/constants';
+import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { useValueChanged } from '@/internals/useValueChanged';
+import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
+import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import { activeElement } from '@/floating-ui-actview/utils';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * The form control to label and validate.

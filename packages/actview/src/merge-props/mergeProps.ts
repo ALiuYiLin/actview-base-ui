@@ -1,5 +1,5 @@
 import { mergeObjects } from '@base-ui/actview-utils/mergeObjects';
-import type { BaseUIEvent, WithBaseUIEvent } from '../internals/types';
+import type { BaseUIEvent, WithBaseUIEvent } from '@/internals/types';
 import type { ComponentType, PropsOf as JSXPropsOf } from '@actview/jsx';
 
 type ElementType = ComponentType<any> | keyof JSX.IntrinsicElements;

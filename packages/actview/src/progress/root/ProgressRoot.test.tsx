@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { ProgressRoot } from './ProgressRoot';
-import { ProgressLabel } from '../label/ProgressLabel';
-import { ProgressValue } from '../value/ProgressValue';
-import { ProgressTrack } from '../track/ProgressTrack';
-import { ProgressIndicator } from '../indicator/ProgressIndicator';
+import { ProgressRoot } from '@/progress/root/ProgressRoot';
+import { ProgressLabel } from '@/progress/label/ProgressLabel';
+import { ProgressValue } from '@/progress/value/ProgressValue';
+import { ProgressTrack } from '@/progress/track/ProgressTrack';
+import { ProgressIndicator } from '@/progress/indicator/ProgressIndicator';
 import { createRenderer } from '../../../test/createRenderer';
 
 describe('<Progress.Root />', () => {

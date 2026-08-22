@@ -1,2 +1,2 @@
-export { FieldsetRoot as Root } from './root/FieldsetRoot';
-export { FieldsetLegend as Legend } from './legend/FieldsetLegend';
+export { FieldsetRoot as Root } from '@/fieldset/root/FieldsetRoot';
+export { FieldsetLegend as Legend } from '@/fieldset/legend/FieldsetLegend';

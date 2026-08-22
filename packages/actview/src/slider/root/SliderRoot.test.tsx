@@ -1,9 +1,9 @@
 import { describe, expect, it, vi, beforeAll } from 'vitest';
-import { SliderRoot } from './SliderRoot';
-import { SliderControl } from '../control/SliderControl';
-import { SliderTrack } from '../track/SliderTrack';
-import { SliderThumb } from '../thumb/SliderThumb';
-import { SliderIndicator } from '../indicator/SliderIndicator';
+import { SliderRoot } from '@/slider/root/SliderRoot';
+import { SliderControl } from '@/slider/control/SliderControl';
+import { SliderTrack } from '@/slider/track/SliderTrack';
+import { SliderThumb } from '@/slider/thumb/SliderThumb';
+import { SliderIndicator } from '@/slider/indicator/SliderIndicator';
 import { createRenderer } from '../../../test/createRenderer';
 
 beforeAll(() => {

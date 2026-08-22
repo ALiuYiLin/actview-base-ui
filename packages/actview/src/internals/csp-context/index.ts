@@ -1,1 +1,1 @@
-export * from './CspContext';
+export * from '@/internals/csp-context/CspContext';

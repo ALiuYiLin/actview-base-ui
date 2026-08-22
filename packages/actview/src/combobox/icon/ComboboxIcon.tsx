@@ -1,6 +1,6 @@
 import { defineComponent, useRootElement } from 'actview';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { mergePropsN } from '../../merge-props';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * An icon that indicates that the trigger button opens the popup.

@@ -1,12 +1,12 @@
 import { computed, ref } from 'actview';
 import { useControlled } from '@base-ui/actview-utils/useControlled';
 import { useStableCallback } from '@base-ui/actview-utils/useStableCallback';
-import { MenuRadioGroupContext } from './MenuRadioGroupContext';
-import { MenuGroupContext } from '../group/MenuGroupContext';
-import { useRenderElement } from '../../internals/useRenderElement';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import type { MenuRoot } from '../root/MenuRoot';
-import { mergeProps } from '../../merge-props';
+import { MenuRadioGroupContext } from '@/menu/radio-group/MenuRadioGroupContext';
+import { MenuGroupContext } from '@/menu/group/MenuGroupContext';
+import { useRenderElement } from '@/internals/useRenderElement';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import type { MenuRoot } from '@/menu/root/MenuRoot';
+import { mergeProps } from '@/merge-props';
 
 /**
  * Groups related radio items.

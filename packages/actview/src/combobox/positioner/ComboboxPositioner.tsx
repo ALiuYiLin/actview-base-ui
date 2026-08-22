@@ -1,21 +1,21 @@
 import { computed, watch } from 'actview';
 import { inertValue } from '@base-ui/actview-utils/inertValue';
 import type { VirtualElement } from '@floating-ui/dom';
-import { useComboboxRootContext } from '../root/ComboboxRootContext';
-import { ComboboxPositionerContext } from './ComboboxPositionerContext';
-import { useListEmpty } from '../utils/parts';
+import { useComboboxRootContext } from '@/combobox/root/ComboboxRootContext';
+import { ComboboxPositionerContext } from '@/combobox/positioner/ComboboxPositionerContext';
+import { useListEmpty } from '@/combobox/utils/parts';
 import {
   type Side,
   type Align,
   useAnchorPositioning,
   type UseAnchorPositioningSharedParameters,
-} from '../../internals/useAnchorPositioning';
-import type { BaseUIComponentProps } from '../../internals/types';
-import { useComboboxPortalContext } from '../portal/ComboboxPortalContext';
-import { DROPDOWN_COLLISION_AVOIDANCE } from '../../internals/constants';
-import { InternalBackdrop } from '../../utils/InternalBackdrop';
-import { usePositioner } from '../../utils/usePositioner';
-import { useAnchoredPopupScrollLock } from '../../utils/useAnchoredPopupScrollLock';
+} from '@/internals/useAnchorPositioning';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { useComboboxPortalContext } from '@/combobox/portal/ComboboxPortalContext';
+import { DROPDOWN_COLLISION_AVOIDANCE } from '@/internals/constants';
+import { InternalBackdrop } from '@/utils/InternalBackdrop';
+import { usePositioner } from '@/utils/usePositioner';
+import { useAnchoredPopupScrollLock } from '@/utils/useAnchoredPopupScrollLock';
 
 /**
  * Positions the popup against the trigger.

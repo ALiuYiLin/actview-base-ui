@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { ScrollAreaRoot } from '../root/ScrollAreaRoot';
-import { ScrollAreaViewport } from '../viewport/ScrollAreaViewport';
-import { ScrollAreaScrollbar } from './ScrollAreaScrollbar';
-import { ScrollAreaThumb } from '../thumb/ScrollAreaThumb';
+import { ScrollAreaRoot } from '@/scroll-area/root/ScrollAreaRoot';
+import { ScrollAreaViewport } from '@/scroll-area/viewport/ScrollAreaViewport';
+import { ScrollAreaScrollbar } from '@/scroll-area/scrollbar/ScrollAreaScrollbar';
+import { ScrollAreaThumb } from '@/scroll-area/thumb/ScrollAreaThumb';
 import { createRenderer } from '../../../test/createRenderer';
 
 describe('<ScrollArea.Scrollbar />', () => {

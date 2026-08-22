@@ -1,5 +1,5 @@
-export { MeterRoot as Root } from './root/MeterRoot';
-export { MeterTrack as Track } from './track/MeterTrack';
-export { MeterIndicator as Indicator } from './indicator/MeterIndicator';
-export { MeterValue as Value } from './value/MeterValue';
-export { MeterLabel as Label } from './label/MeterLabel';
+export { MeterRoot as Root } from '@/meter/root/MeterRoot';
+export { MeterTrack as Track } from '@/meter/track/MeterTrack';
+export { MeterIndicator as Indicator } from '@/meter/indicator/MeterIndicator';
+export { MeterValue as Value } from '@/meter/value/MeterValue';
+export { MeterLabel as Label } from '@/meter/label/MeterLabel';

@@ -1,5 +1,5 @@
-import type { StateAttributesMapping } from '../../internals/getStateAttributesProps';
-import type { ScrollAreaRootState } from './ScrollAreaRoot';
+import type { StateAttributesMapping } from '@/internals/getStateAttributesProps';
+import type { ScrollAreaRootState } from '@/scroll-area/root/ScrollAreaRoot';
 
 // Data-attribute strings inlined so `ScrollAreaRootDataAttributes` tree-shakes out.
 const attr = (name: string) => (value: boolean) => (value ? { [name]: '' } : null);

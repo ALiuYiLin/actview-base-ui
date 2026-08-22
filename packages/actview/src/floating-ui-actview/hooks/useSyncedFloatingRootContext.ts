@@ -1,13 +1,13 @@
 import { watch } from 'actview';
 import type { ActviewStore } from '@base-ui/actview-utils/store';
 import { isElement } from '@floating-ui/utils/dom';
-import type { BaseUIChangeEventDetails } from '../../types';
+import type { BaseUIChangeEventDetails } from '@/types';
 import type {
   PopupStoreContext,
   PopupStoreSelectors,
   PopupStoreState,
-} from '../../utils/popups';
-import { type FloatingRootState, FloatingRootStore } from '../components/FloatingRootStore';
+} from '@/utils/popups';
+import { type FloatingRootState, FloatingRootStore } from '@/floating-ui-actview/components/FloatingRootStore';
 
 /**
  * Narrowed to the store members this hook uses so consumers do not need to provide

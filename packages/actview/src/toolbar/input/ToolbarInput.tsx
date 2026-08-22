@@ -1,10 +1,10 @@
 import { computed, defineComponent } from 'actview';
-import { type BaseUIComponentProps, type HTMLProps } from '../../internals/types';
-import { useFocusableWhenDisabled } from '../../utils/useFocusableWhenDisabled';
-import type { ToolbarRoot, ToolbarRootState } from '../root/ToolbarRoot';
-import { useToolbarRootContext } from '../root/ToolbarRootContext';
-import { useToolbarGroupContext } from '../group/ToolbarGroupContext';
-import { CompositeItem } from '../../internals/composite/item/CompositeItem';
+import { type BaseUIComponentProps, type HTMLProps } from '@/internals/types';
+import { useFocusableWhenDisabled } from '@/utils/useFocusableWhenDisabled';
+import type { ToolbarRoot, ToolbarRootState } from '@/toolbar/root/ToolbarRoot';
+import { useToolbarRootContext } from '@/toolbar/root/ToolbarRootContext';
+import { useToolbarGroupContext } from '@/toolbar/group/ToolbarGroupContext';
+import { CompositeItem } from '@/internals/composite/item/CompositeItem';
 
 /**
  * A native input element that integrates with Toolbar keyboard navigation.

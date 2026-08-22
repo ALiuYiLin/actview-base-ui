@@ -3,12 +3,12 @@ import { useMergedRefs } from '@base-ui/actview-utils/useMergedRefs';
 import { clamp } from '@base-ui/actview-utils/clamp';
 import { formatNumber } from '@base-ui/actview-utils/formatNumber';
 import { visuallyHidden } from '@base-ui/actview-utils/visuallyHidden';
-import { valueToPercent } from '../../utils/valueToPercent';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
-import { ProgressRootContext } from './ProgressRootContext';
-import { progressStateAttributesMapping } from './stateAttributesMapping';
-import { mergePropsN } from '../../merge-props';
+import { valueToPercent } from '@/utils/valueToPercent';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import { ProgressRootContext } from '@/progress/root/ProgressRootContext';
+import { progressStateAttributesMapping } from '@/progress/root/stateAttributesMapping';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * Groups all parts of the progress bar and provides the task completion status to screen readers.

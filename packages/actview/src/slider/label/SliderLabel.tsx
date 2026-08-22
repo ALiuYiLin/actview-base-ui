@@ -1,12 +1,12 @@
 import { computed } from 'actview';
 import { isHTMLElement } from '@floating-ui/utils/dom';
 import { ownerDocument } from '@base-ui/actview-utils/owner';
-import { focusElementWithVisible, useLabel } from '../../internals/labelable-provider/useLabel';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { useRenderElement } from '../../internals/useRenderElement';
-import type { SliderRoot } from '../root/SliderRoot';
-import { useSliderRootContext } from '../root/SliderRootContext';
-import { sliderStateAttributesMapping } from '../root/stateAttributesMapping';
+import { focusElementWithVisible, useLabel } from '@/internals/labelable-provider/useLabel';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { useRenderElement } from '@/internals/useRenderElement';
+import type { SliderRoot } from '@/slider/root/SliderRoot';
+import { useSliderRootContext } from '@/slider/root/SliderRootContext';
+import { sliderStateAttributesMapping } from '@/slider/root/stateAttributesMapping';
 
 /**
  * An accessible label that is automatically associated with the slider thumbs.

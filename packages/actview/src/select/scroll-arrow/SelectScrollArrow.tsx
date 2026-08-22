@@ -1,20 +1,20 @@
 import { computed, watch } from 'actview';
 import { useTimeout } from '@base-ui/actview-utils/useTimeout';
 import { useIsoLayoutEffect } from '@base-ui/actview-utils/useIsoLayoutEffect';
-import type { BaseUIComponentProps } from '../../internals/types';
-import { useSelectRootContext } from '../root/SelectRootContext';
-import { useSelectPositionerContext } from '../positioner/SelectPositionerContext';
-import type { Side } from '../../internals/useAnchorPositioning';
-import { useTransitionStatus, type TransitionStatus } from '../../internals/useTransitionStatus';
-import { useOpenChangeComplete } from '../../internals/useOpenChangeComplete';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { transitionStatusMapping } from '../../internals/stateAttributesMapping';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { useSelectRootContext } from '@/select/root/SelectRootContext';
+import { useSelectPositionerContext } from '@/select/positioner/SelectPositionerContext';
+import type { Side } from '@/internals/useAnchorPositioning';
+import { useTransitionStatus, type TransitionStatus } from '@/internals/useTransitionStatus';
+import { useOpenChangeComplete } from '@/internals/useOpenChangeComplete';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { transitionStatusMapping } from '@/internals/stateAttributesMapping';
 import {
   getMaxScrollOffset,
   normalizeScrollOffset,
   SCROLL_EDGE_TOLERANCE_PX,
-} from '../../utils/scrollEdges';
-import { selectors } from '../store';
+} from '@/utils/scrollEdges';
+import { selectors } from '@/select/store';
 
 /**
  * @internal

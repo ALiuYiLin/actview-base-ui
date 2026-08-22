@@ -1,1 +1,1 @@
-export * from './DirectionContext';
+export * from '@/internals/direction-context/DirectionContext';

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ProgressValue } from './ProgressValue';
-import { ProgressRoot } from '../root/ProgressRoot';
+import { ProgressValue } from '@/progress/value/ProgressValue';
+import { ProgressRoot } from '@/progress/root/ProgressRoot';
 import { createRenderer } from '../../../test/createRenderer';
 
 describe('<Progress.Value />', () => {

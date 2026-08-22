@@ -1,18 +1,18 @@
 import { computed, defineComponent, watch } from 'actview';
 import { warn } from '@base-ui/actview-utils/warn';
-import type { BaseUIComponentProps, HTMLProps } from '../../internals/types';
-import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
-import { resolveStyle } from '../../utils/resolveStyle';
-import { useCollapsibleRootContext } from '../../collapsible/root/CollapsibleRootContext';
-import { useCollapsiblePanel } from '../../collapsible/panel/useCollapsiblePanel';
-import { useAccordionRootContext } from '../root/AccordionRootContext';
-import type { AccordionRoot } from '../root/AccordionRoot';
-import type { AccordionItemState } from '../item/AccordionItem';
-import { useAccordionItemContext } from '../item/AccordionItemContext';
-import { accordionStateAttributesMapping } from '../item/stateAttributesMapping';
-import { AccordionPanelCssVars } from './AccordionPanelCssVars';
-import type { TransitionStatus } from '../../internals/useTransitionStatus';
-import { mergePropsN } from '../../merge-props';
+import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import { resolveStyle } from '@/utils/resolveStyle';
+import { useCollapsibleRootContext } from '@/collapsible/root/CollapsibleRootContext';
+import { useCollapsiblePanel } from '@/collapsible/panel/useCollapsiblePanel';
+import { useAccordionRootContext } from '@/accordion/root/AccordionRootContext';
+import type { AccordionRoot } from '@/accordion/root/AccordionRoot';
+import type { AccordionItemState } from '@/accordion/item/AccordionItem';
+import { useAccordionItemContext } from '@/accordion/item/AccordionItemContext';
+import { accordionStateAttributesMapping } from '@/accordion/item/stateAttributesMapping';
+import { AccordionPanelCssVars } from '@/accordion/panel/AccordionPanelCssVars';
+import type { TransitionStatus } from '@/internals/useTransitionStatus';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * A collapsible panel with the accordion item contents.

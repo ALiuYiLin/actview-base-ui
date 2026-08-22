@@ -1,2 +1,2 @@
-export { FormContext, useFormContext } from './FormContext';
-export type { Errors } from './FormContext';
+export { FormContext, useFormContext } from '@/internals/form-context/FormContext';
+export type { Errors } from '@/internals/form-context/FormContext';

@@ -1,8 +1,8 @@
 import { computed, defineComponent } from 'actview';
-import { useButton } from '../internals/use-button/useButton';
-import { getStateAttributesProps } from '../internals/getStateAttributesProps';
-import type { BaseUIComponentProps, NativeButtonProps } from '../internals/types';
-import { mergePropsN } from '../merge-props';
+import { useButton } from '@/internals/use-button/useButton';
+import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import type { BaseUIComponentProps, NativeButtonProps } from '@/internals/types';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * A button component that can be used to trigger actions.

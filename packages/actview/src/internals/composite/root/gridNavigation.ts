@@ -4,8 +4,8 @@ import {
   getGridCellIndices,
   getGridNavigatedIndex,
   isListIndexDisabled,
-} from '../compositeUtils';
-import { ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT } from '../composite';
+} from '@/internals/composite/compositeUtils';
+import { ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT } from '@/internals/composite/composite';
 
 type CompositeGridElementsRef = { current: Array<HTMLElement | null> };
 type CompositeGridOnLoop = (

@@ -8,7 +8,7 @@ import {
   DateBuilderReturnType,
   TemporalTimezone,
   TemporalAdapter,
-} from '../temporal';
+} from '@/internals/temporal';
 
 const FORMATS: TemporalAdapterFormats = {
   // Digit formats with leading zeroes

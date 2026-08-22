@@ -1,11 +1,11 @@
 import { computed, useRootElement, watch } from 'actview';
 import type { Ref } from '@actview/core';
-import { useCompositeRootContext } from '../root/CompositeRootContext';
+import { useCompositeRootContext } from '@/internals/composite/root/CompositeRootContext';
 import {
   useCompositeListItem,
   type UseCompositeListItemParameters,
-} from '../list/useCompositeListItem';
-import type { HTMLProps } from '../../types';
+} from '@/internals/composite/list/useCompositeListItem';
+import type { HTMLProps } from '@/internals/types';
 
 export interface UseCompositeItemParameters<Metadata> extends Pick<
   UseCompositeListItemParameters<Metadata>,

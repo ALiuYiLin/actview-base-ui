@@ -17,46 +17,46 @@ import {
   useFloatingRootContext,
   useListNavigation,
   useClick,
-} from '../../floating-ui-actview';
-import { gridNavigation } from '../../floating-ui-actview/hooks/gridNavigation';
-import { contains, getTarget } from '../../floating-ui-actview/utils';
+} from '@/floating-ui-actview';
+import { gridNavigation } from '@/floating-ui-actview/hooks/gridNavigation';
+import { contains, getTarget } from '@/floating-ui-actview/utils';
 import {
   createChangeEventDetails,
   createGenericEventDetails,
   type BaseUIChangeEventDetails,
   type BaseUIGenericEventDetails,
-} from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
+} from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
 import {
   ComboboxFloatingContext,
   ComboboxDerivedItemsContext,
   ComboboxHasItemsContext,
   ComboboxRootContext,
   ComboboxInputValueContext,
-} from './ComboboxRootContext';
-import { selectors, ComboboxStoreImpl, type State as StoreState } from '../store';
-import { useOpenChangeComplete } from '../../internals/useOpenChangeComplete';
-import { useFieldRootContext } from '../../internals/field-root-context/FieldRootContext';
-import { useRegisterFieldControl } from '../../internals/field-register-control/useRegisterFieldControl';
-import { useFormContext } from '../../internals/form-context/FormContext';
-import { useLabelableId } from '../../internals/labelable-provider/useLabelableId';
-import { createCollatorItemFilter, type FilterItemToString } from './utils';
-import { useCoreFilter } from './utils/useFilter';
-import { useTransitionStatus } from '../../internals/useTransitionStatus';
-import { useOpenInteractionType } from '../../utils/useOpenInteractionType';
-import { isScrollableY } from '../../utils/scrollable';
-import type { BaseUIEvent, HTMLProps } from '../../internals/types';
-import { useValueChanged } from '../../internals/useValueChanged';
-import { NOOP } from '../../internals/noop';
-import { FOCUSABLE_POPUP_PROPS } from '../../utils/popups';
-import { mergeProps } from '../../merge-props';
+} from '@/combobox/root/ComboboxRootContext';
+import { selectors, ComboboxStoreImpl, type State as StoreState } from '@/combobox/store';
+import { useOpenChangeComplete } from '@/internals/useOpenChangeComplete';
+import { useFieldRootContext } from '@/internals/field-root-context/FieldRootContext';
+import { useRegisterFieldControl } from '@/internals/field-register-control/useRegisterFieldControl';
+import { useFormContext } from '@/internals/form-context/FormContext';
+import { useLabelableId } from '@/internals/labelable-provider/useLabelableId';
+import { createCollatorItemFilter, type FilterItemToString } from '@/combobox/root/utils';
+import { useCoreFilter } from '@/combobox/root/utils/useFilter';
+import { useTransitionStatus } from '@/internals/useTransitionStatus';
+import { useOpenInteractionType } from '@/utils/useOpenInteractionType';
+import { isScrollableY } from '@/utils/scrollable';
+import type { BaseUIEvent, HTMLProps } from '@/internals/types';
+import { useValueChanged } from '@/internals/useValueChanged';
+import { NOOP } from '@/internals/noop';
+import { FOCUSABLE_POPUP_PROPS } from '@/utils/popups';
+import { mergeProps } from '@/merge-props';
 import {
   stringifyAsLabel,
   stringifyAsValue,
   Group,
   flattenLeafItems,
   isGroupedItems,
-} from '../../internals/resolveValueLabel';
+} from '@/internals/resolveValueLabel';
 import {
   compareItemEquality,
   defaultItemEquality,
@@ -64,15 +64,15 @@ import {
   isSelectedValueDirty,
   removeItem,
   selectedValueIncludes,
-} from '../../internals/itemEquality';
-import { INITIAL_LAST_HIGHLIGHT, NO_ACTIVE_VALUE } from './utils/constants';
-import { useDirection } from '../../internals/direction-context/DirectionContext';
+} from '@/internals/itemEquality';
+import { INITIAL_LAST_HIGHLIGHT, NO_ACTIVE_VALUE } from '@/combobox/root/utils/constants';
+import { useDirection } from '@/internals/direction-context/DirectionContext';
 import {
   findCollectionItem,
   type ComboboxItemCollection,
   type ItemCollection,
-} from '../items/itemCollection';
-import { useListEmpty } from '../utils/parts';
+} from '@/combobox/items/itemCollection';
+import { useListEmpty } from '@/combobox/utils/parts';
 
 type InternalAriaComboboxProps<Value, Mode extends SelectionMode, Item = Value> = AriaComboboxProps<
   Value,

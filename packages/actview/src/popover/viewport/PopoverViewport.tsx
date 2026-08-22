@@ -1,10 +1,10 @@
 import { computed } from 'actview';
 import type { VNodeChild } from '@actview/jsx';
-import { usePopoverRootContext } from '../root/PopoverRootContext';
-import { usePopoverPositionerContext } from '../positioner/PopoverPositionerContext';
-import { BaseUIComponentProps } from '../../internals/types';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { popupViewportStateMapping, usePopupViewport } from '../../utils/usePopupViewport';
+import { usePopoverRootContext } from '@/popover/root/PopoverRootContext';
+import { usePopoverPositionerContext } from '@/popover/positioner/PopoverPositionerContext';
+import { BaseUIComponentProps } from '@/internals/types';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { popupViewportStateMapping, usePopupViewport } from '@/utils/usePopupViewport';
 
 /**
  * A viewport for displaying content transitions.

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { ToolbarRoot } from '../root/ToolbarRoot';
-import { ToolbarGroup } from './ToolbarGroup';
-import { ToolbarButton } from '../button/ToolbarButton';
-import { ToolbarLink } from '../link/ToolbarLink';
-import { ToolbarInput } from '../input/ToolbarInput';
+import { ToolbarRoot } from '@/toolbar/root/ToolbarRoot';
+import { ToolbarGroup } from '@/toolbar/group/ToolbarGroup';
+import { ToolbarButton } from '@/toolbar/button/ToolbarButton';
+import { ToolbarLink } from '@/toolbar/link/ToolbarLink';
+import { ToolbarInput } from '@/toolbar/input/ToolbarInput';
 import { createRenderer } from '../../../test/createRenderer';
 
 const { render } = createRenderer();

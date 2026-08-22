@@ -1,15 +1,15 @@
 import { computed, defineComponent, onUnmounted, useRootElement, watch } from 'actview';
-import type { BaseUIComponentProps } from '../../internals/types';
-import type { StateAttributesMapping } from '../../internals/getStateAttributesProps';
-import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
-import { useAvatarRootContext } from '../root/AvatarRootContext';
-import type { AvatarRootState, ImageLoadingStatus } from '../root/AvatarRoot';
-import { avatarStateAttributesMapping } from '../root/stateAttributesMapping';
-import { useOpenChangeComplete } from '../../internals/useOpenChangeComplete';
-import { transitionStatusMapping } from '../../internals/stateAttributesMapping';
-import { type TransitionStatus, useTransitionStatus } from '../../internals/useTransitionStatus';
-import { useImageLoadingStatus } from './useImageLoadingStatus';
-import { mergePropsN } from '../../merge-props';
+import type { BaseUIComponentProps } from '@/internals/types';
+import type { StateAttributesMapping } from '@/internals/getStateAttributesProps';
+import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import { useAvatarRootContext } from '@/avatar/root/AvatarRootContext';
+import type { AvatarRootState, ImageLoadingStatus } from '@/avatar/root/AvatarRoot';
+import { avatarStateAttributesMapping } from '@/avatar/root/stateAttributesMapping';
+import { useOpenChangeComplete } from '@/internals/useOpenChangeComplete';
+import { transitionStatusMapping } from '@/internals/stateAttributesMapping';
+import { type TransitionStatus, useTransitionStatus } from '@/internals/useTransitionStatus';
+import { useImageLoadingStatus } from '@/avatar/image/useImageLoadingStatus';
+import { mergePropsN } from '@/merge-props';
 
 const stateAttributesMapping: StateAttributesMapping<AvatarImageState> = {
   ...avatarStateAttributesMapping,

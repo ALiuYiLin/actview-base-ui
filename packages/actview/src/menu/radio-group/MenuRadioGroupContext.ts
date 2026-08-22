@@ -1,6 +1,6 @@
 import type { ComputedRef } from '@actview/core';
-import { createContext } from '../../internals/createContext';
-import type { MenuRoot } from '../root/MenuRoot';
+import { createContext } from '@/internals/createContext';
+import type { MenuRoot } from '@/menu/root/MenuRoot';
 
 export interface MenuRadioGroupContext {
   value: any;

@@ -5,35 +5,35 @@ import { useMergedRefs } from '@base-ui/actview-utils/useMergedRefs';
 import { visuallyHidden, visuallyHiddenInput } from '@base-ui/actview-utils/visuallyHidden';
 import { ownerWindow } from '@base-ui/actview-utils/owner';
 import { getDefaultFormSubmitter } from '@base-ui/actview-utils/getDefaultFormSubmitter';
-import { getCheckboxStateAttributesMapping } from '../utils/getCheckboxStateAttributesMapping';
-import { dispatchClickWithModifiers } from '../../utils/dispatchClickWithModifiers';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { useBaseUiId } from '../../internals/useBaseUiId';
+import { getCheckboxStateAttributesMapping } from '@/checkbox/utils/getCheckboxStateAttributesMapping';
+import { dispatchClickWithModifiers } from '@/utils/dispatchClickWithModifiers';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useBaseUiId } from '@/internals/useBaseUiId';
 import type {
   BaseUIComponentProps,
   BaseUIEvent,
   HTMLProps,
   NonNativeButtonProps,
   RefValue,
-} from '../../internals/types';
-import { mergeProps } from '../../merge-props';
-import { useButton } from '../../internals/use-button/useButton';
-import type { FieldRootState } from '../../field/root/FieldRoot';
-import { useFieldRootContext } from '../../internals/field-root-context/FieldRootContext';
-import { useRegisterFieldControl } from '../../internals/field-register-control/useRegisterFieldControl';
-import { useFieldItemContext } from '../../field/item/FieldItemContext';
-import { useFormContext } from '../../internals/form-context/FormContext';
-import { useLabelableContext } from '../../internals/labelable-provider/LabelableContext';
-import { useAriaLabelledBy } from '../../internals/labelable-provider/useAriaLabelledBy';
-import { useLabelableId } from '../../internals/labelable-provider/useLabelableId';
-import { useCheckboxGroupContext } from '../../checkbox-group/CheckboxGroupContext';
-import { CheckboxRootContext } from './CheckboxRootContext';
+} from '@/internals/types';
+import { mergeProps } from '@/merge-props';
+import { useButton } from '@/internals/use-button/useButton';
+import type { FieldRootState } from '@/field/root/FieldRoot';
+import { useFieldRootContext } from '@/internals/field-root-context/FieldRootContext';
+import { useRegisterFieldControl } from '@/internals/field-register-control/useRegisterFieldControl';
+import { useFieldItemContext } from '@/field/item/FieldItemContext';
+import { useFormContext } from '@/internals/form-context/FormContext';
+import { useLabelableContext } from '@/internals/labelable-provider/LabelableContext';
+import { useAriaLabelledBy } from '@/internals/labelable-provider/useAriaLabelledBy';
+import { useLabelableId } from '@/internals/labelable-provider/useLabelableId';
+import { useCheckboxGroupContext } from '@/checkbox-group/CheckboxGroupContext';
+import { CheckboxRootContext } from '@/checkbox/root/CheckboxRootContext';
 import {
   BaseUIChangeEventDetails,
   createChangeEventDetails,
-} from '../../internals/createBaseUIEventDetails';
-import { REASONS } from '../../internals/reasons';
-import { useValueChanged } from '../../internals/useValueChanged';
+} from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
+import { useValueChanged } from '@/internals/useValueChanged';
 
 export const PARENT_CHECKBOX = 'data-parent';
 

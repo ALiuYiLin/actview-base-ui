@@ -1,7 +1,7 @@
 import type { ComputedRef } from '@actview/core';
-import { createContext } from '../../internals/createContext';
-import type { MenuStore } from '../store/MenuStore';
-import type { MenuParent } from './MenuRoot';
+import { createContext } from '@/internals/createContext';
+import type { MenuStore } from '@/menu/store/MenuStore';
+import type { MenuParent } from '@/menu/root/MenuRoot';
 
 export interface MenuRootContext<Payload = unknown> {
   store: MenuStore<Payload>;

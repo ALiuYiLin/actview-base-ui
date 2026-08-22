@@ -1,4 +1,4 @@
-import { createContext } from '../../internals/createContext';
+import { createContext } from '@/internals/createContext';
 import type { ComputedRef } from '@actview/core';
 
 export interface TabsListContext {

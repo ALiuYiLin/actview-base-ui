@@ -1,12 +1,12 @@
 import { computed, defineComponent, useRootElement } from 'actview';
-import { type FieldRootState } from '../root/FieldRoot';
-import { useFieldRootContext } from '../../internals/field-root-context/FieldRootContext';
-import { fieldValidityMapping } from '../../internals/field-constants/constants';
-import type { BaseUIComponentProps } from '../../internals/types';
-import { getStateAttributesProps } from '../../internals/getStateAttributesProps';
-import { FieldItemContext } from './FieldItemContext';
-import { LabelableProvider } from '../../internals/labelable-provider';
-import { mergePropsN } from '../../merge-props';
+import { type FieldRootState } from '@/field/root/FieldRoot';
+import { useFieldRootContext } from '@/internals/field-root-context/FieldRootContext';
+import { fieldValidityMapping } from '@/internals/field-constants/constants';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import { FieldItemContext } from '@/field/item/FieldItemContext';
+import { LabelableProvider } from '@/internals/labelable-provider';
+import { mergePropsN } from '@/merge-props';
 
 /**
  * Groups individual items in a checkbox group or radio group with a label and description.

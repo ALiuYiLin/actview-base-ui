@@ -1,5 +1,5 @@
-export * as Collapsible from './index.parts';
+export * as Collapsible from '@/collapsible/index.parts';
 
-export type * from './root/CollapsibleRoot';
-export type * from './trigger/CollapsibleTrigger';
-export type * from './panel/CollapsiblePanel';
+export type * from '@/collapsible/root/CollapsibleRoot';
+export type * from '@/collapsible/trigger/CollapsibleTrigger';
+export type * from '@/collapsible/panel/CollapsiblePanel';

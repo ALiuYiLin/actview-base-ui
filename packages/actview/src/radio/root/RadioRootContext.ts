@@ -1,5 +1,5 @@
 import type { ComputedRef } from '@actview/core';
-import type { RadioRootState } from './RadioRoot';
+import type { RadioRootState } from '@/radio/root/RadioRoot';
 import { createContext } from 'actview';
 
 export type RadioRootContext = RadioRootState;

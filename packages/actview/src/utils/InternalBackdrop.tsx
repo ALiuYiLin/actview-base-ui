@@ -1,4 +1,4 @@
-import type { HTMLProps } from '../internals/types';
+import type { HTMLProps } from '@/internals/types';
 
 /**
  * @internal

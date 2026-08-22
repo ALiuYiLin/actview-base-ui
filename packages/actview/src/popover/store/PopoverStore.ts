@@ -2,10 +2,10 @@ import { ActviewStore } from '@base-ui/actview-utils/store';
 import { Timeout } from '@base-ui/actview-utils/useTimeout';
 import { NOOP } from '@base-ui/actview-utils/empty';
 import type { InteractionType } from '@base-ui/actview-utils/useEnhancedClickHandler';
-import type { PopoverRoot } from '../root/PopoverRoot';
-import { REASONS } from '../../internals/reasons';
-import { NullStore } from '../../utils/NullStore';
-import type { AdaptiveOriginMiddleware } from '../../utils/adaptiveOriginConstants';
+import type { PopoverRoot } from '@/popover/root/PopoverRoot';
+import { REASONS } from '@/internals/reasons';
+import { NullStore } from '@/utils/NullStore';
+import type { AdaptiveOriginMiddleware } from '@/utils/adaptiveOriginConstants';
 import {
   attachPreventUnmountOnClose,
   createInitialPopupStoreState,
@@ -15,8 +15,8 @@ import {
   PopupStoreState,
   PopupTriggerMap,
   type PopupTriggerStoreKeys,
-} from '../../utils/popups';
-import { PATIENT_CLICK_THRESHOLD } from '../../internals/constants';
+} from '@/utils/popups';
+import { PATIENT_CLICK_THRESHOLD } from '@/internals/constants';
 
 export type State<Payload> = PopupStoreState<Payload> & {
   disabled: boolean;

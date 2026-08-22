@@ -1,5 +1,5 @@
 import { isHTMLElement } from '@floating-ui/utils/dom';
-import type { TextDirection } from '../direction-context/DirectionContext';
+import type { TextDirection } from '@/internals/direction-context/DirectionContext';
 
 export {
   stopEvent,
@@ -8,7 +8,7 @@ export {
   findNonDisabledListIndex,
   getMaxListIndex,
   getMinListIndex,
-} from './compositeUtils';
+} from '@/internals/composite/compositeUtils';
 
 export const ARROW_UP = 'ArrowUp';
 export const ARROW_DOWN = 'ArrowDown';

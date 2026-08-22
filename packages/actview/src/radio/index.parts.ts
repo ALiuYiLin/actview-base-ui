@@ -1,2 +1,2 @@
-export { RadioRoot as Root } from './root/RadioRoot';
-export { RadioIndicator as Indicator } from './indicator/RadioIndicator';
+export { RadioRoot as Root } from '@/radio/root/RadioRoot';
+export { RadioIndicator as Indicator } from '@/radio/indicator/RadioIndicator';

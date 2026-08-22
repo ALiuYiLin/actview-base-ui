@@ -1,7 +1,7 @@
 import { getComputedStyle, getNodeName, isHTMLElement, isShadowRoot } from '@floating-ui/utils/dom';
 import { ownerDocument } from '@base-ui/actview-utils/owner';
-import { activeElement, contains } from './element';
-import { isElementVisible } from './composite';
+import { activeElement, contains } from '@/floating-ui-actview/utils/element';
+import { isElementVisible } from '@/floating-ui-actview/utils/composite';
 
 export { contains };
 

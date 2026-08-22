@@ -6,13 +6,13 @@ import {
   type Side,
   type Align,
   type UseAnchorPositioningSharedParameters,
-} from '../../internals/useAnchorPositioning';
-import type { BaseUIComponentProps } from '../../internals/types';
-import { POPUP_COLLISION_AVOIDANCE } from '../../internals/constants';
-import { ToastPositionerContext } from './ToastPositionerContext';
-import type { ToastObject } from '../useToastManager';
-import { useToastProviderContext } from '../provider/ToastProviderContext';
-import { usePositioner } from '../../utils/usePositioner';
+} from '@/internals/useAnchorPositioning';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { POPUP_COLLISION_AVOIDANCE } from '@/internals/constants';
+import { ToastPositionerContext } from '@/toast/positioner/ToastPositionerContext';
+import type { ToastObject } from '@/toast/useToastManager';
+import { useToastProviderContext } from '@/toast/provider/ToastProviderContext';
+import { usePositioner } from '@/utils/usePositioner';
 
 /**
  * Positions the toast against the anchor.

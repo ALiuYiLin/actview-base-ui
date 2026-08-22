@@ -1,6 +1,6 @@
-export { useRegisterFieldControl } from './useRegisterFieldControl';
-export { useFieldControlRegistration } from './useFieldControlRegistration';
+export { useRegisterFieldControl } from '@/internals/field-register-control/useRegisterFieldControl';
+export { useFieldControlRegistration } from '@/internals/field-register-control/useFieldControlRegistration';
 export type {
   FieldControlRegistration,
   UseFieldControlRegistrationParameters,
-} from './useFieldControlRegistration';
+} from '@/internals/field-register-control/useFieldControlRegistration';

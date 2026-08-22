@@ -2,9 +2,9 @@ import { watch } from 'actview';
 import type { VNodeChild } from '@actview/jsx';
 import { useOnMount } from '@base-ui/actview-utils/useOnMount';
 import { useRefWithInit } from '@base-ui/actview-utils/useRefWithInit';
-import { ToastContext } from './ToastProviderContext';
-import type { ToastManager, ToastManagerEvent } from '../createToastManager';
-import { ToastStore } from '../store';
+import { ToastContext } from '@/toast/provider/ToastProviderContext';
+import type { ToastManager, ToastManagerEvent } from '@/toast/createToastManager';
+import { ToastStore } from '@/toast/store';
 
 /**
  * Provides a context for creating and managing toasts.

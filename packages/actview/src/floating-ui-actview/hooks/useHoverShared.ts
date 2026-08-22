@@ -1,7 +1,7 @@
-import { isMouseLikePointerType } from '../utils/event';
-import type { ExtendedElements, FloatingTreeType, Placement } from '../types';
+import { isMouseLikePointerType } from '@/floating-ui-actview/utils/event';
+import type { ExtendedElements, FloatingTreeType, Placement } from '@/floating-ui-actview/types';
 
-export { isTargetInsideEnabledTrigger as isInsideEnabledTrigger } from '../utils/element';
+export { isTargetInsideEnabledTrigger as isInsideEnabledTrigger } from '@/floating-ui-actview/utils/element';
 
 export interface HandleCloseOptions {
   blockPointerEvents?: boolean | undefined;

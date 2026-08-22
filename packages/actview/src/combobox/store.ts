@@ -1,13 +1,13 @@
 import { ActviewStore } from '@base-ui/actview-utils/store';
 import { EMPTY_OBJECT } from '@base-ui/actview-utils/empty';
-import { NOOP } from '../internals/noop';
+import { NOOP } from '@/internals/noop';
 import type { InteractionType } from '@base-ui/actview-utils/useEnhancedClickHandler';
-import type { TransitionStatus } from '../internals/useTransitionStatus';
-import type { HTMLProps, RefObject } from '../internals/types';
-import type { Side } from '../internals/useAnchorPositioning';
-import { compareItemEquality, defaultItemEquality } from '../internals/itemEquality';
-import { hasNullItemLabel } from '../internals/resolveValueLabel';
-import type { AriaCombobox } from './root/AriaCombobox';
+import type { TransitionStatus } from '@/internals/useTransitionStatus';
+import type { HTMLProps, RefObject } from '@/internals/types';
+import type { Side } from '@/internals/useAnchorPositioning';
+import { compareItemEquality, defaultItemEquality } from '@/internals/itemEquality';
+import { hasNullItemLabel } from '@/internals/resolveValueLabel';
+import type { AriaCombobox } from '@/combobox/root/AriaCombobox';
 
 export type State = {
   id: string | undefined;

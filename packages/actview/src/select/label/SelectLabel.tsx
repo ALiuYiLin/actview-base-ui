@@ -1,13 +1,13 @@
 import { computed } from 'actview';
-import type { BaseUIComponentProps } from '../../internals/types';
-import { useRenderElement } from '../../internals/useRenderElement';
-import type { FieldRoot } from '../../field/root/FieldRoot';
-import { useFieldRootContext } from '../../internals/field-root-context/FieldRootContext';
-import { fieldValidityMapping } from '../../internals/field-constants/constants';
-import { useLabel } from '../../internals/labelable-provider/useLabel';
-import { getDefaultLabelId } from '../../utils/resolveAriaLabelledBy';
-import { useSelectRootContext } from '../root/SelectRootContext';
-import { selectors } from '../store';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { useRenderElement } from '@/internals/useRenderElement';
+import type { FieldRoot } from '@/field/root/FieldRoot';
+import { useFieldRootContext } from '@/internals/field-root-context/FieldRootContext';
+import { fieldValidityMapping } from '@/internals/field-constants/constants';
+import { useLabel } from '@/internals/labelable-provider/useLabel';
+import { getDefaultLabelId } from '@/utils/resolveAriaLabelledBy';
+import { useSelectRootContext } from '@/select/root/SelectRootContext';
+import { selectors } from '@/select/store';
 
 /**
  * An accessible label that is automatically associated with the select trigger.

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { CollapsibleTrigger } from './CollapsibleTrigger';
-import { CollapsibleRootContext } from '../root/CollapsibleRootContext';
+import { CollapsibleTrigger } from '@/collapsible/trigger/CollapsibleTrigger';
+import { CollapsibleRootContext } from '@/collapsible/root/CollapsibleRootContext';
 import { createRenderer } from '../../../test/createRenderer';
 
 const context = {

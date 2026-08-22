@@ -1,11 +1,11 @@
 import { computed } from 'actview';
-import { useSelectPositionerContext } from '../positioner/SelectPositionerContext';
-import { useSelectRootContext } from '../root/SelectRootContext';
-import type { BaseUIComponentProps } from '../../internals/types';
-import type { Align, Side } from '../../internals/useAnchorPositioning';
-import { popupTransitionStateMapping } from '../../utils/popupStateMapping';
-import { useRenderElement } from '../../internals/useRenderElement';
-import { selectors } from '../store';
+import { useSelectPositionerContext } from '@/select/positioner/SelectPositionerContext';
+import { useSelectRootContext } from '@/select/root/SelectRootContext';
+import type { BaseUIComponentProps } from '@/internals/types';
+import type { Align, Side } from '@/internals/useAnchorPositioning';
+import { popupTransitionStateMapping } from '@/utils/popupStateMapping';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { selectors } from '@/select/store';
 
 /**
  * Displays an element positioned against the select popup anchor.

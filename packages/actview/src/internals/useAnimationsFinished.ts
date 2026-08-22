@@ -2,7 +2,7 @@ import { unref } from 'actview';
 import type { Ref } from '@actview/core';
 import { useAnimationFrame } from '@base-ui/actview-utils/useAnimationFrame';
 import { useStableCallback } from '@base-ui/actview-utils/useStableCallback';
-import { resolveRef } from '../utils/resolveRef';
+import { resolveRef } from '@/utils/resolveRef';
 
 /**
  * Executes a function once all animations have finished on the provided element.

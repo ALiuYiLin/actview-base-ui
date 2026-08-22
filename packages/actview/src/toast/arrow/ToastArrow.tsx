@@ -1,8 +1,8 @@
 import { computed } from 'actview';
-import { useToastPositionerContext } from '../positioner/ToastPositionerContext';
-import type { BaseUIComponentProps } from '../../internals/types';
-import type { Side, Align } from '../../internals/useAnchorPositioning';
-import { useRenderElement } from '../../internals/useRenderElement';
+import { useToastPositionerContext } from '@/toast/positioner/ToastPositionerContext';
+import type { BaseUIComponentProps } from '@/internals/types';
+import type { Side, Align } from '@/internals/useAnchorPositioning';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * Displays an element positioned against the toast anchor.

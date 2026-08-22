@@ -1,7 +1,7 @@
 import { defineComponent } from 'actview';
-import { FieldControl } from '../field/control/FieldControl';
-import type { FieldControlState } from '../field/control/FieldControl';
-import type { BaseUIComponentProps } from '../internals/types';
+import { FieldControl } from '@/field/control/FieldControl';
+import type { FieldControlState } from '@/field/control/FieldControl';
+import type { BaseUIComponentProps } from '@/internals/types';
 
 /**
  * A native input element that automatically works with [Field](https://base-ui.com/react/components/field).

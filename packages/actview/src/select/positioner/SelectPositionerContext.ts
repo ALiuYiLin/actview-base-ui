@@ -1,6 +1,6 @@
 import type { ComputedRef } from '@actview/core';
-import type { Side, UseAnchorPositioningReturnValue } from '../../internals/useAnchorPositioning';
-import { createContext } from '../../internals/createContext';
+import type { Side, UseAnchorPositioningReturnValue } from '@/internals/useAnchorPositioning';
+import { createContext } from '@/internals/createContext';
 
 export interface SelectPositionerContext extends Omit<UseAnchorPositioningReturnValue, 'side'> {
   side: ComputedRef<'none' | Side>;
