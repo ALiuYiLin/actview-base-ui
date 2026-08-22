@@ -11,7 +11,7 @@ import { CheckboxRoot } from '@/checkbox/root/CheckboxRoot';
 import { CheckboxGroup } from '@/checkbox-group/CheckboxGroup';
 import { RadioRoot } from '@/radio/root/RadioRoot';
 import { RadioGroup } from '@/radio-group/RadioGroup';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 describe('<Field.Root />', () => {
   const { render, fireEvent, act, waitFor } = createRenderer();

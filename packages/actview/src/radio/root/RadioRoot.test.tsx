@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { ref } from 'actview';
 import { RadioGroup } from '@/radio-group/RadioGroup';
 import { RadioRoot } from '@/radio/root/RadioRoot';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 const { render, fireEvent, act } = createRenderer();
 

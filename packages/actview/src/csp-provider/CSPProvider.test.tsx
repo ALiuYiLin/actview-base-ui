@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CSPProvider } from '@/csp-provider/CSPProvider';
 import { useCSPContext } from '@/internals/csp-context/CspContext';
-import { createRenderer } from '../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 const { render } = createRenderer();
 

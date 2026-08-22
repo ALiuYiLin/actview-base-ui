@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ComboboxArrow } from '@/combobox/arrow/ComboboxArrow';
 import { ComboboxRootContext } from '@/combobox/root/ComboboxRootContext';
 import { ComboboxPositionerContext } from '@/combobox/positioner/ComboboxPositionerContext';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 const mockStore = {
   useState: (key: string) => {

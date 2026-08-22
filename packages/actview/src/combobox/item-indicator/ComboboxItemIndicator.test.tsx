@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ComboboxItemIndicator } from '@/combobox/item-indicator/ComboboxItemIndicator';
 import { ComboboxItemContext } from '@/combobox/item/ComboboxItemContext';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 const itemContext = {
   selected: true,

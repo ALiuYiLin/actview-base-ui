@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeAll } from 'vitest';
 import * as Tabs from '@/tabs/index.parts';
-import { createRenderer } from '../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 beforeAll(() => {
   // jsdom doesn't fully implement PointerEvent (e.g. useButton's keyboard click

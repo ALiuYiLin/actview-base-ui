@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ComboboxClear } from '@/combobox/clear/ComboboxClear';
 import { ComboboxRootContext, ComboboxInputValueContext } from '@/combobox/root/ComboboxRootContext';
 import { FieldRootContext } from '@/internals/field-root-context/FieldRootContext';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 const mockStore = {
   useState: (key: string) => {

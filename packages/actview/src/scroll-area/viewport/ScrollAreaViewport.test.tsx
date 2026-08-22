@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ScrollAreaRoot } from '@/scroll-area/root/ScrollAreaRoot';
 import { ScrollAreaViewport } from '@/scroll-area/viewport/ScrollAreaViewport';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 describe('<ScrollArea.Viewport />', () => {
   const { render, fireEvent, act } = createRenderer();

@@ -4,7 +4,7 @@ import { NumberFieldInput } from '@/number-field/input/NumberFieldInput';
 import { NumberFieldIncrement } from '@/number-field/increment/NumberFieldIncrement';
 import { NumberFieldDecrement } from '@/number-field/decrement/NumberFieldDecrement';
 import { NumberFieldGroup } from '@/number-field/group/NumberFieldGroup';
-import { createRenderer } from '../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 beforeAll(() => {
   // jsdom doesn't fully implement PointerEvent

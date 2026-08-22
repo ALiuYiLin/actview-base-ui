@@ -3,7 +3,7 @@ import { FieldRoot } from '@/field/root/FieldRoot';
 import { FieldControl } from '@/field/control/FieldControl';
 import { FieldError } from '@/field/error/FieldError';
 import { Form } from '@/form';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 describe('<Field.Error />', () => {
   const { render, fireEvent, act, waitFor } = createRenderer();

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ToggleGroup } from '@/toggle-group/ToggleGroup';
 import { Toggle } from '@/toggle/Toggle';
-import { createRenderer } from '../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 const { render, fireEvent, act } = createRenderer();
 

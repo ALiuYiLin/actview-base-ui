@@ -4,7 +4,7 @@ import { FieldControl } from '@/field/control/FieldControl';
 import { FieldError } from '@/field/error/FieldError';
 import { FieldValidity } from '@/field/validity/FieldValidity';
 import { Form } from '@/form';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 describe('<Field.Validity />', () => {
   const { render, fireEvent, act, waitFor } = createRenderer();

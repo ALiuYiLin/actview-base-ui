@@ -17,7 +17,7 @@ import { MenuSubmenuRoot } from '@/menu/submenu-root/MenuSubmenuRoot';
 import { MenuSubmenuTrigger } from '@/menu/submenu-trigger/MenuSubmenuTrigger';
 import { MenuArrow } from '@/menu/arrow/MenuArrow';
 import { MenuBackdrop } from '@/menu/backdrop/MenuBackdrop';
-import { createRenderer } from '../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 beforeAll(() => {
   // jsdom doesn't fully implement PointerEvent

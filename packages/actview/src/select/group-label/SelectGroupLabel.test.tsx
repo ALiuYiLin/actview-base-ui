@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { SelectGroupLabel } from '@/select/group-label/SelectGroupLabel';
 import { SelectGroupContext } from '@/select/group/SelectGroupContext';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 let labelId: string | undefined;
 const setLabelId = (next: string | undefined | ((prev: string | undefined) => string | undefined)) => {

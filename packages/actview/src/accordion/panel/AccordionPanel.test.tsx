@@ -3,7 +3,7 @@ import { AccordionPanel } from '@/accordion/panel/AccordionPanel';
 import { AccordionItemContext } from '@/accordion/item/AccordionItemContext';
 import { CollapsibleRootContext } from '@/collapsible/root/CollapsibleRootContext';
 import { AccordionRootContext } from '@/accordion/root/AccordionRootContext';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 const rootContext = {
   value: [],

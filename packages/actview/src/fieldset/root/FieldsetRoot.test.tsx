@@ -3,7 +3,7 @@ import { ref } from 'actview';
 import { FieldsetRoot } from '@/fieldset/root/FieldsetRoot';
 import { FieldRoot } from '@/field/root/FieldRoot';
 import { FieldControl } from '@/field/control/FieldControl';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 const { render, fireEvent, act } = createRenderer();
 

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { ref } from 'actview';
 import { FieldsetRoot } from '@/fieldset/root/FieldsetRoot';
 import { FieldsetLegend } from '@/fieldset/legend/FieldsetLegend';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 const { render, fireEvent, act } = createRenderer();
 

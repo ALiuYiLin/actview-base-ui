@@ -3,7 +3,7 @@ import { FieldRoot } from '@/field/root/FieldRoot';
 import { FieldDescription } from '@/field/description/FieldDescription';
 import { FieldControl } from '@/field/control/FieldControl';
 import { FieldItem } from '@/field/item/FieldItem';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 describe('<Field.Description />', () => {
   const { render } = createRenderer();

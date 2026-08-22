@@ -15,7 +15,7 @@ import { SelectBackdrop } from '@/select/backdrop/SelectBackdrop';
 import { SelectGroup } from '@/select/group/SelectGroup';
 import { SelectGroupLabel } from '@/select/group-label/SelectGroupLabel';
 import { SelectSeparator } from '@/select/separator/SelectSeparator';
-import { createRenderer } from '../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 beforeAll(() => {
   // jsdom doesn't fully implement PointerEvent

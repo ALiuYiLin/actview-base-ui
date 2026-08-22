@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AvatarRoot } from '@/avatar/root/AvatarRoot';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 describe('<Avatar.Root />', () => {
   const { render } = createRenderer();

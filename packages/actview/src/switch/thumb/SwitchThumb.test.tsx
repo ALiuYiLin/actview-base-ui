@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { SwitchRoot } from '@/switch/root/SwitchRoot';
 import { SwitchThumb } from '@/switch/thumb/SwitchThumb';
 import { SwitchRootContext } from '@/switch/root/SwitchRootContext';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 const testContext: SwitchRootContext = {
   checked: false,

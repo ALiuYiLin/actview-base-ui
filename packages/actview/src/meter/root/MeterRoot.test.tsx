@@ -4,7 +4,7 @@ import { MeterLabel } from '@/meter/label/MeterLabel';
 import { MeterTrack } from '@/meter/track/MeterTrack';
 import { MeterIndicator } from '@/meter/indicator/MeterIndicator';
 import { MeterValue } from '@/meter/value/MeterValue';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 const { render, act } = createRenderer();
 

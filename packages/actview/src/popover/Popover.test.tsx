@@ -10,7 +10,7 @@ import { PopoverDescription } from '@/popover/description/PopoverDescription';
 import { PopoverClose } from '@/popover/close/PopoverClose';
 import { PopoverViewport } from '@/popover/viewport/PopoverViewport';
 import { createPopoverHandle } from '@/popover/store/PopoverHandle';
-import { createRenderer } from '../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 beforeAll(() => {
   // jsdom doesn't fully implement PointerEvent

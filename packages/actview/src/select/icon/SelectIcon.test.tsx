@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { SelectIcon } from '@/select/icon/SelectIcon';
 import { SelectRootContext } from '@/select/root/SelectRootContext';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 const mockRootContext = {
   store: {

@@ -14,7 +14,8 @@
     "jsxImportSource": "@actview/jsx",
     "types": ["node"],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "#/*": ["./*"]
     }
   },
   "include": ["src/**/*.ts*"],

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { AccordionHeader } from '@/accordion/header/AccordionHeader';
 import { AccordionItemContext } from '@/accordion/item/AccordionItemContext';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 const testContext = {
   defaultTriggerId: undefined,

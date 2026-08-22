@@ -19,7 +19,7 @@ import { ComboboxChipRemove } from '@/combobox/chip-remove/ComboboxChipRemove';
 import { ComboboxArrow } from '@/combobox/arrow/ComboboxArrow';
 import { ComboboxBackdrop } from '@/combobox/backdrop/ComboboxBackdrop';
 import { ComboboxIcon } from '@/combobox/icon/ComboboxIcon';
-import { createRenderer } from '../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 beforeAll(() => {
   // jsdom doesn't fully implement PointerEvent

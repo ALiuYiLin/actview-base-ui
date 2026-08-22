@@ -6,7 +6,7 @@ import { Fieldset } from '@/fieldset';
 import { Form } from '@/form';
 import { Radio } from '@/radio';
 import { DirectionProvider } from '@/direction-provider';
-import { createRenderer } from '../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 const { render, fireEvent, act } = createRenderer();
 

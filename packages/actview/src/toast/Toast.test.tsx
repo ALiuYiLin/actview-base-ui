@@ -9,7 +9,7 @@ import { ToastClose } from '@/toast/close/ToastClose';
 import { ToastAction } from '@/toast/action/ToastAction';
 import { useToastManager } from '@/toast/useToastManager';
 import { createToastManager } from '@/toast/createToastManager';
-import { createRenderer } from '../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 beforeAll(() => {
   // jsdom doesn't fully implement PointerEvent

@@ -3,7 +3,7 @@ import { FieldRoot } from '@/field/root/FieldRoot';
 import { FieldLabel } from '@/field/label/FieldLabel';
 import { FieldControl } from '@/field/control/FieldControl';
 import { FieldItem } from '@/field/item/FieldItem';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 describe('<Field.Label />', () => {
   const { render, fireEvent, act, waitFor } = createRenderer();

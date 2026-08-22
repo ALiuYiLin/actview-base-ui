@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MenuGroupLabel } from '@/menu/group-label/MenuGroupLabel';
 import { MenuGroupContext } from '@/menu/group/MenuGroupContext';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 let labelId: string | undefined;
 const setLabelId = (next: string | undefined | ((current: string | undefined) => string | undefined)) => {

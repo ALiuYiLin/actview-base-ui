@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DirectionProvider } from '@/direction-provider/DirectionProvider';
 import { useDirection } from '@/internals/direction-context/DirectionContext';
-import { createRenderer } from '../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 const { render } = createRenderer();
 

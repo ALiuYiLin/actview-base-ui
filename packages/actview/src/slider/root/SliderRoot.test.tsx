@@ -4,7 +4,7 @@ import { SliderControl } from '@/slider/control/SliderControl';
 import { SliderTrack } from '@/slider/track/SliderTrack';
 import { SliderThumb } from '@/slider/thumb/SliderThumb';
 import { SliderIndicator } from '@/slider/indicator/SliderIndicator';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 beforeAll(() => {
   // jsdom doesn't fully implement PointerEvent

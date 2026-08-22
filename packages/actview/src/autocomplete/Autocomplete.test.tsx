@@ -8,7 +8,7 @@ import { ComboboxPortal } from '@/combobox/portal/ComboboxPortal';
 import { ComboboxPositioner } from '@/combobox/positioner/ComboboxPositioner';
 import { ComboboxPopup } from '@/combobox/popup/ComboboxPopup';
 import { ComboboxList } from '@/combobox/list/ComboboxList';
-import { createRenderer } from '../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 beforeAll(() => {
   // jsdom doesn't fully implement PointerEvent

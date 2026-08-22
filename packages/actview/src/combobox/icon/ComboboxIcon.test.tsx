@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ComboboxIcon } from '@/combobox/icon/ComboboxIcon';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 describe('<Combobox.Icon />', () => {
   const { render } = createRenderer();

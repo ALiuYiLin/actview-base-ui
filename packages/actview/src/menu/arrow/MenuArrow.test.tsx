@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { MenuArrow } from '@/menu/arrow/MenuArrow';
 import { MenuRootContext } from '@/menu/root/MenuRootContext';
 import { MenuPositionerContext } from '@/menu/positioner/MenuPositionerContext';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 const mockRootContext = {
   store: {

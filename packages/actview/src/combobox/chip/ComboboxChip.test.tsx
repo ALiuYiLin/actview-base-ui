@@ -3,7 +3,7 @@ import { ComboboxChip } from '@/combobox/chip/ComboboxChip';
 import { ComboboxChipsContext } from '@/combobox/chips/ComboboxChipsContext';
 import { ComboboxRootContext } from '@/combobox/root/ComboboxRootContext';
 import { DirectionContext } from '@/internals/direction-context/DirectionContext';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 const mockStore = {
   useState: (key: string) => {

@@ -4,7 +4,7 @@ import { ToolbarGroup } from '@/toolbar/group/ToolbarGroup';
 import { ToolbarButton } from '@/toolbar/button/ToolbarButton';
 import { ToolbarLink } from '@/toolbar/link/ToolbarLink';
 import { ToolbarInput } from '@/toolbar/input/ToolbarInput';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 const { render } = createRenderer();
 

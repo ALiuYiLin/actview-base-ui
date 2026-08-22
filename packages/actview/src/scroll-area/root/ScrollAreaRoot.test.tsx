@@ -4,7 +4,7 @@ import { ScrollAreaViewport } from '@/scroll-area/viewport/ScrollAreaViewport';
 import { ScrollAreaScrollbar } from '@/scroll-area/scrollbar/ScrollAreaScrollbar';
 import { ScrollAreaThumb } from '@/scroll-area/thumb/ScrollAreaThumb';
 import { ScrollAreaCorner } from '@/scroll-area/corner/ScrollAreaCorner';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 import { SCROLL_TIMEOUT } from '@/scroll-area/constants';
 
 describe('<ScrollArea.Root />', () => {

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { defineComponent } from 'actview';
 import { MeterRoot } from '@/meter/root/MeterRoot';
 import { MeterValue } from '@/meter/value/MeterValue';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 const { render } = createRenderer();
 

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Button } from '@/button/Button';
-import { createRenderer } from '../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 describe('<Button />', () => {
   const { render, fireEvent } = createRenderer();

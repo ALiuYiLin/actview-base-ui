@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ComboboxRow } from '@/combobox/row/ComboboxRow';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 describe('<Combobox.Row />', () => {
   const { render } = createRenderer();

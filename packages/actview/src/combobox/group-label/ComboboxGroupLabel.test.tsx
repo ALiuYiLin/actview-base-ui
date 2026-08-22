@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ComboboxGroupLabel } from '@/combobox/group-label/ComboboxGroupLabel';
 import { ComboboxGroupContext } from '@/combobox/group/ComboboxGroupContext';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 let labelId: string | undefined;
 const setLabelId = (next: string | undefined | ((current: string | undefined) => string | undefined)) => {

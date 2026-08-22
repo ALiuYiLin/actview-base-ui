@@ -12,7 +12,8 @@
     "jsxImportSource": "@actview/jsx",
     "types": ["vitest/globals", "@testing-library/jest-dom", "node"],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "#/*": ["./*"]
     }
   },
   "include": [

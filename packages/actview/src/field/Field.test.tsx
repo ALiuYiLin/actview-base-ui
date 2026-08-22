@@ -8,7 +8,7 @@ import { FieldValidity } from '@/field/validity/FieldValidity';
 import { FieldItem } from '@/field/item/FieldItem';
 import { CheckboxRoot } from '@/checkbox/root/CheckboxRoot';
 import { Form } from '@/form';
-import { createRenderer } from '../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 beforeAll(() => {
   // jsdom doesn't fully implement PointerEvent

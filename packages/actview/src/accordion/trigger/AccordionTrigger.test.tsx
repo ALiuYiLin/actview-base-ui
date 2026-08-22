@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { AccordionTrigger } from '@/accordion/trigger/AccordionTrigger';
 import { AccordionItemContext } from '@/accordion/item/AccordionItemContext';
 import { CollapsibleRootContext } from '@/collapsible/root/CollapsibleRootContext';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 const collapsibleContext = {
   defaultPanelId: undefined,

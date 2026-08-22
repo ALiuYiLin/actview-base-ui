@@ -4,7 +4,7 @@ import { AccordionItem } from '@/accordion/item/AccordionItem';
 import { AccordionHeader } from '@/accordion/header/AccordionHeader';
 import { AccordionTrigger } from '@/accordion/trigger/AccordionTrigger';
 import { AccordionPanel } from '@/accordion/panel/AccordionPanel';
-import { createRenderer } from '../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 beforeAll(() => {
   // jsdom doesn't fully implement PointerEvent

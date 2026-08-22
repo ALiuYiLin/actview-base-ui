@@ -1,10 +1,14 @@
 /**
- * Script to rewrite relative imports in `packages/actview/src/` to use `@/*` path alias.
+ * Script to rewrite relative imports in `packages/actview/src/` to use `@/*` and `#/*` path aliases.
  *
- * Transforms:
+ * Transforms (src → @/):
  *   import { X } from '../../internals/types'   -> import { X } from '@/internals/types'
  *   import { Y } from './useCollapsibleRoot'    -> import { Y } from '@/collapsible/root/useCollapsibleRoot'
  *   export type * from '../root/AccordionRoot'  -> export type * from '@/accordion/root/AccordionRoot'
+ *
+ * Transforms (package root → #/):
+ *   import { createRenderer } from '../../../test/createRenderer'
+ *     -> import { createRenderer } from '#/test/createRenderer'
  *
  * Usage: node scripts/rewrite-imports.mjs
  */
@@ -43,10 +47,10 @@ function resolveRelativeImport(relativePath, filePath) {
 }
 
 /**
- * Convert an absolute path to a path relative to srcDir, using forward slashes.
+ * Convert an absolute path to a path relative to a base directory, using forward slashes.
  */
-function makeSrcRelative(absolutePath) {
-  return path.relative(srcDir, absolutePath).replace(/\\/g, '/');
+function makeRelative(baseDir, absolutePath) {
+  return path.relative(baseDir, absolutePath).replace(/\\/g, '/');
 }
 
 /**
@@ -93,6 +97,15 @@ function escapeRegex(string) {
 }
 
 /**
+ * Strip the file extension and trailing /index from a path.
+ */
+function cleanAliasPath(aliasPath) {
+  return aliasPath
+    .replace(/\.(ts|tsx|js|jsx|mjs|cjs)$/, '')
+    .replace(/\/index$/, '');
+}
+
+/**
  * Rewrite imports in a single file.
  * Returns the number of imports rewritten, or 0 if no changes.
  */
@@ -125,17 +138,27 @@ function rewriteFile(filePath) {
     const resolvedPath = resolveRelativeImport(m.importPath, filePath);
     const resolvedFile = resolveFilePath(resolvedPath);
 
-    if (resolvedFile && resolvedFile.startsWith(srcDir)) {
-      const srcRelative = makeSrcRelative(resolvedFile);
-      // Remove file extension for the alias path
-      const aliasPath = srcRelative.replace(/\.(ts|tsx|js|jsx|mjs|cjs)$/, '');
-      // Remove trailing /index
-      const cleanAliasPath = aliasPath.replace(/\/index$/, '');
-      replacements.push({
-        oldPath: m.importPath,
-        newPath: `@/${cleanAliasPath}`,
-        quote: m.quote,
-      });
+    if (resolvedFile) {
+      if (resolvedFile.startsWith(srcDir)) {
+        // File is inside src/ → use @/ alias
+        const srcRelative = makeRelative(srcDir, resolvedFile);
+        const cleanPath = cleanAliasPath(srcRelative);
+        replacements.push({
+          oldPath: m.importPath,
+          newPath: `@/${cleanPath}`,
+          quote: m.quote,
+        });
+      } else if (resolvedFile.startsWith(packageRoot + path.sep)) {
+        // File is inside the package root but outside src/ → use #/ alias
+        const pkgRelative = makeRelative(packageRoot, resolvedFile);
+        const cleanPath = cleanAliasPath(pkgRelative);
+        replacements.push({
+          oldPath: m.importPath,
+          newPath: `#/${cleanPath}`,
+          quote: m.quote,
+        });
+      }
+      // else: outside the package → leave as relative import
     }
   }
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CollapsiblePanel } from '@/collapsible/panel/CollapsiblePanel';
 import { CollapsibleRootContext } from '@/collapsible/root/CollapsibleRootContext';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 const context = {
   defaultPanelId: 'panel-default',

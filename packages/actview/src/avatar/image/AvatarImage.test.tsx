@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { AvatarRoot } from '@/avatar/root/AvatarRoot';
 import { AvatarImage } from '@/avatar/image/AvatarImage';
 import { AvatarFallback } from '@/avatar/fallback/AvatarFallback';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 type MockImage = {
   complete: boolean;

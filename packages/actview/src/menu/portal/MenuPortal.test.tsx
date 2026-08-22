@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MenuPortal } from '@/menu/portal/MenuPortal';
 import { MenuRootContext } from '@/menu/root/MenuRootContext';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 const mockRootContext = {
   store: {

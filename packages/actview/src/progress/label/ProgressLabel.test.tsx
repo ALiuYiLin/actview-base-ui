@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ProgressLabel } from '@/progress/label/ProgressLabel';
 import { ProgressRoot } from '@/progress/root/ProgressRoot';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 describe('<Progress.Label />', () => {
   const { render } = createRenderer();

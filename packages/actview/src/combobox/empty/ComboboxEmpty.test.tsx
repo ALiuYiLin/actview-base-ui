@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ComboboxEmpty } from '@/combobox/empty/ComboboxEmpty';
 import { ComboboxRootContext, ComboboxDerivedItemsContext } from '@/combobox/root/ComboboxRootContext';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 const mockStore = {
   useState: () => ({ value: false }),

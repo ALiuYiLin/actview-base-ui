@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SelectSeparator } from '@/select/separator/SelectSeparator';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 describe('<Select.Separator />', () => {
   const { render } = createRenderer();

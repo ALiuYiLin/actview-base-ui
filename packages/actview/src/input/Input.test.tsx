@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Input } from '@/input/Input';
-import { createRenderer } from '../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 describe('<Input />', () => {
   const { render, fireEvent } = createRenderer();

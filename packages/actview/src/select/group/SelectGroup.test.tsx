@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SelectGroup } from '@/select/group/SelectGroup';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 describe('<Select.Group />', () => {
   const { render } = createRenderer();

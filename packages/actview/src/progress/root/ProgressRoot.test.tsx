@@ -4,7 +4,7 @@ import { ProgressLabel } from '@/progress/label/ProgressLabel';
 import { ProgressValue } from '@/progress/value/ProgressValue';
 import { ProgressTrack } from '@/progress/track/ProgressTrack';
 import { ProgressIndicator } from '@/progress/indicator/ProgressIndicator';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 describe('<Progress.Root />', () => {
   const { render } = createRenderer();

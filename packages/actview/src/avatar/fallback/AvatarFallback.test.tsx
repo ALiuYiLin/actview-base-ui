@@ -4,7 +4,7 @@ import { AvatarRoot } from '@/avatar/root/AvatarRoot';
 import { AvatarImage } from '@/avatar/image/AvatarImage';
 import { AvatarFallback } from '@/avatar/fallback/AvatarFallback';
 import { useImageLoadingStatus } from '@/avatar/image/useImageLoadingStatus';
-import { createRenderer } from '../../../test/createRenderer';
+import { createRenderer } from '#/test/createRenderer';
 
 vi.mock('@/avatar/image/useImageLoadingStatus', () => ({
   useImageLoadingStatus: vi.fn(),
