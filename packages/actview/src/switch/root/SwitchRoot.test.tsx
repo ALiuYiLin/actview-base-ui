@@ -5,9 +5,9 @@ import { FieldRoot } from '@/field/root/FieldRoot';
 import { FieldLabel } from '@/field/label/FieldLabel';
 import { FieldDescription } from '@/field/description/FieldDescription';
 import { FieldError } from '@/field/error/FieldError';
-import { FieldControl } from '@/field/control/FieldControl';
 import { Form } from '@/form';
 import { createRenderer } from '#/test/createRenderer';
+import { ref } from 'actview';
 
 describe('<Switch.Root />', () => {
   const { render, fireEvent, act, waitFor } = createRenderer();
