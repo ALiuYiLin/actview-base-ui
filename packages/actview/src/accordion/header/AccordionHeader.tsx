@@ -4,6 +4,7 @@ import type { AccordionItemState } from '@/accordion/item/AccordionItemContext';
 import { useAccordionItemContext } from '@/accordion/item/AccordionItemContext';
 import { accordionStateAttributesMapping } from '@/accordion/item/stateAttributesMapping';
 import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import { mergeClassNames, mergeStyles } from '@/utils/mergeClassNames';
 
 /**
  * A heading that labels the corresponding panel.
@@ -42,13 +43,26 @@ export const AccordionHeader = defineComponent(function (componentProps: Accordi
       merged.style = style;
     }
 
-    // render 三形态（MIGRATION.md case 3：VNode key 顶层显式透传 + ref 兜底放最后）
+    // render 三形态（MIGRATION.md case 3：VNode 分支按 React 契约**合并**——
+    // className/style 提取后与 merged 合并（两者都保留），其余 props render
+    // 元素优先，ref 由组件兜底放最后）
     if (render) {
       if (typeof render === 'function') {
         return render({ ...merged, ...state, ref: rootRef });
       }
+      const renderProps = render.props ?? {};
+      const { className: renderClassName, style: renderStyle, ...restRenderProps } = renderProps;
       const Tag = render.type as any;
-      return <Tag key={render.key} {...render.props} {...merged} ref={rootRef} />;
+      return (
+        <Tag
+          key={render.key}
+          {...merged}
+          {...restRenderProps}
+          className={mergeClassNames(renderClassName, merged.className)}
+          style={mergeStyles(renderStyle, merged.style)}
+          ref={rootRef}
+        />
+      );
     }
     return <h3 {...merged} ref={rootRef} />;
   };

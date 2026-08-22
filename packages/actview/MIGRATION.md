@@ -59,8 +59,20 @@ export const Separator = defineComponent(function (componentProps: Separator.Pro
       if (typeof render === 'function') {
         return render({ ...merged, ...state, ref: rootRef });
       }
+      // VNode 分支：按 React 契约**合并**（详见案例 3）
+      const renderProps = render.props ?? {};
+      const { className: renderClassName, style: renderStyle, ...restRenderProps } = renderProps;
       const Tag = render.type as any;
-      return <Tag key={render.key} {...render.props} {...merged} ref={rootRef} />;
+      return (
+        <Tag
+          key={render.key}
+          {...merged}
+          {...restRenderProps}
+          className={mergeClassNames(renderClassName, merged.className)}
+          style={mergeStyles(renderStyle, merged.style)}
+          ref={rootRef}
+        />
+      );
     }
     return <div ref={rootRef} {...merged} />;
   };
@@ -129,27 +141,48 @@ if (typeof render === 'function') {
 
 ---
 
-## 案例 3：VNode 透传 —— key 是顶层字段，必须显式透传
+## 案例 3：VNode 透传 —— key 顶层显式透传 + className/style 合并（对齐 React 契约）
 
 **位置**：`Separator.tsx` 的 render VNode 分支
 
-### 问题
+### 问题 1：key 是顶层字段
 
 VNode 的 `key` 存在 **`render.key` 顶层字段**（不在 `props` 里），`{...render.props}` 带不过去。列表场景下 key 丢失 → diff 错乱。
+
+### 问题 2：className/style 必须合并，不能覆盖（React 契约）
+
+React 的 `useRenderElement` 对 VNode 形态是**合并**语义：`mergeProps(组件props, render.props)` 里 className 走 `mergeClassNames`（**两者都保留**，render 元素 className 在前）、style 走 `mergeObjects`（浅合并，render 元素覆盖同名键）、其余键 render 元素优先。
+
+❌ 错误写法（早期范式）：`{...render.props} {...merged}` —— merged 后展开会**覆盖** render 元素的 className/style，conformance 的 className 合并用例（`classList.contains` 两者断言）失败。
+
+✅ 正确写法：从 `render.props` 里**提取** className/style，与 merged 的合并，其余 props 让 render 元素优先。
 
 ### 修复（VNode 透传完整覆盖）
 
 | 字段 | 位置 | 透传方式 |
 |---|---|---|
 | `key` | `render.key`（顶层） | `key={render.key}` 显式传 |
-| 其余 props | `render.props` | `{...render.props}` 展开 |
-| 组件注入 | merged（ARIA/className/style/事件） | `{...merged}` 放中间覆盖 |
+| className/style | `render.props.className` / `.style` | **提取出来**，与 merged 的合并（`mergeClassNames` / `mergeStyles`，两者都保留） |
+| 其余 props | `render.props`（除 className/style） | `{...merged}` 先展开、`{...restRenderProps}` 后展开——**render 元素优先** |
 | `ref` | 内部模板 ref | `ref={rootRef}` **放最后**兜底（覆盖 VNode/merged 自带的 ref） |
 
 ```tsx
+const renderProps = render.props ?? {};
+const { className: renderClassName, style: renderStyle, ...restRenderProps } = renderProps;
 const Tag = render.type as any;
-return <Tag key={render.key} {...render.props} {...merged} ref={rootRef} />;
+return (
+  <Tag
+    key={render.key}
+    {...merged}
+    {...restRenderProps}
+    className={mergeClassNames(renderClassName, merged.className)}
+    style={mergeStyles(renderStyle, merged.style)}
+    ref={rootRef}
+  />
+);
 ```
+
+**注意**：函数形态（`typeof render === 'function'`）不自动合并——框架只把含已解析 className 的 props 对象交给用户函数，是否合并由用户的展开顺序决定（`{...props}` 透传保留组件 className；显式 className 覆盖）。
 
 ---
 
@@ -1058,11 +1091,24 @@ export const Xxx = defineComponent(function (componentProps: Xxx.Props) {
     // 4. merged：ARIA/data-* 状态 + className/style 函数解析 + 用户透传
     //    （props 数组场景用 mergePropsN，不用 mergeProps）
     const merged: HTMLProps = { role: '...', 'aria-...': ..., className: ..., style: ..., ...elementProps };
-    // 5. render 三形态：函数（单对象）/ VNode（key 显式透传 + ref 兜底）/ 默认 JSX
+    // 5. render 三形态：函数（单对象）/ VNode（key 显式 + className/style 合并 + ref 兜底）/ 默认 JSX
     if (render) {
       if (typeof render === 'function') return render({ ...merged, ...state, ref: rootRef });
+      // VNode 分支：className/style 提取后与 merged 合并（两者都保留），
+      // 其余 props render 元素优先，ref 兜底放最后（案例 3）
+      const renderProps = render.props ?? {};
+      const { className: renderClassName, style: renderStyle, ...restRenderProps } = renderProps;
       const Tag = render.type as any;
-      return <Tag key={render.key} {...render.props} {...merged} ref={rootRef} />;
+      return (
+        <Tag
+          key={render.key}
+          {...merged}
+          {...restRenderProps}
+          className={mergeClassNames(renderClassName, merged.className)}
+          style={mergeStyles(renderStyle, merged.style)}
+          ref={rootRef}
+        />
+      );
     }
     return <div ref={rootRef} {...merged} />;
   };
@@ -1075,7 +1121,7 @@ export const Xxx = defineComponent(function (componentProps: Xxx.Props) {
 |---|---|
 | 组件怎么写？ | 源码 `defineComponent(fn)` + setup 初始化 + `return () => {...}` 渲染函数（案例 1）；测试组件 `function Demo() { setup; return JSX; }` Babel 自动转换（案例 19） |
 | render prop 类型？ | 单对象 `(props: RenderFunctionProps & State & { ref? }) => VNode`（案例 2） |
-| VNode 透传？ | `key={render.key}` 显式 + `{...render.props}` + ref 兜底（案例 3） |
+| VNode 透传？ | `key={render.key}` 显式；className/style **提取后与 merged 合并**（两者都保留，对齐 React）；其余 props render 元素优先；ref 兜底放最后（案例 3） |
 | className/style？ | 渲染期函数形态解析（案例 4） |
 | context 用哪个？ | **框架官方 `createContext(defaultValue)`**（案例 5），Provider 传值不传 ref |
 | 根 ref 怎么拿？ | 根是元素 → `useRootElement()`；根是 Provider/List 包裹 → `ref()` + 显式挂载（案例 6） |
