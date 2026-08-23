@@ -84,6 +84,7 @@
     "./internals/TimeoutManager": "./src/internals/TimeoutManager.ts",
     "./button": "./src/button/index.ts",
     "./internals/composite": "./src/internals/composite/index.ts",
+    "./separator": "./src/separator/index.ts",
     "./internals/use-button": "./src/internals/use-button/index.ts",
     "./merge-props": "./src/merge-props/index.ts",
     "./internals/types": "./src/internals/types.ts",
