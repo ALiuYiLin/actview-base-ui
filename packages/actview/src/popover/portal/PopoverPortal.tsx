@@ -1,23 +1,20 @@
 import { defineComponent, toValue } from 'actview';
 import { FloatingPortal } from '@/floating-ui-react';
-import { useMenuRootContext } from '../root/MenuRootContext';
-import { MenuPortalContext } from './MenuPortalContext';
+import { usePopoverRootContext } from '../root/PopoverRootContext';
+import { PopoverPortalContext } from './PopoverPortalContext';
 
 /**
  * A portal element that moves the popup to a different part of the DOM.
  * By default, the portal element is appended to `<body>`.
  * Renders a `<div>` element.
  *
- * Documentation: [Base UI Menu](https://base-ui.com/react/components/menu)
+ * Documentation: [Base UI Popover](https://base-ui.com/react/components/popover)
  */
-export const MenuPortal = defineComponent(function MenuPortal(props: MenuPortal.Props) {
+export const PopoverPortal = defineComponent(function PopoverPortal(props: PopoverPortal.Props) {
   const {keepMounted = false, ...portalProps} = props;
 
-  const {store, parent} = useMenuRootContext();
+  const store = usePopoverRootContext(false);
   const mounted = store.useState('mounted');
-
-  const portalOwnerRole =
-    parent.type === 'menu' || parent.type === 'menubar' ? 'group' : undefined;
 
   return () => {
     const shouldRender = mounted.value || keepMounted;
@@ -26,16 +23,16 @@ export const MenuPortal = defineComponent(function MenuPortal(props: MenuPortal.
     }
 
     return (
-      <MenuPortalContext.Provider value={keepMounted}>
-        <FloatingPortal {...(portalProps as any)} portalOwnerRole={portalOwnerRole} />
-      </MenuPortalContext.Provider>
+      <PopoverPortalContext.Provider value={keepMounted}>
+        <FloatingPortal {...(portalProps as any)} />
+      </PopoverPortalContext.Provider>
     );
   };
 });
 
-export interface MenuPortalState {}
+export interface PopoverPortalState {}
 
-export interface MenuPortalProps {
+export interface PopoverPortalProps {
   /**
    * Whether to keep the portal mounted in the DOM while the popup is hidden.
    * @default false
@@ -54,7 +51,7 @@ export interface MenuPortalProps {
   [key: string]: any;
 }
 
-export namespace MenuPortal {
-  export type State = MenuPortalState;
-  export type Props = MenuPortalProps;
+export namespace PopoverPortal {
+  export type State = PopoverPortalState;
+  export type Props = PopoverPortalProps;
 }

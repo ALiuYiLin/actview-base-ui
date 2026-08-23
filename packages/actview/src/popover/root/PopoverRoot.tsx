@@ -1,6 +1,7 @@
 import { defineComponent, onUnmounted, ref, toValue, watch } from 'actview';
 import type { Ref } from 'actview';
 import { useId } from '@/utils/useId';
+import { useStableCallback } from '@/utils/useStableCallback';
 import {
   useDismiss,
   useFloatingParentNodeId,
@@ -14,7 +15,10 @@ import {
   type BaseUIChangeEventDetails,
 } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
+import { PATIENT_CLICK_THRESHOLD } from '@/internals/constants';
 import {
+  attachPreventUnmountOnClose,
+  createPopupOpenState,
   PopupHandleAttachment,
   useImplicitActiveTrigger,
   usePopupRootStore,
@@ -94,9 +98,88 @@ export const PopoverRoot = defineComponent(function PopoverRoot<Payload = unknow
   const floatingId = useId();
   const floatingParentNodeIdFromContext = useFloatingParentNodeId();
 
-  function setOpen(nextOpen: boolean, eventDetails: PopoverRoot.ChangeEventDetails) {
-    store.setOpen(nextOpen, eventDetails);
-  }
+  const activeTriggerElement = store.useState('activeTriggerElement');
+  const openChangeReason = store.useState('openChangeReason');
+
+  const setOpen = useStableCallback(
+    (
+      nextOpen: boolean,
+      eventDetails: Omit<PopoverRoot.ChangeEventDetails, 'preventUnmountOnClose'>,
+    ) => {
+      const reason = eventDetails.reason;
+
+      // Read the store directly, as relayed tree events and stale hover timers can request
+      // a close after the state changed but before this component re-rendered.
+      if (!nextOpen && !store.select('open')) {
+        return;
+      }
+
+      if (
+        open.value === nextOpen &&
+        eventDetails.trigger === activeTriggerElement.value &&
+        openChangeReason.value === reason
+      ) {
+        return;
+      }
+
+      const shouldPreventUnmountOnClose = attachPreventUnmountOnClose(
+        eventDetails as PopoverRoot.ChangeEventDetails,
+      );
+
+      // Do not immediately reset the activeTriggerId to allow
+      // exit animations to play and focus to be returned correctly.
+      if (!nextOpen && eventDetails.trigger == null) {
+        eventDetails.trigger = activeTriggerElement.value ?? undefined;
+      }
+
+      onOpenChange?.(nextOpen, eventDetails as PopoverRoot.ChangeEventDetails);
+
+      if ((eventDetails as any).isCanceled) {
+        return;
+      }
+
+      store.state.floatingRootContext.dispatchOpenChange(nextOpen, eventDetails);
+
+      const nativeEvent = eventDetails.event as Event;
+
+      const isKeyboardClick =
+        reason === REASONS.triggerPress && (nativeEvent as MouseEvent).detail === 0;
+      const isDismissClose = !nextOpen && (reason === REASONS.escapeKey || reason == null);
+
+      const popupOpenState = createPopupOpenState(
+        store.state,
+        nextOpen,
+        eventDetails.trigger,
+        shouldPreventUnmountOnClose(),
+      ) as ReturnType<typeof createPopupOpenState> & {
+        openChangeReason: PopoverRoot.ChangeEventReason;
+      };
+
+      popupOpenState.openChangeReason = reason as any;
+      store.update(popupOpenState);
+
+      // Only allow "patient" clicks to close the popover if it's open.
+      // If they clicked within 500ms of the popover opening, keep it open.
+      if (reason === REASONS.triggerHover) {
+        store.set('stickIfOpen', true);
+        store.context.stickIfOpenTimeout.start(PATIENT_CLICK_THRESHOLD, () => {
+          store.set('stickIfOpen', false);
+        });
+      } else if (!nextOpen) {
+        store.context.stickIfOpenTimeout.clear();
+      }
+
+      let instantType: PopoverStoreState<unknown>['instantType'];
+      if (isKeyboardClick) {
+        instantType = 'click';
+      } else if (isDismissClose) {
+        instantType = 'dismiss';
+      } else if (reason === REASONS.focusOut) {
+        instantType = 'focus';
+      }
+      store.set('instantType', instantType);
+    },
+  );
 
   const floatingRootContext = useSyncedFloatingRootContext({
     popupStore: store,
