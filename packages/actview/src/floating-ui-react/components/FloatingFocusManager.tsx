@@ -261,11 +261,12 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
   // props 是渲染期值（setup 快照不会随 openMethod 等变化更新），
   // 显式 watch 同步到 refs。
   watch(
-    () => [openInteractionType, returnFocus, initialFocus] as const,
+    () => [openInteractionType, returnFocus, initialFocus, open.value] as const,
     () => {
       openInteractionTypeRef.current = openInteractionType as any;
       returnFocusRef.current = returnFocus as any;
       initialFocusRef.current = initialFocus as any;
+      openRef.current = open.value;
     },
     {flush: 'post', immediate: true},
   );
@@ -623,8 +624,11 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
 
   // Focus the initial element when the floating element opens.
   watch(
-    () => [open.value, disabled] as const,
+    () => [open.value, disabled, floating.value] as const,
     () => {
+      // floatingFocusElement 依赖 floating.value，必须在回调内重算
+      // （setup 期求值在 floating 就绪前恒为 null）。
+      const floatingFocusElement = getFloatingFocusElement(floating.value);
       if (!open.value || disabled || !isHTMLElement(floatingFocusElement)) {
         return;
       }

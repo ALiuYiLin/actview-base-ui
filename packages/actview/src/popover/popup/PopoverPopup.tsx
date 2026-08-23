@@ -21,7 +21,7 @@ import { mergePropsN } from '@/merge-props';
 export const PopoverPopup = defineComponent(function PopoverPopup(
   componentProps: PopoverPopup.Props,
 ) {
-  const {finalFocus} = componentProps;
+  const {finalFocus, initialFocus} = componentProps;
   const children = toValue(componentProps.children);
 
   const store = usePopoverRootContext(false);
@@ -135,8 +135,8 @@ export const PopoverPopup = defineComponent(function PopoverPopup(
         openInteractionType={openMethod.value as any}
         modal={focusManagerModal}
         disabled={!mounted.value || openReason.value === REASONS.triggerHover}
-        initialFocus={() => store.context.popupRef.value}
-        returnFocus={finalFocus}
+        initialFocus={(initialFocus === undefined ? true : initialFocus) as any}
+        returnFocus={finalFocus === undefined ? true : finalFocus}
         restoreFocus="popup"
         previousFocusableElement={activeTriggerElement.value as HTMLElement | null}
         nextFocusableElement={store.context.triggerFocusTargetRef}
@@ -179,6 +179,7 @@ export interface PopoverPopupProps extends BaseUIComponentProps<'div', PopoverPo
   finalFocus?:
     | boolean
     | {current: HTMLElement | null}
+    | {value: HTMLElement | null}
     | ((closeType: InteractionType) => boolean | HTMLElement | null | void)
     | undefined;
   [key: string]: any;
