@@ -309,7 +309,14 @@ export const MenuPositioner = defineComponent(function MenuPositioner(
     styles: positioner.positionerStyles,
     transitionStatus,
     props: {} as any,
-    refs: [store.useStateSetter('positionerElement')],
+    refs: [
+      store.useStateSetter('positionerElement'),
+      (el: HTMLElement | null) => {
+        if (contextMenuContext) {
+          contextMenuContext.positionerRef.value = el;
+        }
+      },
+    ],
     // 传 getter（渲染期 toValue 求值）：keepMounted 时 setup 快照会过时
     hidden: () => !mounted.value,
     inert: () => !open.value,
