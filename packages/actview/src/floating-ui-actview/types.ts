@@ -8,6 +8,7 @@ import type {
 } from '@floating-ui/dom';
 import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import type { HTMLProps } from '@/types';
+import { ACTIVE_KEY, SELECTED_KEY } from '@/floating-ui-actview/utils/constants';
 import type { FloatingTreeStore } from '@/floating-ui-actview/components/FloatingTreeStore';
 import type { FloatingRootStore } from '@/floating-ui-actview/components/FloatingRootStore';
 
@@ -169,6 +170,11 @@ export interface ElementProps {
   item?: HTMLProps<HTMLElement> | undefined;
   trigger?: HTMLProps<Element> | undefined;
 }
+
+export type ExtendedUserProps = {
+  [ACTIVE_KEY]?: boolean | undefined;
+  [SELECTED_KEY]?: boolean | undefined;
+};
 
 export type ReferenceType = Element | VirtualElement;
 
