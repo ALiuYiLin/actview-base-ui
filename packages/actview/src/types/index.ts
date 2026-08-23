@@ -24,3 +24,37 @@ export type RefValue = Ref<any>;
 export type ComponentRenderFn<RenderFunctionProps, State> = (
   props: RenderFunctionProps & State & { ref?: RefValue },
 ) => VNode | null | undefined;
+
+/**
+ * A DOM event augmented with the Base UI handler-prevention mechanism
+ * (mirrors the React `BaseUIEvent`: `preventBaseUIHandler()` / `baseUIHandlerPrevented`).
+ * ActView events are native DOM events, so `E` is a DOM event type.
+ */
+export type BaseUIEvent<E> = E & {
+  preventBaseUIHandler: () => void;
+  readonly baseUIHandlerPrevented?: boolean | undefined;
+};
+
+export type MaybeBaseUIEvent<E extends Event> = E &
+  Partial<Pick<BaseUIEvent<E>, 'preventBaseUIHandler' | 'baseUIHandlerPrevented'>>;
+
+/**
+ * A value, a ref to a value, or a getter that produces a value
+ * (accepted by `toValue` — mirrors Vue's `MaybeRefOrGetter`).
+ */
+export type MaybeRefOrGetter<T> = T | Ref<any> | (() => T);
+
+type WithPreventBaseUIHandler<T> = T extends (event: infer E) => any
+  ? E extends Event
+    ? (event: BaseUIEvent<E>) => ReturnType<T>
+    : T
+  : T extends undefined
+    ? undefined
+    : T;
+
+/**
+ * Adds a `preventBaseUIHandler` method to all event handlers.
+ */
+export type WithBaseUIEvent<T> = {
+  [K in keyof T]: WithPreventBaseUIHandler<T[K]>;
+};

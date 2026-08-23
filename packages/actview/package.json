@@ -82,6 +82,10 @@
     "./internals/serializeValue": "./src/internals/serializeValue.ts",
     "./internals/stateAttributesMapping": "./src/internals/stateAttributesMapping.ts",
     "./internals/TimeoutManager": "./src/internals/TimeoutManager.ts",
+    "./button": "./src/button/index.ts",
+    "./internals/composite": "./src/internals/composite/index.ts",
+    "./internals/use-button": "./src/internals/use-button/index.ts",
+    "./merge-props": "./src/merge-props/index.ts",
     "./internals/types": "./src/internals/types.ts",
     "./internals/use-button": "./src/internals/use-button/index.ts",
     "./internals/useBaseUiId": "./src/internals/useBaseUiId.ts",
@@ -95,6 +99,7 @@
   },
   "imports": {
     "#test-utils": "./test/index.ts",
+    "#test-utils/rtl": "./test/rtl.ts",
     "#formatErrorMessage": "@base-ui/actview-utils/formatErrorMessage"
   },
   "scripts": {

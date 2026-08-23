@@ -60,8 +60,11 @@ export function compileGlob(pattern) {
  * @returns {boolean} true=应当排除
  */
 export function isExcluded(relativePath, excludeREs) {
+  // 相对路径（含目录）与 basename 都尝试匹配：glob `*.test.*` 中的 `*` 不含
+  // 路径分隔符，直接匹配含目录的相对路径会失败（Windows 反斜杠分隔）。
+  const basename = relativePath.split(/[\\/]/).pop() ?? relativePath;
   for (const re of excludeREs) {
-    if (re.test(relativePath)) {
+    if (re.test(relativePath) || re.test(basename)) {
       return true;
     }
   }

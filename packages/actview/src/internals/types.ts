@@ -1,9 +1,43 @@
 import type { VNode, HTMLAttributes } from '@actview/jsx';
-import type { ComponentRenderFn, HTMLProps } from '../types';
+import type { BaseUIEvent, ComponentRenderFn, HTMLProps, MaybeRefOrGetter } from '../types';
 
-export type { HTMLProps, ComponentRenderFn };
+export type { HTMLProps, ComponentRenderFn, BaseUIEvent, MaybeRefOrGetter };
 
 export type Orientation = 'horizontal' | 'vertical';
+
+export interface NativeButtonProps {
+  /**
+   * Whether the component renders a native `<button>` element when replacing it
+   * via the `render` prop.
+   * Set to `false` if the rendered element is not a button (for example, `<div>`).
+   * @default true
+   */
+  nativeButton?: boolean | undefined;
+}
+
+export interface NonNativeButtonProps {
+  /**
+   * Whether the component renders a native `<button>` element when replacing it
+   * via the `render` prop.
+   * Set to `true` if the rendered element is a native button.
+   * @default false
+   */
+  nativeButton?: boolean | undefined;
+}
+
+/**
+ * Simplifies the display of a type (without modifying it).
+ * Taken from https://effectivetypescript.com/2022/02/25/gentips-4-display/
+ */
+export type Simplify<T> = T extends Function ? T : { [K in keyof T]: T[K] };
+
+/**
+ * Makes specified keys in a type required.
+ *
+ * @template T - The original type.
+ * @template K - The keys to make required.
+ */
+export type RequiredExcept<T, K extends keyof T> = Required<Omit<T, K>> & Pick<T, K>;
 
 /**
  * Props shared by all Base UI components.

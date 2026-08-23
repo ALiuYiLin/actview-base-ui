@@ -17,6 +17,9 @@ function dispatch(target: Target, event: Event) {
     throw new Error('Base UI test utils: fireEvent target is null.');
   }
   target.dispatchEvent(event);
+  // testing-library 契约：fireEvent 返回 `!defaultPrevented`（preventDefault 被
+  // 调用时返回 false）。React 版测试断言该返回值（如页面滚动被阻止的用例）。
+  return !event.defaultPrevented;
 }
 
 function assignEventProperties(event: any, init: FireEventInit = {}) {
