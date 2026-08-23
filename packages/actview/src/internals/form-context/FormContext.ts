@@ -1,17 +1,10 @@
 import { createContext } from 'actview';
 import { NOOP } from '@/internals/noop';
+import type { FieldValidityData } from '@/field/root/FieldRoot';
 
 export type Errors = Record<string, string | string[]>;
 
 export type ValidationMode = 'onSubmit' | 'onBlur' | 'onChange';
-
-export interface FieldValidityData {
-  state: Record<string, boolean | null>;
-  errors: string[];
-  error: string;
-  value: unknown;
-  initialValue: unknown;
-}
 
 export interface FormFieldRegistration {
   name: string | undefined;

@@ -1,7 +1,7 @@
 import { watch } from 'actview';
+import type { ComputedRef } from 'actview';
 import { useFormContext } from '@/internals/form-context/FormContext';
-import type { FormFieldRegistration } from '@/internals/form-context/FormContext';
-import type { FieldValidityData } from '@/internals/form-context/FormContext';
+import type { FieldValidityData } from '@/field/root/FieldRoot';
 
 export interface FieldControlRegistration {
   controlRef: {current: any};
@@ -82,7 +82,7 @@ export function useFieldControlRegistration(params: UseFieldControlRegistrationP
       getValue: getValueForForm,
       name: name ?? registration.name,
       controlRef: registration.controlRef,
-      validityData: getCombinedFieldValidityData(validityData.value, invalid),
+      validityData: getCombinedFieldValidityData(validityData.value, invalid.value),
       validate,
     });
   }
@@ -114,7 +114,7 @@ export function useFieldControlRegistration(params: UseFieldControlRegistrationP
 
   // React 版第一个 useIsoLayoutEffect：deps 变化时重注册
   watch(
-    () => [invalid, name, validityData.value] as const,
+    () => [invalid.value, name, validityData.value] as const,
     () => {
       const registration = registrationRef.current;
       if (!registration || !registration.id) {
@@ -127,7 +127,7 @@ export function useFieldControlRegistration(params: UseFieldControlRegistrationP
         getValue: getValueForForm,
         name: name ?? registration.name,
         controlRef: registration.controlRef,
-        validityData: getCombinedFieldValidityData(validityData.value, invalid),
+        validityData: getCombinedFieldValidityData(validityData.value, invalid.value),
         validate,
       });
     },
@@ -200,7 +200,7 @@ function toValueFormContext() {
 export interface UseFieldControlRegistrationParameters {
   change: (value: unknown, cancelPending?: boolean) => void;
   commit: (value: unknown) => void;
-  invalid: boolean | undefined;
+  invalid: ComputedRef<boolean>;
   markedDirtyRef: {current: boolean};
   name: string | undefined;
   setRegisteredFieldName: (name: string | undefined) => void;

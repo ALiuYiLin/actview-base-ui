@@ -3,7 +3,9 @@ import type { ComputedRef } from 'actview';
 import { NOOP } from '@/internals/noop';
 import { DEFAULT_FIELD_ROOT_STATE, DEFAULT_VALIDITY_STATE } from '@/internals/field-constants/constants';
 import type { HTMLProps } from '@/internals/types';
-import type { ValidationMode, FieldValidityData } from '@/internals/form-context/FormContext';
+import type { ValidationMode } from '@/internals/form-context/FormContext';
+import type { FieldValidityData } from '@/field/root/FieldRoot';
+import type { UseFieldValidationReturnValue } from '@/field/root/useFieldValidation';
 
 export interface FieldRootState {
   disabled: boolean;
@@ -41,15 +43,7 @@ export interface FieldRootContext {
     source: symbol,
     registration: FieldControlRegistration | undefined,
   ) => void;
-  validation: {
-    getValidationProps: (disabled: boolean, props?: HTMLProps) => HTMLProps;
-    inputRef: {current: any};
-    registeredInputs: Map<string, unknown>;
-    registerInput: (...args: any[]) => void;
-    getInputControl: (...args: any[]) => any;
-    commit: (...args: any[]) => Promise<void> | void;
-    change: (...args: any[]) => void;
-  };
+  validation: UseFieldValidationReturnValue;
 }
 
 export const DEFAULT_FIELD_ROOT_CONTEXT: FieldRootContext = {
