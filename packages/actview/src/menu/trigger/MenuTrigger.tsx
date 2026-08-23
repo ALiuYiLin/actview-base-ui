@@ -253,7 +253,11 @@ export const MenuTrigger = defineComponent(function MenuTrigger(
     const mergedPropsForRender = (() => {
       const merged = mergePropsN<any>([...propsList, elementProps]);
       const stateAttributes = {};
-      Object.assign(stateAttributes, pressableTriggerOpenStateMapping.open(state.open));
+      if ((globalThis as any).__DSH_TRIGGER_DEBUG) {
+        // eslint-disable-next-line no-console
+        console.log('[MenuTrigger] render isOpened=' + String(isOpenedByThisTrigger.value));
+      }
+      Object.assign(stateAttributes, pressableTriggerOpenStateMapping.open(isOpenedByThisTrigger.value));
       Object.assign(merged, stateAttributes);
       return merged;
     })();
