@@ -1,5 +1,5 @@
 export { FieldRoot as Root } from './root/FieldRoot';
-// export { FieldControl as Control } from './control/FieldControl';
+export { FieldControl as Control } from './control/FieldControl';
 // export { FieldLabel as Label } from './label/FieldLabel';
 // export { FieldError as Error } from './error/FieldError';
 // export { FieldDescription as Description } from './description/FieldDescription';
@@ -7,3 +7,4 @@ export { FieldRoot as Root } from './root/FieldRoot';
 // export { FieldValidity as Validity } from './validity/FieldValidity';
 
 export type * from './root/FieldRoot';
+export type * from './control/FieldControl';
