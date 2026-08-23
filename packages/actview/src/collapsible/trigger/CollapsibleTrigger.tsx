@@ -65,7 +65,9 @@ export const CollapsibleTrigger = defineComponent(function (componentProps: Coll
       },
       elementProps,
       stateAttributes,
-      getButtonProps(),
+      // props getter：接收之前合并的 props 作为 externalProps，handleTrigger
+      // 成为 useButton 的 externalOnClick——disabled 时 preventDefault 且不调用
+      getButtonProps,
     );
 
     if (typeof className === 'function') {

@@ -22,8 +22,15 @@ export function useCollapsibleRoot(
   const defaultPanelId = useBaseUiId();
   // `undefined` uses the initial generated fallback; `null` means the panel unmounted.
   const registeredPanelId = ref<string | null | undefined>(undefined);
-  const setPanelIdState = (value: string | null | undefined) => {
-    registeredPanelId.value = value;
+  const setPanelIdState = (
+    value:
+      | string
+      | null
+      | undefined
+      | ((current: string | null | undefined) => string | null | undefined),
+  ) => {
+    registeredPanelId.value =
+      typeof value === 'function' ? value(registeredPanelId.value) : value;
   };
   const panelId = computed(() =>
     registeredPanelId.value === null
@@ -104,7 +111,13 @@ export interface UseCollapsibleRootReturnValue {
   panelId: ComputedRef<string | undefined>;
   setMounted: (nextMounted: boolean) => void;
   setOpen: (open: boolean | undefined) => void;
-  setPanelIdState: (value: string | null | undefined) => void;
+  setPanelIdState: (
+    value:
+      | string
+      | null
+      | undefined
+      | ((current: string | null | undefined) => string | null | undefined),
+  ) => void;
   transitionStatus: ComputedRef<TransitionStatus>;
 }
 
