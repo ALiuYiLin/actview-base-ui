@@ -79,3 +79,49 @@ async function renderMenu() {
 }
 
 
+
+describe('<Menu.Root /> with selection items (actview smoke)', () => {
+  it('checks and unchecks a checkbox item, selects radio values', async () => {
+    await renderSelectionMenu();
+    const trigger = screen.getByRole('button', {name: 'Open menu'});
+    fireEvent.mouseDown(trigger);
+    fireEvent.mouseUp(trigger);
+    fireEvent.click(trigger);
+    await settle();
+
+    const checkbox = screen.getByRole('menuitemcheckbox');
+    expect(checkbox).toHaveAttribute('data-unchecked');
+    fireEvent.mouseUp(checkbox);
+    fireEvent.click(checkbox);
+    await settle();
+    expect(checkbox).toHaveAttribute('data-checked');
+
+    const radios = screen.getAllByRole('menuitemradio');
+    expect(radios).toHaveLength(2);
+    fireEvent.mouseUp(radios[1]);
+    fireEvent.click(radios[1]);
+    await settle();
+    expect(radios[1]).toHaveAttribute('data-checked');
+    expect(radios[0]).toHaveAttribute('data-unchecked');
+  });
+});
+
+async function renderSelectionMenu() {
+  const {render} = await import('#test-utils/rtl');
+  return render(
+    <Menu.Root>
+      <Menu.Trigger>Open menu</Menu.Trigger>
+      <Menu.Portal>
+        <Menu.Positioner>
+          <Menu.Popup>
+            <Menu.CheckboxItem>Bold</Menu.CheckboxItem>
+            <Menu.RadioGroup defaultValue="left">
+              <Menu.RadioItem value="left">Left</Menu.RadioItem>
+              <Menu.RadioItem value="right">Right</Menu.RadioItem>
+            </Menu.RadioGroup>
+          </Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.Root>,
+  );
+}

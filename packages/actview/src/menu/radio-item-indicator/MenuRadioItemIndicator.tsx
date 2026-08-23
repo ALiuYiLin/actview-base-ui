@@ -1,0 +1,121 @@
+import { computed, defineComponent, toValue } from 'actview';
+import { useMenuRadioItemContext } from '../radio-item/MenuRadioItemContext';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { itemMapping } from '../utils/stateAttributesMapping';
+import { useTransitionStatus } from '@/internals/useTransitionStatus';
+import { useOpenChangeComplete } from '@/internals/useOpenChangeComplete';
+
+/**
+ * Indicates whether the radio item is selected.
+ * Renders a `<span>` element.
+ */
+export const MenuRadioItemIndicator = defineComponent(function MenuRadioItemIndicator(
+  componentProps: MenuRadioItemIndicator.Props,
+) {
+  const {keepMounted = false} = componentProps as any;
+  const children = toValue(componentProps.children);
+
+  const item = useMenuRadioItemContext();
+
+  const indicatorRef = {value: null as HTMLSpanElement | null};
+
+  const {transitionStatus, mounted, setMounted} = useTransitionStatus(
+    computed(() => item.checked),
+  );
+
+  useOpenChangeComplete({
+    open: computed(() => item.checked),
+    ref: indicatorRef,
+    onComplete() {
+      if (!item.checked) {
+        setMounted(false);
+      }
+    },
+  });
+
+  return () => {
+    const {render, className: cls, style: st, ...elementProps} = componentProps as any;
+
+    if (!keepMounted && !mounted.value) {
+      return null;
+    }
+
+    const state: MenuRadioItemIndicatorState = {
+      checked: item.checked,
+      disabled: item.disabled,
+      highlighted: item.highlighted,
+      transitionStatus: transitionStatus.value,
+    };
+
+    const merged: any = {
+      'aria-hidden': true,
+      ...elementProps,
+    };
+
+    if (state.checked) {
+      merged[itemMapping.checkedKey] = '';
+    } else {
+      merged[itemMapping.uncheckedKey] = '';
+    }
+
+    const mergedRefs = (el: HTMLSpanElement | null) => {
+      indicatorRef.value = el;
+      if (typeof componentProps.ref === 'function') {
+        (componentProps.ref as any)(el);
+      } else if (componentProps.ref) {
+        componentProps.ref.value = el;
+        componentProps.ref.current = el;
+      }
+    };
+
+    if (render) {
+      if (typeof render === 'function') {
+        return render({...merged, ...state, ref: mergedRefs} as any);
+      }
+      const renderProps = render.props ?? {};
+      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
+      const Tag = render.type as any;
+      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
+      mergedRenderProps.className =
+        typeof merged.className === 'string' && typeof renderClassName === 'string'
+          ? `${merged.className} ${renderClassName}`.trim()
+          : (merged.className ?? renderClassName);
+      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
+      return <Tag key={render.key} {...mergedRenderProps} ref={mergedRefs}>{children}</Tag>;
+    }
+    return <span {...merged} ref={mergedRefs}>{children}</span>;
+  };
+});
+
+export interface MenuRadioItemIndicatorState {
+  /**
+   * Whether the radio item is selected.
+   */
+  checked: boolean;
+  /**
+   * Whether the radio item is disabled.
+   */
+  disabled: boolean;
+  /**
+   * Whether the radio item is highlighted.
+   */
+  highlighted: boolean;
+  /**
+   * The transition status of the indicator.
+   */
+  transitionStatus: any;
+}
+
+export interface MenuRadioItemIndicatorProps extends BaseUIComponentProps<'span', any> {
+  /**
+   * Whether to keep the HTML element in the DOM when the radio item is not selected.
+   * @default false
+   */
+  keepMounted?: boolean | undefined;
+  [key: string]: any;
+}
+
+export namespace MenuRadioItemIndicator {
+  export type State = MenuRadioItemIndicatorState;
+  export type Props = MenuRadioItemIndicatorProps;
+}

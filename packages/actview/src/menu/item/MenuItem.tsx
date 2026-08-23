@@ -60,7 +60,7 @@ export const MenuItem = defineComponent(function MenuItem(componentProps: MenuIt
     state.highlighted = highlighted;
 
     const merged: any = {};
-    for (const prop of [itemProps.value, elementProps, getItemProps({})]) {
+    for (const prop of [itemProps.value, elementProps, getItemProps as any]) {
       const resolved = typeof (prop as any) === 'function' ? (prop as any)(merged) : prop;
       Object.assign(merged, resolved);
     }
