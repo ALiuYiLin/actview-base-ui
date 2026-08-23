@@ -49,7 +49,7 @@ export function createComboboxItems<Item, Value extends ComboboxPrimitiveValue>(
   if (!Array.isArray(items) && typeof items === 'object') {
     return Object.keys(items)
       .filter((key) => key.toLowerCase().includes(query))
-      .map((key) => ({label: key, value: key}));
+      .map((key) => ({label: (items as any)[key], value: key}));
   }
 
   if (!Array.isArray(items)) {

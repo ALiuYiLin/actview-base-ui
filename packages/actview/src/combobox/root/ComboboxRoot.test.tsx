@@ -52,7 +52,7 @@ describe('<Combobox.Root />', () => {
     await settle();
     await settle();
 
-    expect(screen.getByRole('option', {name: 'apple'})).not.toBe(null);
+    expect(screen.getByRole('option', {name: 'Apple'})).not.toBe(null);
   });
 
   it('is closed by default', async () => {
@@ -70,7 +70,7 @@ describe('<Combobox.Root />', () => {
     await settle();
     await settle();
 
-    expect(screen.getByRole('option', {name: 'apple'})).not.toBe(null);
+    expect(screen.getByRole('option', {name: 'Apple'})).not.toBe(null);
   });
 
   it('filters items as the user types', async () => {
@@ -85,8 +85,8 @@ describe('<Combobox.Root />', () => {
     await settle();
     await settle();
 
-    expect(screen.getByRole('option', {name: 'banana'})).not.toBe(null);
-    expect(screen.queryByRole('option', {name: 'apple'})).toBe(null);
+    expect(screen.getByRole('option', {name: 'Banana'})).not.toBe(null);
+    expect(screen.queryByRole('option', {name: 'Apple'})).toBe(null);
   });
 
   it('selects an item on click and calls onValueChange', async () => {
@@ -98,7 +98,7 @@ describe('<Combobox.Root />', () => {
     await settle();
     await settle();
 
-    fireEvent.click(screen.getByRole('option', {name: 'cherry'}));
+    fireEvent.click(screen.getByRole('option', {name: 'Cherry'}));
     await settle();
     await settle();
 
@@ -113,8 +113,8 @@ describe('<Combobox.Root />', () => {
     await settle();
     await settle();
 
-    expect(screen.getByRole('option', {name: 'date'})).toHaveAttribute('data-selected');
-    expect(screen.getByRole('option', {name: 'apple'})).not.toHaveAttribute('data-selected');
+    expect(screen.getByRole('option', {name: 'Date'})).toHaveAttribute('data-selected');
+    expect(screen.getByRole('option', {name: 'Apple'})).not.toHaveAttribute('data-selected');
   });
 
   it('renders the selected value in Combobox.Value', async () => {
@@ -172,3 +172,4 @@ describe('<Combobox.Root />', () => {
     expect(screen.getByTestId('input')).toHaveAttribute('disabled');
   });
 });
+
