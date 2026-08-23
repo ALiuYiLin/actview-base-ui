@@ -1597,7 +1597,10 @@ describe('useListNavigation', () => {
     await userEvent.keyboard('{ArrowRight}');
     await flushMicrotasks();
 
-    expect(screen.getByText('Text')).toHaveFocus();
+    // 浏览器环境适配：actview 的 initial sync 走 queueMicrotask→nextTick→rAF
+    // 多级调度链 + enqueueFocus 的 rAF，焦点转移晚于 flushMicrotasks（jsdom
+    // 的 rAF 被同步化所以即时）；waitFor 对齐 React 版「打开子菜单后聚焦首项」。
+    await waitFor(() => expect(screen.getByText('Text')).toHaveFocus());
   });
 
   // In JSDOM it will not focus the first item, but will in the browser
@@ -1618,7 +1621,9 @@ describe('useListNavigation', () => {
     await userEvent.keyboard('{ArrowRight}'); // opens second submenu
     await flushMicrotasks();
 
-    expect(screen.getByText('.png')).toHaveFocus();
+    // 浏览器环境适配：同上（第二级子菜单 initial sync 的焦点转移晚于
+    // flushMicrotasks——多级调度链 + enqueueFocus rAF）。
+    await waitFor(() => expect(screen.getByText('.png')).toHaveFocus());
 
     // it navigation with orientation = 'both'
     await userEvent.keyboard('{ArrowRight}');
