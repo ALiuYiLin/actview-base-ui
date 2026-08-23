@@ -60,7 +60,7 @@ export function useFocusableWhenDisabled(
     return additionalProps;
   });
 
-  return { props };
+  return {props};
 }
 
 interface FocusableWhenDisabledProps {

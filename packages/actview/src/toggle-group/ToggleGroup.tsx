@@ -9,11 +9,8 @@ import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDeta
 import { REASONS } from '@/internals/reasons';
 import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
 import type { StateAttributesMapping } from '@/internals/getStateAttributesProps';
-
-// Toolbar 家族尚未迁移：actview stub 恒 undefined（React 版 useToolbarRootContext(true) 可选返回 undefined）。
-// TODO(toolbar): 迁移 toolbar 后接入真实 context。
-const toolbarContext = undefined as {disabled?: boolean} | undefined;
-const toolbarGroupContext = undefined as {disabled?: boolean} | undefined;
+import { useToolbarRootContext } from '@/toolbar/root/ToolbarRootContext';
+import { useToolbarGroupContext } from '@/toolbar/group/ToolbarGroupContext';
 
 /**
  * Provides a shared state to a series of toggle buttons.
@@ -36,8 +33,13 @@ export const ToggleGroup = defineComponent(function <Value extends string>(
   // Use the raw prop to distinguish an omitted value from the empty default.
   const isValueInitialized = valueProp !== undefined || defaultValueProp !== undefined;
 
+  const toolbarContextRef = useToolbarRootContext(true);
+  const toolbarGroupContextRef = useToolbarGroupContext();
+
   const disabled =
-    (toolbarContext?.disabled ?? false) || (toolbarGroupContext?.disabled ?? false) || disabledProp;
+    (toolbarContextRef.value?.disabled ?? false) ||
+    (toolbarGroupContextRef.value?.disabled ?? false) ||
+    disabledProp;
 
   const [groupValue, setValueState] = useControlled({
     controlled: valueProp,
@@ -126,6 +128,8 @@ export const ToggleGroup = defineComponent(function <Value extends string>(
       }
       return <div {...merged}>{componentProps.children}</div>;
     };
+
+    const toolbarContext = toolbarContextRef.value;
 
     return (
       <ToggleGroupContext.Provider value={contextValue as any}>
