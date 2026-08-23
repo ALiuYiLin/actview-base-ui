@@ -1,4 +1,4 @@
-import { computed, onUnmounted, watch } from 'actview';
+import { computed, onUnmounted, toValue, watch } from 'actview';
 import type { ComputedRef } from 'actview';
 import { Store } from './Store';
 import { useStore } from './useStore';
@@ -35,15 +35,17 @@ export class ReactStore<
 
   /**
    * Synchronizes a single external value into the store.
+   * (支持 ref/computed 作为 value：watch 追踪 .value 变化。)
    */
   useSyncedValue<Key extends keyof State>(key: Key, value: State[Key]) {
     // eslint-disable-next-line consistent-this
     const store = this;
     watch(
-      () => value,
+      () => toValue(value as any),
       () => {
-        if (store.state[key] !== value) {
-          store.set(key, value);
+        const next = toValue(value as any);
+        if (store.state[key] !== next) {
+          store.set(key, next);
         }
       },
       {flush: 'post', immediate: true},
@@ -61,10 +63,11 @@ export class ReactStore<
     // eslint-disable-next-line consistent-this
     const store = this;
     watch(
-      () => value,
+      () => toValue(value as any),
       () => {
-        if (store.state[key] !== value) {
-          store.set(key, value);
+        const next = toValue(value as any);
+        if (store.state[key] !== next) {
+          store.set(key, next);
         }
       },
       {flush: 'post', immediate: true},

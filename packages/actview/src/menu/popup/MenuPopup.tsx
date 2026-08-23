@@ -119,6 +119,8 @@ export const MenuPopup = defineComponent(function MenuPopup(componentProps: Menu
     const mergedRefs = (el: HTMLElement | null) => {
       store.context.popupRef.value = el;
       setPopupElement(el);
+      // 同步 floating 元素到 rootContext state（FFM/useDismiss 依赖 floatingElement）。
+      (floatingContext.value as any)?.update?.({floatingElement: el});
     };
 
     const element = (() => {

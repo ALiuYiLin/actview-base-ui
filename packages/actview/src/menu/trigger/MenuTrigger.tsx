@@ -285,23 +285,22 @@ export const MenuTrigger = defineComponent(function MenuTrigger(
       </button>
     );
 
-    if (isOpenedByThisTrigger.value) {
-      return (
-        <div key={`${thisTriggerId}-guards`}>
-          <FocusGuard
-            ref={(el: any) => (preFocusGuardRef.value = el)}
-            onFocus={handlePreFocusGuardFocus}
-          />
-          {element}
-          <FocusGuard
-            ref={(el: any) => (store.context.triggerFocusTargetRef.value = el)}
-            onFocus={handleFocusTargetFocus}
-          />
-        </div>
-      );
-    }
-
-    return element;
+    // actview 渲染无法原地 patch div↔button 结构切换（open 时包裹 guards、
+    // 关闭时不包裹会导致 button 元素重建，domReference 变 disconnected），
+    // 因此始终使用稳定的 div 包裹结构。
+    return (
+      <div key={`${thisTriggerId}-guards`}>
+        <FocusGuard
+          ref={(el: any) => (preFocusGuardRef.value = el)}
+          onFocus={handlePreFocusGuardFocus}
+        />
+        {element}
+        <FocusGuard
+          ref={(el: any) => (store.context.triggerFocusTargetRef.value = el)}
+          onFocus={handleFocusTargetFocus}
+        />
+      </div>
+    );
   };
 });
 

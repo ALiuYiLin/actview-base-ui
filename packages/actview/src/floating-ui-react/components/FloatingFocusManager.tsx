@@ -258,6 +258,18 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
   const openInteractionTypeRef = {current: openInteractionType as any};
   const openRef = {current: open.value};
 
+  // props 是渲染期值（setup 快照不会随 openMethod 等变化更新），
+  // 显式 watch 同步到 refs。
+  watch(
+    () => [openInteractionType, returnFocus, initialFocus] as const,
+    () => {
+      openInteractionTypeRef.current = openInteractionType as any;
+      returnFocusRef.current = returnFocus as any;
+      initialFocusRef.current = initialFocus as any;
+    },
+    {flush: 'post', immediate: true},
+  );
+
   const tree = useFloatingTree(externalTree);
   const portalContextRef = usePortalContext();
   const portalContext = portalContextRef?.value;
@@ -267,6 +279,14 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
   const pointerDownOutsideRef = {current: false};
   const lastFocusedTabbableRef = {current: null as FocusableElement | null};
   const closeTypeRef = {current: '' as InteractionType};
+
+  // actview 的 watch cleanup 在组件卸载时不执行（与 React effect cleanup 不同），
+  // 因此 returnFocus 需要显式在 onUnmounted 中触发。
+  const returnFocusCleanupRef = {current: null as (() => void) | null};
+  onUnmounted(() => {
+    returnFocusCleanupRef.current?.();
+    returnFocusCleanupRef.current = null;
+  });
   const lastInteractionTypeRef = {current: '' as InteractionType};
 
   const beforeGuardRef = {current: null as HTMLSpanElement | null};
@@ -681,9 +701,13 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
 
   // Track return focus targets and restore focus on unmount/close.
   watch(
-    () => [disabled, floating.value, floatingFocusElement] as const,
+    () => [disabled, floating.value, open.value] as const,
     () => {
+      // floatingFocusElement 依赖 floating.value，必须在回调内重算
+      // （setup 期求值在 floating 就绪前恒为 null）。
+      const floatingFocusElement = getFloatingFocusElement(floating.value as HTMLElement | null);
       if (disabled || !floatingFocusElement) {
+        returnFocusCleanupRef.current = null;
         return undefined;
       }
 
@@ -750,6 +774,7 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
             ? returnFocusValueOrFn(closeType)
             : returnFocusValueOrFn;
 
+
         if (resolvedReturnFocusValue === undefined || resolvedReturnFocusValue === false) {
           return null;
         }
@@ -782,7 +807,7 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
         return resolveRef(resolvedReturnFocusValue as any) || defaultReturnElement || null;
       }
 
-      return () => {
+      const cleanupFn = () => {
         events.off('openchange', onOpenChangeLocal);
 
         const activeEl = activeElement(doc);
@@ -794,7 +819,7 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
           ) ||
           (tree &&
             getNodeChildren(tree.nodesRef.current, getNodeId(), false).some((node) =>
-              contains(node.context?.elements.floating, activeEl),
+              contains((node.context?.elements.floating as any)?.value, activeEl),
             ));
 
         const returnFocusValueOrFn = returnFocusRef.current;
@@ -825,6 +850,9 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
           preventReturnFocusRef.current = false;
         });
       };
+
+      returnFocusCleanupRef.current = cleanupFn;
+      return cleanupFn;
     },
     {flush: 'post', immediate: true},
   );

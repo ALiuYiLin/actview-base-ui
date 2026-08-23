@@ -1,4 +1,4 @@
-import { toValue, watch } from 'actview';
+import { computed, ref, toValue, watch } from 'actview';
 import { useFloating as usePosition } from '@floating-ui/actview';
 import { isElement } from '@floating-ui/utils/dom';
 import type { FloatingRootStore } from '../components/FloatingRootStore';
@@ -44,9 +44,9 @@ function useFloatingWithStore(
   const open = store.useState('open');
   const floatingId = store.useState('floatingId');
 
-  const positionReference = {value: null as ReferenceType | null};
-  const localDomReference = {value: undefined as Element | null | undefined};
-  const localFloatingElement = {value: undefined as HTMLElement | null | undefined};
+  const positionReference = ref<ReferenceType | null>(null);
+  const localDomReference = ref<Element | null | undefined>(undefined);
+  const localFloatingElement = ref<HTMLElement | null | undefined>(undefined);
 
   const domReferenceRef = {current: null as Element | null};
 
@@ -65,19 +65,23 @@ function useFloatingWithStore(
     ? (localDomReference.value as Element)
     : null;
 
-  const syncedFloatingElement =
+  // useSyncedValue 的 value 传 ref/computed：watch 追踪 .value 变化
+  // （快照值不会在 setFloating/setReference 后更新 store state）。
+  const syncedReferenceElement = computed(() =>
+    localDomReference.value === undefined ? null : localDomReference.value,
+  );
+  const syncedDomReferenceElement = computed(() =>
+    localDomReference.value === undefined ? domReferenceElement.value : localDomReference.value,
+  );
+  const syncedFloatingElement = computed(() =>
     localFloatingElement.value === undefined
       ? store.state.floatingElement
-      : localFloatingElement.value;
-
-  store.useSyncedValue('referenceElement', localDomReference.value ?? null);
-  store.useSyncedValue(
-    'domReferenceElement',
-    localDomReference.value === undefined
-      ? domReferenceElement.value
-      : localDomReferenceElement,
+      : localFloatingElement.value,
   );
-  store.useSyncedValue('floatingElement', syncedFloatingElement);
+
+  store.useSyncedValue('referenceElement', syncedReferenceElement as any);
+  store.useSyncedValue('domReferenceElement', syncedDomReferenceElement as any);
+  store.useSyncedValue('floatingElement', syncedFloatingElement as any);
 
   const setPositionReference = (node: ReferenceType | null) => {
     const computedPositionReference = isElement(node)
