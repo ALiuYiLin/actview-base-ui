@@ -44,10 +44,12 @@ React hooks 层的 actview 移植，**API 形状与 React 版兼容**：
 
 | 项 | 状态 |
 |---|---|
-| `useTestInteractions`（React `#test-utils`） | ❌ 需实现（依赖 floating-ui-actview 的 `ElementProps` + constants 的 `ACTIVE_KEY` / `SELECTED_KEY` / `FOCUSABLE_ATTRIBUTE`） |
-| role 查询族：`getByRole` / `getAllByRole` / `queryByRole` / `getByLabelText` / `findByTestId` | ❌ `@actview/testing` 的 screen 只有 text/class/testid 查询；菜单/网格导航测试主干用 `getByRole('button'/'menu')`、`getAllByRole('option')`。方案：actview 测试基建引入 `@testing-library/dom` 查询层（框架无关，scoped 到最近 render container） |
-| `userEvent`（~160 处调用） | ✅ **直接复用** `@testing-library/user-event`：v14.6.1 dependencies 为空、peer 仅 `@testing-library/dom >=7.21.4`，**零 React 依赖**；`@testing-library/dom` v10.4.1 同样零 React 依赖（纯 DOM 事件序列仿真：click → pointerdown/mousedown/...、keyboard、tab、type）。actview 组件用原生 DOM 事件绑定可收到。需在 actview 声明 devDeps |
+| `useTestInteractions`（React `#test-utils`） | ✅ **无需实现**：floating-ui 上游测试不使用它（`floating-ui/packages/react/test/unit/` 零引用），floating-ui/actview 迁移时直接用 actview 的 `useInteractions([...])` 等价替代。base-ui 消费方测试转写时同样处理；若想保持原样，其 `mergeProps` 逻辑是纯函数（仅 React.useCallback 包装，约 120 行），可原样搬入 actview 测试基建 |
+| role 查询族：`getByRole` / `getAllByRole` / `queryByRole` / `getByLabelText` / `findByTestId` | ✅ **方案已验证**：floating-ui/actview `test/unit/utils.tsx` 即 RTL 兼容层——re-export `@testing-library/dom` 的 `screen` / `fireEvent` / `waitFor` / `within`（框架无关、零 React 依赖，`@testing-library/dom ^10.4.0` 已声明），并配套 actview `render` / `rerender` / `act`（基于 `@actview/core` render/unmount + nextTick）。直接照搬该层即可 |
+| `userEvent`（~160 处调用） | ✅ **已验证**：floating-ui/actview devDeps 已声明 `@testing-library/user-event ^14.6.1`（v14.6.1 零 React 依赖，纯 DOM 事件序列仿真）并全量测试通过，直接复用 |
 | 其他 | ✅ 已就绪：`isJSDOM`（actview-utils/testUtils）、`flushMicrotasks`（nextTick）、`render/screen/waitFor`（@actview/testing）、`fireEvent`（actview 自写，全方法）、`act`（createRenderer）、`createRenderer`、vitest 运行基建 |
+
+> 注意：base-ui 的 `floating-ui-react` 是 **base-ui 变体**（含上游没有的 `useListNavigation.webkit.test.tsx`、`gridNavigation.ts`、`FloatingRootStore` 等），测试基建（RTL 兼容层方案）可复用，但 3 个 `.test.tsx` 转写不能 1:1 照搬 floating-ui/actview，需按 base-ui 变体的差异逐文件处理。
 
 #### ④ 测试文件 + 夹具迁移
 
@@ -69,12 +71,12 @@ React hooks 层的 actview 移植，**API 形状与 React 版兼容**：
 | `vi.useFakeTimers` + `advanceTimersByTime`（useHover.test 16 处） | vitest 级 ✓；⚠️ 需确认 actview 版 useHover 内部计时走 `useTimeout`（setTimeout）而非 rAF，fake timers 才能拦截 | ⚠️ 迁移时实测 |
 | `ReactDOMClient.createRoot(root).render(<App iframe={root} />)`（FFM iframe 场景） | `render(App, { iframe: root, container: iframeRoot })`（@actview/testing render 支持 container） | ⚠️ 需实测（actview 渲染管线是否绑定全局 document） |
 | `isJSDOM` + `describe.skipIf` | actview-utils/testUtils（#test-utils 已导出） | ✅ |
-| `useTestInteractions` | ❌ 需实现（见 ③） | ❌ |
+| `useTestInteractions` | 转写为 actview `useInteractions`（等价替代，见 ③） | ✅ |
 
 ### 1.5 建议推进顺序
 
 1. **floating-ui-actview 移植**（含 ② 依赖链：actview-utils 9 个 + internals + composite + useBaseUiId）——地基
-2. **测试基建三件套**：`@testing-library/dom` 查询层封装（getByRole 族，scoped 到最近 container）+ `@testing-library/user-event` devDeps + `useTestInteractions` 实现
+2. **测试基建三件套**：复用 floating-ui/actview 已验证的 RTL 兼容层方案——`@testing-library/dom` 查询层（getByRole 族，re-export screen/fireEvent/waitFor/within）+ `@testing-library/user-event` devDeps；`useTestInteractions` 用 actview 的 `useInteractions` 等价替代（见 ③）
 3. **夹具迁移**：11 个文件，CSS `?scoped` + 跨文件 `scopedId` 手动传递（`<Child className="xxxx">` 要生效需 `<div scopedId={props.scopedId}>`）+ React hooks 转写
 4. **测试转写**：3 个 `.test.tsx` 逐文件转写并跑通（渲染/断言层改 actview，交互层 userEvent/断言原样保留）
 
