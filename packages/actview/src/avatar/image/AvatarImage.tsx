@@ -131,18 +131,26 @@ export interface AvatarImageState extends AvatarRootState {
   transitionStatus: TransitionStatus;
 }
 
-export interface AvatarImageProps extends BaseUIComponentProps<'img', AvatarImageState> {
-  /**
-   * Callback fired when the loading status changes.
-   */
-  onLoadingStatusChange?: ((status: ImageLoadingStatus) => void) | undefined;
-  // 原生 <img> 专属属性（actview 的 BaseUIComponentProps 基于通用 HTMLAttributes）
+/**
+ * 原生 `<img>` 专属属性（actview 的 HTMLAttributes 不含）——既作为组件
+ * props，也并入 render prop 参数类型（React 版用 ComponentPropsWithRef<'img'>）。
+ */
+export interface AvatarImageElementProps {
   src?: string | undefined;
   alt?: string | undefined;
   crossOrigin?: string | undefined;
   referrerPolicy?: string | undefined;
   sizes?: string | undefined;
   srcSet?: string | undefined;
+}
+
+export interface AvatarImageProps
+  extends BaseUIComponentProps<'img', AvatarImageState, HTMLProps & AvatarImageElementProps>,
+    AvatarImageElementProps {
+  /**
+   * Callback fired when the loading status changes.
+   */
+  onLoadingStatusChange?: ((status: ImageLoadingStatus) => void) | undefined;
 }
 
 export namespace AvatarImage {
