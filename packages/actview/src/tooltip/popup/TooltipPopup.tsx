@@ -21,7 +21,7 @@ export const TooltipPopup = defineComponent(function TooltipPopup(
   const children = toValue(componentProps.children);
 
   const store = useTooltipRootContext(false);
-  const positionerContext = useTooltipPositionerContext();
+  const positionerContext = useTooltipPositionerContext(false);
 
   const open = store.useState('open');
   const instantType = store.useState('instantType');
