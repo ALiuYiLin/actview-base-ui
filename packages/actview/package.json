@@ -81,9 +81,6 @@
     "./internals/RequestQueue": "./src/internals/RequestQueue.ts",
     "./internals/serializeValue": "./src/internals/serializeValue.ts",
     "./internals/stateAttributesMapping": "./src/internals/stateAttributesMapping.ts",
-    "./internals/temporal": "./src/internals/temporal/index.ts",
-    "./internals/temporal-adapter-date-fns": "./src/internals/temporal-adapter-date-fns/index.ts",
-    "./internals/temporal-adapter-luxon": "./src/internals/temporal-adapter-luxon/index.ts",
     "./internals/TimeoutManager": "./src/internals/TimeoutManager.ts",
     "./internals/types": "./src/internals/types.ts",
     "./internals/use-button": "./src/internals/use-button/index.ts",
@@ -120,26 +117,10 @@
     "@actview/plugin-scoped": "link:../../../actview/plugins/scoped",
     "@actview/plugin-vite": "link:../../../actview/plugins/vite",
     "@actview/testing": "link:../../../actview/packages/testing",
-    "@date-fns/tz": "1.4.1",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/user-event": "^14.6.1",
-    "@types/luxon": "3.7.1",
-    "@vitest/browser-playwright": "4.1.10",
-    "date-fns": "4.1.0",
-    "luxon": "3.7.2"
-  },
-  "peerDependencies": {
-    "@date-fns/tz": "^1.2.0",
-    "date-fns": "^4.0.0"
-  },
-  "peerDependenciesMeta": {
-    "@date-fns/tz": {
-      "optional": true
-    },
-    "date-fns": {
-      "optional": true
-    }
+    "@vitest/browser-playwright": "4.1.10"
   },
   "sideEffects": false,
   "engines": {

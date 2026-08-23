@@ -22,8 +22,14 @@ export function mergeClassNames(
  * 对象按 `{ ...a, ...b }` 合并；字符串形态不合并，直接后者优先。
  */
 export function mergeStyles(
-  renderStyle: string | Record<string, string | number> | undefined,
-  componentStyle: string | Record<string, string | number> | undefined,
+  renderStyle:
+    | string
+    | Record<string, string | number | undefined>
+    | undefined,
+  componentStyle:
+    | string
+    | Record<string, string | number | undefined>
+    | undefined,
 ) {
   if (renderStyle && !componentStyle) {
     return renderStyle;
