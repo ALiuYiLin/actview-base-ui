@@ -24,6 +24,21 @@ export type MiddlewareReturn = any;
 export type MiddlewareData = Record<string, any>;
 export type Rect = {x: number; y: number; width: number; height: number};
 export type Dimensions = {width: number; height: number};
+export type Delay = number | Partial<{open: number; close: number}>;
+
+export interface ExtendedElements<RT extends ReferenceType = ReferenceType> {
+  reference: RT | null;
+  floating: HTMLElement | null;
+  domReference: Element | null;
+}
+
+export interface SafePolygonOptions {
+  buffer?: number | undefined;
+  blockPointerEvents?: boolean | undefined;
+  requireIntent?: number | undefined;
+  hideDelay?: number | undefined;
+  getScope?: (() => HTMLElement | SVGSVGElement | null) | undefined;
+}
 
 export interface FloatingEvents {
   emit<T extends string>(event: T, data?: any): void;

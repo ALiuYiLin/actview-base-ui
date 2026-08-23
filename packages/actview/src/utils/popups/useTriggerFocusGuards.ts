@@ -19,8 +19,8 @@ interface TriggerFocusGuardStore {
   setOpen(open: boolean, eventDetails: BaseUIChangeEventDetails<typeof REASONS.focusOut>): void;
   select(key: 'positionerElement'): HTMLElement | null;
   context: {
-    readonly beforeContentFocusGuardRef: {current: HTMLElement | null};
-    readonly triggerFocusTargetRef: {current: HTMLElement | null};
+    readonly beforeContentFocusGuardRef: {value: HTMLElement | null};
+    readonly triggerFocusTargetRef: {value: HTMLElement | null};
   };
 }
 
@@ -30,10 +30,11 @@ interface TriggerFocusGuardStore {
  * When the popup is open, invisible focus guard elements are placed before and after
  * the trigger. These handlers close the popup and move focus to the appropriate
  * tabbable element when the guards receive focus (i.e. when the user tabs out).
+ * (actview 版：flushSync → 同步调用；原生 DOM 事件无 nativeEvent。)
  */
 export function useTriggerFocusGuards(
   store: TriggerFocusGuardStore,
-  triggerElementRef: {current: HTMLElement | null},
+  triggerElementRef: {value: HTMLElement | null},
 ) {
   const preFocusGuardRef = ref<HTMLElement | null>(null);
 
@@ -42,7 +43,7 @@ export function useTriggerFocusGuards(
       false,
       createChangeEventDetails(
         REASONS.focusOut,
-        event.nativeEvent,
+        event,
         event.currentTarget as HTMLElement,
       ),
     );
@@ -53,12 +54,42 @@ export function useTriggerFocusGuards(
     previousTabbable?.focus();
   }
 
+  function handleFocusTargetFocus(event: any) {
+    const positionerElement = store.select('positionerElement');
+    if (positionerElement && isOutsideEvent(event, positionerElement)) {
+      store.context.beforeContentFocusGuardRef.value?.focus();
+    } else {
+      store.setOpen(
+        false,
+        createChangeEventDetails(
+          REASONS.focusOut,
+          event,
+          event.currentTarget as HTMLElement,
+        ),
+      );
+
+      let nextTabbable = getTabbableAfterElement(
+        store.context.triggerFocusTargetRef.value || triggerElementRef.value,
+      );
+
+      while (nextTabbable !== null && contains(positionerElement, nextTabbable)) {
+        const prevTabbable = nextTabbable;
+        nextTabbable = getNextTabbable(nextTabbable);
+        if (nextTabbable === prevTabbable) {
+          break;
+        }
+      }
+
+      nextTabbable?.focus();
+    }
+  }
+
   function handlePostFocusGuardFocus(event: any) {
     store.setOpen(
       false,
       createChangeEventDetails(
         REASONS.focusOut,
-        event.nativeEvent,
+        event,
         event.currentTarget as HTMLElement,
       ),
     );
@@ -70,7 +101,6 @@ export function useTriggerFocusGuards(
   }
 
   function handleTriggerFocus(event: any) {
-    const currentTarget = event.currentTarget as HTMLElement;
     const positioner = store.select('positionerElement');
     if (!positioner) {
       return;
@@ -78,7 +108,8 @@ export function useTriggerFocusGuards(
 
     const isFocusInsidePopup = positioner.contains(event.relatedTarget as Node | null);
     const isFocusFromOpen = event.relatedTarget == null;
-    const isFocusFromTriggerFocusTarget = event.relatedTarget === store.context.triggerFocusTargetRef.current;
+    const isFocusFromTriggerFocusTarget =
+      event.relatedTarget === store.context.triggerFocusTargetRef.value;
     const isTabFromPopupToTrigger = isOutsideEvent(event, positioner) && !isFocusFromOpen;
 
     if (
@@ -86,14 +117,14 @@ export function useTriggerFocusGuards(
       !isFocusInsidePopup &&
       !isFocusFromOpen &&
       !isFocusFromTriggerFocusTarget &&
-      (isTabFromPopupToTrigger || currentTarget === triggerElementRef.current)
+      (isTabFromPopupToTrigger || event.currentTarget === triggerElementRef.value)
     ) {
       // Focus left the popup via Tab; the popup should close.
       store.setOpen(
         false,
         createChangeEventDetails(
           REASONS.focusOut,
-          event.nativeEvent,
+          event,
           event.currentTarget as HTMLElement,
         ),
       );
@@ -101,8 +132,12 @@ export function useTriggerFocusGuards(
   }
 
   return {
+    preFocusGuardRef,
     handlePreFocusGuardFocus,
+    handleFocusTargetFocus,
     handlePostFocusGuardFocus,
     handleTriggerFocus,
   };
 }
+
+import { contains } from '@/floating-ui-react/utils';

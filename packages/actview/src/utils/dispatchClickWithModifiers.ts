@@ -1,3 +1,5 @@
+import { ownerWindow } from '@/internals/owner';
+
 interface ModifierState {
   shiftKey: boolean;
   ctrlKey: boolean;
@@ -17,13 +19,10 @@ interface ModifierState {
 export function dispatchClickWithModifiers(
   target: Element,
   sourceEvent: ModifierState,
-  { detail = 0 }: { detail?: number | undefined } = {},
+  {detail = 0}: {detail?: number | undefined} = {},
 ) {
-  // @base-ui/utils/owner 的 ownerWindow 语义：realm 安全的 window（iframe 内
-  // 组件用 iframe 的 window 构造事件）。actview 无该 util 依赖，inline 实现。
-  const win = target.ownerDocument?.defaultView ?? window;
   target.dispatchEvent(
-    new (win as Window & typeof globalThis).PointerEvent('click', {
+    new (ownerWindow(target).PointerEvent)('click', {
       bubbles: true,
       cancelable: true,
       composed: true,

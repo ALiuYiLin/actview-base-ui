@@ -17,6 +17,13 @@ export { useTypeahead } from './hooks/useTypeahead';
 export type { UseTypeaheadProps } from './hooks/useTypeahead';
 export { useListNavigation } from './hooks/useListNavigation';
 export type { UseListNavigationProps } from './hooks/useListNavigation';
+export { useClick } from './hooks/useClick';
+export type { UseClickProps } from './hooks/useClick';
+export { useFocus } from './hooks/useFocus';
+export type { UseFocusProps } from './hooks/useFocus';
+export { useHoverReferenceInteraction } from './hooks/useHoverReferenceInteraction';
+export type { UseHoverReferenceInteractionProps } from './hooks/useHoverReferenceInteraction';
+export { useHoverInteractionSharedState } from './hooks/useHoverInteractionSharedState';
 export * from './utils';
 export type * from './types';
 
@@ -30,14 +37,13 @@ export {
   FloatingList,
   FloatingOverlay,
   FloatingPortal,
-  useClick,
+  useClick as useFloatingUiClick,
   useClientPoint,
   useDelayGroup,
   useDelayGroupContext,
   useFloating,
   useFloatingPortalNode,
   useFloatingRootContext,
-  useFocus,
   useHover,
   useId as useFloatingUiId,
   useInteractions,

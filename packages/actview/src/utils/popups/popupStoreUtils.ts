@@ -211,6 +211,84 @@ export type PayloadChildRenderFunction<Payload> = (arg: {
   payload: Payload | undefined;
 }) => any;
 
+export function useTriggerDataForwarding<
+  State extends PopupStoreState<unknown>,
+  const Key extends keyof Omit<State, 'activeTriggerId' | 'activeTriggerElement'>,
+>(
+  triggerId: string | undefined,
+  triggerElementRef: {current: Element | null},
+  store: PopupTriggerDataStore<State>,
+  stateUpdates: Pick<State, Key>,
+) {
+  const isMountedByThisTrigger = store.useState('isMountedByTrigger', triggerId);
+
+  const baseRegisterTrigger = useTriggerRegistration(triggerId, store);
+
+  // Applies trigger-owned state (active-trigger ownership and payload) when the trigger registers.
+  // Stable so payload/`stateUpdates` changes do not change the ref identity; it reads the latest
+  // closure values when invoked.
+  const applyTriggerData = useStableCallback((element: Element) => {
+    const open = store.select('open');
+    const activeTriggerId = store.select('activeTriggerId');
+
+    if (activeTriggerId === triggerId) {
+      const changes = {
+        activeTriggerElement: element,
+        ...(open ? stateUpdates : null),
+      } as Pick<Readonly<State>, Key | 'activeTriggerElement'>;
+      store.update(changes);
+      return;
+    }
+
+    if (activeTriggerId == null && open) {
+      // If a popup is already open, a detached trigger can mount before any active trigger
+      // has been established. Claim the first registered trigger so trigger-owned focus
+      // management and ARIA relationships work.
+      const changes = {
+        activeTriggerId: triggerId ?? null,
+        activeTriggerElement: element,
+        ...stateUpdates,
+      } as Pick<Readonly<State>, Key | 'activeTriggerId' | 'activeTriggerElement'>;
+      store.update(changes);
+    }
+  });
+
+  // Stable, so the merged ref on the rendered element keeps its identity for the trigger's whole
+  // lifetime.
+  const registerTrigger = useStableCallback((element: Element | null) => {
+    baseRegisterTrigger(element);
+    if (element) {
+      applyTriggerData(element);
+    }
+  });
+
+  // A stable ref does not re-fire on a store or id change, so migrate here instead.
+  watch(
+    () => [store, triggerId, triggerElementRef.current] as const,
+    () => {
+      registerTrigger(triggerElementRef.current);
+      return () => registerTrigger(null);
+    },
+    {flush: 'post', immediate: true},
+  );
+
+  watch(
+    () => [isMountedByThisTrigger.value, store, triggerElementRef.current, ...Object.values(stateUpdates)] as const,
+    () => {
+      if (isMountedByThisTrigger.value) {
+        const changes = {
+          activeTriggerElement: triggerElementRef.current,
+          ...stateUpdates,
+        } as Pick<Readonly<State>, Key | 'activeTriggerElement'>;
+        store.update(changes);
+      }
+    },
+    {flush: 'post', immediate: true},
+  );
+
+  return {registerTrigger, isMountedByThisTrigger};
+}
+
 /**
  * Runs the shared open-change sequence for a popup store: notifies `onOpenChange`,
  * honors cancellation, dispatches the floating root change, maps the reason to an

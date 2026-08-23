@@ -7,6 +7,7 @@ export const platform = {
   os: {
     ios: /iPad|iPhone|iPod/.test(userAgent),
     android: /Android/i.test(userAgent),
+    mac: /Mac/i.test(userAgent) && !/iPhone|iPad|iPod/i.test(userAgent),
   },
   engine: {
     webkit: /WebKit/i.test(userAgent),
