@@ -1,9 +1,10 @@
 import { defineProject } from 'vitest/config';
 import { actviewPlugin } from '@actview/plugin-vite';
+import actviewScopedPlugin from '@actview/plugin-scoped';
 import path from 'path';
 
 export default defineProject({
-  plugins: [actviewPlugin()],
+  plugins: [actviewPlugin(), ...actviewScopedPlugin()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),

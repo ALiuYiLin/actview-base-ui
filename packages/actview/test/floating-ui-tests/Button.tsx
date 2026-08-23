@@ -1,5 +1,5 @@
 import { defineComponent } from '@actview/core';
-
+import './Button.css?scoped'
 /**
  * floating-ui-tests 夹具 Button（React 版 → actview 版）。
  *

@@ -4,3 +4,8 @@ declare const process: {
     [key: string]: string | undefined;
   };
 };
+
+declare module '*.css?scoped' {
+  const css: string;
+  export default css;
+}

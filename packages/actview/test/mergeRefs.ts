@@ -7,7 +7,7 @@ export function mergeRefs<T>(...refs: (RefValue | FunctionRef)[]) {
     refs.forEach((ref) => {
       if (typeof ref === 'function') {
         ref(value);
-      } else {
+      } else if (ref) {
         ref.value = value;
       }
     });
