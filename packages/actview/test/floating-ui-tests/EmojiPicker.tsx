@@ -132,7 +132,7 @@ export const Main = defineComponent(function () {
 
   const filteredEmojis = computed(() =>
     emojis.filter(({ name }) =>
-      name.toLocaleLowerCase().includes(String(search.value || '').toLocaleLowerCase()),
+      name.toLocaleLowerCase().includes(search.value.toLocaleLowerCase()),
     ),
   );
 
@@ -210,6 +210,7 @@ export const Main = defineComponent(function () {
                     <input
                       className="Input"
                       placeholder="Search emoji"
+                      value={search.value}
                       aria-controls={
                         filtered.length === 0 ? noResultsId.value : undefined
                       }
