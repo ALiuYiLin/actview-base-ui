@@ -6,9 +6,13 @@ const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : '';
 export const platform = {
   os: {
     ios: /iPad|iPhone|iPod/.test(userAgent),
+    android: /Android/i.test(userAgent),
   },
   engine: {
     webkit: /WebKit/i.test(userAgent),
     gecko: /Gecko\//i.test(userAgent) && !/WebKit/i.test(userAgent),
+  },
+  env: {
+    jsdom: typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent),
   },
 };

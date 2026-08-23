@@ -3,6 +3,14 @@ import type { BaseUIEvent, ComponentRenderFn, HTMLProps, MaybeRefOrGetter } from
 
 export type { HTMLProps, ComponentRenderFn, BaseUIEvent, MaybeRefOrGetter };
 
+export interface FloatingUIOpenChangeDetails {
+  open: boolean;
+  reason: string;
+  nativeEvent: Event;
+  nested: boolean;
+  triggerElement?: Element | undefined;
+}
+
 export type Orientation = 'horizontal' | 'vertical';
 
 export interface NativeButtonProps {
