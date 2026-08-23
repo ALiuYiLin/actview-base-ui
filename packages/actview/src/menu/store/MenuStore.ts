@@ -7,11 +7,11 @@ import type { HTMLProps } from '@/internals/types';
 import type { AdaptiveOriginMiddleware } from '@/utils/adaptiveOriginConstants';
 import {
   createInitialPopupStoreState,
+  popupStoreSelectors,
   type PopupStoreContext,
-  type PopupStoreSelectors,
   type PopupStoreState,
   type PopupTriggerDataStore,
-  type PopupTriggerMap,
+  PopupTriggerMap,
   type PopupTriggerStoreKeys,
 } from '@/utils/popups';
 
@@ -37,14 +37,14 @@ export type State<Payload> = PopupStoreState<Payload> & {
 };
 
 type Context = PopupStoreContext<MenuRoot.ChangeEventDetails> & {
-  readonly positionerRef: {current: HTMLElement | null};
-  readonly popupRef: {current: HTMLElement | null};
-  readonly typingRef: {current: boolean};
+  readonly positionerRef: {value: HTMLElement | null};
+  readonly popupRef: {value: HTMLElement | null};
+  readonly typingRef: {value: boolean};
   readonly itemDomElements: {current: (HTMLElement | null)[]};
   readonly itemLabels: {current: (string | null)[]};
-  allowMouseUpTriggerRef: {current: boolean};
-  readonly triggerFocusTargetRef: {current: HTMLElement | null};
-  readonly beforeContentFocusGuardRef: {current: HTMLElement | null};
+  allowMouseUpTriggerRef: {value: boolean};
+  readonly triggerFocusTargetRef: {value: HTMLElement | null};
+  readonly beforeContentFocusGuardRef: {value: HTMLElement | null};
 };
 
 const selectors = {
@@ -181,14 +181,14 @@ export function createNullMenuStore<Payload>(): MenuHandleStore<Payload> {
 
 function createInitialContext(triggerElements: PopupTriggerMap): Context {
   return {
-    positionerRef: {current: null},
-    popupRef: {current: null},
-    typingRef: {current: false},
+    positionerRef: {value: null},
+    popupRef: {value: null},
+    typingRef: {value: false},
     itemDomElements: {current: []},
     itemLabels: {current: []},
-    allowMouseUpTriggerRef: {current: false},
-    triggerFocusTargetRef: {current: null},
-    beforeContentFocusGuardRef: {current: null},
+    allowMouseUpTriggerRef: {value: false},
+    triggerFocusTargetRef: {value: null},
+    beforeContentFocusGuardRef: {value: null},
     onOpenChangeComplete: undefined,
     triggerElements,
   };

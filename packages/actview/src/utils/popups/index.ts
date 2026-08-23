@@ -18,6 +18,7 @@ export {
   usePopupInteractionProps,
   usePopupRootSync,
   useImplicitActiveTrigger,
+  type PayloadChildRenderFunction,
 } from './popupStoreUtils';
 export { usePopupHandleStore } from './usePopupHandleStore';
 export { useTriggerFocusGuards } from './useTriggerFocusGuards';

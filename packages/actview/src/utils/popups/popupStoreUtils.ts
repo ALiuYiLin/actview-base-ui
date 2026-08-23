@@ -207,6 +207,10 @@ export function attachPreventUnmountOnClose(eventDetails: {preventUnmountOnClose
   return () => preventUnmountOnClose;
 }
 
+export type PayloadChildRenderFunction<Payload> = (arg: {
+  payload: Payload | undefined;
+}) => any;
+
 /**
  * Runs the shared open-change sequence for a popup store: notifies `onOpenChange`,
  * honors cancellation, dispatches the floating root change, maps the reason to an

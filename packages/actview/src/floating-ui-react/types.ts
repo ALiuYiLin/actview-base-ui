@@ -74,6 +74,7 @@ export interface ElementProps {
   reference?: Record<string, any> | undefined;
   floating?: Record<string, any> | undefined;
   item?: Record<string, any> | undefined;
+  trigger?: Record<string, any> | undefined;
 }
 
 export type UseFloatingReturn<RT extends ReferenceType = ReferenceType> = {
