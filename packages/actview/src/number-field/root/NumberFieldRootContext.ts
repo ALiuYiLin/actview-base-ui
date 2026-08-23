@@ -1,0 +1,45 @@
+import { createContext } from 'actview';
+import type { Ref } from 'actview';
+import type { NumberFieldRoot, NumberFieldRootState } from './NumberFieldRoot';
+import type { EventWithOptionalKeyState, IncrementValueParameters } from '../utils/types';
+
+export type InputMode = 'numeric' | 'decimal' | 'text';
+
+export interface NumberFieldRootContext {
+  minWithDefault: number;
+  maxWithDefault: number;
+  id: string | undefined;
+  setValue: (value: number | null, details: NumberFieldRoot.ChangeEventDetails) => boolean;
+  getStepAmount: (event?: EventWithOptionalKeyState) => number;
+  incrementValue: (amount: number, params: IncrementValueParameters) => boolean;
+  inputRef: {current: HTMLInputElement | null};
+  allowInputSyncRef: {current: boolean | null};
+  formatOptionsRef: {current: Intl.NumberFormatOptions | undefined};
+  valueRef: {current: number | null};
+  lastChangedValueRef: {current: number | null};
+  hasPendingCommitRef: {current: boolean};
+  name: string | undefined;
+  nameProp: string | undefined;
+  inputMode: InputMode;
+  getAllowedNonNumericKeys: () => Set<string>;
+  min: number | undefined;
+  max: number | undefined;
+  setInputValue: (value: string) => void;
+  locale: Intl.LocalesArgument;
+  setIsScrubbing: (value: boolean) => void;
+  state: NumberFieldRootState;
+  onValueCommitted: (value: number | null, eventDetails: NumberFieldRoot.CommitEventDetails) => void;
+}
+
+export const NumberFieldRootContext = createContext<NumberFieldRootContext | undefined>(undefined);
+
+export function useNumberFieldRootContext(): Ref<NumberFieldRootContext> {
+  const context = NumberFieldRootContext.use();
+  if (context.value === undefined) {
+    throw new Error(
+      'Base UI: NumberFieldRootContext is missing. NumberField parts must be placed within <NumberField.Root>.',
+    );
+  }
+
+  return context as unknown as Ref<NumberFieldRootContext>;
+}
