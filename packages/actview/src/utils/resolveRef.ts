@@ -1,6 +1,6 @@
 /**
- * If the provided argument is a ref object, returns its `value` (actview) /
- * `current` (React 形状) value. Otherwise, returns the argument itself.
+ * If the provided argument is a ref object ({current} 或 {value}), returns its
+ * value. Otherwise, returns the argument itself.
  */
 export function resolveRef<T extends HTMLElement | null | undefined>(
   maybeRef: T | {current: T} | {value: T},
@@ -17,5 +17,5 @@ export function resolveRef<T extends HTMLElement | null | undefined>(
     return (maybeRef as {value: T}).value;
   }
 
-  return maybeRef;
+  return maybeRef as T;
 }

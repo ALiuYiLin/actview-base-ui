@@ -1,4 +1,5 @@
 import type { StateAttributesMapping } from '@/internals/getStateAttributesProps';
+import { transitionStatusMapping } from '@/internals/stateAttributesMapping';
 
 export enum CommonTriggerDataAttributes {
   /**
@@ -64,3 +65,12 @@ export const popupStateMapping = {
     return null;
   },
 } satisfies StateAttributesMapping<{open: boolean; anchorHidden: boolean}>;
+
+export const popupTransitionStateMapping = {
+  ...popupStateMapping,
+  ...transitionStatusMapping,
+} satisfies StateAttributesMapping<{
+  open: boolean;
+  anchorHidden: boolean;
+  transitionStatus: any;
+}>;

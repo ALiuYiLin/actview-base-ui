@@ -48,7 +48,7 @@ export interface UseOpenChangeCompleteParameters {
   /**
    * Ref to the element being closed.
    */
-  ref: Ref<HTMLElement | null>;
+  ref: Ref<HTMLElement | null> | {value: HTMLElement | null} | {current: HTMLElement | null};
   /**
    * Function to call when the animation completes (or there is no animation).
    */

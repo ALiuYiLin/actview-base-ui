@@ -23,6 +23,8 @@ export { useFocus } from './hooks/useFocus';
 export type { UseFocusProps } from './hooks/useFocus';
 export { useHoverReferenceInteraction } from './hooks/useHoverReferenceInteraction';
 export type { UseHoverReferenceInteractionProps } from './hooks/useHoverReferenceInteraction';
+export { useHoverFloatingInteraction } from './hooks/useHoverFloatingInteraction';
+export type { UseHoverFloatingInteractionProps } from './hooks/useHoverFloatingInteraction';
 export { useHoverInteractionSharedState } from './hooks/useHoverInteractionSharedState';
 export * from './utils';
 export type * from './types';
