@@ -157,6 +157,11 @@ export const PopoverTrigger = defineComponent(function PopoverTrigger(
       Object.assign(merged, stateAttributesMapping.open(isOpenedByThisTrigger.value));
       // 渲染期重算（propsList 在 setup 期构建，快照会过时）
       merged['aria-expanded'] = isOpenedByThisTrigger.value;
+      if (disabled) {
+        merged['data-disabled'] = '';
+      } else {
+        delete merged['data-disabled'];
+      }
       return merged;
     })();
 
