@@ -1,6 +1,7 @@
 import { defineProject } from 'vitest/config';
 import { actviewPlugin } from '@actview/plugin-vite';
 import actviewScopedPlugin from '@actview/plugin-scoped';
+import { playwright } from '@vitest/browser-playwright';
 import path from 'path';
 
 export default defineProject({
@@ -35,5 +36,13 @@ export default defineProject({
     setupFiles: ['./test/setupVitest.ts'],
     exclude: ['node_modules', 'build', '**/*.spec.*'],
     retry: process.env.CI ? 1 : 0,
+    // 双环境（对齐 floating-ui/actview）：默认 jsdom 跑 skipIf(!isJSDOM) 用例；
+    // VITEST_ENV=browser 时用 Playwright Chromium 跑 skipIf(isJSDOM) 用例
+    // （真实布局/动画帧/iframe 等）——两环境合起来零跳过。
+    browser: {
+      provider: playwright(),
+      enabled: process.env.VITEST_ENV === 'browser',
+      instances: [{ browser: 'chromium' }],
+    },
   },
 });

@@ -102,29 +102,32 @@
   },
   "scripts": {
     "test": "cross-env VITEST_ENV=jsdom vitest",
+    "test:run": "cross-env VITEST_ENV=jsdom vitest run",
+    "test:browser": "cross-env VITEST_ENV=browser vitest run",
     "typescript": "tsgo -b tsconfig.json"
   },
   "dependencies": {
     "@actview/core": "link:../../../actview/packages/core",
     "@actview/jsx": "link:../../../actview/packages/jsx",
     "@base-ui/actview-utils": "workspace:*",
+    "@floating-ui/actview": "link:../../../floating-ui/packages/actview",
     "@floating-ui/dom": "^1.7.4",
     "@floating-ui/utils": "^0.2.12",
     "actview": "link:../../../actview/packages/actview",
-    "clsx": "2.1.1",
-    "@floating-ui/actview": "link:../../../floating-ui/packages/actview"
+    "clsx": "2.1.1"
   },
   "devDependencies": {
+    "@actview/plugin-scoped": "link:../../../actview/plugins/scoped",
     "@actview/plugin-vite": "link:../../../actview/plugins/vite",
     "@actview/testing": "link:../../../actview/packages/testing",
     "@date-fns/tz": "1.4.1",
-    "@testing-library/jest-dom": "6.9.1",
-    "@types/luxon": "3.7.1",
-    "date-fns": "4.1.0",
-    "luxon": "3.7.2",
     "@testing-library/dom": "^10.4.0",
+    "@testing-library/jest-dom": "6.9.1",
     "@testing-library/user-event": "^14.6.1",
-    "@actview/plugin-scoped": "link:../../../actview/plugins/scoped"
+    "@types/luxon": "3.7.1",
+    "@vitest/browser-playwright": "4.1.10",
+    "date-fns": "4.1.0",
+    "luxon": "3.7.2"
   },
   "peerDependencies": {
     "@date-fns/tz": "^1.2.0",

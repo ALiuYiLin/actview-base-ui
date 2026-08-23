@@ -3,6 +3,10 @@ import '@testing-library/jest-dom/vitest';
 import { reset as resetError } from '@base-ui/actview-utils/error';
 import { resetAnimationFrameScheduler } from '@base-ui/actview-utils/useAnimationFrame';
 import { cleanup } from '@actview/testing';
+// rtl（floating-ui 迁移测试层）自行创建的挂载容器（id="testing-N"）与
+// portal 节点，@actview/testing 的 cleanup 不负责移除；用例间必须清理，
+// 否则残留容器里的 data-testid 会让后续 getByTestId 命中多个元素。
+import { cleanup as rtlCleanup } from './rtl';
 
 declare global {
   // eslint-disable-next-line vars-on-top
@@ -12,6 +16,7 @@ declare global {
 afterEach(() => {
   vi.resetAllMocks();
   cleanup();
+  rtlCleanup();
   resetError();
   resetAnimationFrameScheduler();
   globalThis.BASE_UI_ANIMATIONS_DISABLED = true;

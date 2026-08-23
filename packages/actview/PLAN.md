@@ -62,7 +62,12 @@ React hooks 层的 actview 移植，**API 形状与 React 版兼容**：
 |---|---|---|
 | `useHover.test.tsx` | ✅ 15 通过 / 1 跳过 | 已转译 |
 | `useListNavigation.test.tsx` | ✅ 60 通过 / 1 跳过 | 已转译；含 gridNavigation 移植、initial sync 单参（#2604）、isListIndexDisabled 守卫、Escape 分层关闭 + cross-close 父导航（克隆事件模拟 React 合成冒泡）、Escape+nested 跳过 animOut return、setupVitest rAF 同步化、EmojiPicker 非受控 input |
-| `FloatingFocusManager.test.tsx` | ⏳ 待转译 | base-ui 2689 行；上游 actview 版已有参考，需按 base-ui 变体（keepMounted/iframes/guards）逐用例处理 |
+| `FloatingFocusManager.test.tsx` | ✅ 59 通过 / 2 跳过 | 已转译；双环境（jsdom + browser，见下）合起来零跳过；仅 iframe 焦点导航 2 例对齐上游 `describe.skip`（actview 无 createRoot 等价物 + jsdom 跨文档 tab 行为差异，上游同样跳过） |
+
+> **双环境（对齐 floating-ui/actview 的 vite.config.mts）**：
+> - `pnpm test`（默认）：jsdom 环境——`skipIf(!isJSDOM)` 用例执行，`skipIf(isJSDOM)` 跳过
+> - `pnpm test:browser`（`TEST_ENV=browser`）：vitest browser mode + Playwright Chromium（`@vitest/browser-playwright`）——`skipIf(isJSDOM)` 用例执行（真实布局/动画帧/iframe/Shadow DOM 等 jsdom 无法模拟的能力），`skipIf(!isJSDOM)` 跳过
+> - 两环境合起来覆盖全部用例 → **一个都不跳过**（除框架能力确实缺失、React 版自身也跳过的用例）
 
 ### 1.4 RTL → ActView API 映射表
 
@@ -76,7 +81,7 @@ React hooks 层的 actview 移植，**API 形状与 React 版兼容**：
 | `waitFor`（~100 处） | `@actview/testing` waitFor | ✅ |
 | `flushMicrotasks`（~104 处） | `test-utils/flushMicrotasks`（`await nextTick()`） | ✅ |
 | `userEvent`（~160 处） | `@testing-library/user-event` 复用（加 devDep） | ✅ |
-| `vi.useFakeTimers` + `advanceTimersByTime`（useHover.test 16 处） | vitest 级 ✓；⚠️ 需确认 actview 版 useHover 内部计时走 `useTimeout`（setTimeout）而非 rAF，fake timers 才能拦截 | ⚠️ 迁移时实测 |
+| `vi.useFakeTimers` + `advanceTimersByTime`（useHover.test 16 处） | vitest 级 ✓；actview 版 useHover 计时走 `useTimeout`（setTimeout），fake timers 可拦截 | ✅ useHover 已转译通过（15\|1），fake timers 实测可用 |
 | `ReactDOMClient.createRoot(root).render(<App iframe={root} />)`（FFM iframe 场景） | `render(App, { iframe: root, container: iframeRoot })`（@actview/testing render 支持 container） | ⚠️ 需实测（actview 渲染管线是否绑定全局 document） |
 | `isJSDOM` + `describe.skipIf` | actview-utils/testUtils（#test-utils 已导出） | ✅ |
 | `useTestInteractions` | 转写为 actview `useInteractions`（等价替代，见 ③） | ✅ |
