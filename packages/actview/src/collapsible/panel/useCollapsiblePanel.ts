@@ -82,6 +82,9 @@ export function useCollapsiblePanel(
 
   const openValue = () => toValue(open) ?? false;
   const mountedValue = () => toValue(mounted);
+  const hiddenUntilFoundValue = () => toValue(hiddenUntilFound);
+  const keepMountedValue = () => toValue(keepMounted);
+  const idValue = () => toValue(idParam);
   const hidden = computed(() => !openValue() && !mountedValue());
   const panelTransitionStatus = computed(() =>
     forcePanelIdle.value ? 'idle' : (toValue(transitionStatus) as TransitionStatus),
@@ -108,7 +111,7 @@ export function useCollapsiblePanel(
   });
   const shouldPersistHiddenTransitionStyles = computed(
     () =>
-      hiddenUntilFound && hidden.value && animationTypeRef.value !== 'css-animation',
+      hiddenUntilFoundValue() && hidden.value && animationTypeRef.value !== 'css-animation',
   );
 
   // Most measured dimensions are reused later when CSS keyframe closes need a
@@ -369,17 +372,15 @@ export function useCollapsiblePanel(
   // legit string values to booleans so we have to force it back in the DOM
   // when necessary: https://github.com/react/react/issues/24740
   watch(
-    () => [hiddenUntilFound, hidden.value],
-    ([hiddenUntilFoundValue, hiddenValue]) => {
-      const panel = panelRef.value;
-
-      if (!panel || !hiddenUntilFoundValue || !hiddenValue) {
+    () => [panelRef.value, hiddenUntilFoundValue(), hidden.value],
+    ([panel, hiddenUntilFoundValueResult, hiddenValue]) => {
+      if (!panel || !hiddenUntilFoundValueResult || !hiddenValue) {
         return;
       }
 
       panel.setAttribute('hidden', 'until-found');
     },
-    {flush: 'post'},
+    {flush: 'post', immediate: true},
   );
 
   watch(
@@ -408,15 +409,18 @@ export function useCollapsiblePanel(
   );
 
   const shouldRender = computed(
-    () => keepMounted || hiddenUntilFound || mountedValue() || openValue(),
+    () => keepMountedValue() || hiddenUntilFoundValue() || mountedValue() || openValue(),
   );
 
   const getPanelProps = (): HTMLProps => ({
     ...(shouldPersistHiddenTransitionStyles.value
       ? {[CollapsiblePanelDataAttributes.startingStyle]: ''}
       : undefined),
-    hidden: hidden.value,
-    id: idParam,
+    // React 只支持 boolean hidden 属性，hiddenUntilFound 时靠 effect 强制
+    // setAttribute('until-found')；actview 渲染直接输出字符串值（渲染期读
+    // hiddenUntilFoundValue 保持响应），避免 setAttribute 被后续渲染覆盖。
+    hidden: (hidden.value ? (hiddenUntilFoundValue() ? 'until-found' : '') : undefined) as any,
+    id: idValue(),
   });
 
   return {
@@ -553,16 +557,16 @@ export interface UseCollapsiblePanelParameters {
    * Overrides the `keepMounted` prop and uses `hidden="until-found"`
    * to hide the element without removing it from the DOM.
    */
-  hiddenUntilFound: boolean;
+  hiddenUntilFound: MaybeRefOrGetter<boolean>;
   /**
    * The `id` attribute of the panel.
    */
-  id: string | undefined;
+  id: MaybeRefOrGetter<string | undefined>;
   /**
    * Whether to keep the element in the DOM while the panel is closed.
    * This prop is ignored when `hiddenUntilFound` is used.
    */
-  keepMounted: boolean;
+  keepMounted: MaybeRefOrGetter<boolean>;
   /**
    * Whether the collapsible panel is mounted for transition and hidden-state
    * purposes. This can be `false` while the element remains in the DOM when
@@ -588,3 +592,5 @@ export interface UseCollapsiblePanelReturnValue {
   transitionStatus: ComputedRef<TransitionStatus>;
   width: ComputedRef<number | undefined>;
 }
+
+

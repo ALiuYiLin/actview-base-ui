@@ -1,10 +1,9 @@
-import { defineComponent, useRootElement } from 'actview';
+import { defineComponent, toValue, useRootElement } from 'actview';
 import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
-import type { AccordionItemState } from '@/accordion/item/AccordionItemContext';
-import { useAccordionItemContext } from '@/accordion/item/AccordionItemContext';
-import { accordionStateAttributesMapping } from '@/accordion/item/stateAttributesMapping';
 import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
-import { mergeClassNames, mergeStyles } from '@/utils/mergeClassNames';
+import type { AccordionItemState } from '../item/AccordionItem';
+import { useAccordionItemContext } from '../item/AccordionItemContext';
+import { accordionStateAttributesMapping } from '../item/stateAttributesMapping';
 
 /**
  * A heading that labels the corresponding panel.
@@ -14,58 +13,43 @@ import { mergeClassNames, mergeStyles } from '@/utils/mergeClassNames';
  */
 export const AccordionHeader = defineComponent(function (componentProps: AccordionHeader.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  // 根是元素（<h3>）→ useRootElement()（MIGRATION.md case 6）：rootRef 经
-  // subTree.el 同步，恒为渲染根（render 分支/函数形态下也成立——conformance
-  // 的 ref 用例依赖此语义；手动 ref() 只在模板绑定处赋值，render 函数分支
-  // 用户覆盖 ref 时 rootRef 会停在 null）
   const rootRef = useRootElement();
-  // context hook 必须在 setup 顶层调用（AD-42）
-  const itemContext = useAccordionItemContext();
+  const {state} = toValue(useAccordionItemContext());
 
   // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
   return () => {
-    const { render, className, style, ...elementProps } = componentProps;
+    const {className, render, style, ...elementProps} = componentProps;
 
-    // state 纯对象：渲染期每次从 context 取最新值（非 computed）
-    const state: AccordionHeaderState = itemContext.value.state;
+    const stateValue = toValue(state);
+    const stateAttributes = getStateAttributesProps(stateValue, accordionStateAttributesMapping);
 
-    const stateAttributes = getStateAttributesProps(state, accordionStateAttributesMapping);
-
-    // merged 顺序对齐 React 契约：[stateAttributes, elementProps, {className, style}]
-    // （Object.assign 合并避免 Record<string,string> 索引签名污染字面量类型）
     const merged: HTMLProps = {};
-    Object.assign(merged, stateAttributes, elementProps);
+    Object.assign(merged, elementProps, stateAttributes);
     if (typeof className === 'function') {
-      merged.className = className(state);
+      merged.className = className(stateValue);
     } else if (className !== undefined) {
       merged.className = className;
     }
     if (typeof style === 'function') {
-      merged.style = style(state);
+      merged.style = style(stateValue);
     } else if (style !== undefined) {
       merged.style = style;
     }
 
-    // render 三形态（MIGRATION.md case 3：VNode 分支按 React 契约**合并**——
-    // className/style 提取后与 merged 合并（两者都保留），其余 props render
-    // 元素优先，ref 由组件兜底放最后）
     if (render) {
       if (typeof render === 'function') {
-        return render({ ...merged, ...state, ref: rootRef });
+        return render({...merged, ...stateValue, ref: rootRef});
       }
       const renderProps = render.props ?? {};
-      const { className: renderClassName, style: renderStyle, ...restRenderProps } = renderProps;
+      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
       const Tag = render.type as any;
-      return (
-        <Tag
-          key={render.key}
-          {...merged}
-          {...restRenderProps}
-          className={mergeClassNames(renderClassName, merged.className)}
-          style={mergeStyles(renderStyle, merged.style)}
-          ref={rootRef}
-        />
-      );
+      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
+      mergedRenderProps.className =
+        typeof merged.className === 'string' && typeof renderClassName === 'string'
+          ? `${merged.className} ${renderClassName}`.trim()
+          : (merged.className ?? renderClassName);
+      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
+      return <Tag key={render.key} {...mergedRenderProps} ref={rootRef} />;
     }
     return <h3 {...merged} ref={rootRef} />;
   };

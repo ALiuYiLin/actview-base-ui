@@ -1,5 +1,5 @@
 import { expect } from 'vitest';
-import { defineComponent } from 'actview';
+import { computed, defineComponent } from 'actview';
 import { AccordionHeader } from '@/accordion/header/AccordionHeader';
 import {
   AccordionItemContext,
@@ -9,17 +9,17 @@ import { createRenderer, describeConformance } from '#test-utils';
 
 const testContext: AccordionItemContextValue = {
   defaultTriggerId: undefined,
-  open: true,
-  state: {
+  open: computed(() => true),
+  state: computed(() => ({
     value: [],
     disabled: false,
-    orientation: 'horizontal',
+    orientation: 'horizontal' as const,
     hidden: false,
     index: 0,
     open: true,
-  },
+  })),
   setTriggerId: () => {},
-  triggerId: undefined,
+  triggerId: computed(() => undefined),
 };
 
 // React 原版用 <Accordion.Root><Accordion.Item>{node}</Accordion.Item></Accordion.Root> 包裹；
