@@ -299,7 +299,7 @@ export const MenuComponent = defineComponent(function (props: MenuProps & any) {
                         : isOpen.value
                           ? 'visible'
                           : 'hidden',
-                    } as any}
+                    }}
                     aria-hidden={!isOpen.value}
                     {...getFloatingProps()}
                   >

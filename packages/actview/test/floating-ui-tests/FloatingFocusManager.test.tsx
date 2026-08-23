@@ -173,8 +173,8 @@ const RadioApp = defineComponent(function () {
             <input
               type="radio"
               name="group"
+              defaultChecked
               data-testid="radio-two"
-              {...({ defaultChecked: true } as any)}
             />
             <button data-testid="after-radio">after</button>
           </div>
