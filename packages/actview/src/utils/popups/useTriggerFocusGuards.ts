@@ -34,7 +34,7 @@ interface TriggerFocusGuardStore {
  */
 export function useTriggerFocusGuards(
   store: TriggerFocusGuardStore,
-  triggerElementRef: {current: HTMLElement | null},
+  triggerElementRef: {value: HTMLElement | null},
 ) {
   const preFocusGuardRef = ref<HTMLElement | null>(null);
 
@@ -69,7 +69,7 @@ export function useTriggerFocusGuards(
       );
 
       let nextTabbable = getTabbableAfterElement(
-        store.context.triggerFocusTargetRef.value || triggerElementRef.current,
+        store.context.triggerFocusTargetRef.value || triggerElementRef.value,
       );
 
       while (nextTabbable !== null && contains(positionerElement, nextTabbable)) {
@@ -117,7 +117,7 @@ export function useTriggerFocusGuards(
       !isFocusInsidePopup &&
       !isFocusFromOpen &&
       !isFocusFromTriggerFocusTarget &&
-      (isTabFromPopupToTrigger || event.currentTarget === triggerElementRef.current)
+      (isTabFromPopupToTrigger || event.currentTarget === triggerElementRef.value)
     ) {
       // Focus left the popup via Tab; the popup should close.
       store.setOpen(

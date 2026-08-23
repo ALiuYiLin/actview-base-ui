@@ -563,7 +563,7 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
 
       const ancestors = tree ? getNodeAncestors(tree.nodesRef.current, getNodeId()) : [];
       const rootAncestorComboboxDomReference = ancestors.find((node) =>
-        isTypeableCombobox(node.context?.elements.domReference || null),
+        isTypeableCombobox((node.context?.elements.domReference as any)?.value || null),
       )?.context?.elements.domReference;
 
       const controlInsideElements = [

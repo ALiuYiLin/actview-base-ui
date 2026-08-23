@@ -1,4 +1,4 @@
-import { computed, defineComponent, toValue } from 'actview';
+import { computed, defineComponent, ref, toValue } from 'actview';
 import { mergePropsN } from '@/merge-props';
 import { EMPTY_OBJECT } from '@/utils/empty';
 import { safePolygon, useClick, useHoverReferenceInteraction } from '@/floating-ui-react';
@@ -63,9 +63,9 @@ export const MenuSubmenuTrigger = defineComponent(function MenuSubmenuTrigger(
     }
   };
 
-  const triggerElementRef = {current: null as HTMLElement | null};
+  const triggerElementRef = ref<HTMLElement | null>(null);
   const handleTriggerElementRef = (el: HTMLElement | null) => {
-    triggerElementRef.current = el;
+    triggerElementRef.value = el;
     store.set('activeTriggerElement', el as any);
   };
 
@@ -123,7 +123,7 @@ export const MenuSubmenuTrigger = defineComponent(function MenuSubmenuTrigger(
     restMs: delay,
     delay: {open: delay, close: closeDelay},
     shouldOpen: delay > 0 ? () => parentMenuStore.select('allowMouseEnter') : undefined,
-    triggerElementRef: triggerElementRef as unknown as {current: Element | null},
+    triggerElementRef: triggerElementRef as any,
     externalTree: floatingTreeRoot.value,
     isClosing: () => store.select('transitionStatus') === 'ending',
     guardStaleOpen: true,

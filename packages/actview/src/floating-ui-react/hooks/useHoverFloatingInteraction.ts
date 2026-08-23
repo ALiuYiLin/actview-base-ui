@@ -118,8 +118,8 @@ export function useHoverFloatingInteraction(
         const floatingEl = floatingElement.value;
         const doc = ownerDocument(floatingEl);
 
-        const parentFloating = tree?.nodesRef.current.find((node) => node.id === parentId)
-          ?.context?.elements.floating as HTMLElement | null;
+        const parentFloating = (tree?.nodesRef.current.find((node) => node.id === parentId)
+          ?.context?.elements.floating as any)?.value as HTMLElement | null;
 
         if (parentFloating) {
           parentFloating.style.pointerEvents = '';

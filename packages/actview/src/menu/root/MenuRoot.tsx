@@ -192,22 +192,18 @@ export const MenuRoot = defineComponent(function MenuRoot<Payload>(
       floatingParentNodeIdFromContext,
     ] as const,
     () => {
+      const updates: any = {
+        floatingNodeId: floatingNodeIdFromContext.value,
+        floatingParentNodeId: floatingParentNodeIdFromContext,
+      };
       if (contextMenuContext && !parentMenuRootContext) {
         // This is a context menu root.
-        store.update({
-          parent: {
-            type: 'context-menu',
-            context: contextMenuContext,
-          },
-          floatingNodeId: floatingNodeIdFromContext.value,
-          floatingParentNodeId: floatingParentNodeIdFromContext,
-        } as any);
-      } else if (parentMenuRootContext) {
-        store.update({
-          floatingNodeId: floatingNodeIdFromContext.value,
-          floatingParentNodeId: floatingParentNodeIdFromContext,
-        } as any);
+        updates.parent = {
+          type: 'context-menu',
+          context: contextMenuContext,
+        };
       }
+      store.update(updates);
     },
     {flush: 'post', immediate: true},
   );

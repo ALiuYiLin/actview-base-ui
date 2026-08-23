@@ -72,7 +72,7 @@ export const MenuTrigger = defineComponent(function MenuTrigger(
   const isOpenedByThisTrigger = store.useState('isOpenedByTrigger', thisTriggerId);
   const popupId = store.useState('triggerPopupId', thisTriggerId);
 
-  const triggerElementRef = {current: null as HTMLElement | null};
+  const triggerElementRef = ref<HTMLElement | null>(null);
 
   const parent = useMenuParent();
   const compositeRootContext = useCompositeRootContextForTrigger();
@@ -101,7 +101,7 @@ export const MenuTrigger = defineComponent(function MenuTrigger(
   const allowMouseUpTriggerTimeout = useTimeout();
 
   const handleDocumentMouseUp = useStableCallback((mouseEvent: MouseEvent) => {
-    if (!triggerElementRef.current) {
+    if (!triggerElementRef.value) {
       return;
     }
 
@@ -111,9 +111,9 @@ export const MenuTrigger = defineComponent(function MenuTrigger(
     const mouseUpTarget = mouseEvent.target as Element | null;
 
     if (
-      contains(triggerElementRef.current, mouseUpTarget) ||
+      contains(triggerElementRef.value, mouseUpTarget) ||
       contains(store.select('positionerElement'), mouseUpTarget) ||
-      mouseUpTarget === triggerElementRef.current
+      mouseUpTarget === triggerElementRef.value
     ) {
       return;
     }
@@ -122,7 +122,7 @@ export const MenuTrigger = defineComponent(function MenuTrigger(
       return;
     }
 
-    if (isMouseWithinBounds(mouseEvent, triggerElementRef.current)) {
+    if (isMouseWithinBounds(mouseEvent, triggerElementRef.value)) {
       return;
     }
 
@@ -136,7 +136,7 @@ export const MenuTrigger = defineComponent(function MenuTrigger(
         isOpenedByThisTrigger.value &&
         store.select('lastOpenChangeReason') === REASONS.triggerHover
       ) {
-        const doc = ownerDocument(triggerElementRef.current);
+        const doc = ownerDocument(triggerElementRef.value);
         doc.addEventListener('mouseup', handleDocumentMouseUp, {once: true});
       }
     },
@@ -214,7 +214,7 @@ export const MenuTrigger = defineComponent(function MenuTrigger(
 
   const refs = [
     (el: HTMLElement | null) => {
-      triggerElementRef.current = el;
+      triggerElementRef.value = el;
     },
     buttonRef,
     registerTrigger,

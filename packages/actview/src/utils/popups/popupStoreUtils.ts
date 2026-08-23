@@ -217,7 +217,7 @@ export function useTriggerDataForwarding<
   const Key extends keyof Omit<State, 'activeTriggerId' | 'activeTriggerElement'>,
 >(
   triggerId: string | undefined,
-  triggerElementRef: {current: Element | null},
+  triggerElementRef: {value: Element | null},
   store: PopupTriggerDataStore<State>,
   stateUpdates: Pick<State, Key>,
 ) {
@@ -265,20 +265,20 @@ export function useTriggerDataForwarding<
 
   // A stable ref does not re-fire on a store or id change, so migrate here instead.
   watch(
-    () => [store, triggerId, triggerElementRef.current] as const,
+    () => [store, triggerId, triggerElementRef.value] as const,
     () => {
-      registerTrigger(triggerElementRef.current);
+      registerTrigger(triggerElementRef.value);
       return () => registerTrigger(null);
     },
     {flush: 'post', immediate: true},
   );
 
   watch(
-    () => [isMountedByThisTrigger.value, store, triggerElementRef.current, ...Object.values(stateUpdates)] as const,
+    () => [isMountedByThisTrigger.value, store, triggerElementRef.value, ...Object.values(stateUpdates)] as const,
     () => {
       if (isMountedByThisTrigger.value) {
         const changes = {
-          activeTriggerElement: triggerElementRef.current,
+          activeTriggerElement: triggerElementRef.value,
           ...stateUpdates,
         } as Pick<Readonly<State>, Key | 'activeTriggerElement'>;
         store.update(changes);

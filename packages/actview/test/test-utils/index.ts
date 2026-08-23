@@ -2,6 +2,9 @@ export { default as createDescribe } from './createDescribe';
 export { flushMicrotasks } from './flushMicrotasks';
 export { randomStringValue } from './randomStringValue';
 export { screen } from './screen';
+export { createRenderer } from './createRenderer';
+export { describeConformance } from './describeConformance';
+export { isJSDOM } from './isJSDOM';
 
 /**
  * 编译期类型断言（对齐 React 版 #test-utils）：`expectType<T, typeof v>(v)`

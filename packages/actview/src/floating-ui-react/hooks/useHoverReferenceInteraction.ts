@@ -40,7 +40,7 @@ export interface UseHoverReferenceInteractionProps {
    * @default true
    */
   isActiveTrigger?: boolean | undefined;
-  triggerElementRef?: {current: Element | null} | undefined;
+  triggerElementRef?: {value: Element | null} | undefined;
   getHandleCloseContext?: (() => HandleCloseContextBase | null) | undefined;
   isClosing?: (() => boolean) | undefined;
   /**
@@ -55,7 +55,7 @@ export interface UseHoverReferenceInteractionProps {
   guardStaleOpen?: boolean | undefined;
 }
 
-const EMPTY_REF: {current: Element | null} = {current: null};
+const EMPTY_REF: {value: Element | null} = {value: null};
 
 /**
  * Provides hover interactions that should be attached to reference or trigger
@@ -201,7 +201,7 @@ export function useHoverReferenceInteraction(
       mouseOnly,
       move,
       restMsRef,
-      triggerElementRef,
+      triggerElementRef.value,
       tree,
       enabledRef,
       getHandleCloseContext,
@@ -229,7 +229,7 @@ export function useHoverReferenceInteraction(
       }
 
       const trigger =
-        (triggerElementRef.current as HTMLElement | null) ??
+        (triggerElementRef.value as HTMLElement | null) ??
         (isActiveTrigger ? (store.select('domReferenceElement') as HTMLElement | null) : null);
 
       if (!isElement(trigger)) {
@@ -345,7 +345,7 @@ export function useHoverReferenceInteraction(
             instance.openChangeTimeout.clear();
           }
 
-          const currentTrigger = triggerElementRef.current;
+          const currentTrigger = triggerElementRef.value;
 
           instance.handler = handleCloseRef.current({
             ...handleCloseContextBase,
