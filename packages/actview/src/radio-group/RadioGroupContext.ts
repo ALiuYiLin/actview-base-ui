@@ -1,5 +1,5 @@
 import { createContext } from 'actview';
-import type { Ref } from 'actview';
+import type { ComputedRef, Ref } from 'actview';
 import type { UseFieldValidationReturnValue } from '@/field/root/useFieldValidation';
 import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import type { BaseUIEventReasons } from '@/internals/reasons';
@@ -10,7 +10,7 @@ export interface RadioGroupContext<Value> {
   required: boolean | undefined;
   form: string | undefined;
   name: string | undefined;
-  checkedValue: Value | undefined;
+  checkedValue: ComputedRef<Value | undefined>;
   setCheckedValue: (
     value: Value,
     eventDetails: BaseUIChangeEventDetails<BaseUIEventReasons['none']>,

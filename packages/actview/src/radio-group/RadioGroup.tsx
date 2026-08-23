@@ -193,7 +193,7 @@ export const RadioGroup = defineComponent(function <Value>(componentProps: Radio
   const ariaLabelledby = labelId.value ?? fieldsetContext?.legendId;
 
   const contextValue: RadioGroupContext<Value> = {
-    checkedValue: checkedValue.value,
+    checkedValue,
     disabled,
     form,
     validation,
