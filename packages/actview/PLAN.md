@@ -56,6 +56,14 @@ React hooks 层的 actview 移植，**API 形状与 React 版兼容**：
 - 3 个 `.test.tsx` 转写 + 11 个夹具转写（CSS `?scoped` + React hooks → actview 响应式）
 - 附：上游 `@floating-ui/vue` 仅 7 文件 / 374 行，只提供定位（`useFloating` + `arrow`），交互层全在 React 版（46 文件 / 7588 行）——**交互 hooks 无法从 Vue 版借鉴**，只能从 React 版移植
 
+##### ④ 进度（截至 useListNavigation 深修完成）
+
+| 测试文件 | 状态 | 说明 |
+|---|---|---|
+| `useHover.test.tsx` | ✅ 15 通过 / 1 跳过 | 已转译 |
+| `useListNavigation.test.tsx` | ✅ 60 通过 / 1 跳过 | 已转译；含 gridNavigation 移植、initial sync 单参（#2604）、isListIndexDisabled 守卫、Escape 分层关闭 + cross-close 父导航（克隆事件模拟 React 合成冒泡）、Escape+nested 跳过 animOut return、setupVitest rAF 同步化、EmojiPicker 非受控 input |
+| `FloatingFocusManager.test.tsx` | ⏳ 待转译 | base-ui 2689 行；上游 actview 版已有参考，需按 base-ui 变体（keepMounted/iframes/guards）逐用例处理 |
+
 ### 1.4 RTL → ActView API 映射表
 
 | React Testing Library（三个测试实际用法） | ActView 对应 | 状态 |
