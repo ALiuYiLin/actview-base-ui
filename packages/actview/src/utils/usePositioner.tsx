@@ -1,34 +1,36 @@
+import { toValue } from 'actview';
 import { popupStateMapping } from './popupStateMapping';
 import { getDisabledMountTransitionStyles } from '@/internals/getDisabledMountTransitionStyles';
 import type { TransitionStatus } from '@/internals/useTransitionStatus';
 
 interface UsePositionerOptions {
   styles: any;
-  transitionStatus: TransitionStatus;
+  transitionStatus: any;
   props?: any | undefined;
   refs?: any[] | undefined;
-  hidden?: boolean | undefined;
-  inert?: boolean | undefined;
+  hidden?: boolean | any | undefined;
+  inert?: boolean | any | undefined;
 }
 
 /**
  * Renders the shared outer Positioner element used by popup components.
- * (actview 版：直接构造元素，替代 useRenderElement。)
+ * (actview 版：直接构造元素；hidden/inert/styles 在渲染期 toValue 求值，
+ * 支持 ref/computed——keepMounted 时 setup 快照不会过时。)
  */
 export function usePositioner<State extends Record<string, any>>(
   componentProps: any,
   state: State,
   {styles, transitionStatus, props, refs, hidden, inert = false}: UsePositionerOptions,
 ) {
-  const style: any = {...(styles.value ?? styles)};
-
-  if (inert) {
-    style.pointerEvents = 'none';
-  }
-
   return () => {
     const {render, className, style: styleProp, ...elementProps} = componentProps;
     const stateValue = toState(state);
+
+    const style: any = {...(toValue(styles) ?? {})};
+
+    if (toValue(inert)) {
+      style.pointerEvents = 'none';
+    }
 
     const attributes: Record<string, string> = {};
     const mapping: any = popupStateMapping;
@@ -43,13 +45,13 @@ export function usePositioner<State extends Record<string, any>>(
 
     const merged: any = {
       role: 'presentation',
-      hidden,
+      hidden: toValue(hidden),
       style: {...style, ...(styleProp ?? {})},
       ...elementProps,
       ...attributes,
     };
 
-    Object.assign(merged, getDisabledMountTransitionStyles(transitionStatus));
+    Object.assign(merged, getDisabledMountTransitionStyles(toValue(transitionStatus)));
 
     if (props) {
       Object.assign(merged, typeof props === 'function' ? props(merged) : props);

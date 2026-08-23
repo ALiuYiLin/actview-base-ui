@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { Menu } from '@/menu';
+import { ToolbarRootContext } from '@/toolbar/root/ToolbarRootContext';
 import { render, screen, fireEvent, act } from '#test-utils/rtl';
 
 async function settle() {
@@ -65,8 +66,6 @@ describe('<Menu.Popup /> finalFocus', () => {
     const targetRef: {current: HTMLElement | null} = {current: null};
     await openAndCloseMenu({finalFocus: () => targetRef.current}, targetRef);
 
-    // eslint-disable-next-line no-console
-    console.log('[debug] targetRef.current:', targetRef.current?.tagName, 'input in dom:', !!screen.queryByTestId('input-to-focus'));
     const inputToFocus = screen.getByTestId('input-to-focus');
     expect(inputToFocus).toHaveFocus();
   });
@@ -77,5 +76,51 @@ describe('<Menu.Popup /> finalFocus', () => {
 
     const inputToFocus = screen.getByTestId('input-to-focus');
     expect(inputToFocus).not.toHaveFocus();
+  });
+
+  it('should move focus to trigger when finalFocus returns true', async () => {
+    await openAndCloseMenu({finalFocus: () => true});
+
+    const trigger = screen.getByRole('button', {name: 'Open'});
+    expect(trigger).toHaveFocus();
+  });
+
+  it('uses default behavior when finalFocus returns null', async () => {
+    await openAndCloseMenu({finalFocus: () => null});
+
+    const trigger = screen.getByRole('button', {name: 'Open'});
+    expect(trigger).toHaveFocus();
+  });
+});
+
+describe('<Menu.Popup /> toolbar', () => {
+  it('stops toolbar navigation keys without blocking ordinary key events', async () => {
+    const onParentKeyDown = vi.fn();
+
+    await render(
+      <ToolbarRootContext.Provider value={{disabled: false, orientation: 'horizontal' as any}}>
+        <div onKeyDown={onParentKeyDown}>
+          <Menu.Root>
+            <Menu.Portal keepMounted>
+              <Menu.Positioner>
+                <Menu.Popup data-testid="popup" />
+              </Menu.Positioner>
+            </Menu.Portal>
+          </Menu.Root>
+        </div>
+      </ToolbarRootContext.Provider>,
+    );
+    await settle();
+
+    const popup = screen.getByTestId('popup');
+    fireEvent(
+      popup,
+      new KeyboardEvent('keydown', {bubbles: true, cancelable: true, key: 'ArrowRight'}),
+    );
+    expect(onParentKeyDown).not.toHaveBeenCalled();
+
+    fireEvent(popup, new KeyboardEvent('keydown', {bubbles: true, cancelable: true, key: 'F1'}));
+    expect(onParentKeyDown).toHaveBeenCalled();
+    expect(onParentKeyDown.mock.calls.every(([event]) => event.key === 'F1')).toBe(true);
   });
 });

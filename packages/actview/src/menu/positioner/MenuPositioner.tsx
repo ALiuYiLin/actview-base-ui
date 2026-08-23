@@ -307,11 +307,12 @@ export const MenuPositioner = defineComponent(function MenuPositioner(
 
   const element = usePositioner(componentProps as any, state() as any, {
     styles: positioner.positionerStyles,
-    transitionStatus: transitionStatus.value,
+    transitionStatus,
     props: {} as any,
     refs: [store.useStateSetter('positionerElement')],
-    hidden: !mounted.value,
-    inert: !open.value,
+    // 传 getter（渲染期 toValue 求值）：keepMounted 时 setup 快照会过时
+    hidden: () => !mounted.value,
+    inert: () => !open.value,
   }) as any;
 
   const shouldRenderBackdrop = () =>

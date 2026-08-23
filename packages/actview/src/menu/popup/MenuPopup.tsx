@@ -13,6 +13,7 @@ import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
 import { COMPOSITE_KEYS } from '@/internals/composite/composite';
 import { getDisabledMountTransitionStyles } from '@/internals/getDisabledMountTransitionStyles';
+import { useToolbarRootContext } from '@/toolbar/root/ToolbarRootContext';
 
 /**
  * A container for the menu items.
@@ -27,6 +28,7 @@ export const MenuPopup = defineComponent(function MenuPopup(componentProps: Menu
 
   const {store} = useMenuRootContext();
   const positionerContext = useMenuPositionerContext();
+  const toolbarContextRef = useToolbarRootContext(true);
   const {side, align} = positionerContext.value ?? {
     side: 'bottom' as const,
     align: 'start' as const,
@@ -105,7 +107,7 @@ export const MenuPopup = defineComponent(function MenuPopup(componentProps: Menu
       popupProps.value,
       {
         onKeyDown(event: any) {
-          if (insideToolbar && COMPOSITE_KEYS.has(event.key)) {
+          if (toolbarContextRef.value && COMPOSITE_KEYS.has(event.key)) {
             event.stopPropagation();
           }
         },
@@ -178,9 +180,6 @@ export const MenuPopup = defineComponent(function MenuPopup(componentProps: Menu
     );
   };
 });
-
-// 简化：actview 无 useToolbarRootContext 的 menubar 场景，insideToolbar 恒 false
-const insideToolbar = false;
 
 import { useTreeCloseEvents } from './useTreeCloseEvents';
 
