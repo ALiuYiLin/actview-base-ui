@@ -3,3 +3,6 @@ export { MenuStore, createNullMenuStore } from './store/MenuStore';
 export { MenuHandle, createMenuHandle } from './store/MenuHandle';
 export { MenuTrigger as Trigger } from './trigger/MenuTrigger';
 export { MenuItem as Item } from './item/MenuItem';
+export { MenuPopup as Popup } from './popup/MenuPopup';
+export { MenuPortal as Portal } from './portal/MenuPortal';
+export { MenuPositioner as Positioner } from './positioner/MenuPositioner';

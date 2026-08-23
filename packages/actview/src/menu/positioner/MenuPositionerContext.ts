@@ -5,7 +5,7 @@ export type MenuPositionerContext = {
   nodeId: string | undefined;
   side: 'top' | 'bottom' | 'left' | 'right' | 'inline-end' | 'inline-start';
   align: 'start' | 'center' | 'end';
-  arrowRef: {current: HTMLDivElement | null};
+  arrowRef: {current: Element | null};
   arrowUncentered: boolean;
   arrowStyles: any;
   context: {
