@@ -20,8 +20,11 @@ afterEach(() => {
 globalThis.BASE_UI_ANIMATIONS_DISABLED = true;
 
 if (typeof window !== 'undefined' && window?.navigator?.userAgent?.includes('jsdom')) {
+  // 与 floating-ui/actview 的 setupTests.ts 对齐：rAF 同步执行（floating-ui
+  // 的 useListNavigation/enqueueFocus 依赖同步 rAF 完成打开时的焦点同步；
+  // 异步 setTimeout 会导致嵌套菜单打开后首项未聚焦的时序失败）。
   globalThis.requestAnimationFrame = (cb) => {
-    setTimeout(() => cb(0), 0);
+    cb(0);
     return 0;
   };
 }

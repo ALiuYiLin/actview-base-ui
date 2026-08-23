@@ -8,6 +8,7 @@ import {
   useListNavigation,
 } from '@floating-ui/actview';
 import './ComplexGrid.css?scoped';
+import { gridNavigationWithColumns } from './gridNavigationWithColumns';
 
 interface Props {
   orientation?: 'horizontal' | 'both';
@@ -45,7 +46,7 @@ export const Main = defineComponent(function (props: Props) {
       onNavigate: (i) => {
         activeIndex.value = i;
       },
-      cols: 7,
+      grid: gridNavigationWithColumns(7),
       orientation: props.orientation ?? 'horizontal',
       loop: props.loopFocus ?? false,
       rtl: props.rtl ?? false,

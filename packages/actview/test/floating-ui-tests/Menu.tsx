@@ -292,11 +292,7 @@ export const MenuComponent = defineComponent(function (props: MenuProps & any) {
                     style={{
                       ...floatingStyles.value,
                       '--cols': GRID_COLUMN_COUNT,
-                      visibility: !keepMounted
-                        ? undefined
-                        : isOpen.value
-                          ? 'visible'
-                          : 'hidden',
+                      visibility: keepMounted ? 'visible' : undefined,
                     } as any}
                     aria-hidden={!isOpen.value}
                     {...getFloatingProps()}

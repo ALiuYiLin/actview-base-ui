@@ -11,6 +11,7 @@ import {
 // 样式隔离：import 带 ?scoped 即开启（@actview/plugin-scoped），本文件所有
 // JSX 元素自动注入 data-v-<hash>，Grid.css 选择器同步追加属性选择器。
 import './Grid.css?scoped';
+import { gridNavigationWithColumns } from './gridNavigationWithColumns';
 
 interface Props {
   orientation?: 'horizontal' | 'both';
@@ -42,7 +43,7 @@ export const Main = defineComponent(function (props: Props) {
       onNavigate: (i) => {
         activeIndex.value = i;
       },
-      cols: 5,
+      grid: gridNavigationWithColumns(5),
       orientation: props.orientation ?? 'horizontal',
       loop: props.loopFocus ?? false,
       openOnArrowKeyDown: false,

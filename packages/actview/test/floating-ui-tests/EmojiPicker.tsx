@@ -11,6 +11,7 @@ import {
   useListNavigation,
 } from '@floating-ui/actview';
 import { Button } from './Button';
+import { gridNavigationWithColumns } from './gridNavigationWithColumns';
 import './EmojiPicker.css?scoped';
 
 const emojis = [
@@ -110,12 +111,12 @@ export const Main = defineComponent(function () {
         activeIndex.value = i;
       },
       activeIndex,
-      cols: 3,
       orientation: 'horizontal',
       loop: true,
       focusItemOnOpen: false,
       virtual: true,
       allowEscape: true,
+      grid: gridNavigationWithColumns(3),
     }),
   ]);
 
@@ -131,7 +132,7 @@ export const Main = defineComponent(function () {
 
   const filteredEmojis = computed(() =>
     emojis.filter(({ name }) =>
-      name.toLocaleLowerCase().includes(search.value.toLocaleLowerCase()),
+      name.toLocaleLowerCase().includes(String(search.value || '').toLocaleLowerCase()),
     ),
   );
 
@@ -209,7 +210,6 @@ export const Main = defineComponent(function () {
                     <input
                       className="Input"
                       placeholder="Search emoji"
-                      value={search.value}
                       aria-controls={
                         filtered.length === 0 ? noResultsId.value : undefined
                       }
