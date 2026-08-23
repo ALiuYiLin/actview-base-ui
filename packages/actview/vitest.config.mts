@@ -9,10 +9,19 @@ export default defineProject({
     alias: {
       '@': path.resolve(__dirname, 'src'),
       '#': path.resolve(__dirname),
+      // @floating-ui/actview 走源码（vite 转译）——与 floating-ui/actview
+      // 自身测试一致（其测试直接 import src）；dist 仅用于包解析/类型。
+      '@floating-ui/actview/utils': path.resolve(
+        'E:/code3/floating-ui/packages/actview/src/utils.ts',
+      ),
+      '@floating-ui/actview': path.resolve(
+        'E:/code3/floating-ui/packages/actview/src/index.ts',
+      ),
     },
   },
   define: {
     'process.env.NODE_ENV': JSON.stringify('test'),
+    __DEV__: 'true',
   },
   test: {
     globals: true,
