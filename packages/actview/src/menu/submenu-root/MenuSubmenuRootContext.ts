@@ -1,5 +1,4 @@
 import { createContext } from 'actview';
-import type { Ref } from 'actview';
 import type { MenuStore } from '../store/MenuStore';
 
 export const MenuSubmenuRootContext = createContext<MenuSubmenuRootContext | undefined>(
@@ -11,5 +10,6 @@ export interface MenuSubmenuRootContext {
 }
 
 export function useMenuSubmenuRootContext(): MenuSubmenuRootContext | undefined {
-  return MenuSubmenuRootContext.use().value;
+  const context = MenuSubmenuRootContext.use();
+  return context.value;
 }

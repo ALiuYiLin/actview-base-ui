@@ -1,4 +1,5 @@
 import { defineComponent, toValue } from 'actview';
+import { mergePropsN } from '@/merge-props';
 import type { InteractionType } from '@/utils/useEnhancedClickHandler';
 import { FloatingFocusManager, useHoverFloatingInteraction } from '@/floating-ui-react';
 import { useMenuRootContext } from '../root/MenuRootContext';
@@ -100,8 +101,7 @@ export const MenuPopup = defineComponent(function MenuPopup(componentProps: Menu
       attributes['data-ending-style'] = '';
     }
 
-    const merged: any = {};
-    for (const prop of [
+    const merged: any = mergePropsN<any>([
       popupProps.value,
       {
         onKeyDown(event: any) {
@@ -113,10 +113,7 @@ export const MenuPopup = defineComponent(function MenuPopup(componentProps: Menu
       getDisabledMountTransitionStyles(transitionStatus.value),
       elementProps,
       {'data-rootownerid': rootId.value},
-    ]) {
-      const resolved = typeof prop === 'function' ? prop(merged) : prop;
-      Object.assign(merged, resolved);
-    }
+    ]);
     Object.assign(merged, attributes);
 
     const mergedRefs = (el: HTMLElement | null) => {

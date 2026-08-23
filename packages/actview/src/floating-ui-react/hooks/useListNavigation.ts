@@ -466,7 +466,7 @@ export function useListNavigation(
       const parent = nodes.find((node) => node.id === parentId)?.context?.elements.floating;
       const activeEl = activeElement(ownerDocument(domReferenceElement.value ?? parent ?? null));
       const treeContainsActiveEl = nodes.some(
-        (node) => node.context && contains(node.context.elements.floating, activeEl),
+        (node) => node.context && contains((node.context.elements.floating as any)?.value, activeEl),
       );
 
       if (parent && !treeContainsActiveEl && isPointerModalityRef.current) {

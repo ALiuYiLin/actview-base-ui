@@ -41,19 +41,31 @@ function unwrapHost(node: Node | null): Element | null {
 const correctElements = (parent: HTMLElement, targets: Element[]): Element[] =>
   targets
     .map((target) => {
-      if (parent.contains(target)) {
-        return target;
+      if (typeof (target as any)?.nodeType !== 'number') {
+        // 防御：Ref/对象混入 targets（actview 转译常见），unwrap 或跳过。
+        const resolved = (target as any)?.value ?? (target as any)?.current;
+        if (resolved && typeof resolved.nodeType === 'number') {
+          return correctElement(parent, resolved);
+        }
+        return null;
       }
-
-      const correctedTarget = unwrapHost(target);
-
-      if (parent.contains(correctedTarget)) {
-        return correctedTarget;
-      }
-
-      return null;
+      return correctElement(parent, target);
     })
     .filter((x): x is Element => x != null);
+
+function correctElement(parent: HTMLElement, target: Element): Element | null {
+  if (parent.contains(target)) {
+    return target;
+  }
+
+  const correctedTarget = unwrapHost(target);
+
+  if (parent.contains(correctedTarget)) {
+    return correctedTarget;
+  }
+
+  return null;
+}
 
 const buildKeepSet = (targets: Element[]): Set<Node> => {
   const keep = new Set<Node>();

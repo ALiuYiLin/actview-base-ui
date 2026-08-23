@@ -21,6 +21,10 @@ export const MenuPortal = defineComponent(function MenuPortal(props: MenuPortal.
 
   return () => {
     const shouldRender = mounted.value || keepMounted;
+    if ((globalThis as any).__DSH_PORTAL_DEBUG) {
+      // eslint-disable-next-line no-console
+      console.log('[MenuPortal] mounted', mounted.value, 'keepMounted', keepMounted);
+    }
     if (!shouldRender) {
       return null;
     }

@@ -59,7 +59,7 @@ function useFloatingWithStore(
       floating: floatingElement,
       ...(positionReference.value && {reference: positionReference.value as any}),
     },
-  });
+  } as any);
 
   const localDomReferenceElement = isElement(localDomReference.value)
     ? (localDomReference.value as Element)

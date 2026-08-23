@@ -1,4 +1,5 @@
-import { onUnmounted, ref, watch } from 'actview';
+import { onUnmounted, ref, toValue, watch } from 'actview';
+import type { Ref } from 'actview';
 import type { ReactStore } from '@/internals/store/ReactStore';
 import { useStableCallback } from '@/utils/useStableCallback';
 import { useId } from '@/utils/useId';
@@ -381,7 +382,7 @@ export function getActiveTriggerId(store: PopupTriggerDataStore<PopupStoreState<
  * Sets up the transition status listeners and handles unmounting when needed.
  */
 export function useOpenStateTransitions<State extends PopupStoreState<unknown>>(
-  open: boolean,
+  open: boolean | Ref<boolean>,
   store: ReactStoreType<State>,
   onUnmount?: () => void,
 ) {
@@ -391,11 +392,29 @@ export function useOpenStateTransitions<State extends PopupStoreState<unknown>>(
   // reads the synchronized value on the same pass.
   const syncedPreventUnmountingOnClose = open ? false : preventUnmountingOnClose.value;
 
-  store.useSyncedValues({
-    mounted: mounted.value,
-    transitionStatus: transitionStatus.value,
-    preventUnmountingOnClose: syncedPreventUnmountingOnClose,
-  } as any);
+  // mounted / transitionStatus 是响应式 ref（useTransitionStatus 内部），
+  // useSyncedValues 的对象快照无法跟踪——这里逐个 watch 同步到 store。
+  watch(
+    () => mounted.value,
+    () => {
+      store.set('mounted', mounted.value);
+    },
+    {flush: 'post', immediate: true},
+  );
+  watch(
+    () => transitionStatus.value,
+    () => {
+      store.set('transitionStatus', transitionStatus.value);
+    },
+    {flush: 'post', immediate: true},
+  );
+  watch(
+    () => syncedPreventUnmountingOnClose,
+    () => {
+      store.set('preventUnmountingOnClose', syncedPreventUnmountingOnClose);
+    },
+    {flush: 'post', immediate: true},
+  );
 
   const forceUnmount = useStableCallback(() => {
     setMounted(false);
@@ -410,11 +429,11 @@ export function useOpenStateTransitions<State extends PopupStoreState<unknown>>(
   });
 
   useOpenChangeComplete({
-    enabled: () => mounted.value && !open && !syncedPreventUnmountingOnClose,
+    enabled: () => mounted.value && !toValue(open) && !syncedPreventUnmountingOnClose,
     open,
     ref: store.context.popupRef as any,
     onComplete() {
-      if (!open) {
+      if (!toValue(open)) {
         forceUnmount();
       }
     },

@@ -217,7 +217,7 @@ export function useHoverFloatingInteraction(
           currentNodeId &&
           isElement(relatedTarget) &&
           getNodeChildren(tree.nodesRef.current, currentNodeId, false).some((node) =>
-            contains(node.context?.elements.floating, relatedTarget),
+            contains((node.context?.elements.floating as any)?.value, relatedTarget),
           );
 
         if (isMovingIntoDescendantFloating) {

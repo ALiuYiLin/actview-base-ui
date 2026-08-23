@@ -26,6 +26,14 @@ export type { UseHoverReferenceInteractionProps } from './hooks/useHoverReferenc
 export { useHoverFloatingInteraction } from './hooks/useHoverFloatingInteraction';
 export type { UseHoverFloatingInteractionProps } from './hooks/useHoverFloatingInteraction';
 export { useHoverInteractionSharedState } from './hooks/useHoverInteractionSharedState';
+export { FloatingFocusManager } from './components/FloatingFocusManager';
+export type { FloatingFocusManagerProps } from './components/FloatingFocusManager';
+export {
+  FloatingPortal,
+  FloatingPortalContext,
+  usePortalContext,
+} from './components/FloatingPortal';
+export type { PortalContextValue } from './components/FloatingPortal';
 export * from './utils';
 export type * from './types';
 
@@ -35,10 +43,8 @@ export {
   CompositeItem,
   FloatingArrow,
   FloatingDelayGroup,
-  FloatingFocusManager,
   FloatingList,
   FloatingOverlay,
-  FloatingPortal,
   useClick as useFloatingUiClick,
   useClientPoint,
   useDelayGroup,

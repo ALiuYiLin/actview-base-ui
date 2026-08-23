@@ -1,4 +1,6 @@
 import { ReactStore } from '@/internals/store/ReactStore';
+import { computed } from 'actview';
+import type { ComputedRef, Ref } from 'actview';
 import type { FloatingEvents, ReferenceType } from '../types';
 import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import { createEventEmitter } from '../utils/createEventEmitter';
@@ -72,6 +74,7 @@ export class FloatingRootStore extends ReactStore<
   constructor(options: FloatingRootStoreOptions) {
     const {syncOnly, nested, onOpenChange, triggerElements, ...initialState} = options;
 
+    const contextData = {};
     super(
       {
         ...initialState,
@@ -80,7 +83,9 @@ export class FloatingRootStore extends ReactStore<
       },
       {
         onOpenChange,
-        dataRef: {current: {}},
+        // current/value 指向同一对象：MenuStore 侧用 .current，
+        // @floating-ui/actview 的 useFloating 用 .value，两者互相可见。
+        dataRef: {current: contextData, value: contextData} as any,
         events: createEventEmitter(),
         nested,
         triggerElements,
@@ -89,6 +94,35 @@ export class FloatingRootStore extends ReactStore<
     );
 
     this.syncOnly = syncOnly;
+
+    // actview useFloating（@floating-ui/actview）读取 rootContext.elements：
+    // {reference, floating, domReference} 均为 Ref（.value 读取）。
+    this.elements = {
+      reference: computed(() => this.select('referenceElement')) as Ref<ReferenceType | null>,
+      floating: computed(() => this.select('floatingElement')) as Ref<HTMLElement | null>,
+      domReference: computed(() => this.select('domReferenceElement')) as Ref<Element | null>,
+    };
+  }
+  readonly elements: {
+    reference: Ref<ReferenceType | null>;
+    floating: Ref<HTMLElement | null>;
+    domReference: Ref<Element | null>;
+  };
+
+  /**
+   * Direct-property aliases matching @floating-ui/actview's FloatingRootContext surface:
+   * actview useFloating reads `rootContext.dataRef`, `rootContext.events`, etc. directly.
+   */
+  get dataRef() {
+    return this.context.dataRef;
+  }
+
+  get events() {
+    return this.context.events;
+  }
+
+  get floatingId() {
+    return this.state.floatingId;
   }
 
   /**

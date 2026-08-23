@@ -30,7 +30,7 @@ import { useMenubarContext } from '@/menubar/MenubarContext';
 import type { MenuParent } from '../root/MenuRoot';
 import { PATIENT_CLICK_THRESHOLD } from '@/internals/constants';
 import { FocusGuard } from '@/utils/FocusGuard';
-import { mergeProps } from '@/merge-props';
+import { mergeProps, mergePropsN } from '@/merge-props';
 
 /**
  * A button that opens the menu.
@@ -72,7 +72,7 @@ export const MenuTrigger = defineComponent(function MenuTrigger(
   const isOpenedByThisTrigger = store.useState('isOpenedByTrigger', thisTriggerId);
   const popupId = store.useState('triggerPopupId', thisTriggerId);
 
-  const triggerElementRef = ref<HTMLElement | null>(null);
+  const triggerElementRef = {current: null as HTMLElement | null};
 
   const parent = useMenuParent();
   const compositeRootContext = useCompositeRootContextForTrigger();
@@ -101,7 +101,7 @@ export const MenuTrigger = defineComponent(function MenuTrigger(
   const allowMouseUpTriggerTimeout = useTimeout();
 
   const handleDocumentMouseUp = useStableCallback((mouseEvent: MouseEvent) => {
-    if (!triggerElementRef.value) {
+    if (!triggerElementRef.current) {
       return;
     }
 
@@ -111,9 +111,9 @@ export const MenuTrigger = defineComponent(function MenuTrigger(
     const mouseUpTarget = mouseEvent.target as Element | null;
 
     if (
-      contains(triggerElementRef.value, mouseUpTarget) ||
+      contains(triggerElementRef.current, mouseUpTarget) ||
       contains(store.select('positionerElement'), mouseUpTarget) ||
-      mouseUpTarget === triggerElementRef.value
+      mouseUpTarget === triggerElementRef.current
     ) {
       return;
     }
@@ -122,7 +122,7 @@ export const MenuTrigger = defineComponent(function MenuTrigger(
       return;
     }
 
-    if (isMouseWithinBounds(mouseEvent, triggerElementRef.value)) {
+    if (isMouseWithinBounds(mouseEvent, triggerElementRef.current)) {
       return;
     }
 
@@ -136,7 +136,7 @@ export const MenuTrigger = defineComponent(function MenuTrigger(
         isOpenedByThisTrigger.value &&
         store.select('lastOpenChangeReason') === REASONS.triggerHover
       ) {
-        const doc = ownerDocument(triggerElementRef.value);
+        const doc = ownerDocument(triggerElementRef.current);
         doc.addEventListener('mouseup', handleDocumentMouseUp, {once: true});
       }
     },
@@ -157,7 +157,7 @@ export const MenuTrigger = defineComponent(function MenuTrigger(
     move: false,
     restMs: parent.type === undefined ? delay : undefined,
     delay: {close: closeDelay},
-    triggerElementRef: triggerElementRef as unknown as {current: Element | null},
+    triggerElementRef: triggerElementRef as any,
     externalTree: floatingTreeRoot,
     isActiveTrigger: isTriggerActive.value,
     isClosing: () => store.select('transitionStatus') === 'ending',
@@ -207,14 +207,14 @@ export const MenuTrigger = defineComponent(function MenuTrigger(
 
   const {registerTrigger, isMountedByThisTrigger: mountedByThis} = useTriggerDataForwarding(
     thisTriggerId,
-    triggerElementRef as unknown as {current: Element | null},
+    triggerElementRef as any,
     store,
     {payload: payload as any},
   );
 
   const refs = [
     (el: HTMLElement | null) => {
-      triggerElementRef.value = el;
+      triggerElementRef.current = el;
     },
     buttonRef,
     registerTrigger,
@@ -251,12 +251,7 @@ export const MenuTrigger = defineComponent(function MenuTrigger(
     const {className: cls, style: st, render: r, ...elementProps} = componentProps;
 
     const mergedPropsForRender = (() => {
-      const merged: any = {};
-      for (const prop of propsList) {
-        const resolved = typeof prop === 'function' ? prop(merged) : prop;
-        Object.assign(merged, resolved);
-      }
-      Object.assign(merged, elementProps);
+      const merged = mergePropsN<any>([...propsList, elementProps]);
       const stateAttributes = {};
       Object.assign(stateAttributes, pressableTriggerOpenStateMapping.open(state.open));
       Object.assign(merged, stateAttributes);

@@ -441,8 +441,8 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
             (tree &&
               (getNodeChildren(tree.nodesRef.current, nodeId).find(
                 (node) =>
-                  contains(node.context?.elements.floating, relatedTarget) ||
-                  contains(node.context?.elements.domReference, relatedTarget),
+                  contains((node.context?.elements.floating as any)?.value, relatedTarget) ||
+                  contains((node.context?.elements.domReference as any)?.value, relatedTarget),
               ) ||
                 getNodeAncestors(tree.nodesRef.current, nodeId).find(
                   (node) =>

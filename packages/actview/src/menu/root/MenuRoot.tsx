@@ -180,7 +180,7 @@ export const MenuRoot = defineComponent(function MenuRoot<Payload>(
   } as any);
 
   useImplicitActiveTrigger(store);
-  const {forceUnmount} = useOpenStateTransitions(open.value, store, () => {
+  const {forceUnmount} = useOpenStateTransitions(open as any, store, () => {
     store.set('allowMouseEnter', false);
   });
 
