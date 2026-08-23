@@ -155,6 +155,8 @@ export const PopoverTrigger = defineComponent(function PopoverTrigger(
     const mergedPropsForRender = (() => {
       const merged = mergePropsN<any>([...propsList]);
       Object.assign(merged, stateAttributesMapping.open(isOpenedByThisTrigger.value));
+      // 渲染期重算（propsList 在 setup 期构建，快照会过时）
+      merged['aria-expanded'] = isOpenedByThisTrigger.value;
       return merged;
     })();
 
@@ -207,6 +209,11 @@ export interface PopoverTriggerState {
 export type PopoverTriggerProps<Payload = unknown> = NativeButtonProps &
   BaseUIComponentProps<'button', PopoverTriggerState> & {
     children?: any;
+    /**
+     * Whether the component should ignore user interaction.
+     * @default false
+     */
+    disabled?: boolean | undefined;
     /**
      * Whether the component renders a native `<button>` element when replacing it
      * via the `render` prop.

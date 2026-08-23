@@ -9,7 +9,7 @@ export interface PopoverPositionerContext {
   side: Side;
   align: Align;
   anchorHidden: boolean;
-  arrowRef: {value: HTMLElement | null};
+  arrowRef: {current: Element | null};
   arrowUncentered: boolean;
   arrowStyles: Record<string, string>;
 }
