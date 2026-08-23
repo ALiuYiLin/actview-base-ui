@@ -14,5 +14,8 @@ export { SelectPositioner as Positioner } from './positioner/SelectPositioner';
 export { SelectPortal as Portal } from './portal/SelectPortal';
 export { SelectBackdrop as Backdrop } from './backdrop/SelectBackdrop';
 export { SelectArrow as Arrow } from './arrow/SelectArrow';
+export { SelectSeparator as Separator } from './separator/SelectSeparator';
+export { SelectScrollArrow as ScrollArrow } from './scroll-arrow/SelectScrollArrow';
 export { SelectScrollUpArrow as ScrollUpArrow } from './scroll-up-arrow/SelectScrollUpArrow';
 export { SelectScrollDownArrow as ScrollDownArrow } from './scroll-down-arrow/SelectScrollDownArrow';
+

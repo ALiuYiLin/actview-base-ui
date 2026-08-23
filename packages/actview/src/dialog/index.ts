@@ -13,3 +13,6 @@ export type * from './viewport/DialogViewport';
 export type { DialogStore, State as DialogStoreState } from './store/DialogStore';
 export type { DialogHandle } from './store/DialogHandle';
 export { DialogHandle as DialogHandleClass } from './store/DialogHandle';
+
+export { useRenderDialogRoot } from './root/useRenderDialogRoot';
+

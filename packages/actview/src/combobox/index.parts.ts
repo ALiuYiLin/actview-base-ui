@@ -21,5 +21,7 @@ export { ComboboxInputGroup as InputGroup } from './input-group/ComboboxInputGro
 export { ComboboxChip as Chip } from './chip/ComboboxChip';
 export { ComboboxChips as Chips } from './chips/ComboboxChips';
 export { ComboboxChipRemove as ChipRemove } from './chip-remove/ComboboxChipRemove';
+export { ComboboxSeparator as Separator } from './separator/ComboboxSeparator';
 export { ComboboxRow as Row } from './row/ComboboxRow';
 export { ComboboxCollection as Collection } from './collection/ComboboxCollection';
+

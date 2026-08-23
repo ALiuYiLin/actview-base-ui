@@ -7,3 +7,7 @@ export { DrawerClose as Close } from './close/DrawerClose';
 export { DrawerTitle as Title } from './title/DrawerTitle';
 export { DrawerDescription as Description } from './description/DrawerDescription';
 export { DrawerProvider as Provider } from './provider/DrawerProvider';
+
+export { DrawerContent as Content } from './content/DrawerContent';
+export { DrawerViewport as Viewport } from './viewport/DrawerViewport';
+

@@ -21,3 +21,6 @@ export { ComboboxRow as Row } from '../combobox/row/ComboboxRow';
 export { ComboboxCollection as Collection } from '../combobox/collection/ComboboxCollection';
 export { ComboboxEmpty as Empty } from '../combobox/empty/ComboboxEmpty';
 export { ComboboxItemIndicator as ItemIndicator } from '../combobox/item-indicator/ComboboxItemIndicator';
+
+export { AutocompleteSeparator as Separator } from './separator/AutocompleteSeparator';
+
