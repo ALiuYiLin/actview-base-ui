@@ -66,7 +66,7 @@ export const Main = defineComponent(function (props: Props) {
               data-testid="floating"
               className="Grid"
               style={{
-                ...floatingStyles,
+                ...floatingStyles.value,
                 gridTemplateColumns: '100px 100px 100px 100px 100px',
                 zIndex: 999,
               }}
