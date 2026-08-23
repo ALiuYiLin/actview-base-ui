@@ -7,10 +7,8 @@ async function settle() {
 }
 
 function openDialog() {
-  const trigger = screen.getByRole('button', {name: 'Open'});
-  fireEvent.mouseDown(trigger);
-  fireEvent.mouseUp(trigger);
-  fireEvent.click(trigger);
+  // dialog 的 useClick 用 mousedown 事件；fireEvent.click 也会派发 mousedown。
+  fireEvent.mouseDown(screen.getByRole('button', {name: 'Open'}));
 }
 
 describe('<Dialog.Root />', () => {
@@ -294,3 +292,4 @@ describe('<Dialog.Root />', () => {
     expect(trigger).toHaveFocus();
   });
 });
+

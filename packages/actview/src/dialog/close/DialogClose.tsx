@@ -26,15 +26,32 @@ export const DialogClose = defineComponent(function DialogClose(
   const store = useDialogRootContext(false);
 
   return () => {
-    const {render, className, style, ...rest} = elementProps as any;
+    const {render, className, style, onClick: userOnClick, ...rest} = elementProps as any;
 
     const merged: any = {
+      ...(getButtonProps ?? {}),
       onClick(event: any) {
-        store.setOpen(false, createChangeEventDetails(REASONS.closePress, event.nativeEvent ?? event));
+        if (disabled) {
+          return;
+        }
+        userOnClick?.(event);
+        if (!event.defaultPrevented) {
+          store.setOpen(false, createChangeEventDetails(REASONS.closePress, event.nativeEvent ?? event));
+        }
       },
       ...rest,
-      ...(getButtonProps ?? {}),
     };
+
+    // actview 的 useButton 不产出原生 disabled/data-disabled，渲染期补写。
+    if (disabled) {
+      if (nativeButton) {
+        merged.disabled = true;
+      }
+      merged['data-disabled'] = '';
+    } else {
+      delete merged.disabled;
+      delete merged['data-disabled'];
+    }
 
     const mergedRefs = (el: HTMLButtonElement | null) => {
       if (typeof buttonRef === 'function') {
