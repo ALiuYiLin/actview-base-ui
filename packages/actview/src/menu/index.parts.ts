@@ -18,3 +18,4 @@ export { MenuRadioItem as RadioItem } from './radio-item/MenuRadioItem';
 export { MenuRadioItemIndicator as RadioItemIndicator } from './radio-item-indicator/MenuRadioItemIndicator';
 export { MenuCheckboxItem as CheckboxItem } from './checkbox-item/MenuCheckboxItem';
 export { MenuCheckboxItemIndicator as CheckboxItemIndicator } from './checkbox-item-indicator/MenuCheckboxItemIndicator';
+export { MenuViewport as Viewport } from './viewport/MenuViewport';

@@ -125,3 +125,28 @@ async function renderSelectionMenu() {
     </Menu.Root>,
   );
 }
+
+describe('<Menu.Viewport /> (actview smoke)', () => {
+  it('renders children in the current container', async () => {
+    const {render} = await import('#test-utils/rtl');
+    await render(
+      <Menu.Root open>
+        <Menu.Trigger>Trigger</Menu.Trigger>
+        <Menu.Portal>
+          <Menu.Positioner>
+            <Menu.Popup>
+              <Menu.Viewport>
+                <div data-testid="content">Content</div>
+              </Menu.Viewport>
+            </Menu.Popup>
+          </Menu.Positioner>
+        </Menu.Portal>
+      </Menu.Root>,
+    );
+    await settle();
+
+    const currentContainer = screen.getByTestId('content').closest('[data-current]');
+    expect(currentContainer).not.toBe(null);
+    expect(currentContainer!.textContent).toBe('Content');
+  });
+});
