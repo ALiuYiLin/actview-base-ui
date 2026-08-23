@@ -1,5 +1,6 @@
 import type { RefValue } from '../src/types';
-import { FunctionRef } from '@actview/core';
+
+type FunctionRef = (value: unknown) => void;
 
 export function mergeRefs<T>(...refs: (RefValue | FunctionRef)[]) {
   return (value: T | null) => {
