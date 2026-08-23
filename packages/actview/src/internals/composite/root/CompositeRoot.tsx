@@ -65,8 +65,32 @@ export function CompositeRoot<Metadata extends {}, State extends Record<string, 
 
   // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
   return () => {
-    const {render, className, style, props = [], tag = 'div', children, ...elementProps} =
-      componentProps;
+    const {
+      render,
+      className,
+      style,
+      props = [],
+      tag = 'div',
+      children,
+      state: _state,
+      stateAttributesMapping: _sam,
+      refs: _refs,
+      highlightedIndex: _hi,
+      onHighlightedIndexChange: _ohic,
+      orientation: _o,
+      grid: _g,
+      loopFocus: _lf,
+      onLoop: _ol,
+      enableHomeAndEndKeys: _ehek,
+      onMapChange: _omc,
+      onKeyDown: _okd,
+      stopEventPropagation: _sep,
+      rootRef: _rr,
+      disabledIndices: _di,
+      modifierKeys: _mk,
+      highlightItemOnHover: _hioh,
+      ...elementProps
+    } = componentProps;
 
     const stateValue = toValue(state) as State;
     const stateAttributes = getStateAttributesProps(stateValue, stateAttributesMapping);
