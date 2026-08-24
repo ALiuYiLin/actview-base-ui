@@ -5,6 +5,7 @@ import { REASONS } from '@/internals/reasons';
 import { useContextMenuRootContext } from '@/context-menu/root/ContextMenuRootContext';
 import { dispatchClickWithModifiers } from '@/utils/dispatchClickWithModifiers';
 import type { UseMenuItemMetadata } from './useMenuItem';
+import type { Ref } from 'actview';
 
 export interface UseMenuItemCommonPropsParameters {
   /**
@@ -30,11 +31,11 @@ export interface UseMenuItemCommonPropsParameters {
   /**
    * Whether a typeahead session is in progress.
    */
-  typingRef?: {current: boolean} | undefined;
+  typingRef?: Ref<boolean> | undefined;
   /**
    * Ref to the item element.
    */
-  itemRef: {current: HTMLElement | null};
+  itemRef: Ref<HTMLElement | null>;
   /**
    * Metadata for checking item type before triggering click.
    */
@@ -62,7 +63,7 @@ export function useMenuItemCommonProps(
     role: 'menuitem' as const,
     tabIndex: open.value && highlighted ? 0 : -1,
     onKeyDown(event: any) {
-      if (event.key === ' ' && typingRef?.current) {
+      if (event.key === ' ' && typingRef?.value) {
         event.preventDefault();
       }
     },
@@ -104,7 +105,7 @@ export function useMenuItemCommonProps(
       }
 
       if (
-        itemRef.current &&
+        itemRef.value &&
         store.context.allowMouseUpTriggerRef.value &&
         (!isContextMenu || event.button === 2)
       ) {
@@ -112,7 +113,7 @@ export function useMenuItemCommonProps(
         if (itemMetadata.type === 'regular-item') {
           // `detail: 1` marks this as a mouse-gesture click so MenuRoot doesn't
           // treat it as a keyboard activation (`detail === 0` → `data-instant`).
-          dispatchClickWithModifiers(itemRef.current, event, {detail: 1});
+          dispatchClickWithModifiers(itemRef.value, event, {detail: 1});
         }
       }
     },

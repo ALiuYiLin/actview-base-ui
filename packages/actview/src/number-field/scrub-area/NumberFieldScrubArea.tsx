@@ -1,4 +1,4 @@
-import { defineComponent, onMounted, onUnmounted, ref, toValue, useRootElement, watch } from 'actview';
+import {defineComponent, onMounted, onUnmounted, ref, toValue, useRootElement, watch, shallowRef} from 'actview';
 import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
 import type { NumberFieldRootState } from '../root/NumberFieldRoot';
 import { useNumberFieldRootContext } from '../root/NumberFieldRootContext';
@@ -37,11 +37,11 @@ export const NumberFieldScrubArea = defineComponent(function (
   const rootContextRef = useNumberFieldRootContext();
   const scrubAreaRef = useRootElement();
 
-  const isScrubbingRef = {current: false};
-  const didMoveRef = {current: false};
-  const pointerDownTargetRef = {current: null as EventTarget | null};
-  const scrubAreaCursorRef = {current: null as HTMLSpanElement | null};
-  const virtualCursorCoords = {current: {x: 0, y: 0}};
+  const isScrubbingRef = ref(false);
+  const didMoveRef = ref(false);
+  const pointerDownTargetRef = ref(null as EventTarget | null);
+  const scrubAreaCursorRef = ref(null as HTMLSpanElement | null);
+  const virtualCursorCoords = shallowRef({x: 0, y: 0});
 
   const exitPointerLockTimeout = useTimeout();
 
@@ -57,7 +57,7 @@ export const NumberFieldScrubArea = defineComponent(function (
   }
 
   const onScrub = ({movementX, movementY}: PointerEvent) => {
-    const virtualCursor = scrubAreaCursorRef.current;
+    const virtualCursor = scrubAreaCursorRef.value;
     const scrubAreaEl = scrubAreaRef.value;
 
     if (!virtualCursor || !scrubAreaEl) {
@@ -66,7 +66,7 @@ export const NumberFieldScrubArea = defineComponent(function (
 
     const rect = getViewportRect(teleportDistance, scrubAreaEl);
 
-    const coords = virtualCursorCoords.current;
+    const coords = virtualCursorCoords.value;
 
     // Wrap the cursor to the opposite edge when its center crosses a viewport bound.
     const wrap = (coord: number, halfSize: number, low: number, high: number) => {
@@ -94,7 +94,7 @@ export const NumberFieldScrubArea = defineComponent(function (
       ),
     };
 
-    virtualCursorCoords.current = newCoords;
+    virtualCursorCoords.value = newCoords;
 
     updateCursorTransform(virtualCursor, newCoords.x, newCoords.y);
   };
@@ -106,7 +106,7 @@ export const NumberFieldScrubArea = defineComponent(function (
     isScrubbing.value = scrubbingValue;
     rootContextRef.value.setIsScrubbing(scrubbingValue);
 
-    const virtualCursor = scrubAreaCursorRef.current;
+    const virtualCursor = scrubAreaCursorRef.value;
     if (!virtualCursor || !scrubbingValue) {
       return;
     }
@@ -116,7 +116,7 @@ export const NumberFieldScrubArea = defineComponent(function (
       y: clientY - virtualCursor.offsetHeight / 2,
     };
 
-    virtualCursorCoords.current = initialCoords;
+    virtualCursorCoords.value = initialCoords;
 
     updateCursorTransform(virtualCursor, initialCoords.x, initialCoords.y);
   };
@@ -140,7 +140,7 @@ export const NumberFieldScrubArea = defineComponent(function (
     scrubListenersCleanup = undefined;
 
     // Only listen while actively scrubbing; avoids unrelated pointerup events committing.
-    if (!inputRef.current || disabled || readOnly || !isScrubbing.value) {
+    if (!inputRef.value || disabled || readOnly || !isScrubbing.value) {
       return;
     }
 
@@ -153,18 +153,18 @@ export const NumberFieldScrubArea = defineComponent(function (
         } catch {
           // Ignore errors.
         } finally {
-          isScrubbingRef.current = false;
+          isScrubbingRef.value = false;
           onScrubbingChange(false, event);
           onValueCommitted(
-            lastChangedValueRef.current ?? valueRef.current,
+            lastChangedValueRef.value ?? valueRef.value,
             createGenericEventDetails(REASONS.scrub, event),
           );
 
           // Manually dispatch a click event if no movement happened, since
           // preventDefault on pointerdown prevents the browser click event.
-          const pointerDownTarget = pointerDownTargetRef.current;
-          const input = inputRef.current;
-          if (!didMoveRef.current && pointerDownTarget != null && input) {
+          const pointerDownTarget = pointerDownTargetRef.value;
+          const input = inputRef.value;
+          if (!didMoveRef.value && pointerDownTarget != null && input) {
             pointerDownTarget.dispatchEvent(
               new (ownerWindow(input).MouseEvent)('click', {
                 bubbles: true,
@@ -173,8 +173,8 @@ export const NumberFieldScrubArea = defineComponent(function (
             );
           }
 
-          didMoveRef.current = false;
-          pointerDownTargetRef.current = null;
+          didMoveRef.value = false;
+          pointerDownTargetRef.value = null;
         }
       }
 
@@ -190,7 +190,7 @@ export const NumberFieldScrubArea = defineComponent(function (
     function handleScrubPointerMove(event: PointerEvent) {
       // The effects below can tear down and re-run without unmounting, which
       // clears the ref while `isScrubbing` stays `true` and re-attaches this listener.
-      if (!isScrubbingRef.current) {
+      if (!isScrubbingRef.value) {
         return;
       }
 
@@ -205,13 +205,13 @@ export const NumberFieldScrubArea = defineComponent(function (
 
       if (Math.abs(cumulativeDelta) >= pixelSensitivity) {
         cumulativeDelta = 0;
-        didMoveRef.current = true;
+        didMoveRef.value = true;
         const dValue = direction === 'vertical' ? -movementY : movementX;
         const stepAmount = getStepAmount(event);
         const rawAmount = dValue * stepAmount;
 
         if (rawAmount !== 0) {
-          allowInputSyncRef.current = true;
+          allowInputSyncRef.value = true;
           incrementValue(Math.abs(rawAmount), {
             direction: rawAmount >= 0 ? 1 : -1,
             event,
@@ -221,7 +221,7 @@ export const NumberFieldScrubArea = defineComponent(function (
       }
     }
 
-    const win = ownerWindow(inputRef.current);
+    const win = ownerWindow(inputRef.value);
     const cleanupPointerUp = addEventListener(win, 'pointerup', handleScrubPointerUp, true);
     const cleanupPointerMove = addEventListener(win, 'pointermove', handleScrubPointerMove, true);
 
@@ -248,8 +248,8 @@ export const NumberFieldScrubArea = defineComponent(function (
   // If the scrub area unmounts mid-scrub, release pointer lock and clear the root's scrubbing
   // state so it doesn't stay locked or stuck.
   onUnmounted(() => {
-    if (isScrubbingRef.current) {
-      isScrubbingRef.current = false;
+    if (isScrubbingRef.value) {
+      isScrubbingRef.value = false;
       rootContextRef.value.setIsScrubbing(false);
       try {
         ownerDocument(scrubAreaRef.value).exitPointerLock();
@@ -296,12 +296,12 @@ export const NumberFieldScrubArea = defineComponent(function (
 
         if (event.pointerType === 'mouse') {
           event.preventDefault();
-          inputRef.current?.focus();
+          inputRef.value?.focus();
         }
 
-        isScrubbingRef.current = true;
-        didMoveRef.current = false;
-        pointerDownTargetRef.current = getTarget(event.nativeEvent ?? event);
+        isScrubbingRef.value = true;
+        didMoveRef.value = false;
+        pointerDownTargetRef.value = getTarget(event.nativeEvent ?? event);
         onScrubbingChange(true, event.nativeEvent ?? event);
 
         // WebKit causes significant layout shift with the native message, so we can't use it.
@@ -315,7 +315,7 @@ export const NumberFieldScrubArea = defineComponent(function (
           } finally {
             // `onScrubbingChange` already wraps its state updates, so re-emit the
             // scrubbing state directly to reflect the resolved pointer-lock result.
-            if (isScrubbingRef.current) {
+            if (isScrubbingRef.value) {
               onScrubbingChange(true, event.nativeEvent ?? event);
             }
           }

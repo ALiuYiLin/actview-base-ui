@@ -1,4 +1,4 @@
-import { defineComponent, watch } from 'actview';
+import {defineComponent, watch, ref} from 'actview';
 import { useTooltipRootContext } from '../root/TooltipRootContext';
 import { TooltipPositionerContext } from './TooltipPositionerContext';
 import {
@@ -51,7 +51,7 @@ export const TooltipPositioner = defineComponent(function TooltipPositioner(
   const adaptiveOrigin = store.useState('adaptiveOrigin');
   const domReference = (floatingRootContext.value as any)?.useState('domReferenceElement');
 
-  const previousTriggerRef = {current: null as Element | null};
+  const previousTriggerRef = ref(null as Element | null);
   const runOnceAnimationsFinish = useAnimationsFinished(positionerElement);
 
   const positioner = useAnchorPositioning({
@@ -78,10 +78,10 @@ export const TooltipPositioner = defineComponent(function TooltipPositioner(
   watch(
     () => domReference?.value,
     (current: Element | null | undefined) => {
-      const prevTriggerElement = previousTriggerRef.current;
+      const prevTriggerElement = previousTriggerRef.value;
 
       if (current) {
-        previousTriggerRef.current = current;
+        previousTriggerRef.value = current;
       }
 
       if (prevTriggerElement && current && current !== prevTriggerElement) {

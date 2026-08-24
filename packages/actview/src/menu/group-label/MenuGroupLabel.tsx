@@ -43,7 +43,6 @@ export const MenuGroupLabel = defineComponent(function MenuGroupLabel(
         (componentProps.ref as any)(el);
       } else if (componentProps.ref) {
         componentProps.ref.value = el;
-        componentProps.ref.current = el;
       }
     };
 

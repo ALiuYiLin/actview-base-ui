@@ -1,4 +1,4 @@
-import { defineComponent } from 'actview';
+import {defineComponent, ref} from 'actview';
 
 /**
  * @internal
@@ -35,7 +35,6 @@ export const InternalBackdrop = defineComponent(function InternalBackdrop(
             props.ref(el);
           } else if (props.ref) {
             props.ref.value = el;
-            props.ref.current = el;
           }
         }}
         role="presentation"

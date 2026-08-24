@@ -45,7 +45,7 @@ export const ContextMenuTrigger = defineComponent(function ContextMenuTrigger(
   const longPressTimeout = useTimeout();
   const allowMouseUpTimeout = useTimeout();
   const allowMouseUpRef = ref(false);
-  const mouseUpAbortControllerRef = {current: null as AbortController | null};
+  const mouseUpAbortControllerRef = ref(null as AbortController | null);
 
   function handleLongPress(x: number, y: number, event: MouseEvent | TouchEvent) {
     const isTouchEvent = event.type.startsWith('touch');
@@ -85,9 +85,9 @@ export const ContextMenuTrigger = defineComponent(function ContextMenuTrigger(
 
     // Abort a listener from a previous trigger that never saw its mouseup, and scope this
     // one to a fresh controller so it's removed on unmount if the mouseup never arrives.
-    mouseUpAbortControllerRef.current?.abort();
+    mouseUpAbortControllerRef.value?.abort();
     const mouseUpAbortController = new AbortController();
-    mouseUpAbortControllerRef.current = mouseUpAbortController;
+    mouseUpAbortControllerRef.value = mouseUpAbortController;
     doc.addEventListener(
       'mouseup',
       (mouseEvent: MouseEvent) => {
@@ -169,16 +169,16 @@ export const ContextMenuTrigger = defineComponent(function ContextMenuTrigger(
 
   // Abort a pending mouseup listener if the trigger unmounts before it fires.
   onUnmounted(() => {
-    mouseUpAbortControllerRef.current?.abort();
+    mouseUpAbortControllerRef.value?.abort();
   });
 
-  const docContextMenuCleanup = {current: () => {}};
+  const docContextMenuCleanup = ref<(() => void) | null>(null);
 
   // Prevent the native context menu from appearing inside the trigger or backdrops.
   watch(
     () => [triggerRef.value, disabledRef.value, disabledState.value] as const,
     () => {
-      docContextMenuCleanup.current();
+      docContextMenuCleanup.value?.();
       if (disabledRef.value || disabledState.value || !triggerRef.value) {
         return;
       }
@@ -194,13 +194,13 @@ export const ContextMenuTrigger = defineComponent(function ContextMenuTrigger(
           event.preventDefault();
         }
       });
-      docContextMenuCleanup.current = cleanup;
+      docContextMenuCleanup.value = cleanup;
     },
     {flush: 'post', immediate: true},
   );
 
   onUnmounted(() => {
-    docContextMenuCleanup.current();
+    docContextMenuCleanup.value?.();
   });
 
   return () => {
@@ -229,7 +229,7 @@ export const ContextMenuTrigger = defineComponent(function ContextMenuTrigger(
         (componentProps.ref as any)(el);
       } else if (componentProps.ref) {
         (componentProps.ref as any).value = el;
-        (componentProps.ref as any).current = el;
+        
       }
     };
 

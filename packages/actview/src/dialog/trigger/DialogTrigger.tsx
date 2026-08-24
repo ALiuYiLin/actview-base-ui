@@ -128,7 +128,7 @@ function mergeRefs(refs: any[]) {
       } else if (r.value !== undefined) {
         r.value = el;
       } else {
-        r.current = el;
+        r.value = el;
       }
     }
   };

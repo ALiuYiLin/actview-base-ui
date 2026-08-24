@@ -1,5 +1,5 @@
 /* eslint-disable no-underscore-dangle */
-import { onUnmounted, watch } from 'actview';
+import {onUnmounted, watch, ref} from 'actview';
 import { addEventListener } from '@/internals/addEventListener';
 import { mergeCleanups } from '@/internals/mergeCleanups';
 import { ownerDocument } from '@/internals/owner';
@@ -132,39 +132,39 @@ export function useDismiss(
 
   const {escapeKey: escapeKeyBubbles, outsidePress: outsidePressBubbles} = normalizeProp(bubbles);
 
-  const pressStartedInsideRef = {current: false};
-  const pressStartPreventedRef = {current: false};
+  const pressStartedInsideRef = ref(false);
+  const pressStartPreventedRef = ref(false);
   // Ignore only the very next outside click after dragging from inside to outside.
-  const suppressNextOutsideClickRef = {current: false};
+  const suppressNextOutsideClickRef = ref(false);
   // A click whose press began before the floating element opened is the tail of that
   // gesture (e.g. the drag-release that opened it), not a new outside press.
-  const sawPressWhileOpenRef = {current: false};
-  const isComposingRef = {current: false};
-  const currentPointerTypeRef = {current: '' as PointerEvent['pointerType']};
+  const sawPressWhileOpenRef = ref(false);
+  const isComposingRef = ref(false);
+  const currentPointerTypeRef = ref('' as PointerEvent['pointerType']);
 
-  const touchStateRef = {current: null as {
+  const touchStateRef = ref<{
     startTime: number;
     startX: number;
     startY: number;
     dismissOnTouchEnd: boolean;
     dismissOnMouseDown: boolean;
-  } | null};
+  } | null>(null);
 
   const cancelDismissOnEndTimeout = useTimeout();
   const clearInsideReactTreeTimeout = useTimeout();
 
   const clearInsideReactTree = useStableCallback(() => {
     clearInsideReactTreeTimeout.clear();
-    dataRef.current.insideReactTree = false;
+    dataRef.value.insideReactTree = false;
   });
 
   const hasBlockingChild = useStableCallback(
     (bubbleKey: '__escapeKeyBubbles' | '__outsidePressBubbles') => {
-      const nodeId = dataRef.current.floatingContext?.nodeId;
-      const children = tree ? getNodeChildren(tree.nodesRef.current, nodeId) : [];
+      const nodeId = dataRef.value.floatingContext?.nodeId;
+      const children = tree ? getNodeChildren(tree.nodesRef.value, nodeId) : [];
 
       return children.some(
-        (child) => child.context?.open && !child.context.dataRef.current[bubbleKey],
+        (child) => child.context?.open && !child.context.dataRef.value[bubbleKey],
       );
     },
   );
@@ -197,7 +197,7 @@ export function useDismiss(
 
     // Wait until IME is settled. Pressing `Escape` while composing should
     // close the compose menu, but not the floating element.
-    if (isComposingRef.current) {
+    if (isComposingRef.value) {
       return;
     }
 
@@ -220,7 +220,7 @@ export function useDismiss(
   });
 
   const markInsideReactTree = useStableCallback(() => {
-    dataRef.current.insideReactTree = true;
+    dataRef.value.insideReactTree = true;
     clearInsideReactTreeTimeout.start(0, clearInsideReactTree);
   });
 
@@ -236,9 +236,9 @@ export function useDismiss(
       return;
     }
 
-    if (!pressStartedInsideRef.current) {
-      pressStartedInsideRef.current = true;
-      pressStartPreventedRef.current = false;
+    if (!pressStartedInsideRef.value) {
+      pressStartedInsideRef.value = true;
+      pressStartPreventedRef.value = false;
     }
   });
 
@@ -251,8 +251,8 @@ export function useDismiss(
       return;
     }
 
-    if (pressStartedInsideRef.current) {
-      pressStartPreventedRef.current = true;
+    if (pressStartedInsideRef.value) {
+      pressStartPreventedRef.value = true;
     }
   });
 
@@ -264,7 +264,7 @@ export function useDismiss(
       function handleOpenChange(details: FloatingUIOpenChangeDetails) {
         // Only the closing half ends the session.
         if (!details.open) {
-          sawPressWhileOpenRef.current = false;
+          sawPressWhileOpenRef.value = false;
         }
       }
 
@@ -290,13 +290,13 @@ export function useDismiss(
         // Reset in the effect body, not the cleanup, which also runs when a dependency
         // changes mid-gesture.
         if (!open.value) {
-          sawPressWhileOpenRef.current = false;
+          sawPressWhileOpenRef.value = false;
         }
         return clearInsideReactTree;
       }
 
-      dataRef.current.__escapeKeyBubbles = escapeKeyBubbles;
-      dataRef.current.__outsidePressBubbles = outsidePressBubbles;
+      dataRef.value.__escapeKeyBubbles = escapeKeyBubbles;
+      dataRef.value.__outsidePressBubbles = outsidePressBubbles;
 
       const compositionTimeout = new Timeout();
       const preventedPressSuppressionTimeout = new Timeout();
@@ -304,7 +304,7 @@ export function useDismiss(
 
       function handleCompositionStart() {
         compositionTimeout.clear();
-        isComposingRef.current = true;
+        isComposingRef.value = true;
       }
 
       function handleCompositionEnd() {
@@ -314,27 +314,27 @@ export function useDismiss(
           // 0ms or 1ms don't work in Safari. 5ms appears to consistently work.
           platform.engine.webkit ? 5 : 0,
           () => {
-            isComposingRef.current = false;
+            isComposingRef.value = false;
           },
         );
       }
 
       function suppressImmediateOutsideClickAfterPreventedStart() {
-        suppressNextOutsideClickRef.current = true;
+        suppressNextOutsideClickRef.value = true;
         // Firefox can emit the synthetic outside click in a later task after
         // pointer lock exit, so microtask clearing is too early here.
         preventedPressSuppressionTimeout.start(0, () => {
-          suppressNextOutsideClickRef.current = false;
+          suppressNextOutsideClickRef.value = false;
         });
       }
 
       function resetPressStartState() {
-        pressStartedInsideRef.current = false;
-        pressStartPreventedRef.current = false;
+        pressStartedInsideRef.value = false;
+        pressStartPreventedRef.value = false;
       }
 
       function getOutsidePressEvent(): PressType {
-        const type = currentPointerTypeRef.current as 'pen' | 'mouse' | 'touch' | '';
+        const type = currentPointerTypeRef.value as 'pen' | 'mouse' | 'touch' | '';
         const computedType = type === 'pen' || !type ? 'mouse' : type;
 
         const outsidePressEventValue = getOutsidePressEventProp();
@@ -359,10 +359,10 @@ export function useDismiss(
       }
 
       function isEventWithinFloatingTree(event: Event) {
-        const nodeId = dataRef.current.floatingContext?.nodeId;
+        const nodeId = dataRef.value.floatingContext?.nodeId;
         const targetIsInsideChildren =
           tree &&
-          getNodeChildren(tree.nodesRef.current, nodeId).some((node) =>
+          getNodeChildren(tree.nodesRef.value, nodeId).some((node) =>
             isEventTargetWithin(event, node.context?.elements.floating),
           );
 
@@ -375,13 +375,13 @@ export function useDismiss(
           // leftover drag-out suppression so this press's eventual click can dismiss.
           if (event.type !== 'click' && !isEventWithinOwnElements(event)) {
             preventedPressSuppressionTimeout.clear();
-            suppressNextOutsideClickRef.current = false;
+            suppressNextOutsideClickRef.value = false;
           }
           clearInsideReactTree();
           return;
         }
 
-        if (dataRef.current.insideReactTree) {
+        if (dataRef.value.insideReactTree) {
           clearInsideReactTree();
           return;
         }
@@ -470,16 +470,16 @@ export function useDismiss(
           if (
             (event as MouseEvent).detail !== 0 &&
             !isVirtualClick(event as MouseEvent) &&
-            !sawPressWhileOpenRef.current
+            !sawPressWhileOpenRef.value
           ) {
             return;
           }
 
           // A press that starts inside and ends outside gets one suppressed
           // outside click.
-          if (suppressNextOutsideClickRef.current) {
+          if (suppressNextOutsideClickRef.value) {
             preventedPressSuppressionTimeout.clear();
-            suppressNextOutsideClickRef.current = false;
+            suppressNextOutsideClickRef.value = false;
             return;
           }
         }
@@ -522,7 +522,7 @@ export function useDismiss(
 
         const touch = event.touches[0];
         if (touch) {
-          touchStateRef.current = {
+          touchStateRef.value = {
             startTime: Date.now(),
             startX: touch.clientX,
             startY: touch.clientY,
@@ -531,9 +531,9 @@ export function useDismiss(
           };
 
           cancelDismissOnEndTimeout.start(1000, () => {
-            if (touchStateRef.current) {
-              touchStateRef.current.dismissOnTouchEnd = false;
-              touchStateRef.current.dismissOnMouseDown = false;
+            if (touchStateRef.value) {
+              touchStateRef.value.dismissOnTouchEnd = false;
+              touchStateRef.value.dismissOnMouseDown = false;
             }
           });
         }
@@ -556,7 +556,7 @@ export function useDismiss(
       }
 
       function handleTouchStartCapture(event: TouchEvent) {
-        currentPointerTypeRef.current = 'touch';
+        currentPointerTypeRef.value = 'touch';
         addTargetEventListenerOnce(event, handleTouchStart);
       }
 
@@ -567,15 +567,15 @@ export function useDismiss(
         if (event.type === 'pointerdown') {
           // Only a primary press can produce a `click`.
           if (event.button === 0) {
-            sawPressWhileOpenRef.current = true;
+            sawPressWhileOpenRef.value = true;
           }
-          currentPointerTypeRef.current = (event as PointerEvent).pointerType;
+          currentPointerTypeRef.value = (event as PointerEvent).pointerType;
         }
 
         if (
           event.type === 'mousedown' &&
-          touchStateRef.current &&
-          !touchStateRef.current.dismissOnMouseDown
+          touchStateRef.value &&
+          !touchStateRef.value.dismissOnMouseDown
         ) {
           return;
         }
@@ -592,14 +592,14 @@ export function useDismiss(
       function handlePressEndCapture(event: PointerEvent | MouseEvent) {
         // A cancelled gesture produces no click.
         if (event.type === 'pointercancel') {
-          sawPressWhileOpenRef.current = false;
+          sawPressWhileOpenRef.value = false;
         }
 
-        if (!pressStartedInsideRef.current) {
+        if (!pressStartedInsideRef.value) {
           return;
         }
 
-        const pressStartedInsideDefaultPrevented = pressStartPreventedRef.current;
+        const pressStartedInsideDefaultPrevented = pressStartPreventedRef.value;
         resetPressStartState();
 
         if (getOutsidePressEvent() !== 'intentional') {
@@ -627,14 +627,14 @@ export function useDismiss(
         }
 
         preventedPressSuppressionTimeout.clear();
-        suppressNextOutsideClickRef.current = true;
+        suppressNextOutsideClickRef.value = true;
         clearInsideReactTree();
       }
 
       function handleTouchMove(event: TouchEvent) {
         if (
           getOutsidePressEvent() !== 'sloppy' ||
-          !touchStateRef.current ||
+          !touchStateRef.value ||
           isEventWithinOwnElements(event)
         ) {
           return;
@@ -645,18 +645,18 @@ export function useDismiss(
           return;
         }
 
-        const deltaX = Math.abs(touch.clientX - touchStateRef.current.startX);
-        const deltaY = Math.abs(touch.clientY - touchStateRef.current.startY);
+        const deltaX = Math.abs(touch.clientX - touchStateRef.value.startX);
+        const deltaY = Math.abs(touch.clientY - touchStateRef.value.startY);
         const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
         if (distance > 5) {
-          touchStateRef.current.dismissOnTouchEnd = true;
+          touchStateRef.value.dismissOnTouchEnd = true;
         }
 
         if (distance > 10) {
           closeOnPressOutside(event);
           cancelDismissOnEndTimeout.clear();
-          touchStateRef.current = null;
+          touchStateRef.value = null;
         }
       }
 
@@ -667,18 +667,18 @@ export function useDismiss(
       function handleTouchEnd(event: TouchEvent) {
         if (
           getOutsidePressEvent() !== 'sloppy' ||
-          !touchStateRef.current ||
+          !touchStateRef.value ||
           isEventWithinOwnElements(event)
         ) {
           return;
         }
 
-        if (touchStateRef.current.dismissOnTouchEnd) {
+        if (touchStateRef.value.dismissOnTouchEnd) {
           closeOnPressOutside(event);
         }
 
         cancelDismissOnEndTimeout.clear();
-        touchStateRef.current = null;
+        touchStateRef.value = null;
       }
 
       function handleTouchEndCapture(event: TouchEvent) {
@@ -711,7 +711,7 @@ export function useDismiss(
         compositionTimeout.clear();
         preventedPressSuppressionTimeout.clear();
         resetPressStartState();
-        suppressNextOutsideClickRef.current = false;
+        suppressNextOutsideClickRef.value = false;
         clearInsideReactTree();
       };
     },

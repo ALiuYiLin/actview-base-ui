@@ -12,6 +12,7 @@ import { useMenuPositionerContext } from '../positioner/MenuPositionerContext';
 import { useTriggerRegistration } from '@/utils/popups';
 import { useMenuSubmenuRootContext } from '../submenu-root/MenuSubmenuRootContext';
 import { REASONS } from '@/internals/reasons';
+import type { Ref } from 'actview';
 
 const VOICE_OVER_EXPANDED_PROPS = {'aria-expanded': undefined};
 
@@ -107,7 +108,7 @@ export const MenuSubmenuTrigger = defineComponent(function MenuSubmenuTrigger(
     highlighted: false,
     id: thisTriggerId,
     store,
-    typingRef: parentMenuStore.context.typingRef as unknown as {current: boolean},
+    typingRef: parentMenuStore.context.typingRef as unknown as Ref<boolean>,
     nativeButton,
     itemMetadata: itemMetadata as any,
     nodeId: menuPositionerContext?.value?.nodeId,
@@ -203,7 +204,6 @@ export const MenuSubmenuTrigger = defineComponent(function MenuSubmenuTrigger(
         (componentProps.ref as any)(el);
       } else if (componentProps.ref) {
         componentProps.ref.value = el;
-        componentProps.ref.current = el;
       }
     };
 

@@ -86,7 +86,7 @@ export interface FloatingTreeProps {
 export const FloatingTree = defineComponent(function (props: FloatingTreeProps) {
   const {children, externalTree} = props;
 
-  const tree = useRefWithInit(() => externalTree ?? new FloatingTreeStore()).current;
+  const tree = useRefWithInit(() => externalTree ?? new FloatingTreeStore()).value;
 
   return () => (
     <FloatingTreeContext.Provider value={tree}>{children}</FloatingTreeContext.Provider>

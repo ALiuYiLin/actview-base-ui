@@ -1,3 +1,4 @@
+import {ref} from 'actview';
 export type InteractionType = 'mouse' | 'touch' | 'pen' | 'keyboard' | '';
 
 /**
@@ -9,14 +10,14 @@ export type InteractionType = 'mouse' | 'touch' | 'pen' | 'keyboard' | '';
 export function useEnhancedClickHandler(
   handler: (event: any, interactionType: InteractionType) => void,
 ) {
-  const lastClickInteractionTypeRef = {current: '' as InteractionType};
+  const lastClickInteractionTypeRef = ref('' as InteractionType);
 
   const handlePointerDown = (event: any) => {
     if (event.defaultPrevented) {
       return;
     }
 
-    lastClickInteractionTypeRef.current = event.pointerType as InteractionType;
+    lastClickInteractionTypeRef.value = event.pointerType as InteractionType;
     handler(event, event.pointerType as InteractionType);
   };
 
@@ -31,9 +32,9 @@ export function useEnhancedClickHandler(
       // Chrome and Edge correctly use PointerEvent
       handler(event, event.pointerType);
     } else {
-      handler(event, lastClickInteractionTypeRef.current);
+      handler(event, lastClickInteractionTypeRef.value);
     }
-    lastClickInteractionTypeRef.current = '';
+    lastClickInteractionTypeRef.value = '';
   };
 
   return {onClick: handleClick, onPointerDown: handlePointerDown};

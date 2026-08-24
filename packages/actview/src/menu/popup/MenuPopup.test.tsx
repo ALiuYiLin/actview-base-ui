@@ -7,7 +7,7 @@ async function settle() {
   await act(async () => {});
 }
 
-async function openAndCloseMenu(popupProps?: any, targetRef?: {current: HTMLElement | null}) {
+async function openAndCloseMenu(popupProps?: any, targetRef?: {value: HTMLElement | null}) {
   await render(
     <div>
       <input />
@@ -25,7 +25,7 @@ async function openAndCloseMenu(popupProps?: any, targetRef?: {current: HTMLElem
         data-testid="input-to-focus"
         ref={(el: HTMLInputElement | null) => {
           if (targetRef) {
-            targetRef.current = el;
+            targetRef.value = el;
           }
         }}
       />
@@ -55,7 +55,7 @@ describe('<Menu.Popup /> finalFocus', () => {
   });
 
   it('should focus the element provided to the prop when closed', async () => {
-    const targetRef: {current: HTMLElement | null} = {current: null};
+    const targetRef: {value: HTMLElement | null} = {value: null};
     await openAndCloseMenu({finalFocus: targetRef as any}, targetRef);
 
     const inputToFocus = screen.getByTestId('input-to-focus');
@@ -63,15 +63,15 @@ describe('<Menu.Popup /> finalFocus', () => {
   });
 
   it('should focus the element provided to `finalFocus` as a function when closed', async () => {
-    const targetRef: {current: HTMLElement | null} = {current: null};
-    await openAndCloseMenu({finalFocus: () => targetRef.current}, targetRef);
+    const targetRef: {value: HTMLElement | null} = {value: null};
+    await openAndCloseMenu({finalFocus: () => targetRef.value}, targetRef);
 
     const inputToFocus = screen.getByTestId('input-to-focus');
     expect(inputToFocus).toHaveFocus();
   });
 
   it('should not move focus when finalFocus is false', async () => {
-    const targetRef: {current: HTMLElement | null} = {current: null};
+    const targetRef: {value: HTMLElement | null} = {value: null};
     await openAndCloseMenu({finalFocus: false}, targetRef);
 
     const inputToFocus = screen.getByTestId('input-to-focus');

@@ -1,4 +1,4 @@
-import { defineComponent, toValue, useRootElement, watch } from 'actview';
+import {defineComponent, toValue, useRootElement, watch, ref} from 'actview';
 import { useControlled } from '@/utils/useControlled';
 import { useFieldRootContext } from '@/internals/field-root-context/FieldRootContext';
 import { useRegisterFieldControl } from '@/internals/field-register-control/useRegisterFieldControl';
@@ -69,7 +69,7 @@ export const FieldControl = defineComponent(function (componentProps: FieldContr
   // The DOM value is always a string, so dirty comparisons must serialize the controlled value.
   const serializedValue = value == null ? undefined : String(value);
 
-  const getValueFromInput = () => validation.inputRef.current?.value;
+  const getValueFromInput = () => validation.inputRef.value?.value;
 
   useRegisterFieldControl(
     validation.inputRef,
@@ -82,7 +82,7 @@ export const FieldControl = defineComponent(function (componentProps: FieldContr
 
   // React 版 useIsoLayoutEffect：input 有值时标记 filled
   watch(
-    () => validation.inputRef.current?.value,
+    () => validation.inputRef.value?.value,
     (v) => {
       if (v) {
         setFilled(true);
@@ -103,13 +103,13 @@ export const FieldControl = defineComponent(function (componentProps: FieldContr
     validation.change(serializedValue);
   });
 
-  const inputRef = {current: null as HTMLElement | null};
+  const inputRef = ref(null as HTMLElement | null);
 
   // React 版 useIsoLayoutEffect：autoFocus 时标记 focused
   watch(
     () => autoFocus,
     (v) => {
-      if (v && inputRef.current === activeElement(ownerDocument(inputRef.current))) {
+      if (v && inputRef.value === activeElement(ownerDocument(inputRef.value))) {
         setFocused(true);
       }
     },
@@ -193,8 +193,8 @@ export const FieldControl = defineComponent(function (componentProps: FieldContr
     const finalProps = validation.getValidationProps(disabled, merged);
 
     const refCallback = (el: any) => {
-      validation.inputRef.current = el;
-      inputRef.current = el;
+      validation.inputRef.value = el;
+      inputRef.value = el;
       rootRef.value = el;
     };
 

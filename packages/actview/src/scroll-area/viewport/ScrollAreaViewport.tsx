@@ -1,4 +1,4 @@
-import { defineComponent, onMounted, onUnmounted, ref, toValue, useRootElement } from 'actview';
+import {defineComponent, onMounted, onUnmounted, ref, toValue, useRootElement, shallowRef} from 'actview';
 import { platform } from '@/utils/platform';
 import { useTimeout } from '@/utils/useTimeout';
 import { clamp } from '@/utils/clamp';
@@ -71,19 +71,19 @@ export const ScrollAreaViewport = defineComponent(function (componentProps: Scro
 
   const direction = useDirection();
 
-  const programmaticScrollRef = {current: true};
-  const lastMeasuredViewportMetricsRef = {current: [NaN, NaN, NaN, NaN] as [number, number, number, number]};
+  const programmaticScrollRef = ref(true);
+  const lastMeasuredViewportMetricsRef = shallowRef([NaN, NaN, NaN, NaN] as [number, number, number, number]);
 
   const scrollEndTimeout = useTimeout();
   const waitForAnimationsTimeout = useTimeout();
 
   const computeThumbPosition = () => {
     const viewportEl = viewportRef.value;
-    const scrollbarYEl = rootContextRef.value.scrollbarYRef.current;
-    const scrollbarXEl = rootContextRef.value.scrollbarXRef.current;
-    const thumbYEl = rootContextRef.value.thumbYRef.current;
-    const thumbXEl = rootContextRef.value.thumbXRef.current;
-    const cornerEl = rootContextRef.value.cornerRef.current;
+    const scrollbarYEl = rootContextRef.value.scrollbarYRef.value;
+    const scrollbarXEl = rootContextRef.value.scrollbarXRef.value;
+    const thumbYEl = rootContextRef.value.thumbYRef.value;
+    const thumbXEl = rootContextRef.value.thumbXRef.value;
+    const cornerEl = rootContextRef.value.cornerRef.value;
 
     if (!viewportEl) {
       return;
@@ -95,7 +95,7 @@ export const ScrollAreaViewport = defineComponent(function (componentProps: Scro
     const viewportWidth = viewportEl.clientWidth;
     const scrollTop = viewportEl.scrollTop;
     const scrollLeft = viewportEl.scrollLeft;
-    const lastMeasuredViewportMetrics = lastMeasuredViewportMetricsRef.current;
+    const lastMeasuredViewportMetrics = lastMeasuredViewportMetricsRef.value;
     const isFirstMeasurement = Number.isNaN(lastMeasuredViewportMetrics[0]);
 
     lastMeasuredViewportMetrics[0] = viewportHeight;
@@ -254,7 +254,7 @@ export const ScrollAreaViewport = defineComponent(function (componentProps: Scro
     resizeObserver = new ResizeObserver(() => {
       if (!hasInitializedResize) {
         hasInitializedResize = true;
-        const lastMeasuredViewportMetrics = lastMeasuredViewportMetricsRef.current;
+        const lastMeasuredViewportMetrics = lastMeasuredViewportMetricsRef.value;
         if (
           lastMeasuredViewportMetrics[0] === viewport.clientHeight &&
           lastMeasuredViewportMetrics[1] === viewport.scrollHeight &&
@@ -291,7 +291,7 @@ export const ScrollAreaViewport = defineComponent(function (componentProps: Scro
   });
 
   function handleUserInteraction() {
-    programmaticScrollRef.current = false;
+    programmaticScrollRef.value = false;
   }
 
   // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
@@ -325,7 +325,7 @@ export const ScrollAreaViewport = defineComponent(function (componentProps: Scro
         // WebKit consumes a touch that catches an in-flight momentum scroll or
         // rubber-band bounce without dispatching any DOM events for the whole
         // gesture, so scrolls cannot be attributed to the user through events.
-        if (touchModality || !programmaticScrollRef.current) {
+        if (touchModality || !programmaticScrollRef.value) {
           handleScroll({
             x: viewportRef.value.scrollLeft,
             y: viewportRef.value.scrollTop,
@@ -335,7 +335,7 @@ export const ScrollAreaViewport = defineComponent(function (componentProps: Scro
         // Debounce the restoration of the programmatic flag so that it only
         // flips back to `true` once scrolling has come to a rest.
         scrollEndTimeout.start(100, () => {
-          programmaticScrollRef.current = true;
+          programmaticScrollRef.value = true;
         });
       },
       onWheel: handleUserInteraction,

@@ -115,10 +115,10 @@ type HoverContextData = ContextData & {
 };
 
 export function useHoverInteractionSharedState(store: FloatingRootContext): HoverInteraction {
-  const data = store.context.dataRef.current as HoverContextData;
+  const data = store.context.dataRef.value as HoverContextData;
   const instance = useRefWithInit(
     () => data.hoverInteractionState ?? HoverInteraction.create(),
-  ).current;
+  ).value;
 
   if (!data.hoverInteractionState) {
     data.hoverInteractionState = instance;

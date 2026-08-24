@@ -1,5 +1,6 @@
 import { createContext } from 'actview';
 import type { Side, Align } from '@/internals/useAnchorPositioning';
+import type { Ref } from 'actview';
 
 export const TooltipPositionerContext = createContext<TooltipPositionerContext | undefined>(
   undefined,
@@ -9,7 +10,7 @@ export interface TooltipPositionerContext {
   side: Side;
   align: Align;
   anchorHidden: boolean;
-  arrowRef: {current: Element | null};
+  arrowRef: Ref<Element | null>;
   arrowUncentered: boolean;
   arrowStyles: Record<string, string>;
 }

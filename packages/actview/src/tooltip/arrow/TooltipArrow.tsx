@@ -4,6 +4,7 @@ import { useTooltipRootContext } from '../root/TooltipRootContext';
 import type { Side, Align } from '@/internals/useAnchorPositioning';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { popupStateMapping } from '@/utils/popupStateMapping';
+import type { Ref } from 'actview';
 
 /**
  * Displays an element positioned against the tooltip anchor.
@@ -17,7 +18,7 @@ export const TooltipArrow = defineComponent(function TooltipArrow(
   const store = useTooltipRootContext(false);
   const positionerContext = useTooltipPositionerContext();
   const {arrowRef, side, align, arrowUncentered, arrowStyles} = positionerContext ?? {
-    arrowRef: {current: null as Element | null},
+    arrowRef: {value: null as Element | null},
     side: 'bottom' as Side,
     align: 'center' as Align,
     arrowUncentered: false,
@@ -50,12 +51,12 @@ export const TooltipArrow = defineComponent(function TooltipArrow(
     };
 
     const mergedRefs = (el: HTMLDivElement | null) => {
-      arrowRef.current = el;
+      arrowRef.value = el;
       if (typeof componentProps.ref === 'function') {
         (componentProps.ref as any)(el);
       } else if (componentProps.ref) {
         (componentProps.ref as any).value = el;
-        (componentProps.ref as any).current = el;
+        
       }
     };
 

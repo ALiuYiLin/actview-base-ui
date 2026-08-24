@@ -1,4 +1,4 @@
-import { onUnmounted, watch } from 'actview';
+import {onUnmounted, watch, ref} from 'actview';
 import { useFieldRootContext } from '@/internals/field-root-context/FieldRootContext';
 import type { FieldControlRegistration } from './useFieldControlRegistration';
 
@@ -11,7 +11,7 @@ export function useRegisterFieldControl(
   name?: FieldControlRegistration['name'],
 ) {
   const {registerFieldControl} = toValueFieldRootContext();
-  const sourceRef = {current: Symbol()};
+  const sourceRef = ref(Symbol());
 
   // Re-register without unregistering first: re-registration with the same id updates the
   // form's fields Map entry in place, while a delete + re-add would move the field to the
@@ -19,7 +19,7 @@ export function useRegisterFieldControl(
   watch(
     () => [enabled, id, value, name, getFormValueOverride, controlRef] as const,
     () => {
-      const source = sourceRef.current;
+      const source = sourceRef.value;
 
       if (!enabled) {
         registerFieldControl(source, undefined);
@@ -40,7 +40,7 @@ export function useRegisterFieldControl(
   );
 
   onUnmounted(() => {
-    registerFieldControl(sourceRef.current, undefined);
+    registerFieldControl(sourceRef.value, undefined);
   });
 }
 

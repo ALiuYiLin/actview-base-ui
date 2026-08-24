@@ -4,6 +4,7 @@ import { useMenuRootContext } from '../root/MenuRootContext';
 import type { Side, Align } from '@/internals/useAnchorPositioning';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { popupStateMapping } from '@/utils/popupStateMapping';
+import type { Ref } from 'actview';
 
 /**
  * Displays an element positioned against the menu anchor.
@@ -15,7 +16,7 @@ export const MenuArrow = defineComponent(function MenuArrow(componentProps: Menu
   const {store} = useMenuRootContext();
   const positionerContext = useMenuPositionerContext();
   const {arrowRef, side, align, arrowUncentered, arrowStyles} = positionerContext.value ?? {
-    arrowRef: {current: null as Element | null},
+    arrowRef: {value: null as Element | null},
     side: 'bottom' as Side,
     align: 'center' as Align,
     arrowUncentered: false,
@@ -48,12 +49,11 @@ export const MenuArrow = defineComponent(function MenuArrow(componentProps: Menu
     };
 
     const mergedRefs = (el: HTMLDivElement | null) => {
-      arrowRef.current = el;
+      arrowRef.value = el;
       if (typeof componentProps.ref === 'function') {
         (componentProps.ref as any)(el);
       } else if (componentProps.ref) {
         componentProps.ref.value = el;
-        componentProps.ref.current = el;
       }
     };
 

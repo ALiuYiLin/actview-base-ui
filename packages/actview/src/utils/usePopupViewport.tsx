@@ -57,58 +57,58 @@ export function usePopupViewport(
   const payload = store.useState('payload');
   const mounted = store.useState('mounted');
 
-  const previousActiveTriggerRef = {current: null as Element | null};
+  const previousActiveTriggerRef = ref(null as Element | null);
   // Remount current content on trigger changes (and once more when payload lags).
   const currentContentKey = usePopupContentKey(activeTriggerId, payload);
 
-  const capturedNodeRef = {current: null as HTMLElement | null};
+  const capturedNodeRef = ref(null as HTMLElement | null);
   const previousContentNode = ref<HTMLElement | null>(null);
   const showStartingStyleAttribute = ref(false);
 
-  const currentContainerRef = {value: null as HTMLDivElement | null};
-  const previousContainerRef = {value: null as HTMLDivElement | null};
+  const currentContainerRef = ref(null as HTMLDivElement | null);
+  const previousContainerRef = ref(null as HTMLDivElement | null);
 
   const onAnimationsFinished = useAnimationsFinished(currentContainerRef, true);
 
   // When a trigger changes, set the captured children HTML to state.
-  const lastHandledTriggerRef = {current: null as Element | null};
+  const lastHandledTriggerRef = ref(null as Element | null);
   watch(
-    () => [open.value, mounted.value, activeTrigger.value, previousActiveTriggerRef.current] as const,
+    () => [open.value, mounted.value, activeTrigger.value, previousActiveTriggerRef.value] as const,
     () => {
       if (!open.value || !mounted.value) {
-        lastHandledTriggerRef.current = null;
+        lastHandledTriggerRef.value = null;
         return;
       }
 
       const trigger = activeTrigger.value;
-      const previousTrigger = previousActiveTriggerRef.current;
+      const previousTrigger = previousActiveTriggerRef.value;
       if (
         trigger &&
         previousTrigger &&
         trigger !== previousTrigger &&
-        lastHandledTriggerRef.current !== trigger &&
-        capturedNodeRef.current
+        lastHandledTriggerRef.value !== trigger &&
+        capturedNodeRef.value
       ) {
-        previousContentNode.value = capturedNodeRef.current;
+        previousContentNode.value = capturedNodeRef.value;
         showStartingStyleAttribute.value = true;
-        lastHandledTriggerRef.current = trigger;
+        lastHandledTriggerRef.value = trigger;
       }
       if (trigger) {
-        previousActiveTriggerRef.current = trigger;
+        previousActiveTriggerRef.value = trigger;
       }
     },
     {flush: 'post', immediate: true},
   );
 
   // Arm cleanup after a trigger change.
-  const cleanupControllerRef = {current: null as AbortController | null};
+  const cleanupControllerRef = ref(null as AbortController | null);
   const armViewportCleanup = () => {
-    cleanupControllerRef.current?.abort();
+    cleanupControllerRef.value?.abort();
     const controller = new AbortController();
-    cleanupControllerRef.current = controller;
+    cleanupControllerRef.value = controller;
     onAnimationsFinished(() => {
       previousContentNode.value = null;
-      capturedNodeRef.current = null;
+      capturedNodeRef.value = null;
     }, controller.signal);
   };
 
@@ -118,7 +118,7 @@ export function usePopupViewport(
       if (previousContentNode.value == null) {
         return;
       }
-      cleanupControllerRef.current?.abort();
+      cleanupControllerRef.value?.abort();
       showStartingStyleAttribute.value = true;
       armViewportCleanup();
     },
@@ -140,7 +140,7 @@ export function usePopupViewport(
       for (const child of Array.from(source.childNodes)) {
         wrapper.appendChild(child.cloneNode(true));
       }
-      capturedNodeRef.current = wrapper;
+      capturedNodeRef.value = wrapper;
     },
     {flush: 'post', immediate: true},
   );
@@ -233,28 +233,28 @@ function usePopupContentKey(
   payload: ComputedRef<unknown>,
 ): ComputedRef<string> {
   const contentKey = ref(0);
-  const previousActiveTriggerIdRef = {current: activeTriggerId.value};
-  const previousPayloadRef = {current: payload.value};
-  const pendingPayloadUpdateRef = {current: false};
+  const previousActiveTriggerIdRef = ref(activeTriggerId.value);
+  const previousPayloadRef = ref(payload.value);
+  const pendingPayloadUpdateRef = ref(false);
 
   watch(
     () => [activeTriggerId.value, payload.value] as const,
     ([activeTriggerIdValue, payloadValue]) => {
-      const previousActiveTriggerId = previousActiveTriggerIdRef.current;
-      const previousPayload = previousPayloadRef.current;
+      const previousActiveTriggerId = previousActiveTriggerIdRef.value;
+      const previousPayload = previousPayloadRef.value;
       const triggerIdChanged = activeTriggerIdValue !== previousActiveTriggerId;
       const payloadChanged = payloadValue !== previousPayload;
 
       if (triggerIdChanged) {
         contentKey.value += 1;
-        pendingPayloadUpdateRef.current = !payloadChanged;
-      } else if (pendingPayloadUpdateRef.current && payloadChanged) {
+        pendingPayloadUpdateRef.value = !payloadChanged;
+      } else if (pendingPayloadUpdateRef.value && payloadChanged) {
         contentKey.value += 1;
-        pendingPayloadUpdateRef.current = false;
+        pendingPayloadUpdateRef.value = false;
       }
 
-      previousActiveTriggerIdRef.current = activeTriggerIdValue;
-      previousPayloadRef.current = payloadValue;
+      previousActiveTriggerIdRef.value = activeTriggerIdValue;
+      previousPayloadRef.value = payloadValue;
     },
     {flush: 'post', immediate: true},
   );

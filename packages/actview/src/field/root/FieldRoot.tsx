@@ -10,6 +10,7 @@ import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
 import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
 import { useFieldValidation } from './useFieldValidation';
 import { useFieldControlRegistration } from '@/internals/field-register-control/useFieldControlRegistration';
+import type { Ref } from 'actview';
 
 /**
  * @internal
@@ -45,8 +46,8 @@ const FieldRootInner = defineComponent(function (componentProps: FieldRoot.Props
   const dirty = computed(() => dirtyProp ?? dirtyState.value);
   const touched = computed(() => touchedProp ?? touchedState.value);
 
-  const markedDirtyRef = {current: dirty.value};
-  const registeredFieldIdRef = {current: undefined as string | undefined};
+  const markedDirtyRef = ref(dirty.value);
+  const registeredFieldIdRef = ref(undefined as string | undefined);
   const registeredFieldName = ref<string | undefined>(undefined);
   const effectiveName = computed(() => name ?? registeredFieldName.value);
 
@@ -55,7 +56,7 @@ const FieldRootInner = defineComponent(function (componentProps: FieldRoot.Props
     () => dirtyProp,
     (v) => {
       if (v !== undefined) {
-        markedDirtyRef.current = v;
+        markedDirtyRef.value = v;
       }
     },
     {immediate: true},
@@ -68,7 +69,7 @@ const FieldRootInner = defineComponent(function (componentProps: FieldRoot.Props
 
     const next = typeof value === 'function' ? value(dirtyState.value) : value;
     if (next) {
-      markedDirtyRef.current = true;
+      markedDirtyRef.value = true;
     }
     dirtyState.value = next;
   };
@@ -90,7 +91,7 @@ const FieldRootInner = defineComponent(function (componentProps: FieldRoot.Props
 
   const shouldValidateOnChange = () =>
     validationMode === 'onChange' ||
-    (validationMode === 'onSubmit' && submitAttemptedRef.current);
+    (validationMode === 'onSubmit' && submitAttemptedRef.value);
 
   const formError = computed(() => {
     const fieldName = effectiveName.value;
@@ -352,7 +353,7 @@ export interface FieldRootProps extends BaseUIComponentProps<'div', FieldRootSta
    * A ref to imperative actions.
    * - `validate`: Validates the field when called.
    */
-  actionsRef?: {current: FieldRoot.Actions | null} | undefined;
+  actionsRef?: Ref<FieldRoot.Actions | null> | undefined;
 }
 
 export namespace FieldRoot {

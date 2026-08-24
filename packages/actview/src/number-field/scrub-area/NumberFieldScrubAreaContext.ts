@@ -5,7 +5,7 @@ export interface NumberFieldScrubAreaContext {
   isScrubbing: boolean;
   isTouchInput: boolean;
   isPointerLockDenied: boolean;
-  scrubAreaCursorRef: {current: HTMLSpanElement | null};
+  scrubAreaCursorRef: Ref<HTMLSpanElement | null>;
 }
 
 export const NumberFieldScrubAreaContext = createContext<

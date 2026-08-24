@@ -30,7 +30,6 @@ export const MenuGroup = defineComponent(function MenuGroup(componentProps: Menu
         (componentProps.ref as any)(el);
       } else if (componentProps.ref) {
         componentProps.ref.value = el;
-        componentProps.ref.current = el;
       }
     };
 

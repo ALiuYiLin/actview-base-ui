@@ -1,4 +1,4 @@
-import { onUnmounted, watch } from 'actview';
+import {onUnmounted, watch, ref} from 'actview';
 import { addEventListener } from '@/internals/addEventListener';
 import { mergeCleanups } from '@/internals/mergeCleanups';
 import { ownerDocument } from '@/internals/owner';
@@ -89,23 +89,23 @@ export function useHoverReferenceInteraction(
   const tree = useFloatingTree(externalTree);
 
   const instance = useHoverInteractionSharedState(store);
-  const isHoverCloseActiveRef = {current: false};
+  const isHoverCloseActiveRef = ref(false);
 
-  const handleCloseRef = {
-    current: handleClose as ((context: any) => (event: MouseEvent) => void | null) | null,
-  };
-  const delayRef = {current: delay as Delay | (() => Delay) | undefined};
-  const restMsRef = {current: restMs as number | (() => number)};
-  const enabledRef = {current: enabled};
-  const shouldOpenRef = {current: shouldOpenProp as (() => boolean) | undefined};
-  const isClosingRef = {current: isClosing as (() => boolean) | undefined};
+  const handleCloseRef = ref<((context: any) => (event: MouseEvent) => void | null) | null>(
+    handleClose,
+  );
+  const delayRef = ref(delay as Delay | (() => Delay) | undefined);
+  const restMsRef = ref(restMs as number | (() => number));
+  const enabledRef = ref(enabled);
+  const shouldOpenRef = ref(shouldOpenProp as (() => boolean) | undefined);
+  const isClosingRef = ref(isClosing as (() => boolean) | undefined);
 
   const isClickLikeOpenEvent = useStableCallback(() => {
-    return isClickLikeOpenEventShared(dataRef.current.openEvent?.type, instance.interactedInside);
+    return isClickLikeOpenEventShared(dataRef.value.openEvent?.type, instance.interactedInside);
   });
 
   const checkShouldOpen = useStableCallback(() => {
-    return shouldOpenRef.current?.() !== false;
+    return shouldOpenRef.value?.() !== false;
   });
 
   const isOverInactiveTrigger = useStableCallback(
@@ -166,14 +166,14 @@ export function useHoverReferenceInteraction(
 
       function onOpenChangeLocal(details: FloatingUIOpenChangeDetails) {
         if (!details.open) {
-          isHoverCloseActiveRef.current = details.reason === REASONS.triggerHover;
+          isHoverCloseActiveRef.value = details.reason === REASONS.triggerHover;
           cleanupMouseMoveHandler();
           instance.openChangeTimeout.clear();
           instance.restTimeout.clear();
           instance.blockMouseMove = true;
           instance.restTimeoutPending = false;
         } else {
-          isHoverCloseActiveRef.current = false;
+          isHoverCloseActiveRef.value = false;
         }
       }
 
@@ -215,7 +215,7 @@ export function useHoverReferenceInteraction(
       }
 
       function closeWithDelay(event: MouseEvent, runElseBranch = true) {
-        const closeDelay = getDelay(delayRef.current, 'close', instance.pointerType);
+        const closeDelay = getDelay(delayRef.value, 'close', instance.pointerType);
         if (closeDelay) {
           instance.openChangeTimeout.start(closeDelay, () => {
             store.setOpen(false, createChangeEventDetails(REASONS.triggerHover, event));
@@ -245,8 +245,8 @@ export function useHoverReferenceInteraction(
         }
 
         // Only rest delay is set; there's no fallback delay.
-        const restMsValue = getRestMs(restMsRef.current);
-        const openDelay = getDelay(delayRef.current, 'open', instance.pointerType);
+        const restMsValue = getRestMs(restMsRef.value);
+        const openDelay = getDelay(delayRef.value, 'open', instance.pointerType);
         const eventTarget = getTarget(event);
         const currentTarget = (event.currentTarget as HTMLElement) ?? null;
         const currentDomReference = store.select('domReferenceElement');
@@ -279,9 +279,9 @@ export function useHoverReferenceInteraction(
             : isOverInactiveTrigger(currentDomReference, triggerNode, eventTarget);
         const isOpen = store.select('open');
         const isInClosingTransition =
-          isClosingRef.current?.() ?? store.select('transitionStatus') === 'ending';
+          isClosingRef.value?.() ?? store.select('transitionStatus') === 'ending';
         const isHoverCloseTransition =
-          !isOpen && isInClosingTransition && isHoverCloseActiveRef.current;
+          !isOpen && isInClosingTransition && isHoverCloseActiveRef.value;
         const isReenteringSameTriggerDuringCloseTransition =
           !isOverInactive &&
           isElement(triggerNode) &&
@@ -334,20 +334,20 @@ export function useHoverReferenceInteraction(
         instance.restTimeout.clear();
         instance.restTimeoutPending = false;
 
-        const handleCloseContextBase = dataRef.current.floatingContext ?? getHandleCloseContext?.();
+        const handleCloseContextBase = dataRef.value.floatingContext ?? getHandleCloseContext?.();
 
         if (isInsideEnabledTrigger(event.relatedTarget, store.context.triggerElements)) {
           return;
         }
 
-        if (handleCloseRef.current && handleCloseContextBase) {
+        if (handleCloseRef.value && handleCloseContextBase) {
           if (!store.select('open')) {
             instance.openChangeTimeout.clear();
           }
 
           const currentTrigger = triggerElementRef.value;
 
-          instance.handler = handleCloseRef.current({
+          instance.handler = handleCloseRef.value({
             ...handleCloseContextBase,
             tree,
             x: event.clientX,
@@ -356,7 +356,7 @@ export function useHoverReferenceInteraction(
               clearPointerEvents();
               cleanupMouseMoveHandler();
               if (
-                enabledRef.current &&
+                enabledRef.value &&
                 !isClickLikeOpenEvent() &&
                 currentTrigger === store.select('domReferenceElement')
               ) {
@@ -452,7 +452,7 @@ export function useHoverReferenceInteraction(
         }
       }
 
-      const restMsValue = getRestMs(restMsRef.current);
+      const restMsValue = getRestMs(restMsRef.value);
       if ((currentOpen && !isOverInactive) || restMsValue === 0) {
         return;
       }

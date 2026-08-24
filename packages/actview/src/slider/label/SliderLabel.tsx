@@ -41,7 +41,7 @@ export const SliderLabel = defineComponent(function (componentProps: SliderLabel
         }
       }
 
-      const fallbackInputs = controlRef.current?.querySelectorAll('input[type="range"]');
+      const fallbackInputs = controlRef.value?.querySelectorAll('input[type="range"]');
       const fallbackInput = fallbackInputs?.length === 1 ? fallbackInputs[0] : null;
       if (isHTMLElement(fallbackInput)) {
         focusElementWithVisible(fallbackInput as HTMLElement);

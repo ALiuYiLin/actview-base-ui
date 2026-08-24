@@ -45,8 +45,8 @@ export function useCompositeListItem<Metadata>(
     externalIndex == null && guess
       ? (() => {
           if (indexRef.value === -1) {
-            const newIndex = nextIndexRef.current;
-            nextIndexRef.current += 1;
+            const newIndex = nextIndexRef.value;
+            nextIndexRef.value += 1;
             indexRef.value = newIndex;
           }
           return indexRef.value;

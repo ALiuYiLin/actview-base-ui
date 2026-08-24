@@ -1,4 +1,4 @@
-import { computed, defineComponent, onUnmounted, toValue, watch } from 'actview';
+import {computed, defineComponent, onUnmounted, toValue, watch, ref} from 'actview';
 import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
 import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
 import { mergePropsN } from '@/merge-props';
@@ -62,11 +62,11 @@ export const AccordionPanel = defineComponent(function (componentProps: Accordio
   }
 
   // 注册 panel id 到 CollapsibleRoot（卸载时注销）
-  const latestRegisteredId = {current: undefined as string | undefined};
+  const latestRegisteredId = ref(undefined as string | undefined);
   watch(
     () => registeredId.value,
     (registeredIdValue) => {
-      latestRegisteredId.current = registeredIdValue;
+      latestRegisteredId.value = registeredIdValue;
       setPanelIdState((currentId: string | null | undefined) =>
         registeredIdValue ?? (currentId === null ? undefined : currentId),
       );
@@ -75,7 +75,7 @@ export const AccordionPanel = defineComponent(function (componentProps: Accordio
   );
   onUnmounted(() => {
     setPanelIdState((currentId: string | null | undefined) =>
-      currentId === latestRegisteredId.current ? null : currentId,
+      currentId === latestRegisteredId.value ? null : currentId,
     );
   });
 

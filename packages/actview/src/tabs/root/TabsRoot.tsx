@@ -1,4 +1,4 @@
-import { defineComponent, ref, toValue, watch } from 'actview';
+import {defineComponent, ref, toValue, watch, shallowRef} from 'actview';
 import type { Ref } from 'actview';
 import { useControlled } from '@/utils/useControlled';
 import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
@@ -88,7 +88,7 @@ export const TabsRoot = defineComponent(function (componentProps: TabsRoot.Props
   // Used to determine if we should honor a disabled tab selection.
   const hasExplicitDefaultValueProp = defaultValueProp !== undefined;
 
-  const tabPanelRefs = {current: [] as (HTMLElement | null)[]};
+  const tabPanelRefs = shallowRef([] as (HTMLElement | null)[]);
   const mountedTabPanels = ref(new Map<TabsTab.Value, string>());
 
   const [value, setValue] = useControlled({
@@ -104,7 +104,7 @@ export const TabsRoot = defineComponent(function (componentProps: TabsRoot.Props
   const setTabMap = (m: Map<Node, CompositeMetadata<TabsTab.Metadata>>) => {
     tabMap.value = m;
   };
-  const lastKnownTabElementRef = {current: undefined as Node | undefined};
+  const lastKnownTabElementRef = ref(undefined as Node | undefined);
 
   // Used for activation direction detection via tab element positions.
   const getTabElementBySelectedValue = (selectedValue: TabsTab.Value): HTMLElement | null =>
@@ -245,14 +245,14 @@ export const TabsRoot = defineComponent(function (componentProps: TabsRoot.Props
 
   // Implicit uncontrolled selections are still automatic changes, so notify
   // once when the tabs first register. Explicit defaults are treated as user-owned.
-  const shouldNotifyInitialValueChangeRef = {current: !hasExplicitDefaultValueProp};
+  const shouldNotifyInitialValueChangeRef = ref(!hasExplicitDefaultValueProp);
   // useControlled warns if defaultValue changes after mount, but the
   // disabled-default honor policy below still needs a stable initial value.
-  const initialDefaultValueRef = {current: defaultValueProp};
+  const initialDefaultValueRef = ref(defaultValueProp);
   // An explicit defaultValue can intentionally point at a disabled tab on mount.
   // Once that selection becomes valid, later disabled states should fall back.
-  const shouldHonorDisabledDefaultValueRef = {current: hasExplicitDefaultValueProp};
-  const didRegisterTabsRef = {current: false};
+  const shouldHonorDisabledDefaultValueRef = ref(hasExplicitDefaultValueProp);
+  const didRegisterTabsRef = ref(false);
 
   // React 版 useIsoLayoutEffect：非受控自动回退
   watch(
@@ -280,41 +280,41 @@ export const TabsRoot = defineComponent(function (componentProps: TabsRoot.Props
         // Mark the initial notification as delivered only after the consumer
         // callback returns. The fallback value is queued first so automatic
         // consistency updates are not cancelable through a throwing handler.
-        shouldNotifyInitialValueChangeRef.current = false;
+        shouldNotifyInitialValueChangeRef.value = false;
       }
 
       if (currentTabMap.size === 0) {
         // A Suspense boundary outside the root can clean up layout effects while
         // keeping the previous tabs connected. Don't treat that as removal.
         if (
-          didRegisterTabsRef.current &&
+          didRegisterTabsRef.value &&
           currentValue !== null &&
-          !lastKnownTabElementRef.current?.isConnected
+          !lastKnownTabElementRef.value?.isConnected
         ) {
           commitAutomaticValueChange(null, REASONS.missing);
         }
         return;
       }
 
-      didRegisterTabsRef.current = true;
-      lastKnownTabElementRef.current = currentTabMap.keys().next().value;
+      didRegisterTabsRef.value = true;
+      lastKnownTabElementRef.value = currentTabMap.keys().next().value;
 
       const selectionIsDisabled = selectedTabMetadata()?.disabled;
       const selectionIsMissing = selectedTabMetadata() == null && currentValue !== null;
 
-      if (!selectionIsDisabled && currentValue === initialDefaultValueRef.current) {
-        shouldHonorDisabledDefaultValueRef.current = false;
+      if (!selectionIsDisabled && currentValue === initialDefaultValueRef.value) {
+        shouldHonorDisabledDefaultValueRef.value = false;
       }
 
       if (
-        shouldHonorDisabledDefaultValueRef.current &&
+        shouldHonorDisabledDefaultValueRef.value &&
         selectionIsDisabled &&
-        currentValue === initialDefaultValueRef.current
+        currentValue === initialDefaultValueRef.value
       ) {
         return;
       }
 
-      const shouldNotifyInitialValueChange = shouldNotifyInitialValueChangeRef.current;
+      const shouldNotifyInitialValueChange = shouldNotifyInitialValueChangeRef.value;
 
       if (selectionIsDisabled || selectionIsMissing) {
         const fallbackValue = firstEnabledTabValue() ?? null;
@@ -322,7 +322,7 @@ export const TabsRoot = defineComponent(function (componentProps: TabsRoot.Props
         if (currentValue === fallbackValue) {
           // Already at the fallback value; no commit or notification needed,
           // but record that the implicit-initial transition has resolved.
-          shouldNotifyInitialValueChangeRef.current = false;
+          shouldNotifyInitialValueChangeRef.value = false;
           return;
         }
 
@@ -340,7 +340,7 @@ export const TabsRoot = defineComponent(function (componentProps: TabsRoot.Props
 
       if (shouldNotifyInitialValueChange && selectedTabMetadata() != null) {
         notifyAutomaticValueChange(currentValue, REASONS.initial);
-        shouldNotifyInitialValueChangeRef.current = false;
+        shouldNotifyInitialValueChangeRef.value = false;
       }
     },
     {flush: 'post', immediate: true},

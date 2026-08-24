@@ -63,7 +63,7 @@ export function usePositioner<State extends Record<string, any>>(
           r(el);
         } else if (r) {
           r.value = el;
-          r.current = el;
+          r.value = el;
         }
       }
     };

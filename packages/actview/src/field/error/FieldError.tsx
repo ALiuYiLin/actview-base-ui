@@ -61,14 +61,14 @@ export const FieldError = defineComponent(function (componentProps: FieldError.P
   const {mounted, transitionStatus, setMounted} = useTransitionStatus(rendered);
 
   // React 版 useIsoLayoutEffect：rendered 且 id 存在时注册进 messageIds
-  const latestRegisteredId = {current: undefined as string | undefined};
+  const latestRegisteredId = ref(undefined as string | undefined);
   watch(
     () => [rendered.value, id.value] as const,
     ([renderedValue, idValue], _old, onCleanup) => {
       if (!renderedValue || !idValue) {
         return;
       }
-      latestRegisteredId.current = idValue;
+      latestRegisteredId.value = idValue;
       setMessageIds((v) => v.concat(idValue));
       onCleanup(() => {
         setMessageIds((v) => v.filter((item) => item !== idValue));
@@ -82,8 +82,8 @@ export const FieldError = defineComponent(function (componentProps: FieldError.P
     () => mounted.value,
     (_v, _old, onCleanup) => {
       onCleanup(() => {
-        if (latestRegisteredId.current) {
-          setMessageIds((v) => v.filter((item) => item !== latestRegisteredId.current));
+        if (latestRegisteredId.value) {
+          setMessageIds((v) => v.filter((item) => item !== latestRegisteredId.value));
         }
       });
     },

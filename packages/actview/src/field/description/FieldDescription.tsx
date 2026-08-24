@@ -1,4 +1,4 @@
-import { computed, defineComponent, onUnmounted, toValue, useRootElement, watch } from 'actview';
+import {computed, defineComponent, onUnmounted, toValue, useRootElement, watch, ref} from 'actview';
 import type { FieldRootState } from '../root/FieldRoot';
 import { useFieldRootContext } from '@/internals/field-root-context/FieldRootContext';
 import { useLabelableContext } from '@/internals/labelable-provider/LabelableContext';
@@ -31,14 +31,14 @@ export const FieldDescription = defineComponent(function (componentProps: FieldD
   });
 
   // React 版 useIsoLayoutEffect：id 注册进 messageIds，卸载时移除
-  const latestRegisteredId = {current: undefined as string | undefined};
+  const latestRegisteredId = ref(undefined as string | undefined);
   watch(
     id,
     (idValue, _old, onCleanup) => {
       if (!idValue) {
         return;
       }
-      latestRegisteredId.current = idValue;
+      latestRegisteredId.value = idValue;
       setMessageIds((v) => v.concat(idValue));
       onCleanup(() => {
         setMessageIds((v) => v.filter((item) => item !== idValue));
@@ -49,8 +49,8 @@ export const FieldDescription = defineComponent(function (componentProps: FieldD
 
   // 组件卸载时 watch 的 onCleanup 不保证执行——显式注销
   onUnmounted(() => {
-    if (latestRegisteredId.current) {
-      setMessageIds((v) => v.filter((item) => item !== latestRegisteredId.current));
+    if (latestRegisteredId.value) {
+      setMessageIds((v) => v.filter((item) => item !== latestRegisteredId.value));
     }
   });
 

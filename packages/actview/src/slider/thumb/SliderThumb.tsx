@@ -31,6 +31,7 @@ import type { SliderRootState } from '../root/SliderRoot';
 import { useSliderRootContext } from '../root/SliderRootContext';
 import { sliderStateAttributesMapping } from '../root/stateAttributesMapping';
 import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import type { Ref } from 'actview';
 
 const ALL_KEYS = new Set([...COMPOSITE_KEYS, PAGE_UP, PAGE_DOWN]);
 
@@ -149,9 +150,9 @@ export const SliderThumb = defineComponent(function (componentProps: SliderThumb
 
   const {setTouched, setFocused, validationMode} = toValue(useFieldRootContext());
 
-  const thumbRef = {current: null as HTMLElement | null};
-  const inputRef = {current: null as HTMLInputElement | null};
-  const restoringFocusVisibleRef = {current: false};
+  const thumbRef = ref(null as HTMLElement | null);
+  const inputRef = ref(null as HTMLInputElement | null);
+  const restoringFocusVisibleRef = ref(false);
 
   const defaultInputId = useBaseUiId();
   const labelableId = useLabelableId();
@@ -175,8 +176,8 @@ export const SliderThumb = defineComponent(function (componentProps: SliderThumb
     lastUsedThumbIndex >= 0 && lastUsedThumbIndex < sliderValues.length ? lastUsedThumbIndex : -1;
 
   const getInsetPosition = () => {
-    const control = controlRef.current;
-    const thumb = thumbRef.current;
+    const control = controlRef.value;
+    const thumb = thumbRef.value;
     if (!control || !thumb) {
       return;
     }
@@ -218,7 +219,7 @@ export const SliderThumb = defineComponent(function (componentProps: SliderThumb
 
   let resizeObserverCleanup: (() => void) | undefined;
   watch(
-    () => [inset, controlRef.current, thumbRef.current] as const,
+    () => [inset, controlRef.value, thumbRef.value] as const,
     () => {
       resizeObserverCleanup?.();
       resizeObserverCleanup = undefined;
@@ -227,8 +228,8 @@ export const SliderThumb = defineComponent(function (componentProps: SliderThumb
         return;
       }
 
-      const control = controlRef.current;
-      const thumb = thumbRef.current;
+      const control = controlRef.value;
+      const thumb = thumbRef.value;
 
       if (!control || !thumb) {
         return;
@@ -320,8 +321,8 @@ export const SliderThumb = defineComponent(function (componentProps: SliderThumb
         handleInputChange(event.currentTarget.valueAsNumber, index, event);
       },
       onFocus(event: any) {
-        const isRestoringFocusVisible = restoringFocusVisibleRef.current;
-        restoringFocusVisibleRef.current = false;
+        const isRestoringFocusVisible = restoringFocusVisibleRef.value;
+        restoringFocusVisibleRef.value = false;
         setActive(index);
         setFocused(true);
 
@@ -330,7 +331,7 @@ export const SliderThumb = defineComponent(function (componentProps: SliderThumb
         }
       },
       onBlur(event: any) {
-        if (restoringFocusVisibleRef.current) {
+        if (restoringFocusVisibleRef.value) {
           event.stopPropagation();
           return;
         }
@@ -339,7 +340,7 @@ export const SliderThumb = defineComponent(function (componentProps: SliderThumb
 
         // Keep field-level blur logic from running while focus moves to another thumb
         // of the same slider, so validation doesn't commit mid-interaction.
-        if (thumbRefs.current.some((thumb) => contains(thumb, event.relatedTarget))) {
+        if (thumbRefs.value.some((thumb) => contains(thumb, event.relatedTarget))) {
           return;
         }
 
@@ -412,7 +413,7 @@ export const SliderThumb = defineComponent(function (componentProps: SliderThumb
           const input = event.currentTarget as HTMLInputElement;
 
           if (!matchesFocusVisible(input)) {
-            restoringFocusVisibleRef.current = true;
+            restoringFocusVisibleRef.value = true;
             input.blur();
             input.focus({preventScroll: true});
           }
@@ -456,9 +457,9 @@ export const SliderThumb = defineComponent(function (componentProps: SliderThumb
               return;
             }
 
-            pressedThumbIndexRef.current = index;
+            pressedThumbIndexRef.value = index;
             const midpoint = getMidpoint(event.currentTarget, vertical);
-            pressedThumbCenterOffsetRef.current =
+            pressedThumbCenterOffsetRef.value =
               (vertical ? event.clientY : event.clientX) - midpoint;
           },
           style: thumbStyle,
@@ -555,7 +556,7 @@ export interface SliderThumbProps
   /**
    * A ref to access the nested input element.
    */
-  inputRef?: {current: HTMLInputElement | null} | ((element: HTMLInputElement | null) => void) | undefined;
+  inputRef?: Ref<HTMLInputElement | null> | ((element: HTMLInputElement | null) => void) | undefined;
   /**
    * A blur handler forwarded to the `input`.
    */

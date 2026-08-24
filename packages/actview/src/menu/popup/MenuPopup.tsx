@@ -182,6 +182,7 @@ export const MenuPopup = defineComponent(function MenuPopup(componentProps: Menu
 });
 
 import { useTreeCloseEvents } from './useTreeCloseEvents';
+import type { Ref } from 'actview';
 
 export interface MenuPopupProps extends BaseUIComponentProps<'div', MenuPopupState> {
   children?: any;
@@ -194,7 +195,7 @@ export interface MenuPopupProps extends BaseUIComponentProps<'div', MenuPopupSta
    */
   finalFocus?:
     | boolean
-    | {current: HTMLElement | null}
+    | Ref<HTMLElement | null>
     | ((closeType: InteractionType) => boolean | HTMLElement | null | void)
     | undefined;
 }

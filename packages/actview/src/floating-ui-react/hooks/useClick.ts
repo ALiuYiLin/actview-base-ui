@@ -6,6 +6,7 @@ import { getTarget, isTypeableElement } from '../utils/element';
 import { isMouseLikePointerType, isVirtualPointerEvent } from '../utils/event';
 import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
+import {ref} from 'actview';
 
 export interface UseClickProps {
   /**
@@ -72,7 +73,7 @@ export function useClick(
 
   const dataRef = store.context.dataRef;
 
-  const pointerTypeRef = {current: undefined as 'mouse' | 'pen' | 'touch' | 'virtual' | undefined};
+  const pointerTypeRef = ref(undefined as 'mouse' | 'pen' | 'touch' | 'virtual' | undefined);
   const frame = useAnimationFrame();
   const touchOpenTimeout = useTimeout();
 
@@ -81,13 +82,13 @@ export function useClick(
       // Screen reader activations (Android TalkBack, desktop screen readers) report a
       // mouse-like `pointerType`, but `ignoreMouse` must not drop them: hover logic cannot
       // open for a virtual press since there is no real pointer movement to wait for.
-      pointerTypeRef.current =
+      pointerTypeRef.value =
         isMouseLikePointerType(event.pointerType, true) && isVirtualPointerEvent(event)
           ? 'virtual'
           : event.pointerType;
     },
     onMouseDown(event: any) {
-      const pointerType = pointerTypeRef.current;
+      const pointerType = pointerTypeRef.value;
       const nativeEvent = event;
       const open = store.select('open');
 
@@ -128,10 +129,10 @@ export function useClick(
         return;
       }
 
-      const pointerType = pointerTypeRef.current;
+      const pointerType = pointerTypeRef.value;
 
       if (eventOption === 'mousedown' && pointerType) {
-        pointerTypeRef.current = undefined;
+        pointerTypeRef.value = undefined;
         return;
       }
 
@@ -157,7 +158,7 @@ export function useClick(
       );
     },
     onKeyDown() {
-      pointerTypeRef.current = undefined;
+      pointerTypeRef.value = undefined;
     },
   };
 
@@ -183,7 +184,7 @@ export function useClick(
     currentTarget: EventTarget | null,
     isClickLikeOpenEvent: (eventType: string | undefined) => boolean,
   ) {
-    const openEvent = dataRef.current.openEvent;
+    const openEvent = dataRef.value.openEvent;
     const hasClickedOnInactiveTrigger = store.select('domReferenceElement') !== currentTarget;
 
     if (open && hasClickedOnInactiveTrigger) {

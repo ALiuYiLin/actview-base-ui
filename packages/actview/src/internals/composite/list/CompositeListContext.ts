@@ -1,4 +1,5 @@
-import { createContext } from 'actview';
+import { createContext, ref } from 'actview';
+import type { Ref } from 'actview';
 
 export interface CompositeListRegistration<Metadata> {
   metadata: Metadata | null;
@@ -11,14 +12,14 @@ export interface CompositeListContextValue<Metadata> {
   register: (node: Element, registration: CompositeListRegistration<Metadata>) => void;
   unregister: (node: Element) => void;
   subscribeMapChange: (fn: (map: Map<Element, Metadata>) => void) => () => void;
-  nextIndexRef: {current: number};
+  nextIndexRef: Ref<number>;
 }
 
 const defaultContext: CompositeListContextValue<any> = {
   register: () => {},
   unregister: () => {},
   subscribeMapChange: () => () => {},
-  nextIndexRef: {current: 0},
+  nextIndexRef: ref(0),
 };
 
 export const CompositeListContext = createContext<CompositeListContextValue<any>>(defaultContext);

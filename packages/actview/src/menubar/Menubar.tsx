@@ -60,7 +60,7 @@ export const Menubar = defineComponent(function Menubar(props: Menubar.Props) {
         (props.ref as any)(el);
       } else if (props.ref) {
         (props.ref as any).value = el;
-        (props.ref as any).current = el;
+        
       }
     };
 

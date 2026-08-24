@@ -23,6 +23,7 @@ import { REASONS } from '@/internals/reasons';
 import { useValueChanged } from '@/internals/useValueChanged';
 import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
 import { mergePropsN } from '@/merge-props';
+import type { Ref } from 'actview';
 
 /**
  * Represents the switch itself.
@@ -65,10 +66,10 @@ export const SwitchRoot = defineComponent(function (componentProps: SwitchRoot.P
   const disabled = fieldDisabled.value || disabledProp;
   const name = fieldName.value ?? nameProp;
 
-  const inputRef = {current: null as HTMLInputElement | null};
+  const inputRef = ref(null as HTMLInputElement | null);
   const handleInputRef = useMergedRefs(inputRef, externalInputRef, validation.inputRef);
 
-  const switchRef = {current: null as HTMLElement | null};
+  const switchRef = ref(null as HTMLElement | null);
 
   const id = useBaseUiId();
 
@@ -84,12 +85,12 @@ export const SwitchRoot = defineComponent(function (componentProps: SwitchRoot.P
 
   useRegisterFieldControl(switchRef, id, toValue(checked), undefined, !disabled, nameProp);
 
-  // React 版 useIsoLayoutEffect：setFilled(inputRef.current.checked)
+  // React 版 useIsoLayoutEffect：setFilled(inputRef.value.checked)
   watch(
-    () => inputRef.current,
+    () => inputRef.value,
     () => {
-      if (inputRef.current) {
-        setFilled(inputRef.current.checked);
+      if (inputRef.value) {
+        setFilled(inputRef.value.checked);
       }
     },
     {flush: 'post', immediate: true},
@@ -134,7 +135,7 @@ export const SwitchRoot = defineComponent(function (componentProps: SwitchRoot.P
         }
       },
       onBlur() {
-        const element = inputRef.current;
+        const element = inputRef.value;
         if (!element || disabled) {
           return;
         }
@@ -153,7 +154,7 @@ export const SwitchRoot = defineComponent(function (componentProps: SwitchRoot.P
 
         event.preventDefault();
 
-        const input = inputRef.current;
+        const input = inputRef.value;
         if (!input) {
           return;
         }
@@ -201,7 +202,7 @@ export const SwitchRoot = defineComponent(function (componentProps: SwitchRoot.P
         setCheckedState(nextChecked);
       },
       onFocus() {
-        switchRef.current?.focus();
+        switchRef.value?.focus();
       },
       // React <19 sets an empty value if `undefined` is passed explicitly
       // To avoid this, we only set the value if it's defined
@@ -235,7 +236,7 @@ export const SwitchRoot = defineComponent(function (componentProps: SwitchRoot.P
     }
 
     const mergedRefs = (el: HTMLElement | null) => {
-      switchRef.current = el;
+      switchRef.value = el;
       buttonRef(el);
     };
 
@@ -319,7 +320,7 @@ export interface SwitchRootProps
   /**
    * A ref to access the hidden `<input>` element.
    */
-  inputRef?: {current: HTMLInputElement | null} | ((element: HTMLInputElement | null) => void) | undefined;
+  inputRef?: Ref<HTMLInputElement | null> | ((element: HTMLInputElement | null) => void) | undefined;
   /**
    * Identifies the field when a form is submitted.
    */

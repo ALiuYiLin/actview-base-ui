@@ -1,4 +1,4 @@
-import { defineComponent, toValue, watch } from 'actview';
+import {defineComponent, toValue, watch, ref} from 'actview';
 import { inertValue } from '@/utils/inertValue';
 import { usePopoverRootContext } from '../root/PopoverRootContext';
 import { PopoverPositionerContext } from './PopoverPositionerContext';
@@ -58,7 +58,7 @@ export const PopoverPositioner = defineComponent(function PopoverPositioner(
   const adaptiveOrigin = store.useState('adaptiveOrigin');
   const domReference = (floatingRootContext.value as any)?.useState('domReferenceElement');
 
-  const previousTriggerRef = {current: null as Element | null};
+  const previousTriggerRef = ref(null as Element | null);
   const runOnceAnimationsFinish = useAnimationsFinished(positionerElement);
 
   const positioner = useAnchorPositioning({
@@ -85,10 +85,10 @@ export const PopoverPositioner = defineComponent(function PopoverPositioner(
   watch(
     () => domReference?.value,
     (current: Element | null | undefined) => {
-      const prevTriggerElement = previousTriggerRef.current;
+      const prevTriggerElement = previousTriggerRef.value;
 
       if (current) {
-        previousTriggerRef.current = current;
+        previousTriggerRef.value = current;
       }
 
       if (prevTriggerElement && current && current !== prevTriggerElement) {

@@ -1,4 +1,4 @@
-import { defineComponent, toValue, useRootElement, watch } from 'actview';
+import {defineComponent, toValue, useRootElement, watch, ref} from 'actview';
 import type { ComputedRef } from 'actview';
 import { useMergedRefs } from '@/utils/useMergedRefs';
 import { visuallyHidden, visuallyHiddenInput } from '@/utils/visuallyHidden';
@@ -24,6 +24,7 @@ import { serializeValue } from '@/internals/serializeValue';
 import { RadioRootContext } from './RadioRootContext';
 import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
 import type { BaseUIComponentProps } from '@/internals/types';
+import type { Ref } from 'actview';
 
 /**
  * Represents the radio button itself.
@@ -55,8 +56,8 @@ export const RadioRoot = defineComponent(function <Value>(componentProps: RadioR
   const nativeButton = toValue(componentProps.nativeButton) ?? false;
   const idProp = toValue(componentProps.id);
 
-  const radioRef = {current: null as HTMLElement | null};
-  const inputRef = {current: null as HTMLInputElement | null};
+  const radioRef = ref(null as HTMLElement | null);
+  const inputRef = ref(null as HTMLInputElement | null);
 
   const registerFieldInput = undefined; // groupContext 里取
   const registerInput = (element: HTMLInputElement) => {
@@ -85,7 +86,7 @@ export const RadioRoot = defineComponent(function <Value>(componentProps: RadioR
 
   // React 版 useIsoLayoutEffect：input checked → filled
   watch(
-    () => inputRef.current?.checked,
+    () => inputRef.value?.checked,
     (checked) => {
       if (checked) {
         setFilled(true);
@@ -105,7 +106,7 @@ export const RadioRoot = defineComponent(function <Value>(componentProps: RadioR
       };
     },
     (state) => {
-      const input = inputRef.current;
+      const input = inputRef.value;
       if (!input) {
         return;
       }
@@ -172,7 +173,7 @@ export const RadioRoot = defineComponent(function <Value>(componentProps: RadioR
 
         event.preventDefault();
 
-        const input = inputRef.current;
+        const input = inputRef.value;
         if (!input) {
           return;
         }
@@ -184,7 +185,7 @@ export const RadioRoot = defineComponent(function <Value>(componentProps: RadioR
           return;
         }
 
-        inputRef.current?.click();
+        inputRef.value?.click();
 
         groupContext?.setTouched(false);
       },
@@ -231,7 +232,7 @@ export const RadioRoot = defineComponent(function <Value>(componentProps: RadioR
         setFieldTouched(true);
       },
       onFocus() {
-        radioRef.current?.focus();
+        radioRef.value?.focus();
       },
     };
 
@@ -365,7 +366,7 @@ export interface RadioRootProps<Value = any>
   /**
    * A ref to access the hidden input element.
    */
-  inputRef?: {current: HTMLInputElement | null} | ((element: HTMLInputElement | null) => void) | undefined;
+  inputRef?: Ref<HTMLInputElement | null> | ((element: HTMLInputElement | null) => void) | undefined;
 }
 
 export namespace RadioRoot {

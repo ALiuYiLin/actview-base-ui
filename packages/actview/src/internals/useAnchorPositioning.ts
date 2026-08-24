@@ -24,6 +24,7 @@ import { hide } from '@/utils/hideMiddleware';
 import { DEFAULT_SIDES } from '@/utils/adaptiveOriginConstants';
 import type { FloatingRootStore } from '@/floating-ui-react/components/FloatingRootStore';
 import type { FloatingTreeStore } from '@/floating-ui-react/components/FloatingTreeStore';
+import type { Ref } from 'actview';
 
 const AVAILABLE_WIDTH_VAR = '--available-width';
 const AVAILABLE_HEIGHT_VAR = '--available-height';
@@ -129,8 +130,8 @@ export function useAnchorPositioning(
   const anchorFn = typeof anchor === 'function' ? anchor : undefined;
   const anchorFnCallback = useStableCallback(anchorFn as any);
   const anchorDep = anchorFn ? anchorFnCallback : anchor;
-  const anchorValueRef = {current: anchor};
-  const mountedRef = {current: mountedValue};
+  const anchorValueRef = ref(anchor);
+  const mountedRef = ref(mountedValue);
 
   const direction = useDirection();
   const isRtl = direction.value === 'rtl';
@@ -187,10 +188,10 @@ export function useAnchorPositioning(
 
   // Using a ref assumes that the arrow element is always present in the DOM for the lifetime of the
   // popup.
-  const arrowRef = {current: null as Element | null};
+  const arrowRef = ref(null as Element | null);
 
-  const sideOffsetRef = {current: sideOffset};
-  const alignOffsetRef = {current: alignOffset};
+  const sideOffsetRef = ref(sideOffset);
+  const alignOffsetRef = ref(alignOffset);
   const sideOffsetDep = typeof sideOffset !== 'function' ? sideOffset : 0;
   const alignOffsetDep = typeof alignOffset !== 'function' ? alignOffset : 0;
 
@@ -205,13 +206,13 @@ export function useAnchorPositioning(
       const data = getOffsetData(state, sideParam, isRtl);
 
       const sideAxis =
-        typeof sideOffsetRef.current === 'function'
-          ? (sideOffsetRef.current as any)(data)
-          : sideOffsetRef.current;
+        typeof sideOffsetRef.value === 'function'
+          ? (sideOffsetRef.value as any)(data)
+          : sideOffsetRef.value;
       const alignAxis =
-        typeof alignOffsetRef.current === 'function'
-          ? (alignOffsetRef.current as any)(data)
-          : alignOffsetRef.current;
+        typeof alignOffsetRef.value === 'function'
+          ? (alignOffsetRef.value as any)(data)
+          : alignOffsetRef.value;
 
       return {
         mainAxis: sideAxis,
@@ -251,10 +252,10 @@ export function useAnchorPositioning(
           sticky || shiftCrossAxis
             ? undefined
             : limitShift((limitData: any) => {
-                if (!arrowRef.current) {
+                if (!arrowRef.value) {
                   return {};
                 }
-                const {width, height} = arrowRef.current.getBoundingClientRect();
+                const {width, height} = arrowRef.value.getBoundingClientRect();
                 const sideAxis = getSideAxis(getSide(limitData.placement));
                 const arrowSize = sideAxis === 'y' ? width : height;
                 const offsetAmount =
@@ -282,7 +283,7 @@ export function useAnchorPositioning(
     size({
       ...commonCollisionProps,
       apply({elements: {floating}, availableWidth, availableHeight, rects}: any) {
-        if (!mountedRef.current) {
+        if (!mountedRef.value) {
           return;
         }
 
@@ -302,7 +303,7 @@ export function useAnchorPositioning(
     } as any),
     arrow((state: any) => ({
       // `transform-origin` calculations rely on an element existing.
-      element: arrowRef.current || ownerDocument(state.elements.floating).createElement('div'),
+      element: arrowRef.value || ownerDocument(state.elements.floating).createElement('div'),
       padding: arrowPadding,
       offsetParent: 'floating',
     }) as any),
@@ -313,7 +314,7 @@ export function useAnchorPositioning(
 
         const currentRenderedSide = getSide(renderedPlacement);
         const currentRenderedAxis = getSideAxis(currentRenderedSide);
-        const arrowEl = arrowRef.current;
+        const arrowEl = arrowRef.value;
         const arrowX = middlewareData.arrow?.x || 0;
         const arrowY = middlewareData.arrow?.y || 0;
         const arrowWidth = arrowEl?.clientWidth || 0;
@@ -422,7 +423,7 @@ export function useAnchorPositioning(
     return base;
   });
 
-  const registeredPositionReferenceRef = {current: null as Element | VirtualElement | null};
+  const registeredPositionReferenceRef = ref(null as Element | VirtualElement | null);
 
   watch(
     () => [mountedValue, refs] as const,
@@ -431,17 +432,17 @@ export function useAnchorPositioning(
         return;
       }
 
-      const anchorValue = anchorValueRef.current;
+      const anchorValue = anchorValueRef.value;
       const resolvedAnchor = typeof anchorValue === 'function' ? (anchorValue as any)() : anchorValue;
       const unwrappedElement =
         (isRef(resolvedAnchor)
-          ? ((resolvedAnchor as any).current ?? (resolvedAnchor as any).value)
+          ? (resolvedAnchor as any).value
           : resolvedAnchor) || null;
       const finalAnchor = unwrappedElement || null;
 
-      if (finalAnchor !== registeredPositionReferenceRef.current) {
+      if (finalAnchor !== registeredPositionReferenceRef.value) {
         refs.setPositionReference(finalAnchor);
-        registeredPositionReferenceRef.current = finalAnchor;
+        registeredPositionReferenceRef.value = finalAnchor;
       }
     },
     {flush: 'post', immediate: true},
@@ -454,16 +455,16 @@ export function useAnchorPositioning(
         return;
       }
 
-      const anchorValue = anchorValueRef.current;
+      const anchorValue = anchorValueRef.value;
 
       // Refs from parent components are set after layout effects run and are available later.
       if (typeof anchorValue === 'function') {
         return;
       }
 
-      if (isRef(anchorValue) && anchorValue.current !== registeredPositionReferenceRef.current) {
-        refs.setPositionReference(anchorValue.current);
-        registeredPositionReferenceRef.current = anchorValue.current;
+      if (isRef(anchorValue) && anchorValue.value !== registeredPositionReferenceRef.value) {
+        refs.setPositionReference(anchorValue.value);
+        registeredPositionReferenceRef.value = anchorValue.value;
       }
     },
     {flush: 'post', immediate: true},
@@ -526,8 +527,8 @@ export function useAnchorPositioning(
   } as unknown as UseAnchorPositioningReturnValue;
 }
 
-function isRef(param: any): param is {current: any} | {value: any} {
-  return param != null && ('current' in param || 'value' in param);
+function isRef(param: any): param is {value: any} {
+  return param != null && 'value' in param;
 }
 
 export interface UseAnchorPositioningSharedParameters {
@@ -538,7 +539,7 @@ export interface UseAnchorPositioningSharedParameters {
     | Element
     | null
     | VirtualElement
-    | {current: Element | null}
+    | Ref<Element | null>
     | (() => Element | VirtualElement | null)
     | undefined;
   /**
@@ -623,7 +624,7 @@ export interface UseAnchorPositioningParameters extends UseAnchorPositioningShar
 export interface UseAnchorPositioningReturnValue {
   positionerStyles: any;
   arrowStyles: any;
-  arrowRef: {current: Element | null};
+  arrowRef: Ref<Element | null>;
   arrowUncentered: boolean;
   side: Side;
   align: Align;

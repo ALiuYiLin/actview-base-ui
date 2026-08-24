@@ -20,12 +20,12 @@ export interface ScrollAreaRootContext {
   setHovering: (value: boolean) => void;
   scrollingX: boolean;
   scrollingY: boolean;
-  viewportRef: {current: HTMLDivElement | null};
-  scrollbarYRef: {current: HTMLDivElement | null};
-  thumbYRef: {current: HTMLDivElement | null};
-  scrollbarXRef: {current: HTMLDivElement | null};
-  thumbXRef: {current: HTMLDivElement | null};
-  cornerRef: {current: HTMLDivElement | null};
+  viewportRef: Ref<HTMLDivElement | null>;
+  scrollbarYRef: Ref<HTMLDivElement | null>;
+  thumbYRef: Ref<HTMLDivElement | null>;
+  scrollbarXRef: Ref<HTMLDivElement | null>;
+  thumbXRef: Ref<HTMLDivElement | null>;
+  cornerRef: Ref<HTMLDivElement | null>;
   handlePointerDown: (event: PointerEvent) => void;
   handlePointerMove: (event: PointerEvent) => void;
   handlePointerUp: (event: PointerEvent) => void;

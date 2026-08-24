@@ -26,7 +26,7 @@ export const ToastViewport = defineComponent(function ToastViewport(
         (componentProps.ref as any)(el);
       } else if (componentProps.ref) {
         (componentProps.ref as any).value = el;
-        (componentProps.ref as any).current = el;
+        
       }
     };
 

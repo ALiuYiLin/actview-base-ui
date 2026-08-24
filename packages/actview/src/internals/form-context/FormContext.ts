@@ -1,6 +1,7 @@
-import { createContext } from 'actview';
+import { createContext, ref, shallowRef } from 'actview';
 import { NOOP } from '@/internals/noop';
 import type { FieldValidityData } from '@/field/root/FieldRoot';
+import type { Ref } from 'actview';
 
 export type Errors = Record<string, string | string[]>;
 
@@ -14,36 +15,30 @@ export interface FormFieldRegistration {
    */
   validate: () => void;
   validityData: FieldValidityData;
-  controlRef: {current: HTMLElement | null};
+  controlRef: Ref<HTMLElement | null>;
   getValue: () => unknown;
 }
 
 export interface FormContext {
   errors: Errors;
   clearErrors: (name: string | undefined) => void;
-  elementRef: {current: HTMLFormElement | null};
-  formRef: {
-    current: {
-      fields: Map<string, FormFieldRegistration>;
-    };
-  };
+  elementRef: Ref<HTMLFormElement | null>;
+  formRef: Ref<{
+    fields: Map<string, FormFieldRegistration>;
+  }>;
   validationMode: ValidationMode;
-  submitAttemptedRef: {current: boolean};
+  submitAttemptedRef: Ref<boolean>;
 }
 
 export const FormContext = createContext<FormContext>({
-  elementRef: {current: null},
-  formRef: {
-    current: {
-      fields: new Map(),
-    },
-  },
+  elementRef: ref(null),
+  formRef: shallowRef({
+    fields: new Map(),
+  }),
   errors: {},
   clearErrors: NOOP,
   validationMode: 'onSubmit',
-  submitAttemptedRef: {
-    current: false,
-  },
+  submitAttemptedRef: ref(false),
 });
 
 export function useFormContext() {

@@ -48,7 +48,6 @@ export const MenuViewport = defineComponent(function MenuViewport(
         (componentProps.ref as any)(el);
       } else if (componentProps.ref) {
         componentProps.ref.value = el;
-        componentProps.ref.current = el;
       }
     };
 

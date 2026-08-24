@@ -68,11 +68,11 @@ export function useHoverFloatingInteraction(
   const childClosedTimeout = useTimeout();
 
   const isClickLikeOpenEvent = useStableCallback(() => {
-    return isClickLikeOpenEventShared(dataRef.current.openEvent?.type, instance.interactedInside);
+    return isClickLikeOpenEventShared(dataRef.value.openEvent?.type, instance.interactedInside);
   });
 
   const isHoverOpen = useStableCallback(() => {
-    return isHoverOpenEvent(dataRef.current.openEvent?.type);
+    return isHoverOpenEvent(dataRef.value.openEvent?.type);
   });
 
   const clearPointerEvents = useStableCallback(() => {
@@ -118,7 +118,7 @@ export function useHoverFloatingInteraction(
         const floatingEl = floatingElement.value;
         const doc = ownerDocument(floatingEl);
 
-        const parentFloating = (tree?.nodesRef.current.find((node) => node.id === parentId)
+        const parentFloating = (tree?.nodesRef.value.find((node) => node.id === parentId)
           ?.context?.elements.floating as any)?.value as HTMLElement | null;
 
         if (parentFloating) {
@@ -164,7 +164,7 @@ export function useHoverFloatingInteraction(
         return !!(
           tree &&
           parentId &&
-          getNodeChildren(tree.nodesRef.current, parentId).length > 0
+          getNodeChildren(tree.nodesRef.value, parentId).length > 0
         );
       }
 
@@ -210,13 +210,13 @@ export function useHoverFloatingInteraction(
           return;
         }
 
-        const currentNodeId = dataRef.current.floatingContext?.nodeId ?? nodeIdProp;
+        const currentNodeId = dataRef.value.floatingContext?.nodeId ?? nodeIdProp;
         const relatedTarget = event.relatedTarget;
         const isMovingIntoDescendantFloating =
           tree &&
           currentNodeId &&
           isElement(relatedTarget) &&
-          getNodeChildren(tree.nodesRef.current, currentNodeId, false).some((node) =>
+          getNodeChildren(tree.nodesRef.value, currentNodeId, false).some((node) =>
             contains((node.context?.elements.floating as any)?.value, relatedTarget),
           );
 

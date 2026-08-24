@@ -1,4 +1,4 @@
-import { computed, defineComponent, toValue } from 'actview';
+import { computed, defineComponent, ref, toValue } from 'actview';
 import { useMenuRadioItemContext } from '../radio-item/MenuRadioItemContext';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { itemMapping } from '../utils/stateAttributesMapping';
@@ -17,7 +17,7 @@ export const MenuRadioItemIndicator = defineComponent(function MenuRadioItemIndi
 
   const item = useMenuRadioItemContext();
 
-  const indicatorRef = {value: null as HTMLSpanElement | null};
+  const indicatorRef = ref(null as HTMLSpanElement | null);
 
   const {transitionStatus, mounted, setMounted} = useTransitionStatus(
     computed(() => item.checked),
@@ -64,7 +64,6 @@ export const MenuRadioItemIndicator = defineComponent(function MenuRadioItemIndi
         (componentProps.ref as any)(el);
       } else if (componentProps.ref) {
         componentProps.ref.value = el;
-        componentProps.ref.current = el;
       }
     };
 

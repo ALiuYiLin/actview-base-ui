@@ -91,7 +91,7 @@ export const NumberFieldRoot = defineComponent(function (componentProps: NumberF
   const minWithZeroDefault = min ?? 0;
   const formatStyle = format?.style;
 
-  const inputRef = {current: null as HTMLInputElement | null};
+  const inputRef = ref(null as HTMLInputElement | null);
   const hiddenInputRef = useMergedRefs(inputRefProp as any, fieldContextRef.value.validation.inputRef as any);
 
   const id = useLabelableId({id: idProp});
@@ -103,7 +103,7 @@ export const NumberFieldRoot = defineComponent(function (componentProps: NumberF
     state: 'value',
   });
 
-  const valueRef = useValueAsRef(value) as unknown as {current: number | null};
+  const valueRef = useValueAsRef(value) as unknown as Ref<number | null>;
 
   // React 版 useIsoLayoutEffect：filled 状态
   watch(
@@ -118,18 +118,18 @@ export const NumberFieldRoot = defineComponent(function (componentProps: NumberF
 
   const formatOptionsRef = useValueAsRef(format);
 
-  const hasPendingCommitRef = {current: false};
+  const hasPendingCommitRef = ref(false);
 
   const onValueCommitted = (
     nextValue: number | null,
     eventDetails: NumberFieldRoot.CommitEventDetails,
   ) => {
-    hasPendingCommitRef.current = false;
+    hasPendingCommitRef.value = false;
     onValueCommittedProp?.(nextValue, eventDetails);
   };
 
-  const allowInputSyncRef = {current: true};
-  const lastChangedValueRef = {current: null as number | null};
+  const allowInputSyncRef = ref(true);
+  const lastChangedValueRef = ref(null as number | null);
 
   const inputValue = ref(formatNumber(value.value as number | null, locale, format));
   const setInputValue = (v: string) => (inputValue.value = v);
@@ -221,7 +221,7 @@ export const NumberFieldRoot = defineComponent(function (componentProps: NumberF
       minWithDefault,
       maxWithDefault,
       minWithZeroDefault,
-      formatOptionsRef.current,
+      formatOptionsRef.value,
       snapOnStep,
       eventWithOptionalKeyState?.altKey ?? false,
       shouldClampValue,
@@ -232,7 +232,7 @@ export const NumberFieldRoot = defineComponent(function (componentProps: NumberF
     // it back to the existing value.
     const shouldFireChange =
       validatedValue !== value.value ||
-      (isInputReason && (unvalidatedValue !== value.value || allowInputSyncRef.current === false));
+      (isInputReason && (unvalidatedValue !== value.value || allowInputSyncRef.value === false));
 
     if (shouldFireChange) {
       onValueChangeProp?.(validatedValue, details);
@@ -244,16 +244,16 @@ export const NumberFieldRoot = defineComponent(function (componentProps: NumberF
 
       setValueUnwrapped(validatedValue);
       fieldContextRef.value.setDirty(validatedValue !== fieldContextRef.value.validityData.value.initialValue);
-      hasPendingCommitRef.current = true;
+      hasPendingCommitRef.value = true;
     }
 
-    lastChangedValueRef.current = validatedValue as number | null;
+    lastChangedValueRef.value = validatedValue as number | null;
 
     // Keep the visible input in sync immediately when programmatic changes occur
     // (increment/decrement, wheel, etc). During direct typing we don't want
     // to overwrite the user-provided text until blur, so we gate on
     // `allowInputSyncRef`.
-    if (allowInputSyncRef.current) {
+    if (allowInputSyncRef.value) {
       setInputValue(formatNumber(validatedValue, locale, format));
     }
 
@@ -267,7 +267,7 @@ export const NumberFieldRoot = defineComponent(function (componentProps: NumberF
     amount: number,
     {direction, currentValue, event, reason}: IncrementValueParameters,
   ) => {
-    const prevValue = currentValue == null ? valueRef.current : currentValue;
+    const prevValue = currentValue == null ? valueRef.value : currentValue;
     const nativeEvent = event as ReasonToEvent<IncrementValueParameters['reason']> | undefined;
 
     if (typeof prevValue !== 'number') {
@@ -291,7 +291,7 @@ export const NumberFieldRoot = defineComponent(function (componentProps: NumberF
     () => {
       // This ensures the value is only updated on blur rather than every keystroke, but still
       // allows the input value to be updated when the value is changed externally.
-      if (!allowInputSyncRef.current) {
+      if (!allowInputSyncRef.value) {
         return;
       }
 
@@ -331,7 +331,7 @@ export const NumberFieldRoot = defineComponent(function (componentProps: NumberF
   // Attach a native (non-passive) `wheel` listener to the input instead to prevent page scrolling.
   let wheelCleanup: (() => void) | undefined;
   onMounted(() => {
-    const element = inputRef.current;
+    const element = inputRef.value;
     if (disabled || readOnly || !allowWheelScrub || !element) {
       return;
     }
@@ -340,14 +340,14 @@ export const NumberFieldRoot = defineComponent(function (componentProps: NumberF
       if (
         // Allow pinch-zooming.
         event.ctrlKey ||
-        activeElement(ownerDocument(inputRef.current)) !== inputRef.current
+        activeElement(ownerDocument(inputRef.value)) !== inputRef.value
       ) {
         return;
       }
 
       // Prevent the default behavior to avoid scrolling the page.
       event.preventDefault();
-      allowInputSyncRef.current = true;
+      allowInputSyncRef.value = true;
 
       const amount = getStepAmount(event);
 
@@ -360,7 +360,7 @@ export const NumberFieldRoot = defineComponent(function (componentProps: NumberF
       });
       if (changed) {
         onValueCommitted(
-          lastChangedValueRef.current,
+          lastChangedValueRef.value,
           createGenericEventDetails(REASONS.wheel, event),
         );
       }
@@ -450,7 +450,7 @@ export const NumberFieldRoot = defineComponent(function (componentProps: NumberF
 
     const hiddenInputProps = fieldContextRef.value.validation.getValidationProps(disabled, {
       onFocus() {
-        inputRef.current?.focus();
+        inputRef.value?.focus();
       },
       onChange(event: any) {
         // Workaround for https://github.com/react/react/issues/9023
@@ -467,7 +467,7 @@ export const NumberFieldRoot = defineComponent(function (componentProps: NumberF
         // that same value rather than the raw autofilled one.
         setValue(parsedValue, details);
         formContextRef.value.clearErrors(name);
-        fieldContextRef.value.validation.change(lastChangedValueRef.current ?? parsedValue);
+        fieldContextRef.value.validation.change(lastChangedValueRef.value ?? parsedValue);
       },
     });
 
@@ -625,7 +625,7 @@ export interface NumberFieldRootProps
   /**
    * A ref to access the hidden input element.
    */
-  inputRef?: ((instance: HTMLInputElement | null) => void) | {current: HTMLInputElement | null} | undefined;
+  inputRef?: ((instance: HTMLInputElement | null) => void) | Ref<HTMLInputElement | null> | undefined;
 }
 
 export interface NumberFieldRootState extends FieldRootState {
@@ -686,6 +686,7 @@ export type NumberFieldRootCommitEventDetails =
   BaseUIGenericEventDetails<NumberFieldRoot.CommitEventReason>;
 
 import type { ChangeEventCustomProperties } from '../utils/types';
+import type { Ref } from 'actview';
 
 export namespace NumberFieldRoot {
   export type State = NumberFieldRootState;

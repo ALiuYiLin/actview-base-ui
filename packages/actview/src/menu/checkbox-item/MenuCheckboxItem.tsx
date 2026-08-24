@@ -1,4 +1,4 @@
-import { computed, defineComponent, toValue } from 'actview';
+import {computed, defineComponent, toValue, ref} from 'actview';
 import { mergePropsN } from '@/merge-props';
 import { NOOP } from '@/utils/empty';
 import { MenuCheckboxItemContext } from './MenuCheckboxItemContext';
@@ -110,7 +110,6 @@ export const MenuCheckboxItem = defineComponent(function MenuCheckboxItem(
         (componentProps.ref as any)(el);
       } else if (componentProps.ref) {
         componentProps.ref.value = el;
-        componentProps.ref.current = el;
       }
     };
 

@@ -1,4 +1,4 @@
-import { computed, defineComponent, toValue } from 'actview';
+import {computed, defineComponent, toValue, ref} from 'actview';
 import { mergeProps, mergePropsN } from '@/merge-props';
 import type { HTMLProps } from '@/internals/types';
 import { useMenuRootContext } from '../root/MenuRootContext';
@@ -8,6 +8,7 @@ import { useMenuPositionerContext } from '../positioner/MenuPositionerContext';
 import { useMenuItemCommonProps } from '../item/useMenuItemCommonProps';
 import { REGULAR_ITEM } from '../item/useMenuItem';
 import { useButton } from '@/internals/use-button/useButton';
+import type { Ref } from 'actview';
 
 /**
  * A link in the menu that can be used to navigate to a different page or section.
@@ -19,7 +20,7 @@ export const MenuLinkItem = defineComponent(function MenuLinkItem(
   const {id: idProp, label, closeOnClick = false} = componentProps as any;
   const children = toValue(componentProps.children);
 
-  const linkRef = {current: null as HTMLAnchorElement | null};
+  const linkRef = ref(null as HTMLAnchorElement | null);
 
   const listItem = useCompositeListItem({guess: true, label});
   const menuPositionerContext = useMenuPositionerContext(true);
@@ -44,7 +45,7 @@ export const MenuLinkItem = defineComponent(function MenuLinkItem(
     id,
     nodeId,
     store,
-    typingRef: typingRef as unknown as {current: boolean},
+    typingRef: typingRef as unknown as Ref<boolean>,
     itemRef: linkRef as any,
     itemMetadata: REGULAR_ITEM,
   });
@@ -71,14 +72,13 @@ export const MenuLinkItem = defineComponent(function MenuLinkItem(
     }
 
     const mergedRefs = (el: HTMLAnchorElement | null) => {
-      linkRef.current = el;
+      linkRef.value = el;
       buttonRef(el);
       listItem.ref(el);
       if (typeof componentProps.ref === 'function') {
         (componentProps.ref as any)(el);
       } else if (componentProps.ref) {
         componentProps.ref.value = el;
-        componentProps.ref.current = el;
       }
     };
 

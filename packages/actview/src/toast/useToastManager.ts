@@ -1,5 +1,6 @@
 import { useToastProviderContext } from './provider/ToastProviderContext';
 import type { ToastManagerAddOptions, ToastManagerPromiseOptions, ToastManagerUpdateOptions } from './store';
+import type { Ref } from 'actview';
 
 /**
  * Returns the array of toasts and methods to manage them.
@@ -31,7 +32,7 @@ export interface ToastObject<Data extends object = any> {
   /**
    * The ref for the toast.
    */
-  ref?: {current: HTMLElement | null} | undefined;
+  ref?: Ref<HTMLElement | null> | undefined;
   /**
    * The title of the toast.
    */

@@ -48,7 +48,7 @@ function useFloatingWithStore(
   const localDomReference = ref<Element | null | undefined>(undefined);
   const localFloatingElement = ref<HTMLElement | null | undefined>(undefined);
 
-  const domReferenceRef = {current: null as Element | null};
+  const domReferenceRef = ref(null as Element | null);
 
   const tree = useFloatingTree(externalTree);
 
@@ -97,7 +97,7 @@ function useFloatingWithStore(
 
   const setReference = (node: ReferenceType | null) => {
     if (isElement(node) || node === null) {
-      domReferenceRef.current = node as Element | null;
+      domReferenceRef.value = node as Element | null;
       localDomReference.value = node as Element | null;
     }
 
@@ -145,7 +145,7 @@ function useFloatingWithStore(
     () => domReferenceElement.value,
     () => {
       if (domReferenceElement.value) {
-        domReferenceRef.current = domReferenceElement.value as Element | null;
+        domReferenceRef.value = domReferenceElement.value as Element | null;
       }
     },
     {flush: 'post', immediate: true},
@@ -154,9 +154,9 @@ function useFloatingWithStore(
   watch(
     () => [tree, nodeId, store] as const,
     () => {
-      store.context.dataRef.current.floatingContext = context;
+      store.context.dataRef.value.floatingContext = context;
 
-      const node = tree?.nodesRef.current.find((n) => n.id === nodeId);
+      const node = tree?.nodesRef.value.find((n) => n.id === nodeId);
       if (node) {
         node.context = context;
       }

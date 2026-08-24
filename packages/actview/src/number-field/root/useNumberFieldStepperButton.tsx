@@ -63,20 +63,20 @@ export function useNumberFieldStepperButton(
     : REASONS.decrementPress;
 
   function commitValue(nativeEvent: MouseEvent) {
-    const shouldCommitInputValue = !allowInputSyncRef.current;
-    allowInputSyncRef.current = true;
+    const shouldCommitInputValue = !allowInputSyncRef.value;
+    allowInputSyncRef.value = true;
 
     if (!shouldCommitInputValue) {
       // The input is already synced, so step from the authoritative numeric value rather than
       // re-parsing the rounded display text. Refresh the commit ref to the current value so a
       // subsequent canceled step can't commit a stale `lastChangedValueRef` left over from an
       // earlier change.
-      lastChangedValueRef.current = valueRef.current;
+      lastChangedValueRef.value = valueRef.value;
       return;
     }
 
     // The input is dirty but not yet blurred, so the value won't have been committed.
-    const parsedValue = parseNumber(inputValue, locale, formatOptionsRef.current);
+    const parsedValue = parseNumber(inputValue, locale, formatOptionsRef.value);
 
     if (parsedValue !== null) {
       // Sync the dirty typed value with no direction so it isn't directionally snapped
@@ -88,7 +88,7 @@ export function useNumberFieldStepperButton(
       // Only sync the ref base when the commit wasn't canceled, so a subsequent increment in the
       // same interaction steps from the value actually applied.
       if (!details.isCanceled) {
-        valueRef.current = parsedValue;
+        valueRef.value = parsedValue;
       }
     }
   }
@@ -107,7 +107,7 @@ export function useNumberFieldStepperButton(
     onStop(nativeEvent: PointerEvent) {
       // `onStop` fires on every release; fall back to the current value when no tick changed it.
       // Step interactions never commit `null`, so the `??` can't mask a legitimate null commit.
-      const committed = lastChangedValueRef.current ?? valueRef.current;
+      const committed = lastChangedValueRef.value ?? valueRef.value;
       onValueCommitted(committed, createGenericEventDetails(pressReason, nativeEvent));
     },
   });
@@ -144,7 +144,7 @@ export function useNumberFieldStepperButton(
 
         const amount = getStepAmount(event);
 
-        const prev = valueRef.current;
+        const prev = valueRef.value;
 
         incrementValue(amount, {
           direction: isIncrement ? 1 : -1,
@@ -152,7 +152,7 @@ export function useNumberFieldStepperButton(
           reason: pressReason,
         });
 
-        const committed = lastChangedValueRef.current ?? valueRef.current;
+        const committed = lastChangedValueRef.value ?? valueRef.value;
         if (committed !== prev) {
           onValueCommitted(committed, createGenericEventDetails(pressReason, event.nativeEvent));
         }
@@ -166,11 +166,11 @@ export function useNumberFieldStepperButton(
         commitValue(event.nativeEvent);
         // Treat `lastChangedValueRef` as a per-hold result slot. If the first tick is a no-op or is
         // canceled, `onStop` should fall back to the current value, not a previous interaction.
-        lastChangedValueRef.current = null;
+        lastChangedValueRef.value = null;
 
         if (!isTouchLikePointerType(event.pointerType)) {
           // Focus the input so the user can continue with keyboard interactions.
-          inputRef.current?.focus();
+          inputRef.value?.focus();
         }
 
         pointerHandlers.onPointerDown(event);

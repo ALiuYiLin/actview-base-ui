@@ -1,4 +1,4 @@
-import { defineComponent, toValue, watch } from 'actview';
+import {defineComponent, toValue, watch, ref} from 'actview';
 import type { ComputedRef } from 'actview';
 import { inertValue } from '@/utils/inertValue';
 import { FloatingNode } from '@/floating-ui-react';
@@ -68,7 +68,7 @@ export const MenuPositioner = defineComponent(function MenuPositioner(
   const floatingParentNodeId = store.useState('floatingParentNodeId');
   const domReference = (floatingRootContext.value as any)?.useState('domReferenceElement');
 
-  const previousTriggerRef = {current: null as Element | null};
+  const previousTriggerRef = ref(null as Element | null);
   const runOnceAnimationsFinish = useAnimationsFinished(positionerElement);
 
   let anchor = anchorProp;
@@ -262,10 +262,10 @@ export const MenuPositioner = defineComponent(function MenuPositioner(
     () => [domReference.value] as const,
     () => {
       const currentTrigger = domReference.value;
-      const previousTrigger = previousTriggerRef.current;
+      const previousTrigger = previousTriggerRef.value;
 
       if (currentTrigger) {
-        previousTriggerRef.current = currentTrigger;
+        previousTriggerRef.value = currentTrigger;
       }
 
       if (previousTrigger && currentTrigger && currentTrigger !== previousTrigger) {

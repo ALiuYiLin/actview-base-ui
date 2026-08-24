@@ -8,6 +8,7 @@ import type { ModifierKey } from '@/internals/composite/composite';
 import type { CompositeGridNavigator } from './gridNavigation';
 import { useDirection } from '@/internals/direction-context/DirectionContext';
 import { getStateAttributesProps, StateAttributesMapping } from '@/internals/getStateAttributesProps';
+import type { Ref } from 'actview';
 
 export function CompositeRoot<Metadata extends {}, State extends Record<string, any>>(
   componentProps: CompositeRoot.Props<Metadata, State>,
@@ -157,7 +158,7 @@ export interface CompositeRootProps<Metadata, State extends Record<string, any>>
   props?: Array<Record<string, any> | (() => Record<string, any>)> | undefined;
   state?: State | undefined;
   stateAttributesMapping?: StateAttributesMapping<State> | undefined;
-  refs?: Array<((element: HTMLElement | null) => void) | {current: HTMLElement | null}> | undefined;
+  refs?: Array<((element: HTMLElement | null) => void) | Ref<HTMLElement | null>> | undefined;
   tag?: keyof JSX.IntrinsicElements | undefined;
   orientation?: 'horizontal' | 'vertical' | 'both' | undefined;
   grid?: CompositeGridNavigator | undefined;
@@ -167,7 +168,7 @@ export interface CompositeRootProps<Metadata, State extends Record<string, any>>
         event: any,
         prevIndex: number,
         nextIndex: number,
-        elementsRef: {current: Array<HTMLElement | null>},
+        elementsRef: Ref<Array<HTMLElement | null>>,
       ) => number)
     | undefined;
   highlightedIndex?: number | undefined;

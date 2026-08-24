@@ -1,6 +1,7 @@
 import { ownerDocument } from '@/internals/owner';
 import { EMPTY_OBJECT } from '@/utils/empty';
 import type { Ref } from 'actview';
+import {ref} from 'actview';
 
 /**
  * Returns `click` and `mousedown` handlers that fix the behavior of triggers of popups that are toggled by different events.
@@ -10,7 +11,7 @@ import type { Ref } from 'actview';
  */
 export function useMixedToggleClickHandler(params: UseMixedToggleClickHandlerParameters) {
   const {enabled = true, mouseDownAction, open} = params;
-  const ignoreClickRef = {current: false};
+  const ignoreClickRef = ref(false);
 
   const openValue = typeof open === 'boolean' ? open : open.value;
 
@@ -24,20 +25,20 @@ export function useMixedToggleClickHandler(params: UseMixedToggleClickHandlerPar
         (mouseDownAction === 'open' && !openValue) ||
         (mouseDownAction === 'close' && openValue)
       ) {
-        ignoreClickRef.current = true;
+        ignoreClickRef.value = true;
 
         ownerDocument(event.currentTarget as Element).addEventListener(
           'click',
           () => {
-            ignoreClickRef.current = false;
+            ignoreClickRef.value = false;
           },
           {once: true},
         );
       }
     },
     onClick: (event: any) => {
-      if (ignoreClickRef.current) {
-        ignoreClickRef.current = false;
+      if (ignoreClickRef.value) {
+        ignoreClickRef.value = false;
         event.preventDefault();
         event.stopPropagation();
       }

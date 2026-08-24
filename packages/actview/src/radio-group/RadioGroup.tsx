@@ -18,6 +18,7 @@ import { RadioGroupContext } from './RadioGroupContext';
 import type { BaseUIComponentProps } from '@/internals/types';
 import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
+import type { Ref } from 'actview';
 
 const MODIFIER_KEYS = [SHIFT];
 
@@ -54,7 +55,7 @@ export const RadioGroup = defineComponent(function <Value>(componentProps: Radio
   const externalValue = toValue(componentProps.value);
   const defaultValue = toValue(componentProps.defaultValue);
   const inputRefProp = componentProps.inputRef as
-    | {current: HTMLInputElement | null}
+    | Ref<HTMLInputElement | null>
     | ((element: HTMLInputElement | null) => void)
     | undefined;
   const onValueChangeProp = componentProps.onValueChange;
@@ -90,8 +91,8 @@ export const RadioGroup = defineComponent(function <Value>(componentProps: Radio
       return getInputControl();
     },
   };
-  const groupInputRef = {current: null as HTMLInputElement | null};
-  const firstEnabledInputRef = {current: null as HTMLInputElement | null};
+  const groupInputRef = ref(null as HTMLInputElement | null);
+  const firstEnabledInputRef = ref(null as HTMLInputElement | null);
 
   // Only forwards the public `inputRef` and tracks the current representative for that forwarding.
   // The registry (`validation.registeredInputs`) is authoritative for validation and form-value
@@ -107,11 +108,11 @@ export const RadioGroup = defineComponent(function <Value>(componentProps: Radio
           cleanup = result;
         }
       } else {
-        inputRefProp.current = hiddenInput;
+        inputRefProp.value = hiddenInput;
       }
     }
 
-    groupInputRef.current = hiddenInput;
+    groupInputRef.value = hiddenInput;
 
     return cleanup;
   }
@@ -121,11 +122,11 @@ export const RadioGroup = defineComponent(function <Value>(componentProps: Radio
       return undefined;
     }
 
-    if (!firstEnabledInputRef.current) {
-      firstEnabledInputRef.current = input;
+    if (!firstEnabledInputRef.value) {
+      firstEnabledInputRef.value = input;
     }
 
-    const currentInput = groupInputRef.current;
+    const currentInput = groupInputRef.value;
     const cleanup =
       input.checked || currentInput == null || currentInput.disabled
         ? setInputRef(input)
@@ -135,13 +136,13 @@ export const RadioGroup = defineComponent(function <Value>(componentProps: Radio
     // keep holding a disconnected node. The input may have become the forwarded
     // one after attach (via the re-registration effect), so always return this.
     return () => {
-      if (firstEnabledInputRef.current === input) {
-        firstEnabledInputRef.current = null;
+      if (firstEnabledInputRef.value === input) {
+        firstEnabledInputRef.value = null;
       }
-      if (groupInputRef.current === input) {
+      if (groupInputRef.value === input) {
         if (cleanup) {
           cleanup();
-          groupInputRef.current = null;
+          groupInputRef.value = null;
         } else {
           void setInputRef(null);
         }
@@ -152,7 +153,7 @@ export const RadioGroup = defineComponent(function <Value>(componentProps: Radio
   };
 
   const getFormValue = () => {
-    const formElement = elementRef.current;
+    const formElement = elementRef.value;
     if (!formElement) {
       return checkedValue.value ?? null;
     }
@@ -183,7 +184,7 @@ export const RadioGroup = defineComponent(function <Value>(componentProps: Radio
 
     validation.change(checkedValue.value);
 
-    const fallbackInput = firstEnabledInputRef.current;
+    const fallbackInput = firstEnabledInputRef.value;
     if (checkedValue.value == null && fallbackInput && !fallbackInput.disabled) {
       // Imperative re-point outside React's ref lifecycle; the ref-callback cleanup isn't tracked here.
       void setInputRef(fallbackInput);
@@ -323,7 +324,7 @@ export interface RadioGroupProps<Value = any>
   /**
    * A ref to access the hidden input element.
    */
-  inputRef?: {current: HTMLInputElement | null} | ((element: HTMLInputElement | null) => void) | undefined;
+  inputRef?: Ref<HTMLInputElement | null> | ((element: HTMLInputElement | null) => void) | undefined;
 }
 
 export type RadioGroupChangeEventReason = typeof REASONS.none;

@@ -102,13 +102,13 @@ describe('useRender', () => {
   });
 
   it('refs are handled as expected', async () => {
-    const refs: any[] = [{current: null}, {current: null}];
+    const refs: any[] = [{value: null}, {value: null}];
     await render(<TestComponentDef refs={refs} data-testid="el" />);
     await settle();
 
     const el = screen.getByTestId('el');
     refs.forEach((ref) => {
-      expect(ref.current).toBe(el);
+      expect(ref.value).toBe(el);
     });
   });
 

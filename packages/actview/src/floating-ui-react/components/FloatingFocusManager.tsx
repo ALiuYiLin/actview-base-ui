@@ -1,4 +1,4 @@
-import { defineComponent, onUnmounted, watch } from 'actview';
+import {defineComponent, onUnmounted, watch, ref} from 'actview';
 import { getNodeName, isHTMLElement } from '@floating-ui/utils/dom';
 import { addEventListener } from '@/internals/addEventListener';
 import { mergeCleanups } from '@/internals/mergeCleanups';
@@ -164,7 +164,7 @@ export interface FloatingFocusManagerProps {
    */
   initialFocus?:
     | boolean
-    | {current: HTMLElement | null}
+    | Ref<HTMLElement | null>
     | ((openType: InteractionType) => boolean | HTMLElement | null | void)
     | undefined;
   /**
@@ -173,7 +173,7 @@ export interface FloatingFocusManagerProps {
    */
   returnFocus?:
     | boolean
-    | {current: HTMLElement | null}
+    | Ref<HTMLElement | null>
     | ((closeType: InteractionType) => boolean | HTMLElement | null | void)
     | undefined;
   /**
@@ -194,15 +194,15 @@ export interface FloatingFocusManagerProps {
   /**
    * Overrides the element to focus when tabbing forward out of the floating element.
    */
-  nextFocusableElement?: HTMLElement | {current: HTMLElement | null} | null | undefined;
+  nextFocusableElement?: HTMLElement | Ref<HTMLElement | null> | null | undefined;
   /**
    * Overrides the element to focus when tabbing backward out of the floating element.
    */
-  previousFocusableElement?: HTMLElement | {current: HTMLElement | null} | null | undefined;
+  previousFocusableElement?: HTMLElement | Ref<HTMLElement | null> | null | undefined;
   /**
    * Ref to the focus guard preceding the floating element content.
    */
-  beforeContentFocusGuardRef?: {current: HTMLSpanElement | null} | undefined;
+  beforeContentFocusGuardRef?: Ref<HTMLSpanElement | null> | undefined;
   /**
    * External FloatingTree to use when the one provided by context can't be used.
    */
@@ -246,27 +246,27 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
   const floating = store.useState('floatingElement');
   const {events, dataRef} = store.context;
 
-  const getNodeId = useStableCallback(() => dataRef.current.floatingContext?.nodeId);
+  const getNodeId = useStableCallback(() => dataRef.value.floatingContext?.nodeId);
 
   const ignoreInitialFocus = initialFocus === false;
   // A typeable combobox reference with `initialFocus={false}` has different focus semantics.
   const isUntrappedTypeableCombobox =
     isTypeableCombobox(domReference.value) && ignoreInitialFocus;
 
-  const initialFocusRef = {current: initialFocus as any};
-  const returnFocusRef = {current: returnFocus as any};
-  const openInteractionTypeRef = {current: openInteractionType as any};
-  const openRef = {current: open.value};
+  const initialFocusRef = ref(initialFocus as any);
+  const returnFocusRef = ref(returnFocus as any);
+  const openInteractionTypeRef = ref(openInteractionType as any);
+  const openRef = ref(open.value);
 
   // props 是渲染期值（setup 快照不会随 openMethod 等变化更新），
   // 显式 watch 同步到 refs。
   watch(
     () => [openInteractionType, returnFocus, initialFocus, open.value] as const,
     () => {
-      openInteractionTypeRef.current = openInteractionType as any;
-      returnFocusRef.current = returnFocus as any;
-      initialFocusRef.current = initialFocus as any;
-      openRef.current = open.value;
+      openInteractionTypeRef.value = openInteractionType as any;
+      returnFocusRef.value = returnFocus as any;
+      initialFocusRef.value = initialFocus as any;
+      openRef.value = open.value;
     },
     {flush: 'post', immediate: true},
   );
@@ -275,23 +275,23 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
   const portalContextRef = usePortalContext();
   const portalContext = portalContextRef?.value;
 
-  const preventReturnFocusRef = {current: false};
-  const isPointerDownRef = {current: false};
-  const pointerDownOutsideRef = {current: false};
-  const lastFocusedTabbableRef = {current: null as FocusableElement | null};
-  const closeTypeRef = {current: '' as InteractionType};
+  const preventReturnFocusRef = ref(false);
+  const isPointerDownRef = ref(false);
+  const pointerDownOutsideRef = ref(false);
+  const lastFocusedTabbableRef = ref(null as FocusableElement | null);
+  const closeTypeRef = ref('' as InteractionType);
 
   // actview 的 watch cleanup 在组件卸载时不执行（与 React effect cleanup 不同），
   // 因此 returnFocus 需要显式在 onUnmounted 中触发。
-  const returnFocusCleanupRef = {current: null as (() => void) | null};
+  const returnFocusCleanupRef = ref(null as (() => void) | null);
   onUnmounted(() => {
-    returnFocusCleanupRef.current?.();
-    returnFocusCleanupRef.current = null;
+    returnFocusCleanupRef.value?.();
+    returnFocusCleanupRef.value = null;
   });
-  const lastInteractionTypeRef = {current: '' as InteractionType};
+  const lastInteractionTypeRef = ref('' as InteractionType);
 
-  const beforeGuardRef = {current: null as HTMLSpanElement | null};
-  const afterGuardRef = {current: null as HTMLSpanElement | null};
+  const beforeGuardRef = ref(null as HTMLSpanElement | null);
+  const afterGuardRef = ref(null as HTMLSpanElement | null);
 
   const blurTimeout = useTimeout();
   const pointerDownTimeout = useTimeout();
@@ -347,7 +347,7 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
       const doc = ownerDocument(floatingFocusElement);
 
       function clearPointerDownOutside() {
-        pointerDownOutsideRef.current = false;
+        pointerDownOutsideRef.value = false;
       }
 
       function onPointerDown(event: PointerEvent) {
@@ -358,20 +358,20 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
           contains(domReference.value, target) ||
           contains(portalContext?.portalNode, target) ||
           insideElements.some((element) => element === target || contains(element, target));
-        pointerDownOutsideRef.current = !pointerTargetInside;
-        lastInteractionTypeRef.current =
+        pointerDownOutsideRef.value = !pointerTargetInside;
+        lastInteractionTypeRef.value =
           (event.pointerType as any) || 'keyboard';
 
         if (target?.closest(`[${CLICK_TRIGGER_IDENTIFIER}]`)) {
-          isPointerDownRef.current = true;
+          isPointerDownRef.value = true;
           pointerDownTimeout.start(0, () => {
-            isPointerDownRef.current = false;
+            isPointerDownRef.value = false;
           });
         }
       }
 
       function onKeyDown() {
-        lastInteractionTypeRef.current = 'keyboard';
+        lastInteractionTypeRef.value = 'keyboard';
       }
 
       return mergeCleanups(
@@ -409,16 +409,16 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
 
       // In Safari, buttons lose focus when pressing them.
       function handlePointerDown() {
-        isPointerDownRef.current = true;
+        isPointerDownRef.value = true;
         pointerDownTimeout.start(0, () => {
-          isPointerDownRef.current = false;
+          isPointerDownRef.value = false;
         });
       }
 
       function handleFocusIn(event: FocusEvent) {
         const target = getTarget(event) as FocusableElement | null;
         if (isTabbable(target)) {
-          lastFocusedTabbableRef.current = target;
+          lastFocusedTabbableRef.value = target;
         }
       }
 
@@ -439,8 +439,8 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
           const isRelatedFocusGuard =
             relatedTarget?.hasAttribute(createAttribute('focus-guard')) &&
             [
-              beforeGuardRef.current,
-              afterGuardRef.current,
+              beforeGuardRef.value,
+              afterGuardRef.value,
               portalContext?.beforeInsideRef.value,
               portalContext?.afterInsideRef.value,
               portalContext?.beforeOutsideRef.value,
@@ -460,12 +460,12 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
             triggers.hasMatchingElement((trigger) => contains(trigger, relatedTarget)) ||
             isRelatedFocusGuard ||
             (tree &&
-              (getNodeChildren(tree.nodesRef.current, nodeId).find(
+              (getNodeChildren(tree.nodesRef.value, nodeId).find(
                 (node) =>
                   contains((node.context?.elements.floating as any)?.value, relatedTarget) ||
                   contains((node.context?.elements.domReference as any)?.value, relatedTarget),
               ) ||
-                getNodeAncestors(tree.nodesRef.current, nodeId).find(
+                getNodeAncestors(tree.nodesRef.value, nodeId).find(
                   (node) =>
                     [
                       node.context?.elements.floating,
@@ -498,7 +498,7 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
             }
 
             const tabbableContent = getTabbableContent() as Array<Element | null>;
-            const prevTabbable = lastFocusedTabbableRef.current;
+            const prevTabbable = lastFocusedTabbableRef.value;
             const nodeToFocus =
               (prevTabbable && tabbableContent.includes(prevTabbable) ? prevTabbable : null) ||
               tabbableContent[tabbableContent.length - 1] ||
@@ -510,8 +510,8 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
           }
 
           // https://github.com/floating-ui/floating-ui/issues/3060
-          if (dataRef.current.insideReactTree) {
-            dataRef.current.insideReactTree = false;
+          if (dataRef.value.insideReactTree) {
+            dataRef.value.insideReactTree = false;
             return;
           }
 
@@ -521,22 +521,22 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
             (isUntrappedTypeableCombobox ? true : !modal) &&
             relatedTarget &&
             movedToUnrelatedNode &&
-            !isPointerDownRef.current &&
+            !isPointerDownRef.value &&
             (isUntrappedTypeableCombobox || relatedTarget !== getPreviouslyFocusedElement())
           ) {
-            preventReturnFocusRef.current = true;
+            preventReturnFocusRef.value = true;
             store.setOpen(false, createChangeEventDetails(REASONS.focusOut, event));
           }
         });
       }
 
       function markInsideReactTree() {
-        if (pointerDownOutsideRef.current) {
+        if (pointerDownOutsideRef.value) {
           return;
         }
-        dataRef.current.insideReactTree = true;
+        dataRef.value.insideReactTree = true;
         blurTimeout.start(0, () => {
-          dataRef.current.insideReactTree = false;
+          dataRef.value.insideReactTree = false;
         });
       }
 
@@ -582,7 +582,7 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
         portalContext?.portalNode?.querySelectorAll(`[${createAttribute('portal')}]`) || [],
       );
 
-      const ancestors = tree ? getNodeAncestors(tree.nodesRef.current, getNodeId()) : [];
+      const ancestors = tree ? getNodeAncestors(tree.nodesRef.value, getNodeId()) : [];
       const rootAncestorComboboxDomReference = ancestors.find((node) =>
         isTypeableCombobox((node.context?.elements.domReference as any)?.value || null),
       )?.context?.elements.domReference;
@@ -590,8 +590,8 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
       const controlInsideElements = [
         floating.value,
         ...portalNodes,
-        beforeGuardRef.current,
-        afterGuardRef.current,
+        beforeGuardRef.value,
+        afterGuardRef.value,
         portalContext?.beforeOutsideRef.value,
         portalContext?.afterOutsideRef.value,
         ...getResolvedInsideElements(),
@@ -633,18 +633,18 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
         return;
       }
 
-      closeTypeRef.current = '';
-      lastInteractionTypeRef.current = '';
+      closeTypeRef.value = '';
+      lastInteractionTypeRef.value = '';
 
       const doc = ownerDocument(floatingFocusElement);
       const previouslyFocusedElement = activeElement(doc);
 
       // Wait for any layout effect state setters to execute to set `tabIndex`.
       queueMicrotask(() => {
-        const initialFocusValueOrFn = initialFocusRef.current;
+        const initialFocusValueOrFn = initialFocusRef.value;
         const resolvedInitialFocus =
           typeof initialFocusValueOrFn === 'function'
-            ? initialFocusValueOrFn(openInteractionTypeRef.current || '')
+            ? initialFocusValueOrFn(openInteractionTypeRef.value || '')
             : initialFocusValueOrFn;
 
         if (resolvedInitialFocus === undefined || resolvedInitialFocus === false) {
@@ -682,7 +682,7 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
         void enqueueFocus(elToFocus, {
           preventScroll: elToFocus === floatingFocusElement,
           shouldFocus() {
-            if (!openRef.current) {
+            if (!openRef.value) {
               return false;
             }
 
@@ -711,22 +711,22 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
       // （setup 期求值在 floating 就绪前恒为 null）。
       const floatingFocusElement = getFloatingFocusElement(floating.value as HTMLElement | null);
       if (disabled || !floatingFocusElement) {
-        returnFocusCleanupRef.current = null;
+        returnFocusCleanupRef.value = null;
         return undefined;
       }
 
       const doc = ownerDocument(floatingFocusElement);
       const elementFocusedBeforeOpen = activeElement(doc);
       // Only an explicit `null` interaction type represents a programmatic open.
-      const preferPreviousFocus = openInteractionTypeRef.current == null;
+      const preferPreviousFocus = openInteractionTypeRef.value == null;
 
       addPreviouslyFocusedElement(elementFocusedBeforeOpen);
 
       function onOpenChangeLocal(details: FloatingUIOpenChangeDetails) {
         if (!details.open) {
-          closeTypeRef.current = getEventType(
+          closeTypeRef.value = getEventType(
             details.nativeEvent,
-            lastInteractionTypeRef.current,
+            lastInteractionTypeRef.value,
           );
         }
 
@@ -734,7 +734,7 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
           details.reason === REASONS.triggerHover &&
           details.nativeEvent.type === 'mouseleave'
         ) {
-          preventReturnFocusRef.current = true;
+          preventReturnFocusRef.value = true;
         }
 
         if (details.reason !== REASONS.outsidePress) {
@@ -742,12 +742,12 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
         }
 
         if (details.nested) {
-          preventReturnFocusRef.current = false;
+          preventReturnFocusRef.value = false;
         } else if (
           isVirtualClick(details.nativeEvent as MouseEvent) ||
           isVirtualPointerEvent(details.nativeEvent as PointerEvent)
         ) {
-          preventReturnFocusRef.current = false;
+          preventReturnFocusRef.value = false;
         } else {
           // On outside press, only return focus to the reference when the browser
           // supports the `focus({ preventScroll })` option.
@@ -762,9 +762,9 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
             } as any);
 
           if (isPreventScrollSupported) {
-            preventReturnFocusRef.current = false;
+            preventReturnFocusRef.value = false;
           } else {
-            preventReturnFocusRef.current = true;
+            preventReturnFocusRef.value = true;
           }
         }
       }
@@ -772,7 +772,7 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
       events.on('openchange', onOpenChangeLocal);
 
       function getReturnElement(closeType: InteractionType) {
-        const returnFocusValueOrFn = returnFocusRef.current;
+        const returnFocusValueOrFn = returnFocusRef.value;
         let resolvedReturnFocusValue =
           typeof returnFocusValueOrFn === 'function'
             ? returnFocusValueOrFn(closeType)
@@ -822,12 +822,12 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
             (element) => element === activeEl || contains(element, activeEl),
           ) ||
           (tree &&
-            getNodeChildren(tree.nodesRef.current, getNodeId(), false).some((node) =>
+            getNodeChildren(tree.nodesRef.value, getNodeId(), false).some((node) =>
               contains((node.context?.elements.floating as any)?.value, activeEl),
             ));
 
-        const returnFocusValueOrFn = returnFocusRef.current;
-        const closeType = closeTypeRef.current;
+        const returnFocusValueOrFn = returnFocusRef.value;
+        const closeType = closeTypeRef.value;
         const returnElement = getReturnElement(closeType);
 
         queueMicrotask(() => {
@@ -836,7 +836,7 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
 
           if (
             returnFocusValueOrFn &&
-            !preventReturnFocusRef.current &&
+            !preventReturnFocusRef.value &&
             isHTMLElement(tabbableReturnElement) &&
             (!hasExplicitReturnFocus &&
             tabbableReturnElement !== activeEl &&
@@ -851,11 +851,11 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
             tabbableReturnElement.focus(focusOptions);
           }
 
-          preventReturnFocusRef.current = false;
+          preventReturnFocusRef.value = false;
         });
       };
 
-      returnFocusCleanupRef.current = cleanupFn;
+      returnFocusCleanupRef.value = cleanupFn;
       return cleanupFn;
     },
     {flush: 'post', immediate: true},
@@ -929,7 +929,7 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
         <FocusGuard
           data-type="inside"
           ref={(el: any) => {
-            beforeGuardRef.current = el;
+            beforeGuardRef.value = el;
             if (portalContext?.beforeInsideRef) {
               portalContext.beforeInsideRef.value = el;
             }
@@ -939,7 +939,7 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
               const els = getTabbableContent();
               void enqueueFocus(els[els.length - 1]);
             } else if (portalContext?.portalNode) {
-              preventReturnFocusRef.current = false;
+              preventReturnFocusRef.value = false;
               if (isOutsideEvent(event, portalContext.portalNode)) {
                 const nextTabbable = getNextTabbable(domReference.value);
                 nextTabbable?.focus();
@@ -958,7 +958,7 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
         <FocusGuard
           data-type="inside"
           ref={(el: any) => {
-            afterGuardRef.current = el;
+            afterGuardRef.value = el;
             if (portalContext?.afterInsideRef) {
               portalContext.afterInsideRef.value = el;
             }
@@ -968,7 +968,7 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
               void enqueueFocus(getTabbableContent()[0]);
             } else if (portalContext?.portalNode) {
               if (closeOnFocusOut) {
-                preventReturnFocusRef.current = true;
+                preventReturnFocusRef.value = true;
               }
 
               if (isOutsideEvent(event, portalContext.portalNode)) {

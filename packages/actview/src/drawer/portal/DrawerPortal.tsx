@@ -2,6 +2,7 @@ import { defineComponent } from 'actview';
 import { FloatingPortal } from '@/floating-ui-react';
 import { useDialogRootContext } from '@/dialog/root/DialogRootContext';
 import { DrawerPortalContext } from './DrawerPortalContext';
+import type { Ref } from 'actview';
 
 /**
  * A portal element that moves the Drawer to a different part of the DOM.
@@ -41,7 +42,7 @@ export interface DrawerPortalProps {
   /**
    * A parent element to render the portal element into.
    */
-  container?: HTMLElement | ShadowRoot | {current: HTMLElement | ShadowRoot | null} | null | undefined;
+  container?: HTMLElement | ShadowRoot | Ref<HTMLElement | ShadowRoot | null> | null | undefined;
   children?: any;
   [key: string]: any;
 }

@@ -89,7 +89,7 @@ export const OTPFieldInput = defineComponent(function OTPFieldInput(
         if (typeof componentProps.ref === 'function') (componentProps.ref as any)(el);
         else {
           (componentProps.ref as any).value = el;
-          (componentProps.ref as any).current = el;
+          
         }
       }
     };

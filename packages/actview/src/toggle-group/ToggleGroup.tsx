@@ -11,6 +11,7 @@ import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
 import type { StateAttributesMapping } from '@/internals/getStateAttributesProps';
 import { useToolbarRootContext } from '@/toolbar/root/ToolbarRootContext';
 import { useToolbarGroupContext } from '@/toolbar/group/ToolbarGroupContext';
+import type { Ref } from 'actview';
 
 /**
  * Provides a shared state to a series of toggle buttons.
@@ -110,7 +111,7 @@ export const ToggleGroup = defineComponent(function <Value extends string>(
       merged.style = style;
     }
 
-    const element = (refs?: Array<((el: HTMLElement | null) => void) | {current: HTMLElement | null}>) => {
+    const element = (refs?: Array<((el: HTMLElement | null) => void) | Ref<HTMLElement | null>>) => {
       if (render) {
         if (typeof render === 'function') {
           return render({...merged, ...stateValue, ref: refs?.[0]} as any);

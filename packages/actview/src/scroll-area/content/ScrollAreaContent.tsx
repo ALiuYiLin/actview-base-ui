@@ -1,4 +1,4 @@
-import { defineComponent, onMounted, onUnmounted, useRootElement } from 'actview';
+import {defineComponent, onMounted, onUnmounted, useRootElement, ref} from 'actview';
 import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
 import { useScrollAreaRootContext } from '../root/ScrollAreaRootContext';
 import { useScrollAreaViewportContext } from '../viewport/ScrollAreaViewportContext';
@@ -17,7 +17,7 @@ export const ScrollAreaContent = defineComponent(function (componentProps: Scrol
   const viewportContextRef = useScrollAreaViewportContext();
   const contentWrapperRef = useRootElement();
 
-  const computeOnInitialResizeRef = {current: rootContextRef.value.hasMeasuredScrollbar};
+  const computeOnInitialResizeRef = ref(rootContextRef.value.hasMeasuredScrollbar);
 
   // React 版 useIsoLayoutEffect：内容尺寸变化 → 重算 thumb
   let resizeObserver: ResizeObserver | null = null;
@@ -37,7 +37,7 @@ export const ScrollAreaContent = defineComponent(function (componentProps: Scrol
         // ResizeObserver fires once upon observing. Skip that initial call to avoid
         // double-calculating the thumb position on mount, unless the content mounted
         // after the viewport's initial measurement.
-        if (!computeOnInitialResizeRef.current) {
+        if (!computeOnInitialResizeRef.value) {
           return;
         }
       }

@@ -1,4 +1,4 @@
-import { computed, defineComponent, toValue } from 'actview';
+import { computed, defineComponent, ref, toValue } from 'actview';
 import { useMenuCheckboxItemContext } from '../checkbox-item/MenuCheckboxItemContext';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { itemMapping } from '../utils/stateAttributesMapping';
@@ -17,7 +17,7 @@ export const MenuCheckboxItemIndicator = defineComponent(function MenuCheckboxIt
 
   const item = useMenuCheckboxItemContext();
 
-  const indicatorRef = {value: null as HTMLSpanElement | null};
+  const indicatorRef = ref(null as HTMLSpanElement | null);
 
   const {transitionStatus, mounted, setMounted} = useTransitionStatus(
     computed(() => item.checked),
@@ -64,7 +64,6 @@ export const MenuCheckboxItemIndicator = defineComponent(function MenuCheckboxIt
         (componentProps.ref as any)(el);
       } else if (componentProps.ref) {
         componentProps.ref.value = el;
-        componentProps.ref.current = el;
       }
     };
 

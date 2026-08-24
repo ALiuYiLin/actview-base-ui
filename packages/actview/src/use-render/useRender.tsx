@@ -50,10 +50,8 @@ export function useRender<State extends Record<string, any>>(
         if (!r) continue;
         if (typeof r === 'function') {
           r(el);
-        } else if (r.value !== undefined) {
-          r.value = el;
         } else {
-          r.current = el;
+          r.value = el;
         }
       }
     };

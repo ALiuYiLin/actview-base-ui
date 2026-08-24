@@ -1,4 +1,4 @@
-import { ref, toValue, watch } from 'actview';
+import {ref, toValue, watch, shallowRef} from 'actview';
 import { isElementDisabled } from '@/utils/isElementDisabled';
 import { useMergedRefs } from '@/utils/useMergedRefs';
 import { EMPTY_ARRAY } from '@/internals/noop';
@@ -26,6 +26,7 @@ import type { CompositeMetadata } from '@/internals/composite/list/CompositeList
 import type { HTMLProps } from '@/internals/types';
 import { getTarget } from '@/utils/shadowDom';
 import type { CompositeGridNavigator } from './gridNavigation';
+import type { Ref } from 'actview';
 
 export interface UseCompositeRootParameters {
   orientation?: 'horizontal' | 'vertical' | 'both' | undefined;
@@ -36,7 +37,7 @@ export interface UseCompositeRootParameters {
         event: any,
         prevIndex: number,
         nextIndex: number,
-        elementsRef: {current: Array<HTMLElement | null>},
+        elementsRef: Ref<Array<HTMLElement | null>>,
       ) => number)
     | undefined;
   highlightedIndex?: number | undefined;
@@ -87,26 +88,26 @@ export function useCompositeRoot(params: UseCompositeRootParameters) {
   const internalHighlightedIndex = ref(0);
   const isGrid = grid != null;
 
-  const rootRef = {current: null as HTMLElement | null};
+  const rootRef = ref(null as HTMLElement | null);
   const mergedRef = useMergedRefs(
     (el: HTMLElement | null) => {
-      rootRef.current = el;
+      rootRef.value = el;
     },
     externalRef,
   );
 
-  const elementsRef = {current: [] as Array<HTMLElement | null>};
-  const hasSetDefaultIndexRef = {current: false};
-  const highlightedElementRef = {current: null as HTMLElement | null};
+  const elementsRef = shallowRef([] as Array<HTMLElement | null>);
+  const hasSetDefaultIndexRef = ref(false);
+  const highlightedElementRef = ref(null as HTMLElement | null);
 
   const highlightedIndex = externalHighlightedIndex ?? internalHighlightedIndex.value;
 
   const onHighlightedIndexChange = (index: number, shouldScrollIntoView = false) => {
-    highlightedElementRef.current = elementsRef.current[index] ?? null;
+    highlightedElementRef.value = elementsRef.value[index] ?? null;
     (externalSetHighlightedIndex ?? ((i: number) => (internalHighlightedIndex.value = i)))(index);
     if (shouldScrollIntoView) {
-      const newActiveItem = elementsRef.current[index];
-      scrollIntoViewIfNeeded(rootRef.current, newActiveItem, direction, orientation);
+      const newActiveItem = elementsRef.value[index];
+      scrollIntoViewIfNeeded(rootRef.value, newActiveItem, direction, orientation);
     }
   };
 
@@ -115,16 +116,16 @@ export function useCompositeRoot(params: UseCompositeRootParameters) {
       return;
     }
 
-    if (hasSetDefaultIndexRef.current) {
-      const elements = elementsRef.current;
-      const nextIndex = elements.indexOf(highlightedElementRef.current);
+    if (hasSetDefaultIndexRef.value) {
+      const elements = elementsRef.value;
+      const nextIndex = elements.indexOf(highlightedElementRef.value);
 
       if (nextIndex === -1) {
         const replacement = elements[highlightedIndex];
         if (!replacement || isListIndexDisabled(elements, highlightedIndex, disabledIndices)) {
           onHighlightedIndexChange(getFallbackIndex(elements, disabledIndices));
         } else {
-          highlightedElementRef.current = replacement;
+          highlightedElementRef.value = replacement;
         }
       } else if (nextIndex !== highlightedIndex) {
         onHighlightedIndexChange(nextIndex);
@@ -132,7 +133,7 @@ export function useCompositeRoot(params: UseCompositeRootParameters) {
       return;
     }
 
-    hasSetDefaultIndexRef.current = true;
+    hasSetDefaultIndexRef.value = true;
 
     const sortedElements = Array.from(map.keys()) as Array<HTMLElement | null>;
     const activeItem =
@@ -150,7 +151,7 @@ export function useCompositeRoot(params: UseCompositeRootParameters) {
       }
     }
 
-    scrollIntoViewIfNeeded(rootRef.current, activeItem, direction, orientation);
+    scrollIntoViewIfNeeded(rootRef.value, activeItem, direction, orientation);
   };
 
   // React 版 useIsoLayoutEffect：disabledIndices 渲染后重验证默认 tab stop
@@ -159,17 +160,17 @@ export function useCompositeRoot(params: UseCompositeRootParameters) {
       disabledIndices,
       externalHighlightedIndex,
       highlightedIndex,
-      hasSetDefaultIndexRef.current,
+      hasSetDefaultIndexRef.value,
     ] as const,
     () => {
       if (
         disabledIndices == null ||
         externalHighlightedIndex != null ||
-        !hasSetDefaultIndexRef.current
+        !hasSetDefaultIndexRef.value
       ) {
         return;
       }
-      const elements = elementsRef.current;
+      const elements = elementsRef.value;
       if (isListIndexDisabled(elements, highlightedIndex, disabledIndices)) {
         const firstEnabledIndex = findNonDisabledListIndex(elements, {disabledIndices});
         if (!isIndexOutOfListBounds(elements, firstEnabledIndex)) {
@@ -201,7 +202,7 @@ export function useCompositeRoot(params: UseCompositeRootParameters) {
       return;
     }
 
-    const element = rootRef.current;
+    const element = rootRef.value;
     if (!element) {
       return;
     }
@@ -279,7 +280,7 @@ export function useCompositeRoot(params: UseCompositeRootParameters) {
           nextIndex = onLoop(event, highlightedIndex, nextIndex, elementsRef);
         }
       } else {
-        nextIndex = findNonDisabledListIndex(elementsRef.current, {
+        nextIndex = findNonDisabledListIndex(elementsRef.value, {
           startingIndex: nextIndex,
           decrement: isBackwardKey,
           disabledIndices,
@@ -287,7 +288,7 @@ export function useCompositeRoot(params: UseCompositeRootParameters) {
       }
     }
 
-    if (nextIndex !== highlightedIndex && !isIndexOutOfListBounds(elementsRef.current, nextIndex)) {
+    if (nextIndex !== highlightedIndex && !isIndexOutOfListBounds(elementsRef.value, nextIndex)) {
       if (stopEventPropagation) {
         event.stopPropagation();
       }
@@ -299,7 +300,7 @@ export function useCompositeRoot(params: UseCompositeRootParameters) {
 
       // Wait for FocusManager `returnFocus` to execute.
       queueMicrotask(() => {
-        elementsRef.current[nextIndex]?.focus();
+        elementsRef.value[nextIndex]?.focus();
       });
     }
   };
@@ -307,7 +308,7 @@ export function useCompositeRoot(params: UseCompositeRootParameters) {
   const props: HTMLProps = {
     ref: mergedRef,
     onFocus(event: any) {
-      const element = rootRef.current;
+      const element = rootRef.value;
       const target = getTarget(event);
       if (!element || target == null || !isNativeInput(target)) {
         return;

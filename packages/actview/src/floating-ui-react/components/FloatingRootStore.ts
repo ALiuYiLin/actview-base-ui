@@ -26,7 +26,7 @@ export interface FloatingRootStoreContext {
   onOpenChange:
     | ((open: boolean, eventDetails: BaseUIChangeEventDetails<string>) => void)
     | undefined;
-  readonly dataRef: {current: ContextDataLike};
+  readonly dataRef: Ref<ContextDataLike>;
   readonly events: FloatingEvents;
   nested: boolean;
   readonly triggerElements: PopupTriggerMap;
@@ -83,9 +83,8 @@ export class FloatingRootStore extends ReactStore<
       },
       {
         onOpenChange,
-        // current/value 指向同一对象：MenuStore 侧用 .current，
-        // @floating-ui/actview 的 useFloating 用 .value，两者互相可见。
-        dataRef: {current: contextData, value: contextData} as any,
+        // 统一 .value 语义：MenuStore 与 @floating-ui/actview 均读 .value。
+        dataRef: {value: contextData} as any,
         events: createEventEmitter(),
         nested,
         triggerElements,
@@ -136,7 +135,7 @@ export class FloatingRootStore extends ReactStore<
       // click events to upgrade a hover-open.
       (event != null && isClickLikeEvent(event))
     ) {
-      this.context.dataRef.current.openEvent = newOpen ? event : undefined;
+      this.context.dataRef.value.openEvent = newOpen ? event : undefined;
     }
   };
 

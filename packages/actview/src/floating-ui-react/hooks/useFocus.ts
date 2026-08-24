@@ -1,4 +1,4 @@
-import { watch } from 'actview';
+import {watch, ref} from 'actview';
 import { addEventListener } from '@/internals/addEventListener';
 import { platform } from '@/utils/platform';
 import { mergeCleanups } from '@/internals/mergeCleanups';
@@ -51,10 +51,10 @@ export function useFocus(
 
   const {events, dataRef} = store.context;
 
-  const blockFocusRef = {current: false};
+  const blockFocusRef = ref(false);
   // Track which reference should be blocked from re-opening after Escape/press dismissal.
-  const blockedReferenceRef = {current: null as Element | null};
-  const keyboardModalityRef = {current: true};
+  const blockedReferenceRef = ref(null as Element | null);
+  const keyboardModalityRef = ref(true);
 
   const timeout = useTimeout();
 
@@ -79,17 +79,17 @@ export function useFocus(
           isHTMLElement(currentDomReference) &&
           currentDomReference === activeElement(ownerDocument(currentDomReference))
         ) {
-          blockFocusRef.current = true;
-          blockedReferenceRef.current = currentDomReference;
+          blockFocusRef.value = true;
+          blockedReferenceRef.value = currentDomReference;
         }
       }
 
       function onKeyDown() {
-        keyboardModalityRef.current = true;
+        keyboardModalityRef.value = true;
       }
 
       function onPointerDown() {
-        keyboardModalityRef.current = false;
+        keyboardModalityRef.value = false;
       }
 
       return mergeCleanups(
@@ -112,8 +112,8 @@ export function useFocus(
         if (details.reason === REASONS.triggerPress || details.reason === REASONS.escapeKey) {
           const referenceElement = store.select('domReferenceElement');
           if (isElement(referenceElement)) {
-            blockedReferenceRef.current = referenceElement;
-            blockFocusRef.current = true;
+            blockedReferenceRef.value = referenceElement;
+            blockFocusRef.value = true;
           }
         }
       }
@@ -133,8 +133,8 @@ export function useFocus(
     onFocus(event: any) {
       const focusTarget = event.currentTarget as Element;
 
-      if (blockFocusRef.current) {
-        if (blockedReferenceRef.current === focusTarget) {
+      if (blockFocusRef.value) {
+        if (blockedReferenceRef.value === focusTarget) {
           return;
         }
 
@@ -147,7 +147,7 @@ export function useFocus(
         // Safari fails to match `:focus-visible` if focus was initially
         // outside the document.
         if (isMacSafari && !event.relatedTarget) {
-          if (!keyboardModalityRef.current && !isTypeableElement(target)) {
+          if (!keyboardModalityRef.value && !isTypeableElement(target)) {
             return;
           }
         } else if (!matchesFocusVisible(target)) {
@@ -180,7 +180,7 @@ export function useFocus(
       }
 
       timeout.start(delayValue, () => {
-        if (blockFocusRef.current) {
+        if (blockFocusRef.value) {
           return;
         }
 
@@ -219,7 +219,7 @@ export function useFocus(
         // When focusing the reference element, then clicking into the floating
         // element, prevent it from hiding.
         if (
-          contains(dataRef.current.floatingContext?.refs.floating.current, activeEl) ||
+          contains(dataRef.value.floatingContext?.refs.floating.value, activeEl) ||
           contains(domReference, activeEl) ||
           movedToFocusGuard
         ) {
@@ -239,8 +239,8 @@ export function useFocus(
   };
 
   function resetBlockedFocus() {
-    blockFocusRef.current = false;
-    blockedReferenceRef.current = null;
+    blockFocusRef.value = false;
+    blockedReferenceRef.value = null;
   }
 
   return enabled ? {reference, trigger: reference} : {};

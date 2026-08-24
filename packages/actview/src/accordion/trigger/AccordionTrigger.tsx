@@ -1,4 +1,4 @@
-import { defineComponent, onUnmounted, toValue, useRootElement, watch } from 'actview';
+import {defineComponent, onUnmounted, toValue, useRootElement, watch, ref} from 'actview';
 import { triggerOpenStateMapping } from '@/utils/collapsibleOpenStateMapping';
 import type { BaseUIComponentProps, HTMLProps, NativeButtonProps } from '@/internals/types';
 import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
@@ -41,17 +41,17 @@ export const AccordionTrigger = defineComponent(function (componentProps: Accord
   // 注册 trigger id 到 AccordionItem（id 变化时先注销旧值，再注册新值；
   // React 版 useIsoLayoutEffect cleanup 的等价物）。组件卸载时 watch 的
   // onCleanup 不保证执行——用 onUnmounted 显式注销。
-  const latestRegisteredId = {current: undefined as string | undefined};
+  const latestRegisteredId = ref(undefined as string | undefined);
   watch(
     () => toValue(componentProps.id),
     (registeredId, _old, onCleanup) => {
-      latestRegisteredId.current = registeredId || undefined;
+      latestRegisteredId.value = registeredId || undefined;
       setTriggerId((currentId: string | null | undefined) =>
-        latestRegisteredId.current ?? (currentId === null ? undefined : currentId),
+        latestRegisteredId.value ?? (currentId === null ? undefined : currentId),
       );
       onCleanup(() => {
         setTriggerId((currentId: string | null | undefined) =>
-          currentId === latestRegisteredId.current ? null : currentId,
+          currentId === latestRegisteredId.value ? null : currentId,
         );
       });
     },
@@ -59,7 +59,7 @@ export const AccordionTrigger = defineComponent(function (componentProps: Accord
   );
   onUnmounted(() => {
     setTriggerId((currentId: string | null | undefined) =>
-      currentId === latestRegisteredId.current ? null : currentId,
+      currentId === latestRegisteredId.value ? null : currentId,
     );
   });
 

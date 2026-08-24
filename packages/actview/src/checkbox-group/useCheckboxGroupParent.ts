@@ -1,16 +1,17 @@
-import { ref, toValue } from 'actview';
+import {ref, toValue, shallowRef} from 'actview';
 import type { ComputedRef } from 'actview';
 import { EMPTY_ARRAY } from '@/internals/noop';
 import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import type { BaseUIEventReasons } from '@/internals/reasons';
+import type { Ref } from 'actview';
 
 export function useCheckboxGroupParent(
   params: UseCheckboxGroupParentParameters,
 ): UseCheckboxGroupParentReturnValue {
   const {allValues = EMPTY_ARRAY, value, onValueChange: onValueChangeProp} = params;
 
-  const uncontrolledStateRef = {current: value.value};
-  const disabledStatesRef = {current: new Map<string, boolean>()};
+  const uncontrolledStateRef = ref(value.value);
+  const disabledStatesRef = shallowRef(new Map<string, boolean>());
 
   const status = ref<'on' | 'off' | 'mixed'>('mixed');
   // A `Map` rather than an object: checkbox values are consumer data, and a value like
@@ -62,18 +63,18 @@ export function useCheckboxGroupParent(
         allValues.flatMap((v) => childIdsState.value.registry.get(v) ?? EMPTY_ARRAY).join(' ') ||
         undefined,
       onCheckedChange(_: boolean, eventDetails: BaseUIChangeEventDetails<any>) {
-        const uncontrolledState = uncontrolledStateRef.current;
+        const uncontrolledState = uncontrolledStateRef.value;
         const emitChange = onValueChange!;
 
         // None except the disabled ones that are checked, which can't be changed.
         const none = allValues.filter(
-          (v) => disabledStatesRef.current.get(v) && uncontrolledState.includes(v),
+          (v) => disabledStatesRef.value.get(v) && uncontrolledState.includes(v),
         );
         // "All" that are valid:
         // - any that aren't disabled
         // - disabled ones that are checked
         const all = allValues.filter(
-          (v) => !disabledStatesRef.current.get(v) || uncontrolledState.includes(v),
+          (v) => !disabledStatesRef.value.get(v) || uncontrolledState.includes(v),
         );
 
         const allOnOrOff =
@@ -123,7 +124,7 @@ export function useCheckboxGroupParent(
         onValueChange!(newValue, eventDetails);
 
         if (!eventDetails.isCanceled) {
-          uncontrolledStateRef.current = newValue;
+          uncontrolledStateRef.value = newValue;
           status.value = 'mixed';
         }
       },
@@ -145,7 +146,7 @@ export interface UseCheckboxGroupParentParameters {
 }
 
 export interface UseCheckboxGroupParentReturnValue {
-  disabledStatesRef: {current: Map<string, boolean>};
+  disabledStatesRef: Ref<Map<string, boolean>>;
   /**
    * Reports the `id` of the element a child checkbox exposes.
    */

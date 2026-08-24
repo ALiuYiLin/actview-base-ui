@@ -1,10 +1,11 @@
 import { ref, watch } from 'actview';
 import { useBaseUiId } from '@/internals/useBaseUiId';
+import type { Ref } from 'actview';
 
 export function useAriaLabelledBy(
   explicitAriaLabelledBy: string | undefined,
   labelId: string | undefined,
-  labelSourceRef: {current: LabelSource | null},
+  labelSourceRef: Ref<LabelSource | null>,
   enableFallback = true,
   labelSourceId?: string,
 ) {
@@ -17,12 +18,12 @@ export function useAriaLabelledBy(
   // Run after every commit so DOM association changes (e.g. label mount/unmount)
   // are reflected even when props/state deps are unchanged.
   watch(
-    () => [explicitAriaLabelledBy, labelId, labelSourceRef.current] as const,
+    () => [explicitAriaLabelledBy, labelId, labelSourceRef.value] as const,
     () => {
       const nextAriaLabelledBy =
         explicitAriaLabelledBy || labelId || !enableFallback
           ? undefined
-          : getAriaLabelledBy(labelSourceRef.current, generatedLabelId);
+          : getAriaLabelledBy(labelSourceRef.value, generatedLabelId);
 
       if (fallbackAriaLabelledBy.value !== nextAriaLabelledBy) {
         fallbackAriaLabelledBy.value = nextAriaLabelledBy;

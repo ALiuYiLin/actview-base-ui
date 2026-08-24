@@ -1,10 +1,11 @@
-import { watch } from 'actview';
+import {watch, ref} from 'actview';
 import type { ComputedRef } from 'actview';
 import { useFormContext } from '@/internals/form-context/FormContext';
 import type { FieldValidityData } from '@/field/root/FieldRoot';
+import type { Ref } from 'actview';
 
 export interface FieldControlRegistration {
-  controlRef: {current: any};
+  controlRef: Ref<any>;
   id: string | undefined;
   name?: string | undefined;
   getValue?: (() => unknown) | undefined;
@@ -39,12 +40,12 @@ export function useFieldControlRegistration(params: UseFieldControlRegistrationP
 
   const {formRef} = toValueFormContext();
 
-  const activeFieldControlSourceRef = {current: null as symbol | null};
-  const registrationRef = {current: null as FieldControlRegistration | null};
-  const initialValueCapturedRef = {current: false};
+  const activeFieldControlSourceRef = ref(null as symbol | null);
+  const registrationRef = ref(null as FieldControlRegistration | null);
+  const initialValueCapturedRef = ref(false);
 
   const getValueForForm = () => {
-    const registration = registrationRef.current;
+    const registration = registrationRef.value;
     if (!registration) {
       return undefined;
     }
@@ -61,8 +62,8 @@ export function useFieldControlRegistration(params: UseFieldControlRegistrationP
   }
 
   const validate = () => {
-    const registration = registrationRef.current;
-    markedDirtyRef.current = true;
+    const registration = registrationRef.value;
+    markedDirtyRef.value = true;
 
     if (!registration) {
       commit(validityData.value);
@@ -73,12 +74,12 @@ export function useFieldControlRegistration(params: UseFieldControlRegistrationP
   };
 
   function refreshRegistration() {
-    const registration = registrationRef.current;
+    const registration = registrationRef.value;
     if (!registration || !registration.id) {
       return;
     }
 
-    formRef.current.fields.set(registration.id, {
+    formRef.value.fields.set(registration.id, {
       getValue: getValueForForm,
       name: name ?? registration.name,
       controlRef: registration.controlRef,
@@ -87,9 +88,9 @@ export function useFieldControlRegistration(params: UseFieldControlRegistrationP
     });
   }
 
-  function deleteRegistration(id = registrationRef.current?.id) {
+  function deleteRegistration(id = registrationRef.value?.id) {
     if (id) {
-      formRef.current.fields.delete(id);
+      formRef.value.fields.delete(id);
     }
   }
 
@@ -100,11 +101,11 @@ export function useFieldControlRegistration(params: UseFieldControlRegistrationP
   // pristine and its real initial value would read dirty. Consumers that want a fresh baseline
   // remount or key `<Field.Root>` itself.
   function captureInitialValue(registration: FieldControlRegistration) {
-    if (initialValueCapturedRef.current) {
+    if (initialValueCapturedRef.value) {
       return;
     }
 
-    initialValueCapturedRef.current = true;
+    initialValueCapturedRef.value = true;
     const initialValue = getRegistrationValue(registration);
 
     setValidityData((prev) =>
@@ -116,14 +117,14 @@ export function useFieldControlRegistration(params: UseFieldControlRegistrationP
   watch(
     () => [invalid.value, name, validityData.value] as const,
     () => {
-      const registration = registrationRef.current;
+      const registration = registrationRef.value;
       if (!registration || !registration.id) {
         return;
       }
 
       setRegisteredFieldName(name ? undefined : registration.name);
 
-      formRef.current.fields.set(registration.id, {
+      formRef.value.fields.set(registration.id, {
         getValue: getValueForForm,
         name: name ?? registration.name,
         controlRef: registration.controlRef,
@@ -138,10 +139,10 @@ export function useFieldControlRegistration(params: UseFieldControlRegistrationP
   watch(
     () => formRef,
     (_v, _old, onCleanup) => {
-      const fields = formRef.current.fields;
+      const fields = formRef.value.fields;
 
       onCleanup(() => {
-        const id = registrationRef.current?.id;
+        const id = registrationRef.value?.id;
         if (id) {
           fields.delete(id);
         }
@@ -155,31 +156,31 @@ export function useFieldControlRegistration(params: UseFieldControlRegistrationP
     registration: FieldControlRegistration | undefined,
   ) => {
     if (!registration) {
-      if (activeFieldControlSourceRef.current === source) {
-        activeFieldControlSourceRef.current = null;
+      if (activeFieldControlSourceRef.value === source) {
+        activeFieldControlSourceRef.value = null;
         change(undefined, true);
         deleteRegistration();
-        registrationRef.current = null;
+        registrationRef.value = null;
         setRegisteredFieldName(undefined);
-        registeredFieldIdRef.current = undefined;
+        registeredFieldIdRef.value = undefined;
       }
       return;
     }
 
-    const previousId = registrationRef.current?.id;
-    const previousSource = activeFieldControlSourceRef.current;
+    const previousId = registrationRef.value?.id;
+    const previousSource = activeFieldControlSourceRef.value;
 
     // Drop work owned by a replaced control, but not on first registration.
     if (previousSource && previousSource !== source) {
       change(undefined, true);
     }
 
-    activeFieldControlSourceRef.current = source;
-    registrationRef.current = registration;
+    activeFieldControlSourceRef.value = source;
+    registrationRef.value = registration;
     if (!name) {
       setRegisteredFieldName(registration.name);
     }
-    registeredFieldIdRef.current = registration.id;
+    registeredFieldIdRef.value = registration.id;
 
     if (previousId && previousId !== registration.id) {
       deleteRegistration(previousId);
@@ -201,10 +202,10 @@ export interface UseFieldControlRegistrationParameters {
   change: (value: unknown, cancelPending?: boolean) => void;
   commit: (value: unknown) => void;
   invalid: ComputedRef<boolean>;
-  markedDirtyRef: {current: boolean};
+  markedDirtyRef: Ref<boolean>;
   name: string | undefined;
   setRegisteredFieldName: (name: string | undefined) => void;
-  registeredFieldIdRef: {current: string | undefined};
+  registeredFieldIdRef: Ref<string | undefined>;
   setValidityData: (
     updater: FieldValidityData | ((prev: FieldValidityData) => FieldValidityData),
   ) => void;

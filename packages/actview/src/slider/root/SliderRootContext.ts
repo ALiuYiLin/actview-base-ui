@@ -15,7 +15,7 @@ export interface SliderRootContext {
    * The index of the most recently interacted thumb.
    */
   lastUsedThumbIndex: number;
-  controlRef: {current: HTMLElement | null};
+  controlRef: Ref<HTMLElement | null>;
   dragging: boolean;
   disabled: boolean;
   validation: UseFieldValidationReturnValue;
@@ -38,7 +38,7 @@ export interface SliderRootContext {
    * @default 10
    */
   largeStep: number;
-  lastChangeReasonRef: {current: SliderRoot.ChangeEventReason};
+  lastChangeReasonRef: Ref<SliderRoot.ChangeEventReason>;
   /**
    * The locale used by `Intl.NumberFormat` when formatting the value.
    * Defaults to the user's runtime locale.
@@ -70,9 +70,9 @@ export interface SliderRootContext {
    * @default 'horizontal'
    */
   orientation: Orientation;
-  pressedThumbCenterOffsetRef: {current: number | null};
-  pressedThumbIndexRef: {current: number};
-  pressedValuesRef: {current: readonly number[] | null};
+  pressedThumbCenterOffsetRef: Ref<number | null>;
+  pressedThumbIndexRef: Ref<number>;
+  pressedValuesRef: Ref<readonly number[] | null>;
   renderBeforeHydration: boolean;
   registerFieldControlRef: ((element: HTMLElement | null) => void) | null;
   setActive: (index: number) => void;
@@ -94,7 +94,7 @@ export interface SliderRootContext {
   step: number;
   thumbCollisionBehavior: 'push' | 'swap' | 'none';
   thumbMap: Map<Node, CompositeMetadata<ThumbMetadata>>;
-  thumbRefs: {current: (HTMLElement | null)[]};
+  thumbRefs: Ref<(HTMLElement | null)[]>;
   /**
    * The value(s) of the slider
    */

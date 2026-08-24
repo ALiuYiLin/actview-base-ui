@@ -1,4 +1,4 @@
-import { toValue } from 'actview';
+import {toValue, ref as refState} from 'actview';
 import { CompositeRootContext } from '@/internals/composite/root/CompositeRootContext';
 import {
   useCompositeListItem,
@@ -13,8 +13,8 @@ export function useCompositeItem<Metadata>(params: UseCompositeItemParameters<Me
   const rootContext = CompositeRootContext.use();
   const {ref, index} = useCompositeListItem(params);
 
-  const itemRef = {current: null as HTMLElement | null};
-  const compositeRef = useMergedRefsCallback(ref, (el: HTMLElement | null) => (itemRef.current = el));
+  const itemRef = refState(null as HTMLElement | null);
+  const compositeRef = useMergedRefsCallback(ref, (el: HTMLElement | null) => (itemRef.value = el));
 
   // render 期 getter：highlightedIndex 变化时重新求值（对齐 React 每次 render）
   const compositeProps = (_previousProps?: Record<string, any>) => {
@@ -27,7 +27,7 @@ export function useCompositeItem<Metadata>(params: UseCompositeItemParameters<Me
         contextValue?.onHighlightedIndexChange(index.value);
       },
       onMouseMove() {
-        const item = itemRef.current;
+        const item = itemRef.value;
         if (!contextValue?.highlightItemOnHover || !item) {
           return;
         }

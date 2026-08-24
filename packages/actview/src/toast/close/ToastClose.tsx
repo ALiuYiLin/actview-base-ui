@@ -20,7 +20,7 @@ export const ToastClose = defineComponent(function ToastClose(props: ToastClose.
         if (typeof props.ref === 'function') (props.ref as any)(el);
         else {
           (props.ref as any).value = el;
-          (props.ref as any).current = el;
+          
         }
       }
     };

@@ -8,6 +8,7 @@ import { getDisabledMountTransitionStyles } from '@/internals/getDisabledMountTr
 import { mergePropsN } from '@/merge-props';
 import type { BaseUIComponentProps } from '@/internals/types';
 import type { TransitionStatus } from '@/internals/useTransitionStatus';
+import type { Ref } from 'actview';
 
 /**
  * A container for the Drawer contents.
@@ -176,7 +177,7 @@ export interface DrawerPopupProps extends BaseUIComponentProps<'div', DrawerPopu
    */
   finalFocus?:
     | boolean
-    | {current: HTMLElement | null}
+    | Ref<HTMLElement | null>
     | {value: HTMLElement | null}
     | ((closeType: any) => boolean | HTMLElement | null | void)
     | undefined;
@@ -186,7 +187,7 @@ export interface DrawerPopupProps extends BaseUIComponentProps<'div', DrawerPopu
   initialFocus?:
     | boolean
     | HTMLElement
-    | {current: HTMLElement | null}
+    | Ref<HTMLElement | null>
     | {value: HTMLElement | null}
     | ((interactionType: any) => boolean | HTMLElement | null | void)
     | undefined;

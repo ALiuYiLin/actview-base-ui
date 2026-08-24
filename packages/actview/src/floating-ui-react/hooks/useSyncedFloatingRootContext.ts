@@ -1,4 +1,4 @@
-import { watch } from 'actview';
+import {watch, ref} from 'actview';
 import type { ReactStore } from '@/internals/store/ReactStore';
 import { isElement } from '@floating-ui/utils/dom';
 import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
@@ -59,9 +59,9 @@ export function useSyncedFloatingRootContext<
     eventDetails: BaseUIChangeEventDetails<string>,
   ) => void;
 
-  const internalStoreRef = {current: null as FloatingRootStore | null};
-  if (floatingRootContextProp === undefined && internalStoreRef.current === null) {
-    internalStoreRef.current = new FloatingRootStore({
+  const internalStoreRef = ref(null as FloatingRootStore | null);
+  if (floatingRootContextProp === undefined && internalStoreRef.value === null) {
+    internalStoreRef.value = new FloatingRootStore({
       open: open.value,
       transitionStatus: undefined,
       referenceElement: referenceElement.value,
@@ -74,7 +74,7 @@ export function useSyncedFloatingRootContext<
     });
   }
 
-  const store = floatingRootContextProp ?? internalStoreRef.current!;
+  const store = floatingRootContextProp ?? internalStoreRef.value!;
 
   popupStore.useSyncedValue('floatingId', floatingId as State['floatingId']);
 

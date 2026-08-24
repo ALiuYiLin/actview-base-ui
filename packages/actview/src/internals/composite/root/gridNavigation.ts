@@ -1,3 +1,4 @@
+import type { Ref } from 'actview';
 export interface CompositeGridItemSize {
   width: number;
   height: number;
@@ -32,7 +33,7 @@ export function gridNavigation(config: CompositeGridConfig): CompositeGridNaviga
 
 export interface CompositeGridNavigationState {
   event: any;
-  elementsRef: {current: Array<HTMLElement | null>};
+  elementsRef: Ref<Array<HTMLElement | null>>;
   highlightedIndex: number;
   minIndex: number;
   maxIndex: number;

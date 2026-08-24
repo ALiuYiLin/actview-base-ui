@@ -1,6 +1,7 @@
-import { defineComponent, onUnmounted, toValue } from 'actview';
+import {defineComponent, onUnmounted, ref} from 'actview';
 import type { CompositeListContextValue, CompositeListRegistration } from './CompositeListContext';
 import { CompositeListContext } from './CompositeListContext';
+import type { Ref } from 'actview';
 
 export type CompositeMetadata<CustomMetadata> = {
   index: number;
@@ -22,19 +23,23 @@ export const CompositeList = defineComponent(function (componentProps: Composite
   // ============ setup（只执行一次）：一次性初始化 ============
   const listeners = new Set<Function>();
   const map = new Map<Element, CompositeListRegistration<any>>();
-  const nextIndexRef = {current: 0};
+  const nextIndexRef = ref(0);
   let itemsRef: readonly CompositeListItem<any>[] | null = null;
 
   const syncRefs = (items: readonly CompositeListItem<any>[]) => {
     const nextMap = new Map<Element, CompositeMetadata<any>>();
-    const elementsRef = toValue(componentProps.elementsRef) as {current: (HTMLElement | null)[]};
-    const labelsRef = toValue(componentProps.labelsRef) as
-      | {current: (string | null)[]}
-      | undefined;
+    const elementsRefProp = componentProps.elementsRef;
+    const elementsRef = (
+      typeof elementsRefProp === 'function' ? elementsRefProp() : elementsRefProp
+    ).value as (HTMLElement | null)[];
+    const labelsRefProp = componentProps.labelsRef;
+    const labelsRef = labelsRefProp
+      ? (typeof labelsRefProp === 'function' ? labelsRefProp() : labelsRefProp).value
+      : undefined;
 
-    elementsRef.current.length = 0;
+    elementsRef.length = 0;
     if (labelsRef) {
-      labelsRef.current.length = 0;
+      labelsRef.length = 0;
     }
 
     items.forEach((item) => {
@@ -43,17 +48,17 @@ export const CompositeList = defineComponent(function (componentProps: Composite
         index: item.index,
       });
 
-      elementsRef.current[item.index] = item.element;
+      elementsRef[item.index] = item.element;
 
       if (labelsRef) {
-        labelsRef.current[item.index] =
+        labelsRef[item.index] =
           item.registration.label !== undefined
             ? item.registration.label
             : (item.registration.textRef?.value?.textContent ?? item.element.textContent);
       }
     });
 
-    nextIndexRef.current = elementsRef.current.length;
+    nextIndexRef.value = elementsRef.length;
 
     return nextMap;
   };
@@ -105,13 +110,17 @@ export const CompositeList = defineComponent(function (componentProps: Composite
   };
 
   onUnmounted(() => {
-    const elementsRef = toValue(componentProps.elementsRef) as {current: (HTMLElement | null)[]};
-    elementsRef.current = [];
-    const labelsRef = toValue(componentProps.labelsRef) as
-      | {current: (string | null)[]}
-      | undefined;
+    const elementsRefProp = componentProps.elementsRef;
+    const elementsRef = (
+      typeof elementsRefProp === 'function' ? elementsRefProp() : elementsRefProp
+    ).value as (HTMLElement | null)[];
+    elementsRef.length = 0;
+    const labelsRefProp = componentProps.labelsRef;
+    const labelsRef = labelsRefProp
+      ? (typeof labelsRefProp === 'function' ? labelsRefProp() : labelsRefProp).value
+      : undefined;
     if (labelsRef) {
-      labelsRef.current = [];
+      labelsRef.length = 0;
     }
   });
 
@@ -191,14 +200,14 @@ export interface CompositeListProps<Metadata> {
    * Explicit indexes can leave empty slots in the array.
    * `useListNavigation`'s `listRef` prop.
    */
-  elementsRef: {current: (HTMLElement | null)[]} | (() => {current: (HTMLElement | null)[]});
+  elementsRef: Ref<(HTMLElement | null)[]> | (() => Ref<(HTMLElement | null)[]>);
   /**
    * A ref to the list of element labels, ordered by their index.
    * `useTypeahead`'s `listRef` prop.
    */
   labelsRef?:
-    | {current: (string | null)[]}
-    | (() => {current: (string | null)[]})
+    | Ref<(string | null)[]>
+    | (() => Ref<(string | null)[]>)
     | undefined;
   onMapChange?: ((newMap: Map<Element, CompositeMetadata<Metadata>>) => void) | undefined;
 }

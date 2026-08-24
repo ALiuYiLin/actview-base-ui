@@ -53,9 +53,9 @@ export const NumberFieldInput = defineComponent(function (componentProps: Number
   const fieldContextRef = useFieldRootContext();
   const labelableContextRef = useLabelableContext();
 
-  const hasTouchedInputRef = {current: false};
-  const blockRevalidationRef = {current: false};
-  const pendingCaretRef = {current: null as number | null};
+  const hasTouchedInputRef = ref(false);
+  const blockRevalidationRef = ref(false);
+  const pendingCaretRef = ref(null as number | null);
 
   const valueRef = rootContextRef.value.valueRef;
 
@@ -71,11 +71,11 @@ export const NumberFieldInput = defineComponent(function (componentProps: Number
   // After a paste splices text into the controlled value, the browser would otherwise drop the
   // caret at the end of the new value. Restore it just after the inserted text.
   watch(
-    () => pendingCaretRef.current,
+    () => pendingCaretRef.value,
     () => {
-      if (pendingCaretRef.current != null) {
-        const caret = pendingCaretRef.current;
-        pendingCaretRef.current = null;
+      if (pendingCaretRef.value != null) {
+        const caret = pendingCaretRef.value;
+        pendingCaretRef.value = null;
         (inputRef.value as HTMLInputElement | null)?.setSelectionRange(caret, caret);
       }
     },
@@ -85,8 +85,8 @@ export const NumberFieldInput = defineComponent(function (componentProps: Number
   useValueChanged(() => rootContextRef.value.state.value, () => {
     formContextRef.value.clearErrors(rootContextRef.value.name);
 
-    if (blockRevalidationRef.current && !fieldContextRef.value.shouldValidateOnChange()) {
-      blockRevalidationRef.current = false;
+    if (blockRevalidationRef.value && !fieldContextRef.value.shouldValidateOnChange()) {
+      blockRevalidationRef.value = false;
       return;
     }
 
@@ -144,11 +144,11 @@ export const NumberFieldInput = defineComponent(function (componentProps: Number
 
         fieldContextRef.value.setFocused(true);
 
-        if (hasTouchedInputRef.current) {
+        if (hasTouchedInputRef.value) {
           return;
         }
 
-        hasTouchedInputRef.current = true;
+        hasTouchedInputRef.value = true;
 
         // Browsers set selection at the start of the input field by default. We want to set it at
         // the end for the first focus.
@@ -168,10 +168,10 @@ export const NumberFieldInput = defineComponent(function (componentProps: Number
           return;
         }
 
-        const hadManualInput = !allowInputSyncRef.current;
-        const hadPendingProgrammaticChange = hasPendingCommitRef.current;
+        const hadManualInput = !allowInputSyncRef.value;
+        const hadPendingProgrammaticChange = hasPendingCommitRef.value;
 
-        allowInputSyncRef.current = true;
+        allowInputSyncRef.value = true;
 
         if (inputValue.trim() === '') {
           const clearDetails = createChangeEventDetails(REASONS.inputClear, event.nativeEvent);
@@ -191,7 +191,7 @@ export const NumberFieldInput = defineComponent(function (componentProps: Number
           return;
         }
 
-        const formatOptions = formatOptionsRef.current;
+        const formatOptions = formatOptionsRef.value;
         const parsedValue = parseNumber(inputValue, locale, formatOptions);
         if (parsedValue === null) {
           return;
@@ -221,17 +221,17 @@ export const NumberFieldInput = defineComponent(function (componentProps: Number
         let committedValue = committed;
         if (shouldUpdateValue) {
           const changeDetails = createChangeEventDetails(REASONS.inputBlur, event.nativeEvent);
-          blockRevalidationRef.current = true;
+          blockRevalidationRef.value = true;
           setValue(committed, changeDetails);
           if (changeDetails.isCanceled) {
-            blockRevalidationRef.current = false;
+            blockRevalidationRef.value = false;
             return;
           }
-          committedValue = lastChangedValueRef.current;
+          committedValue = lastChangedValueRef.value;
           // If validation normalized back to the current value, `useValueChanged` won't fire to
           // reset the flag, so reset it here or the next external change won't revalidate.
           if (committedValue === value) {
-            blockRevalidationRef.current = false;
+            blockRevalidationRef.value = false;
           }
         }
         if (validationMode.value === 'onBlur') {
@@ -253,7 +253,7 @@ export const NumberFieldInput = defineComponent(function (componentProps: Number
           return;
         }
 
-        allowInputSyncRef.current = false;
+        allowInputSyncRef.value = false;
         const targetValue = event.currentTarget.value;
 
         if (targetValue.trim() === '') {
@@ -281,7 +281,7 @@ export const NumberFieldInput = defineComponent(function (componentProps: Number
           return;
         }
 
-        const parsedValue = parseNumber(targetValue, locale, formatOptionsRef.current);
+        const parsedValue = parseNumber(targetValue, locale, formatOptionsRef.value);
 
         setInputValue(targetValue);
 
@@ -300,7 +300,7 @@ export const NumberFieldInput = defineComponent(function (componentProps: Number
         // Enter, Escape, …) return early without changing the value, so marking the input synced
         // here would wrongly discard dirty-input authority. Only the value-changing branches below
         // mark it synced.
-        const hadManualInput = !allowInputSyncRef.current;
+        const hadManualInput = !allowInputSyncRef.value;
 
         const allowedNonNumericKeys = getAllowedNonNumericKeys();
 
@@ -308,7 +308,7 @@ export const NumberFieldInput = defineComponent(function (componentProps: Number
 
         const {decimal, currency, percentSign} = getNumberLocaleDetails(
           locale,
-          formatOptionsRef.current,
+          formatOptionsRef.value,
         );
 
         const selectionStart = event.currentTarget.selectionStart;
@@ -387,7 +387,7 @@ export const NumberFieldInput = defineComponent(function (componentProps: Number
         // so pass no `currentValue` and let `incrementValue` fall back to the numeric state
         // (mirrors the button path).
         const currentValue = hadManualInput
-          ? parseNumber(inputValue, locale, formatOptionsRef.current)
+          ? parseNumber(inputValue, locale, formatOptionsRef.value)
           : null;
 
         const amount = getStepAmount(event);
@@ -400,14 +400,14 @@ export const NumberFieldInput = defineComponent(function (componentProps: Number
 
         let changed = false;
         if (isStepKey || boundaryValue !== null) {
-          allowInputSyncRef.current = true;
+          allowInputSyncRef.value = true;
         }
         if (isStepKey) {
           // When stepping from the synced numeric state, refresh the commit ref to the current
           // value so a canceled step can't commit a stale `lastChangedValueRef` left over from an
           // earlier change (mirrors the button path).
           if (!hadManualInput) {
-            lastChangedValueRef.current = valueRef.current;
+            lastChangedValueRef.value = valueRef.value;
           }
 
           changed = incrementValue(amount, {
@@ -423,7 +423,7 @@ export const NumberFieldInput = defineComponent(function (componentProps: Number
         // `changed` is only true when `setValue` applied the change, which records the stored
         // (clamped/snapped) value, so commit that rather than the pre-validation input.
         if (changed) {
-          onValueCommitted(lastChangedValueRef.current, commitDetails);
+          onValueCommitted(lastChangedValueRef.value, commitDetails);
         }
       },
       onPaste(event: any) {
@@ -451,11 +451,11 @@ export const NumberFieldInput = defineComponent(function (componentProps: Number
         const nextText =
           inputValue.slice(0, selectionStart) + pastedData + inputValue.slice(selectionEnd);
 
-        const parsedValue = parseNumber(nextText, locale, formatOptionsRef.current);
+        const parsedValue = parseNumber(nextText, locale, formatOptionsRef.value);
 
         if (parsedValue !== null) {
-          allowInputSyncRef.current = false;
-          pendingCaretRef.current = selectionStart + pastedData.length;
+          allowInputSyncRef.value = false;
+          pendingCaretRef.value = selectionStart + pastedData.length;
           setValue(parsedValue, createChangeEventDetails(REASONS.inputPaste, event.nativeEvent));
           setInputValue(nextText);
         }

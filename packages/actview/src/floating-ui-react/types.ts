@@ -1,3 +1,4 @@
+import type { Ref } from 'actview';
 import type { FloatingRootStore } from './components/FloatingRootStore';
 import type { FloatingTreeStore } from './components/FloatingTreeStore';
 import type { ReferenceType } from '@floating-ui/actview';
@@ -58,13 +59,13 @@ export type FloatingContext = {
   open: boolean;
   onOpenChange(open: boolean, eventDetails: any): void;
   events: FloatingEvents;
-  dataRef: {current: ContextData};
+  dataRef: Ref<ContextData>;
   nodeId: string | undefined;
   floatingId: string | undefined;
   refs: {
-    reference: {current: ReferenceType | null};
-    floating: {current: HTMLElement | null};
-    domReference: {current: Element | null};
+    reference: Ref<ReferenceType | null>;
+    floating: Ref<HTMLElement | null>;
+    domReference: Ref<Element | null>;
     setReference(node: ReferenceType | null): void;
     setFloating(node: HTMLElement | null): void;
     setPositionReference(node: ReferenceType | null): void;

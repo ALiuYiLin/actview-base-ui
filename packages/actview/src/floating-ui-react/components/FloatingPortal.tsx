@@ -68,13 +68,13 @@ export const FloatingPortal = defineComponent(function FloatingPortal(
   const portalNode = ref<HTMLElement | null>(null);
   const portalNodeId = useBaseUiId();
 
-  const beforeOutsideRef = {value: null as HTMLSpanElement | null};
-  const afterOutsideRef = {value: null as HTMLSpanElement | null};
-  const beforeInsideRef = {value: null as HTMLSpanElement | null};
-  const afterInsideRef = {value: null as HTMLSpanElement | null};
+  const beforeOutsideRef = ref(null as HTMLSpanElement | null);
+  const afterOutsideRef = ref(null as HTMLSpanElement | null);
+  const beforeInsideRef = ref(null as HTMLSpanElement | null);
+  const afterInsideRef = ref(null as HTMLSpanElement | null);
 
   const focusManagerState = ref<FocusManagerState>(null);
-  const focusInsideDisabledRef = {current: false};
+  const focusInsideDisabledRef = ref(false);
 
   // Create the portal node and append it to the resolved container.
   watch(
@@ -88,7 +88,7 @@ export const FloatingPortal = defineComponent(function FloatingPortal(
       const resolvedContainer =
         (containerProp && (containerProp as any).nodeType != null
           ? containerProp
-          : (containerProp as any)?.current) ??
+          : (containerProp as any)?.value) ??
         document.body;
 
       if (resolvedContainer == null) {
@@ -130,13 +130,13 @@ export const FloatingPortal = defineComponent(function FloatingPortal(
       function onFocus(event: FocusEvent) {
         if (portalNode.value && event.relatedTarget && isOutsideEvent(event)) {
           if (event.type === 'focusin') {
-            if (focusInsideDisabledRef.current) {
+            if (focusInsideDisabledRef.value) {
               enableFocusInside(portalNode.value);
-              focusInsideDisabledRef.current = false;
+              focusInsideDisabledRef.value = false;
             }
           } else {
             disableFocusInside(portalNode.value);
-            focusInsideDisabledRef.current = true;
+            focusInsideDisabledRef.value = true;
           }
         }
       }
@@ -152,13 +152,13 @@ export const FloatingPortal = defineComponent(function FloatingPortal(
   watch(
     () => [open(), portalNode.value] as const,
     () => {
-      if (!portalNode.value || open() !== true || !focusInsideDisabledRef.current) {
+      if (!portalNode.value || open() !== true || !focusInsideDisabledRef.value) {
         return;
       }
 
       // Restore tabbability before the focus manager's queued focus-on-open step runs.
       enableFocusInside(portalNode.value);
-      focusInsideDisabledRef.current = false;
+      focusInsideDisabledRef.value = false;
     },
     {flush: 'post', immediate: true},
   );
@@ -247,6 +247,7 @@ export const FloatingPortal = defineComponent(function FloatingPortal(
 });
 
 import { Teleport } from 'actview';
+import type { Ref } from 'actview';
 
 function TeleportContainer(props: {node: HTMLElement; children: any}) {
   return () => <Teleport mount={props.node}>{props.children}</Teleport>;
@@ -260,7 +261,7 @@ export namespace FloatingPortal {
     /**
      * A parent element to render the portal element into.
      */
-    container?: HTMLElement | ShadowRoot | null | {current: HTMLElement | ShadowRoot | null} | undefined;
+    container?: HTMLElement | ShadowRoot | null | Ref<HTMLElement | ShadowRoot | null> | undefined;
     /**
      * @ignore
      * The role for the hidden `aria-owns` owner element.

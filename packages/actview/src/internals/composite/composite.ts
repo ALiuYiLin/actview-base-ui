@@ -1,3 +1,5 @@
+import type { Ref } from 'actview';
+
 export const ARROW_UP = 'ArrowUp';
 export const ARROW_DOWN = 'ArrowDown';
 export const ARROW_LEFT = 'ArrowLeft';
@@ -36,19 +38,19 @@ export function isIndexOutOfListBounds(list: Array<HTMLElement | null>, index: n
 }
 
 export function getMinListIndex(
-  listRef: {current: ReadonlyArray<HTMLElement | null>},
+  listRef: Ref<ReadonlyArray<HTMLElement | null>>,
   disabledIndices?: DisabledIndices | undefined,
 ) {
-  return findNonDisabledListIndex(listRef.current, {disabledIndices});
+  return findNonDisabledListIndex(listRef.value, {disabledIndices});
 }
 
 export function getMaxListIndex(
-  listRef: {current: Array<HTMLElement | null>},
+  listRef: Ref<Array<HTMLElement | null>>,
   disabledIndices?: DisabledIndices | undefined,
 ) {
-  return findNonDisabledListIndex(listRef.current, {
+  return findNonDisabledListIndex(listRef.value, {
     decrement: true,
-    startingIndex: listRef.current.length,
+    startingIndex: listRef.value.length,
     disabledIndices,
   });
 }

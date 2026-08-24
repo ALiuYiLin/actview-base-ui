@@ -1,5 +1,6 @@
 import type { Middleware, VirtualElement } from '@/floating-ui-react/types';
 import { isElement } from '@floating-ui/utils/dom';
+import type { Ref } from 'actview';
 
 // Floating UI ships an `inline()` middleware. This local version mirrors its line-rect
 // selection while adding trigger identity checks, delayed-open hit-line reuse, and
@@ -200,7 +201,7 @@ function getContextElement(reference: Element | VirtualElement): Element | undef
 }
 
 export function getInlineRectTriggerProps(
-  coordsRef: {current: InlineRectCoords | undefined},
+  coordsRef: Ref<InlineRectCoords | undefined>,
   isOpen: boolean,
 ): Pick<any, 'onFocus' | 'onMouseEnter' | 'onMouseMove'> {
   function updateCoords(event: any) {
@@ -215,7 +216,7 @@ export function getInlineRectTriggerProps(
 
   return {
     onFocus() {
-      coordsRef.current = undefined;
+      coordsRef.value = undefined;
     },
     onMouseEnter: updateCoordsIfClosed,
     onMouseMove: updateCoordsIfClosed,
@@ -223,18 +224,18 @@ export function getInlineRectTriggerProps(
 }
 
 export function updateInlineRectCoords(
-  coordsRef: {current: InlineRectCoords | undefined},
+  coordsRef: Ref<InlineRectCoords | undefined>,
   element: Element,
   clientX: number,
   clientY: number,
 ) {
   const nextCoords = getInlineRectCoords(element, clientX, clientY);
-  coordsRef.current = nextCoords;
+  coordsRef.value = nextCoords;
   return nextCoords;
 }
 
 export function createInlineMiddleware(
-  coordsRef: {current: InlineRectCoords | undefined},
+  coordsRef: Ref<InlineRectCoords | undefined>,
 ): Middleware {
   return {
     name: 'inline',
@@ -248,7 +249,7 @@ export function createInlineMiddleware(
       }
 
       const contextElement = getContextElement(reference);
-      const coords = coordsRef.current;
+      const coords = coordsRef.value;
       const currentCoords =
         coords?.element === reference || coords?.element === contextElement ? coords : undefined;
       const rect = getInlineReferenceRect(

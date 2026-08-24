@@ -1,4 +1,4 @@
-import { defineComponent, toValue } from 'actview';
+import {defineComponent, toValue, ref} from 'actview';
 import { REGULAR_ITEM, useMenuItem } from './useMenuItem';
 import { useMenuRootContext } from '../root/MenuRootContext';
 import { useBaseUiId } from '@/internals/useBaseUiId';

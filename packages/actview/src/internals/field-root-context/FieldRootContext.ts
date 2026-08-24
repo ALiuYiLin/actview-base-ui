@@ -1,5 +1,5 @@
-import { computed, createContext } from 'actview';
-import type { ComputedRef } from 'actview';
+import { computed, createContext, ref } from 'actview';
+import type { ComputedRef, Ref } from 'actview';
 import { NOOP } from '@/internals/noop';
 import { DEFAULT_FIELD_ROOT_STATE, DEFAULT_VALIDITY_STATE } from '@/internals/field-constants/constants';
 import type { HTMLProps } from '@/internals/types';
@@ -17,7 +17,7 @@ export interface FieldRootState {
 }
 
 export interface FieldControlRegistration {
-  controlRef: {current: any};
+  controlRef: Ref<any>;
   id: string | undefined;
   name?: string | undefined;
   getValue?: (() => unknown) | undefined;
@@ -68,7 +68,7 @@ export const DEFAULT_FIELD_ROOT_CONTEXT: FieldRootContext = {
   registerFieldControl: NOOP,
   validation: {
     getValidationProps: (_disabled: boolean, props: HTMLProps = {}) => props,
-    inputRef: {current: null},
+    inputRef: ref(null),
     registeredInputs: new Map(),
     registerInput: NOOP,
     getInputControl: () => null,

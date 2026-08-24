@@ -11,6 +11,7 @@ import { useOpenChangeComplete } from '@/internals/useOpenChangeComplete';
 import { REASONS } from '@/internals/reasons';
 import { getDisabledMountTransitionStyles } from '@/internals/getDisabledMountTransitionStyles';
 import { mergePropsN } from '@/merge-props';
+import type { Ref } from 'actview';
 
 /**
  * A container for the preview-card contents.
@@ -178,7 +179,7 @@ export interface PreviewCardPopupProps extends BaseUIComponentProps<'div', Previ
    */
   finalFocus?:
     | boolean
-    | {current: HTMLElement | null}
+    | Ref<HTMLElement | null>
     | {value: HTMLElement | null}
     | ((closeType: InteractionType) => boolean | HTMLElement | null | void)
     | undefined;

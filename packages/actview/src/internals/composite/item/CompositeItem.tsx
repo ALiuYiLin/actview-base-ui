@@ -5,6 +5,7 @@ import {
   type StateAttributesMapping,
 } from '@/internals/getStateAttributesProps';
 import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import type { Ref } from 'actview';
 
 export function CompositeItem<Metadata, State extends Record<string, any>>(
   componentProps: CompositeItem.Props<Metadata, State>,
@@ -50,7 +51,7 @@ export function CompositeItem<Metadata, State extends Record<string, any>>(
     const mergedRefs = (el: HTMLElement | null) => {
       compositeRef(el);
       for (const r of refs) {
-        const resolved = typeof r === 'function' ? r : (el: HTMLElement | null) => (r.current = el);
+        const resolved = typeof r === 'function' ? r : (el: HTMLElement | null) => (r.value = el);
         resolved(el);
       }
     };
@@ -81,7 +82,7 @@ export interface CompositeItemProps<Metadata, State extends Record<string, any>>
   extends Pick<BaseUIComponentProps<any, State>, 'render' | 'className' | 'style'> {
   children?: any;
   metadata?: Metadata | undefined;
-  refs?: Array<((element: HTMLElement | null) => void) | {current: HTMLElement | null}> | undefined;
+  refs?: Array<((element: HTMLElement | null) => void) | Ref<HTMLElement | null>> | undefined;
   props?: Array<Record<string, any> | (() => Record<string, any>)> | undefined;
   state?: State | undefined;
   stateAttributesMapping?: StateAttributesMapping<State> | undefined;

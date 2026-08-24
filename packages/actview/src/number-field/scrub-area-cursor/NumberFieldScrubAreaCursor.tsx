@@ -68,7 +68,7 @@ export const NumberFieldScrubAreaCursor = defineComponent(function (
 
     const mergedRefs = (el: HTMLSpanElement | null) => {
       cursorRef.value = el;
-      scrubAreaCursorRef.current = el;
+      scrubAreaCursorRef.value = el;
     };
 
     let element: any;

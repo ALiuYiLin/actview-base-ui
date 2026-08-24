@@ -37,9 +37,9 @@ export const FOCUSABLE_POPUP_PROPS = {
  * popup element itself to prevent the virtual keyboard from opening (required for Android
  * specifically; iOS handles this automatically). Otherwise it falls back to the default behavior.
  */
-export function createDefaultInitialFocus(popupRef: {current: HTMLElement | null}) {
+export function createDefaultInitialFocus(popupRef: Ref<HTMLElement | null>) {
   return (interactionType: InteractionType) =>
-    interactionType === 'touch' ? popupRef.current : true;
+    interactionType === 'touch' ? popupRef.value : true;
 }
 
 type PopupStoreWithOpen<
@@ -74,7 +74,7 @@ export function usePopupRootStore<
   const floatingId = useId();
   const nested = useFloatingParentNodeId() != null;
 
-  const store = useRefWithInit(() => createStore(floatingId, nested)).current;
+  const store = useRefWithInit(() => createStore(floatingId, nested)).value;
 
   useSyncedFloatingRootContext({
     popupStore: store,
@@ -123,14 +123,14 @@ export function useTriggerRegistration<State extends PopupStoreState<unknown>>(
   id: string | undefined,
   store: PopupTriggerDataStore<State>,
 ) {
-  const registrationRef = {current: null as {
+  const registrationRef = ref<{
     store: PopupTriggerDataStore<State>;
     id: string;
     element: Element;
-  } | null};
+  } | null>(null);
 
   return useStableCallback((element: Element | null) => {
-    const registration = registrationRef.current;
+    const registration = registrationRef.value;
 
     if (registration !== null) {
       if (
@@ -142,7 +142,7 @@ export function useTriggerRegistration<State extends PopupStoreState<unknown>>(
         return;
       }
 
-      registrationRef.current = null;
+      registrationRef.value = null;
       const registeredStore = registration.store;
       if (
         registeredStore.context.triggerElements.getById(registration.id) === registration.element
@@ -153,7 +153,7 @@ export function useTriggerRegistration<State extends PopupStoreState<unknown>>(
     }
 
     if (element !== null && id !== undefined) {
-      registrationRef.current = {store, id, element};
+      registrationRef.value = {store, id, element};
       store.context.triggerElements.add(id, element);
       syncTriggerCount(store);
     }
@@ -454,7 +454,7 @@ export function useImplicitActiveTrigger<State extends PopupStoreState<unknown>>
 ) {
   const {closeOnActiveTriggerUnmount = false} = options;
   // Distinguishes a trigger that unmounted from a new active trigger that has not hydrated yet.
-  const resolvedActiveTriggerIdRef = {current: null as string | null};
+  const resolvedActiveTriggerIdRef = ref(null as string | null);
   const open = store.useState('open');
   const reactiveTriggerCount = store.useState('triggerCount');
   const activeTriggerId = store.useState('activeTriggerId');
@@ -469,7 +469,7 @@ export function useImplicitActiveTrigger<State extends PopupStoreState<unknown>>
     ] as const,
     () => {
       if (!open.value) {
-        resolvedActiveTriggerIdRef.current = null;
+        resolvedActiveTriggerIdRef.value = null;
         if (store.state.triggerCount !== 0) {
           store.set('triggerCount', 0);
         }
@@ -496,26 +496,26 @@ export function useImplicitActiveTrigger<State extends PopupStoreState<unknown>>
             if (triggerElement === store.state.activeTriggerElement) {
               stateUpdates.activeTriggerId = triggerId;
               stateUpdates.activeTriggerElement = triggerElement;
-              resolvedActiveTriggerIdRef.current = triggerId;
+              resolvedActiveTriggerIdRef.value = triggerId;
               break;
             }
           }
 
           if (stateUpdates.activeTriggerId === undefined) {
-            if (resolvedActiveTriggerIdRef.current === currentActiveTriggerId) {
+            if (resolvedActiveTriggerIdRef.value === currentActiveTriggerId) {
               lostActiveTriggerId = currentActiveTriggerId;
             } else {
-              resolvedActiveTriggerIdRef.current = null;
+              resolvedActiveTriggerIdRef.value = null;
             }
           }
         } else {
-          resolvedActiveTriggerIdRef.current = currentActiveTriggerId;
+          resolvedActiveTriggerIdRef.value = currentActiveTriggerId;
           if (activeTriggerElement !== store.state.activeTriggerElement) {
             stateUpdates.activeTriggerElement = activeTriggerElement;
           }
         }
       } else {
-        resolvedActiveTriggerIdRef.current = null;
+        resolvedActiveTriggerIdRef.value = null;
       }
 
       if (!lostActiveTriggerId && !currentActiveTriggerId && triggerCount === 1) {
@@ -524,7 +524,7 @@ export function useImplicitActiveTrigger<State extends PopupStoreState<unknown>>
           const [implicitTriggerId, implicitTriggerElement] = iteratorResult.value;
           stateUpdates.activeTriggerId = implicitTriggerId;
           stateUpdates.activeTriggerElement = implicitTriggerElement;
-          resolvedActiveTriggerIdRef.current = implicitTriggerId;
+          resolvedActiveTriggerIdRef.value = implicitTriggerId;
         }
       }
 

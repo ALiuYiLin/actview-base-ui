@@ -1,4 +1,4 @@
-import { defineComponent, toValue } from 'actview';
+import { defineComponent, ref, toValue } from 'actview';
 import { useId } from '@/utils/useId';
 import { ContextMenuRootContext } from './ContextMenuRootContext';
 import { Menu } from '@/menu';
@@ -16,27 +16,27 @@ export const ContextMenuRoot = defineComponent(function ContextMenuRoot(props: C
   const children = toValue(props.children);
   const restProps = {...props, children: undefined};
 
-  const anchorRef = {current: {
+  const anchorRef = ref({
     getBoundingClientRect() {
       return DOMRect.fromRect({width: 0, height: 0, x: 0, y: 0});
     },
-  } as ContextMenuRootContext['anchor']};
+  } as ContextMenuRootContext['anchor']);
   const setAnchor = (anchor: ContextMenuRootContext['anchor']) => {
-    anchorRef.current = anchor;
+    anchorRef.value = anchor;
   };
 
-  const backdropRef = {value: null as HTMLDivElement | null};
-  const internalBackdropRef = {value: null as HTMLDivElement | null};
-  const actionsRef = {value: null as {
+  const backdropRef = ref(null as HTMLDivElement | null);
+  const internalBackdropRef = ref(null as HTMLDivElement | null);
+  const actionsRef = ref<{
     setOpen: (nextOpen: boolean, eventDetails: ContextMenuRoot.ChangeEventDetails) => void;
-  } | null};
-  const positionerRef = {value: null as HTMLElement | null};
-  const allowMouseUpTriggerRef = {value: true};
-  const initialCursorPointRef = {value: null as {x: number; y: number} | null};
+  } | null>(null);
+  const positionerRef = ref(null as HTMLElement | null);
+  const allowMouseUpTriggerRef = ref(true);
+  const initialCursorPointRef = ref(null as {x: number; y: number} | null);
   const id = useId();
 
   const contextValue: ContextMenuRootContext = {
-    anchor: anchorRef.current,
+    anchor: anchorRef.value,
     setAnchor,
     actionsRef,
     backdropRef,

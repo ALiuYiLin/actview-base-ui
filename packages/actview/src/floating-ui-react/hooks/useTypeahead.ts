@@ -1,4 +1,5 @@
-import { watch } from 'actview';
+import {watch, ref} from 'actview';
+import type { Ref } from 'actview';
 import { useStableCallback } from '@/utils/useStableCallback';
 import { useTimeout } from '@/utils/useTimeout';
 import { EMPTY_ARRAY } from '@/utils/empty';
@@ -13,7 +14,7 @@ export interface UseTypeaheadProps {
    * elements of the list.
    * @default empty list
    */
-  listRef: {current: Array<string | null>};
+  listRef: Ref<Array<string | null>>;
   /**
    * The index of the active (focused or highlighted) item in the list.
    * @default null
@@ -26,7 +27,7 @@ export interface UseTypeaheadProps {
   /**
    * Optional list of item elements that correspond to `listRef` indices.
    */
-  elementsRef?: {current: Array<HTMLElement | null>} | undefined;
+  elementsRef?: Ref<Array<HTMLElement | null>> | undefined;
   /**
    * Indices that are disabled, either as an array or a predicate.
    */
@@ -80,13 +81,13 @@ export function useTypeahead(
   const open = store.useState('open');
 
   const timeout = useTimeout();
-  const stringRef = {current: ''};
-  const prevIndexRef = {current: selectedIndex ?? activeIndex ?? -1} as {current: number | null};
-  const matchIndexRef = {current: null as number | null};
+  const stringRef = ref('');
+  const prevIndexRef = ref(selectedIndex ?? activeIndex ?? -1) as Ref<number | null>;
+  const matchIndexRef = ref(null as number | null);
 
   const onKeyDown = useStableCallback((event: any) => {
     function getElement(index: number) {
-      return elementsRef?.current[index];
+      return elementsRef?.value[index];
     }
 
     function isItemAvailable(index: number) {
@@ -116,16 +117,16 @@ export function useTypeahead(
       return -1;
     }
 
-    const listContent = listRef.current;
+    const listContent = listRef.value;
 
-    if (stringRef.current.length > 0 && event.key === ' ') {
+    if (stringRef.value.length > 0 && event.key === ' ') {
       // Space should continue the in-progress typeahead session.
       stopEvent(event);
       onTyping?.(true);
     }
 
-    if (stringRef.current.length > 0 && stringRef.current[0] !== ' ') {
-      if (getMatchingIndex(listContent, stringRef.current) === -1 && event.key !== ' ') {
+    if (stringRef.value.length > 0 && stringRef.value[0] !== ' ') {
+      if (getMatchingIndex(listContent, stringRef.value) === -1 && event.key !== ' ') {
         onTyping?.(false);
       }
     }
@@ -148,9 +149,9 @@ export function useTypeahead(
     }
 
     // Capture whether this is a new typing session before mutating the string.
-    const isNewSession = stringRef.current === '';
+    const isNewSession = stringRef.value === '';
     if (isNewSession) {
-      prevIndexRef.current = selectedIndex ?? activeIndex ?? -1;
+      prevIndexRef.value = selectedIndex ?? activeIndex ?? -1;
     }
 
     // Bail out if the list contains a word like "llama" or "aaron". TODO:
@@ -161,29 +162,29 @@ export function useTypeahead(
 
     // Allows the user to cycle through items that start with the same letter
     // in rapid succession.
-    if (allowRapidSuccessionOfFirstLetter && stringRef.current === event.key) {
-      stringRef.current = '';
-      prevIndexRef.current = matchIndexRef.current;
+    if (allowRapidSuccessionOfFirstLetter && stringRef.value === event.key) {
+      stringRef.value = '';
+      prevIndexRef.value = matchIndexRef.value;
     }
 
-    stringRef.current += event.key;
+    stringRef.value += event.key;
     timeout.start(resetMs, () => {
-      stringRef.current = '';
-      prevIndexRef.current = matchIndexRef.current;
+      stringRef.value = '';
+      prevIndexRef.value = matchIndexRef.value;
       onTyping?.(false);
     });
 
     // Compute the starting index for this search.
-    const prevIndex = isNewSession ? (selectedIndex ?? activeIndex ?? -1) : prevIndexRef.current;
+    const prevIndex = isNewSession ? (selectedIndex ?? activeIndex ?? -1) : prevIndexRef.value;
     const startIndex = (prevIndex ?? 0) + 1;
 
-    const index = getMatchingIndex(listContent, stringRef.current, startIndex);
+    const index = getMatchingIndex(listContent, stringRef.value, startIndex);
 
     if (index !== -1) {
       onMatchProp?.(index);
-      matchIndexRef.current = index;
+      matchIndexRef.value = index;
     } else if (event.key !== ' ') {
-      stringRef.current = '';
+      stringRef.value = '';
       onTyping?.(false);
     }
   });
@@ -202,8 +203,8 @@ export function useTypeahead(
 
     // End the current typing session when focus leaves the composite entirely.
     timeout.clear();
-    stringRef.current = '';
-    prevIndexRef.current = matchIndexRef.current;
+    stringRef.value = '';
+    prevIndexRef.value = matchIndexRef.value;
     onTyping?.(false);
   });
 
@@ -215,10 +216,10 @@ export function useTypeahead(
       }
 
       timeout.clear();
-      matchIndexRef.current = null;
+      matchIndexRef.value = null;
 
-      if (stringRef.current !== '') {
-        stringRef.current = '';
+      if (stringRef.value !== '') {
+        stringRef.value = '';
       }
     },
     {flush: 'post', immediate: true},

@@ -1,4 +1,4 @@
-import { defineComponent, ref, toValue, useRootElement, watch } from 'actview';
+import {defineComponent, ref, toValue, useRootElement, watch, shallowRef} from 'actview';
 import {
   createGenericEventDetails,
   type BaseUIGenericEventDetails,
@@ -10,6 +10,7 @@ import type { FormContext as FormContextValue } from '@/internals/form-context/F
 import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
 import { useValueChanged } from '@/internals/useValueChanged';
 import { EMPTY_OBJECT } from '@/internals/empty';
+import type { Ref } from 'actview';
 
 /**
  * A native form element with consolidated error handling.
@@ -21,10 +22,10 @@ export const Form: any = defineComponent(function (componentProps: Form.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
   const rootRef = useRootElement();
 
-  const formRef = {current: {fields: new Map<string, any>()}};
-  const elementRef = {current: null as HTMLFormElement | null};
-  const submittedRef = {current: false};
-  const submitAttemptedRef = {current: false};
+  const formRef = shallowRef({fields: new Map<string, any>()});
+  const elementRef = ref(null as HTMLFormElement | null);
+  const submittedRef = ref(false);
+  const submitAttemptedRef = ref(false);
 
   const validationMode = toValue(componentProps.validationMode) ?? 'onSubmit';
   const externalErrors = toValue(componentProps.errors);
@@ -41,12 +42,12 @@ export const Form: any = defineComponent(function (componentProps: Form.Props) {
     // implementation-specific, keep registration order.
     let hasInvalid = false;
     let firstControl: HTMLElement | null = null;
-    for (const field of formRef.current.fields.values()) {
+    for (const field of formRef.value.fields.values()) {
       if (field.validityData.state.valid !== false) {
         continue;
       }
       hasInvalid = true;
-      const control = field.controlRef.current;
+      const control = field.controlRef.value;
       if (control && (!firstControl || comesBeforeInSameTree(control, firstControl))) {
         firstControl = control;
       }
@@ -71,11 +72,11 @@ export const Form: any = defineComponent(function (componentProps: Form.Props) {
   watch(
     () => errorsState.value,
     () => {
-      if (!submittedRef.current) {
+      if (!submittedRef.value) {
         return;
       }
 
-      submittedRef.current = false;
+      submittedRef.value = false;
       focusFirstInvalid();
     },
     {flush: 'post'},
@@ -83,11 +84,11 @@ export const Form: any = defineComponent(function (componentProps: Form.Props) {
 
   const validate = (fieldName?: string) => {
     if (fieldName) {
-      Array.from(formRef.current.fields.values())
+      Array.from(formRef.value.fields.values())
         .find((field) => field.name === fieldName)
         ?.validate();
     } else {
-      formRef.current.fields.forEach((field) => {
+      formRef.value.fields.forEach((field) => {
         field.validate();
       });
     }
@@ -140,10 +141,10 @@ export const Form: any = defineComponent(function (componentProps: Form.Props) {
       {
         noValidate: true,
         onSubmit(event: Event) {
-          submitAttemptedRef.current = true;
+          submitAttemptedRef.value = true;
 
           // Async validation isn't supported to stop the submit event.
-          formRef.current.fields.forEach((field) => {
+          formRef.value.fields.forEach((field) => {
             field.validate();
           });
 
@@ -152,14 +153,14 @@ export const Form: any = defineComponent(function (componentProps: Form.Props) {
             return;
           }
 
-          submittedRef.current = true;
+          submittedRef.value = true;
           onSubmit?.(event as any);
 
           if (onFormSubmit) {
             event.preventDefault();
 
             const formValues = {} as Record<string, any>;
-            formRef.current.fields.forEach((field) => {
+            formRef.value.fields.forEach((field) => {
               if (field.name) {
                 formValues[field.name] = field.getValue();
               }
@@ -248,13 +249,13 @@ export interface FormProps<FormValues extends Record<string, any> = Record<strin
    * @example
    * ```tsx
    * // validate all fields
-   * actionsRef.current?.validate();
+   * actionsRef.value?.validate();
    *
    * // validate one field
-   * actionsRef.current?.validate('email');
+   * actionsRef.value?.validate('email');
    * ```
    */
-  actionsRef?: {current: Form.Actions | null} | undefined;
+  actionsRef?: Ref<Form.Actions | null> | undefined;
 }
 
 export namespace Form {

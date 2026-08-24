@@ -4,6 +4,7 @@ import { getComputedStyle } from '@floating-ui/utils/dom';
 import type { Dimensions } from '../types';
 import { stopEvent } from './event';
 import { ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT, ARROW_UP } from './constants';
+import type { Ref } from 'actview';
 
 export type DisabledIndices = ReadonlyArray<number> | ((index: number) => boolean);
 
@@ -16,19 +17,19 @@ export function isIndexOutOfListBounds(list: Array<HTMLElement | null>, index: n
 }
 
 export function getMinListIndex(
-  listRef: {current: ReadonlyArray<HTMLElement | null>},
+  listRef: Ref<ReadonlyArray<HTMLElement | null>>,
   disabledIndices?: DisabledIndices | undefined,
 ) {
-  return findNonDisabledListIndex(listRef.current, {disabledIndices});
+  return findNonDisabledListIndex(listRef.value, {disabledIndices});
 }
 
 export function getMaxListIndex(
-  listRef: {current: Array<HTMLElement | null>},
+  listRef: Ref<Array<HTMLElement | null>>,
   disabledIndices?: DisabledIndices | undefined,
 ) {
-  return findNonDisabledListIndex(listRef.current, {
+  return findNonDisabledListIndex(listRef.value, {
     decrement: true,
-    startingIndex: listRef.current.length,
+    startingIndex: listRef.value.length,
     disabledIndices,
   });
 }

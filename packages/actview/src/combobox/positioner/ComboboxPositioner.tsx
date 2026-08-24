@@ -17,7 +17,7 @@ export const ComboboxPositioner = defineComponent(function ComboboxPositioner(
         if (typeof props.ref === 'function') (props.ref as any)(el);
         else {
           (props.ref as any).value = el;
-          (props.ref as any).current = el;
+          
         }
       }
     };

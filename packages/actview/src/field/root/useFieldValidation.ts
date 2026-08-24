@@ -9,11 +9,13 @@ import { getCombinedFieldValidityData } from '../utils/getCombinedFieldValidityD
 import { useTimeout } from '@/utils/useTimeout';
 import type { HTMLProps } from '@/internals/types';
 import type { FieldValidityData, FieldRootState } from './FieldRoot';
+import {ref} from 'actview';
+import type { Ref } from 'actview';
 
 const validityKeys = Object.keys(DEFAULT_VALIDITY_STATE) as Array<keyof ValidityState>;
 
 export type RegisteredInput = {
-  controlRef: {current: HTMLElement | null};
+  controlRef: Ref<HTMLElement | null>;
   value: string | undefined;
 };
 
@@ -91,13 +93,13 @@ export function useFieldValidation(
   const {controlId, getDescriptionProps} = toValueLabelable();
 
   const timeout = useTimeout();
-  const inputRef = {current: null as HTMLInputElement | null};
+  const inputRef = ref(null as HTMLInputElement | null);
   const registeredInputs = new Map<HTMLInputElement, RegisteredInput>();
-  const validationCommitIdRef = {current: 0};
+  const validationCommitIdRef = ref(0);
   // Tracks the message installed by Base UI and the custom message it displaced.
-  const customValidityRef = {
-    current: null as [element: HTMLInputElement, message: string, displaced: string] | null,
-  };
+  const customValidityRef = ref<
+    [element: HTMLInputElement, message: string, displaced: string] | null
+  >(null);
 
   // Groups register several inputs against a single field so focus, validation, and form-value
   // projection can use the same live controls. This also ensures a `required` checkbox can't be
@@ -110,24 +112,24 @@ export function useFieldValidation(
   };
 
   const getInputControl = () => {
-    const element = findRepresentativeInput(registeredInputs, elementRef.current);
-    return (element && registeredInputs.get(element)?.controlRef.current) || null;
+    const element = findRepresentativeInput(registeredInputs, elementRef.value);
+    return (element && registeredInputs.get(element)?.controlRef.value) || null;
   };
 
   const commit = async (value: unknown, revalidate = false) => {
-    validationCommitIdRef.current += 1;
-    const validationCommitId = validationCommitIdRef.current;
+    validationCommitIdRef.value += 1;
+    const validationCommitId = validationCommitIdRef.value;
 
     function updateRegisteredFieldValidity(
       nextValidityData: FieldValidityData,
       externalInvalid = invalid.value,
     ) {
-      const fieldId = registeredFieldIdRef.current ?? controlId.value;
+      const fieldId = registeredFieldIdRef.value ?? controlId.value;
       if (fieldId == null) {
         return;
       }
 
-      const currentFieldData = formRef.current.fields.get(fieldId);
+      const currentFieldData = formRef.value.fields.get(fieldId);
       if (!currentFieldData) {
         return;
       }
@@ -137,7 +139,7 @@ export function useFieldValidation(
         externalInvalid,
       );
 
-      formRef.current.fields.set(fieldId, {
+      formRef.value.fields.set(fieldId, {
         ...currentFieldData,
         validityData: validityDataWithFormErrors,
       });
@@ -163,12 +165,12 @@ export function useFieldValidation(
       const displaced = element.validity.customError ? element.validationMessage : '';
       const ownedMessage = message.replace(/\r\n?/g, '\n');
       element.setCustomValidity(ownedMessage);
-      customValidityRef.current = [element, ownedMessage, displaced];
+      customValidityRef.value = [element, ownedMessage, displaced];
     }
 
     function clearCustomValidity() {
-      const record = customValidityRef.current;
-      customValidityRef.current = null;
+      const record = customValidityRef.value;
+      customValidityRef.value = null;
       // Replacement transfers ownership; barred controls hide `validationMessage`.
       if (record && (!record[0].willValidate || record[0].validationMessage === record[1])) {
         record[0].setCustomValidity(record[2]);
@@ -209,7 +211,7 @@ export function useFieldValidation(
 
       // Only make `valueMissing` mark the field invalid if it's been changed
       // to reduce error noise.
-      if (hasOnlyValueMissingError && !markedDirtyRef.current) {
+      if (hasOnlyValueMissingError && !markedDirtyRef.value) {
         computedState.valid = true;
         computedState.valueMissing = false;
       }
@@ -221,8 +223,8 @@ export function useFieldValidation(
     // `inputRef` is the fallback only when no inputs are registered.
     function resolveRepresentativeInput() {
       return registeredInputs.size > 0
-        ? findRepresentativeInput(registeredInputs, elementRef.current)
-        : inputRef.current;
+        ? findRepresentativeInput(registeredInputs, elementRef.value)
+        : inputRef.value;
     }
 
     // A field with no eligible input has no native constraint, but its custom validator still
@@ -284,7 +286,7 @@ export function useFieldValidation(
       // call the validate function because either
       // - validating on change, or
       // - native constraint validations passed, custom validity check is next
-      const formValues = Array.from(formRef.current.fields.values()).reduce((acc, field) => {
+      const formValues = Array.from(formRef.value.fields.values()).reduce((acc, field) => {
         if (field.name) {
           acc[field.name] = field.getValue();
         }
@@ -308,7 +310,7 @@ export function useFieldValidation(
         // failure can't retire an error and unblock submission.
         result = await resultOrPromise;
 
-        if (validationCommitId !== validationCommitIdRef.current) {
+        if (validationCommitId !== validationCommitIdRef.value) {
           return;
         }
         nextState = refreshState();
@@ -336,7 +338,7 @@ export function useFieldValidation(
 
   const change = (value: unknown, cancelPending = false) => {
     timeout.clear();
-    validationCommitIdRef.current += 1;
+    validationCommitIdRef.value += 1;
     if (cancelPending) {
       return;
     }
@@ -392,16 +394,16 @@ export interface UseFieldValidationParameters {
   validityData: ComputedRef<FieldValidityData>;
   validationDebounceTime: number;
   invalid: ComputedRef<boolean>;
-  markedDirtyRef: {current: boolean};
+  markedDirtyRef: Ref<boolean>;
   state: ComputedRef<FieldRootState>;
   shouldValidateOnChange: () => boolean;
   validationMode: ValidationMode;
-  registeredFieldIdRef: {current: string | undefined};
+  registeredFieldIdRef: Ref<string | undefined>;
 }
 
 export interface UseFieldValidationReturnValue {
   getValidationProps: (disabled: boolean, props?: HTMLProps) => HTMLProps;
-  inputRef: {current: HTMLInputElement | null};
+  inputRef: Ref<HTMLInputElement | null>;
   registeredInputs: RegisteredInputs;
   registerInput: (element: HTMLInputElement, registration: RegisteredInput) => void | (() => void);
   getInputControl: () => HTMLElement | null;

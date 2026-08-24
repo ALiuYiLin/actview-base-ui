@@ -43,7 +43,7 @@ const correctElements = (parent: HTMLElement, targets: Element[]): Element[] =>
     .map((target) => {
       if (typeof (target as any)?.nodeType !== 'number') {
         // 防御：Ref/对象混入 targets（actview 转译常见），unwrap 或跳过。
-        const resolved = (target as any)?.value ?? (target as any)?.current;
+        const resolved = (target as any)?.value;
         if (resolved && typeof resolved.nodeType === 'number') {
           return correctElement(parent, resolved);
         }

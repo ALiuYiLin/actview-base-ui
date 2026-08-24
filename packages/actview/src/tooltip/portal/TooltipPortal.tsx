@@ -2,6 +2,7 @@ import { defineComponent, toValue } from 'actview';
 import { FloatingPortal } from '@/floating-ui-react';
 import { useTooltipRootContext } from '../root/TooltipRootContext';
 import { TooltipPortalContext } from './TooltipPortalContext';
+import type { Ref } from 'actview';
 
 /**
  * A portal element that moves the tooltip to a different part of the DOM.
@@ -43,7 +44,7 @@ export interface TooltipPortalProps {
   /**
    * A parent element to render the portal element into.
    */
-  container?: HTMLElement | ShadowRoot | {current: HTMLElement | ShadowRoot | null} | null | undefined;
+  container?: HTMLElement | ShadowRoot | Ref<HTMLElement | ShadowRoot | null> | null | undefined;
   children?: any;
   [key: string]: any;
 }

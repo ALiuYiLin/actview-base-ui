@@ -1,4 +1,4 @@
-import { computed, defineComponent, onUnmounted, toValue, watch } from 'actview';
+import {computed, defineComponent, onUnmounted, toValue, watch, ref} from 'actview';
 import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
 import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
 import { mergePropsN } from '@/merge-props';
@@ -52,11 +52,11 @@ export const CollapsiblePanel = defineComponent(function (componentProps: Collap
 
   // 注册 panel id（React useIsoLayoutEffect + cleanup）。组件卸载时 watch 的
   // onCleanup 不保证执行（effectScope stop 只停 effect），用 onUnmounted 显式清理。
-  const latestRegisteredId = {current: registeredId};
+  const latestRegisteredId = ref(registeredId);
   watch(
     () => registeredId,
     (registeredIdValue) => {
-      latestRegisteredId.current = registeredIdValue;
+      latestRegisteredId.value = registeredIdValue;
       setPanelIdState((currentId: string | null | undefined) =>
         registeredIdValue ?? (currentId === null ? undefined : currentId),
       );
@@ -65,7 +65,7 @@ export const CollapsiblePanel = defineComponent(function (componentProps: Collap
   );
   onUnmounted(() => {
     setPanelIdState((currentId: string | null | undefined) =>
-      currentId === latestRegisteredId.current ? null : currentId,
+      currentId === latestRegisteredId.value ? null : currentId,
     );
   });
 

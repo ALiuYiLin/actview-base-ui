@@ -1,9 +1,10 @@
-import { onUnmounted } from 'actview';
+import {onUnmounted, ref, shallowRef} from 'actview';
 import { addEventListener } from '@/utils/addEventListener';
 import { NOOP } from '@/internals/noop';
 import { useTimeout } from '@/utils/useTimeout';
 import { useInterval } from '@/utils/useInterval';
 import { ownerWindow } from '@/utils/owner';
+import type { Ref } from 'actview';
 
 const DEFAULT_TICK_DELAY = 60;
 const DEFAULT_START_DELAY = 400;
@@ -46,7 +47,7 @@ export interface UsePressAndHoldParameters {
   /**
    * Ref to the anchor element used to resolve `ownerWindow`.
    */
-  elementRef: {current: HTMLElement | null};
+  elementRef: Ref<HTMLElement | null>;
 }
 
 export interface UsePressAndHoldReturnValue {
@@ -88,27 +89,27 @@ export function usePressAndHold(params: UsePressAndHoldParameters): UsePressAndH
   const tickInterval = useInterval();
   const intentionalTouchCheckTimeout = useTimeout();
 
-  const isPressedRef = {current: false};
-  const movesAfterTouchRef = {current: 0};
-  const downCoordsRef = {current: {x: 0, y: 0}};
-  const isTouchingButtonRef = {current: false};
-  const ignoreClickRef = {current: false};
-  const pointerTypeRef = {current: ''};
-  const unsubscribeFromGlobalContextMenuRef = {current: NOOP as () => void};
-  const unsubscribeFromGlobalPointerUpRef = {current: NOOP as () => void};
+  const isPressedRef = ref(false);
+  const movesAfterTouchRef = ref(0);
+  const downCoordsRef = shallowRef({x: 0, y: 0});
+  const isTouchingButtonRef = ref(false);
+  const ignoreClickRef = ref(false);
+  const pointerTypeRef = ref('');
+  const unsubscribeFromGlobalContextMenuRef = ref(NOOP as () => void);
+  const unsubscribeFromGlobalPointerUpRef = ref(NOOP as () => void);
 
   const stopAutoChange = () => {
     intentionalTouchCheckTimeout.clear();
     startTickTimeout.clear();
     tickInterval.clear();
-    unsubscribeFromGlobalContextMenuRef.current();
-    movesAfterTouchRef.current = 0;
+    unsubscribeFromGlobalContextMenuRef.value();
+    movesAfterTouchRef.value = 0;
   };
 
   function startAutoChange(triggerNativeEvent?: Event) {
     stopAutoChange();
 
-    const element = elementRef.current;
+    const element = elementRef.value;
     if (!element) {
       return;
     }
@@ -121,7 +122,7 @@ export function usePressAndHold(params: UsePressAndHoldParameters): UsePressAndH
 
     // A global context menu listener is necessary to prevent the context menu from
     // appearing when the touch is slightly outside of the element's hit area.
-    unsubscribeFromGlobalContextMenuRef.current = addEventListener(
+    unsubscribeFromGlobalContextMenuRef.value = addEventListener(
       win,
       'contextmenu',
       handleContextMenu,
@@ -130,12 +131,12 @@ export function usePressAndHold(params: UsePressAndHoldParameters): UsePressAndH
     // The release listener stays registered through `stopAutoChange` so a hold that auto-stops at
     // a boundary (a repeat tick returning `false`) still fires `onStop` on release. Replace any
     // existing one first so a mouseleave/mouseenter cycle during a hold doesn't stack listeners.
-    unsubscribeFromGlobalPointerUpRef.current();
-    unsubscribeFromGlobalPointerUpRef.current = addEventListener(
+    unsubscribeFromGlobalPointerUpRef.value();
+    unsubscribeFromGlobalPointerUpRef.value = addEventListener(
       win,
       'pointerup',
       (event) => {
-        isPressedRef.current = false;
+        isPressedRef.value = false;
         stopAutoChange();
         onStop?.(event as PointerEvent);
       },
@@ -158,32 +159,32 @@ export function usePressAndHold(params: UsePressAndHoldParameters): UsePressAndH
 
   onUnmounted(() => {
     stopAutoChange();
-    unsubscribeFromGlobalPointerUpRef.current();
+    unsubscribeFromGlobalPointerUpRef.value();
   });
 
   if (disabled) {
-    isPressedRef.current = false;
-    isTouchingButtonRef.current = false;
-    pointerTypeRef.current = '';
+    isPressedRef.value = false;
+    isTouchingButtonRef.value = false;
+    pointerTypeRef.value = '';
     stopAutoChange();
   }
 
   const pointerHandlers: UsePressAndHoldReturnValue['pointerHandlers'] = {
     onTouchStart() {
-      isTouchingButtonRef.current = true;
+      isTouchingButtonRef.value = true;
     },
     onTouchEnd() {
-      isTouchingButtonRef.current = false;
+      isTouchingButtonRef.value = false;
     },
     onPointerDown(event: any) {
       if (event.defaultPrevented || event.button || disabled) {
         return;
       }
 
-      pointerTypeRef.current = event.pointerType;
-      ignoreClickRef.current = false;
-      isPressedRef.current = true;
-      downCoordsRef.current = {x: event.clientX, y: event.clientY};
+      pointerTypeRef.value = event.pointerType;
+      ignoreClickRef.value = false;
+      isPressedRef.value = true;
+      downCoordsRef.value = {x: event.clientX, y: event.clientY};
 
       const isTouchPointer = isTouchLikePointerType(event.pointerType);
 
@@ -194,18 +195,18 @@ export function usePressAndHold(params: UsePressAndHoldParameters): UsePressAndH
         // Check if the pointerdown was intentional and not the result of a scroll or
         // pinch-zoom. In that case, we don't want to start the auto-change sequence.
         intentionalTouchCheckTimeout.start(TOUCH_TIMEOUT, () => {
-          const moves = movesAfterTouchRef.current;
-          movesAfterTouchRef.current = 0;
+          const moves = movesAfterTouchRef.value;
+          movesAfterTouchRef.value = 0;
           // Only start auto-change if the touch is still pressed (prevents races
           // with pointerup occurring before the timeout fires on quick taps).
-          const stillPressed = isPressedRef.current;
+          const stillPressed = isPressedRef.value;
           if (stillPressed && moves < MAX_POINTER_MOVES_AFTER_TOUCH) {
             startAutoChange(event.nativeEvent);
-            ignoreClickRef.current = true; // synthesized click after hold should be ignored
+            ignoreClickRef.value = true; // synthesized click after hold should be ignored
           } else {
             // No auto-change (simple tap or scroll gesture), allow the click handler
             // to perform a single action.
-            ignoreClickRef.current = false;
+            ignoreClickRef.value = false;
             stopAutoChange();
           }
         });
@@ -215,17 +216,17 @@ export function usePressAndHold(params: UsePressAndHoldParameters): UsePressAndH
       // Ensure we mark the press as released for touch flows even if auto-change never
       // started, so the delayed auto-change check won't start after a quick tap.
       if (isTouchLikePointerType(event.pointerType)) {
-        isPressedRef.current = false;
+        isPressedRef.value = false;
       }
     },
     onPointerMove(event: any) {
-      if (disabled || !isTouchLikePointerType(event.pointerType) || !isPressedRef.current) {
+      if (disabled || !isTouchLikePointerType(event.pointerType) || !isPressedRef.value) {
         return;
       }
 
-      movesAfterTouchRef.current += 1;
+      movesAfterTouchRef.value += 1;
 
-      const {x, y} = downCoordsRef.current;
+      const {x, y} = downCoordsRef.value;
       const dx = x - event.clientX;
       const dy = y - event.clientY;
 
@@ -237,9 +238,9 @@ export function usePressAndHold(params: UsePressAndHoldParameters): UsePressAndH
       if (
         event.defaultPrevented ||
         disabled ||
-        !isPressedRef.current ||
-        isTouchingButtonRef.current ||
-        isTouchLikePointerType(pointerTypeRef.current)
+        !isPressedRef.value ||
+        isTouchingButtonRef.value ||
+        isTouchLikePointerType(pointerTypeRef.value)
       ) {
         return;
       }
@@ -247,14 +248,14 @@ export function usePressAndHold(params: UsePressAndHoldParameters): UsePressAndH
       startAutoChange(event.nativeEvent);
     },
     onMouseLeave() {
-      if (isTouchingButtonRef.current) {
+      if (isTouchingButtonRef.value) {
         return;
       }
 
       stopAutoChange();
     },
     onMouseUp() {
-      if (isTouchingButtonRef.current) {
+      if (isTouchingButtonRef.value) {
         return;
       }
 
@@ -266,8 +267,8 @@ export function usePressAndHold(params: UsePressAndHoldParameters): UsePressAndH
     if (event.defaultPrevented) {
       return true;
     }
-    if (isTouchLikePointerType(pointerTypeRef.current)) {
-      return ignoreClickRef.current;
+    if (isTouchLikePointerType(pointerTypeRef.value)) {
+      return ignoreClickRef.value;
     }
     // actview 事件包装可能不提供 detail；undefined 视为 0（首次单击）
     return (event.detail ?? 0) !== 0;

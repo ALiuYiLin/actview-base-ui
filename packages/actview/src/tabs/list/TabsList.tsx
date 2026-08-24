@@ -1,4 +1,4 @@
-import { defineComponent, onUnmounted, ref, toValue } from 'actview';
+import {defineComponent, onUnmounted, ref, toValue, shallowRef} from 'actview';
 import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
 import type { TabsRootState } from '../root/TabsRoot';
 import { CompositeRoot } from '@/internals/composite/root/CompositeRoot';
@@ -24,9 +24,9 @@ export const TabsList = defineComponent(function (componentProps: TabsList.Props
   const setHighlightedTabIndex = (v: number) => (highlightedTabIndex.value = v);
   const tabsListElement = ref<HTMLElement | null>(null);
 
-  const indicatorUpdateListenersRef = {current: new Set<() => void>()};
-  const tabResizeObserverElementsRef = {current: new Set<HTMLElement>()};
-  const resizeObserverRef = {current: null as ResizeObserver | null};
+  const indicatorUpdateListenersRef = shallowRef(new Set<() => void>());
+  const tabResizeObserverElementsRef = shallowRef(new Set<HTMLElement>());
+  const resizeObserverRef = ref(null as ResizeObserver | null);
 
   // React 版 useIsoLayoutEffect：ResizeObserver 建立
   let resizeObserverCleanup: (() => void) | undefined;
@@ -39,24 +39,24 @@ export const TabsList = defineComponent(function (componentProps: TabsList.Props
     }
 
     const resizeObserver = new ResizeObserver(() => {
-      indicatorUpdateListenersRef.current.forEach((listener) => {
+      indicatorUpdateListenersRef.value.forEach((listener) => {
         listener();
       });
     });
 
-    resizeObserverRef.current = resizeObserver;
+    resizeObserverRef.value = resizeObserver;
 
     if (tabsListElement.value) {
       resizeObserver.observe(tabsListElement.value);
     }
 
-    tabResizeObserverElementsRef.current.forEach((element) => {
+    tabResizeObserverElementsRef.value.forEach((element) => {
       resizeObserver.observe(element);
     });
 
     resizeObserverCleanup = () => {
       resizeObserver.disconnect();
-      resizeObserverRef.current = null;
+      resizeObserverRef.value = null;
     };
   };
   const stopObserver = () => {
@@ -69,18 +69,18 @@ export const TabsList = defineComponent(function (componentProps: TabsList.Props
   onUnmounted(stopObserver);
 
   const registerIndicatorUpdateListener = (listener: () => void) => {
-    indicatorUpdateListenersRef.current.add(listener);
+    indicatorUpdateListenersRef.value.add(listener);
     return () => {
-      indicatorUpdateListenersRef.current.delete(listener);
+      indicatorUpdateListenersRef.value.delete(listener);
     };
   };
 
   const registerTabResizeObserverElement = (element: HTMLElement) => {
-    tabResizeObserverElementsRef.current.add(element);
-    resizeObserverRef.current?.observe(element);
+    tabResizeObserverElementsRef.value.add(element);
+    resizeObserverRef.value?.observe(element);
     return () => {
-      tabResizeObserverElementsRef.current.delete(element);
-      resizeObserverRef.current?.unobserve(element);
+      tabResizeObserverElementsRef.value.delete(element);
+      resizeObserverRef.value?.unobserve(element);
     };
   };
 

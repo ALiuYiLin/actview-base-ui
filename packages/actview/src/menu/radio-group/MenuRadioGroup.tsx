@@ -65,7 +65,6 @@ export const MenuRadioGroup = defineComponent(function MenuRadioGroup(
         (componentProps.ref as any)(el);
       } else if (componentProps.ref) {
         componentProps.ref.value = el;
-        componentProps.ref.current = el;
       }
     };
 

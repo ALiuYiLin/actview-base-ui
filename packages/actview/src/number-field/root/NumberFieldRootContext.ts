@@ -12,12 +12,12 @@ export interface NumberFieldRootContext {
   setValue: (value: number | null, details: NumberFieldRoot.ChangeEventDetails) => boolean;
   getStepAmount: (event?: EventWithOptionalKeyState) => number;
   incrementValue: (amount: number, params: IncrementValueParameters) => boolean;
-  inputRef: {current: HTMLInputElement | null};
-  allowInputSyncRef: {current: boolean | null};
-  formatOptionsRef: {current: Intl.NumberFormatOptions | undefined};
-  valueRef: {current: number | null};
-  lastChangedValueRef: {current: number | null};
-  hasPendingCommitRef: {current: boolean};
+  inputRef: Ref<HTMLInputElement | null>;
+  allowInputSyncRef: Ref<boolean | null>;
+  formatOptionsRef: Ref<Intl.NumberFormatOptions | undefined>;
+  valueRef: Ref<number | null>;
+  lastChangedValueRef: Ref<number | null>;
+  hasPendingCommitRef: Ref<boolean>;
   name: string | undefined;
   nameProp: string | undefined;
   inputMode: InputMode;

@@ -26,6 +26,7 @@ import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
 import { useValueChanged } from '@/internals/useValueChanged';
+import type { Ref } from 'actview';
 
 export const PARENT_CHECKBOX = 'data-parent';
 
@@ -95,7 +96,7 @@ export const CheckboxRoot = defineComponent(function (componentProps: CheckboxRo
 
   const groupValue = groupContext ? toValue(groupContext.value) : undefined;
 
-  const controlRef = {current: null as HTMLElement | null};
+  const controlRef = ref(null as HTMLElement | null);
 
   const {getButtonProps, buttonRef} = useButton({
     disabled,
@@ -125,7 +126,7 @@ export const CheckboxRoot = defineComponent(function (componentProps: CheckboxRo
 
   const registerChildId = parentContext?.registerChildId;
 
-  const inputRef = {current: null as HTMLInputElement | null};
+  const inputRef = ref(null as HTMLInputElement | null);
   const registerFieldInput = validation.registerInput;
   const registeredInputValue = groupContext ? value : undefined;
   const registerInput = (element: HTMLInputElement) =>
@@ -147,8 +148,8 @@ export const CheckboxRoot = defineComponent(function (componentProps: CheckboxRo
   watch(
     () => [checked.value, indeterminateProp] as const,
     () => {
-      if (inputRef.current) {
-        inputRef.current.indeterminate = Boolean(indeterminateProp);
+      if (inputRef.value) {
+        inputRef.value.indeterminate = Boolean(indeterminateProp);
         if (checked.value) {
           setFilled(true);
         }
@@ -177,7 +178,7 @@ export const CheckboxRoot = defineComponent(function (componentProps: CheckboxRo
         return;
       }
 
-      const disabledStates = parentContext.disabledStatesRef.current;
+      const disabledStates = parentContext.disabledStatesRef.value;
       disabledStates.set(value, disabled);
 
       return () => {
@@ -188,7 +189,7 @@ export const CheckboxRoot = defineComponent(function (componentProps: CheckboxRo
   );
   onUnmounted(() => {
     if (parentContext && value !== undefined) {
-      parentContext.disabledStatesRef.current.delete(value);
+      parentContext.disabledStatesRef.value.delete(value);
     }
   });
 
@@ -305,7 +306,7 @@ export const CheckboxRoot = defineComponent(function (componentProps: CheckboxRo
           }
         },
         onFocus() {
-          controlRef.current?.focus();
+          controlRef.value?.focus();
         },
       },
       valueProp !== undefined
@@ -335,7 +336,7 @@ export const CheckboxRoot = defineComponent(function (componentProps: CheckboxRo
           }
         },
         onBlur() {
-          const inputEl = inputRef.current;
+          const inputEl = inputRef.value;
           if (!inputEl) {
             return;
           }
@@ -360,7 +361,7 @@ export const CheckboxRoot = defineComponent(function (componentProps: CheckboxRo
             return;
           }
 
-          const formToSubmit = inputRef.current?.form ?? null;
+          const formToSubmit = inputRef.value?.form ?? null;
           const currentTarget = event.currentTarget;
           const nativeEvent = event;
           const originalPreventDefault = event.preventDefault;
@@ -397,7 +398,7 @@ export const CheckboxRoot = defineComponent(function (componentProps: CheckboxRo
 
           event.preventDefault();
 
-          const input = inputRef.current;
+          const input = inputRef.value;
           if (!input) {
             return;
           }
@@ -561,7 +562,7 @@ export interface CheckboxRootProps
   /**
    * A ref to access the hidden `<input>` element.
    */
-  inputRef?: {current: HTMLInputElement | null} | undefined;
+  inputRef?: Ref<HTMLInputElement | null> | undefined;
   /**
    * Whether the checkbox controls a group of child checkboxes.
    *

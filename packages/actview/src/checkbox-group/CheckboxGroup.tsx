@@ -91,7 +91,7 @@ export const CheckboxGroup = defineComponent(function (componentProps: CheckboxG
   };
 
   const getFormValue = () => {
-    const formElement = elementRef.current;
+    const formElement = elementRef.value;
     if (!formElement) {
       return value.value;
     }

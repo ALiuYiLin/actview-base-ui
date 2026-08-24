@@ -41,19 +41,19 @@ export const TabsTab = defineComponent(function (componentProps: TabsTab.Props) 
     metadata: tabMetadata,
   });
 
-  const isNavigatingRef = {current: false};
-  const unobserveTabElementRef = {current: null as (() => void) | null};
+  const isNavigatingRef = ref(false);
+  const unobserveTabElementRef = ref(null as (() => void) | null);
 
   // Registered from the ref callback rather than an effect so the observer
   // follows the rendered element when the `render` prop swaps the host element.
   const observeTabElement = (element: HTMLElement | null) => {
-    unobserveTabElementRef.current?.();
-    unobserveTabElementRef.current = element
+    unobserveTabElementRef.value?.();
+    unobserveTabElementRef.value = element
       ? listContextRef.value.registerTabResizeObserverElement(element)
       : null;
   };
   onUnmounted(() => {
-    unobserveTabElementRef.current?.();
+    unobserveTabElementRef.value?.();
   });
 
   // Keep the highlighted item in sync with the currently active tab
@@ -73,8 +73,8 @@ export const TabsTab = defineComponent(function (componentProps: TabsTab.Props) 
       };
     },
     ({active, highlightedIndex, tabIndex, onHighlightedIndexChange, listElement}) => {
-      if (isNavigatingRef.current) {
-        isNavigatingRef.current = false;
+      if (isNavigatingRef.value) {
+        isNavigatingRef.value = false;
         return;
       }
 
@@ -107,8 +107,8 @@ export const TabsTab = defineComponent(function (componentProps: TabsTab.Props) 
     focusableWhenDisabled: true,
   });
 
-  const isPressingRef = {current: false};
-  const isMainButtonRef = {current: false};
+  const isPressingRef = ref(false);
+  const isMainButtonRef = ref(false);
 
   // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
   return () => {
@@ -150,8 +150,8 @@ export const TabsTab = defineComponent(function (componentProps: TabsTab.Props) 
 
       if (
         listContextRef.value.activateOnFocus &&
-        (!isPressingRef.current || // keyboard or touch focus
-          isMainButtonRef.current) // main mouse button focus
+        (!isPressingRef.value || // keyboard or touch focus
+          isMainButtonRef.value) // main mouse button focus
       ) {
         activate(event);
       }
@@ -162,18 +162,18 @@ export const TabsTab = defineComponent(function (componentProps: TabsTab.Props) 
         return;
       }
 
-      isPressingRef.current = true;
+      isPressingRef.value = true;
       // Secondary presses (context menu, middle click) may focus the tab, but
       // must not activate it with `activateOnFocus`.
-      isMainButtonRef.current = event.button === 0;
+      isMainButtonRef.value = event.button === 0;
 
       // Registered for every button so a secondary press doesn't leave the tab
       // stuck in the pressing state, which would suppress later focus activation.
       const doc = ownerDocument(event.currentTarget);
 
       function handlePointerEnd() {
-        isPressingRef.current = false;
-        isMainButtonRef.current = false;
+        isPressingRef.value = false;
+        isMainButtonRef.value = false;
         doc.removeEventListener('pointerup', handlePointerEnd);
         doc.removeEventListener('pointercancel', handlePointerEnd);
       }
@@ -204,7 +204,7 @@ export const TabsTab = defineComponent(function (componentProps: TabsTab.Props) 
         onPointerDown,
         [ACTIVE_COMPOSITE_ITEM as string]: active ? '' : undefined,
         onKeyDownCapture() {
-          isNavigatingRef.current = true;
+          isNavigatingRef.value = true;
         },
       },
       elementProps,

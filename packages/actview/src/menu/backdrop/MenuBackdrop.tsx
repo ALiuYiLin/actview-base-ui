@@ -63,7 +63,6 @@ export const MenuBackdrop = defineComponent(function MenuBackdrop(
         (componentProps.ref as any)(el);
       } else if (componentProps.ref) {
         componentProps.ref.value = el;
-        componentProps.ref.current = el;
       }
     };
 

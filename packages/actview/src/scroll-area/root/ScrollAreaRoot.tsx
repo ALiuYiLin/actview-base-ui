@@ -51,21 +51,21 @@ export const ScrollAreaRoot = defineComponent(function (componentProps: ScrollAr
   const overflowEdges = ref<OverflowEdges>(DEFAULT_OVERFLOW_EDGES);
   const hiddenState = ref<HiddenState>(DEFAULT_HIDDEN_STATE);
 
-  const viewportRef = {current: null as HTMLDivElement | null};
-  const scrollbarYRef = {current: null as HTMLDivElement | null};
-  const scrollbarXRef = {current: null as HTMLDivElement | null};
-  const thumbYRef = {current: null as HTMLDivElement | null};
-  const thumbXRef = {current: null as HTMLDivElement | null};
-  const cornerRef = {current: null as HTMLDivElement | null};
+  const viewportRef = ref(null as HTMLDivElement | null);
+  const scrollbarYRef = ref(null as HTMLDivElement | null);
+  const scrollbarXRef = ref(null as HTMLDivElement | null);
+  const thumbYRef = ref(null as HTMLDivElement | null);
+  const thumbXRef = ref(null as HTMLDivElement | null);
+  const cornerRef = ref(null as HTMLDivElement | null);
 
-  const activePointerIdRef = {current: null as number | null};
-  const startYRef = {current: 0};
-  const startXRef = {current: 0};
-  const startScrollTopRef = {current: 0};
-  const startScrollLeftRef = {current: 0};
-  const currentOrientationRef = {current: 'vertical' as 'vertical' | 'horizontal'};
-  const scrollPositionRef = {current: DEFAULT_COORDS};
-  const savedSnapTypeRef = {current: null as string | null};
+  const activePointerIdRef = ref(null as number | null);
+  const startYRef = ref(0);
+  const startXRef = ref(0);
+  const startScrollTopRef = ref(0);
+  const startScrollLeftRef = ref(0);
+  const currentOrientationRef = ref('vertical' as 'vertical' | 'horizontal');
+  const scrollPositionRef = ref(DEFAULT_COORDS);
+  const savedSnapTypeRef = ref(null as string | null);
 
   function startScrolling(vertical: boolean) {
     const setScrolling = vertical ? scrollingY : scrollingX;
@@ -78,10 +78,10 @@ export const ScrollAreaRoot = defineComponent(function (componentProps: ScrollAr
   }
 
   const handleScroll = (scrollPosition: Coords) => {
-    const offsetX = scrollPosition.x - scrollPositionRef.current.x;
-    const offsetY = scrollPosition.y - scrollPositionRef.current.y;
+    const offsetX = scrollPosition.x - scrollPositionRef.value.x;
+    const offsetY = scrollPosition.y - scrollPositionRef.value.y;
 
-    scrollPositionRef.current = scrollPosition;
+    scrollPositionRef.value = scrollPosition;
 
     if (offsetY !== 0) {
       startScrolling(true);
@@ -97,9 +97,9 @@ export const ScrollAreaRoot = defineComponent(function (componentProps: ScrollAr
   // scrollbars suppress snapping while dragging, so disable it until the
   // pointer is released; restoring the value re-snaps the viewport.
   const disableViewportSnap = () => {
-    const viewportEl = viewportRef.current;
-    if (viewportEl && savedSnapTypeRef.current === null) {
-      savedSnapTypeRef.current = viewportEl.style.scrollSnapType;
+    const viewportEl = viewportRef.value;
+    if (viewportEl && savedSnapTypeRef.value === null) {
+      savedSnapTypeRef.value = viewportEl.style.scrollSnapType;
       viewportEl.style.scrollSnapType = 'none';
     }
   };
@@ -109,57 +109,57 @@ export const ScrollAreaRoot = defineComponent(function (componentProps: ScrollAr
       return;
     }
 
-    if (activePointerIdRef.current !== null) {
+    if (activePointerIdRef.value !== null) {
       const activeThumb =
-        currentOrientationRef.current === 'vertical' ? thumbYRef.current : thumbXRef.current;
-      if (activeThumb?.hasPointerCapture(activePointerIdRef.current)) {
+        currentOrientationRef.value === 'vertical' ? thumbYRef.value : thumbXRef.value;
+      if (activeThumb?.hasPointerCapture(activePointerIdRef.value)) {
         return;
       }
     }
 
-    activePointerIdRef.current = event.pointerId;
-    startYRef.current = event.clientY;
-    startXRef.current = event.clientX;
-    currentOrientationRef.current = (event.currentTarget as HTMLElement).getAttribute(
+    activePointerIdRef.value = event.pointerId;
+    startYRef.value = event.clientY;
+    startXRef.value = event.clientX;
+    currentOrientationRef.value = (event.currentTarget as HTMLElement).getAttribute(
       'data-orientation',
     ) as 'vertical' | 'horizontal';
 
-    const viewportEl = viewportRef.current;
+    const viewportEl = viewportRef.value;
     if (viewportEl) {
-      startScrollTopRef.current = viewportEl.scrollTop;
-      startScrollLeftRef.current = viewportEl.scrollLeft;
+      startScrollTopRef.value = viewportEl.scrollTop;
+      startScrollLeftRef.value = viewportEl.scrollLeft;
       disableViewportSnap();
     }
 
     const thumb =
-      currentOrientationRef.current === 'vertical' ? thumbYRef.current : thumbXRef.current;
+      currentOrientationRef.value === 'vertical' ? thumbYRef.value : thumbXRef.value;
     thumb?.setPointerCapture(event.pointerId);
   };
 
   const handlePointerUp = (event: PointerEvent) => {
-    if (event.pointerId !== activePointerIdRef.current) {
+    if (event.pointerId !== activePointerIdRef.value) {
       return;
     }
 
-    activePointerIdRef.current = null;
-    (currentOrientationRef.current === 'vertical' ? scrollingY : scrollingX).value = false;
+    activePointerIdRef.value = null;
+    (currentOrientationRef.value === 'vertical' ? scrollingY : scrollingX).value = false;
 
-    if (savedSnapTypeRef.current !== null) {
-      if (viewportRef.current) {
-        viewportRef.current.style.scrollSnapType = savedSnapTypeRef.current;
+    if (savedSnapTypeRef.value !== null) {
+      if (viewportRef.value) {
+        viewportRef.value.style.scrollSnapType = savedSnapTypeRef.value;
       }
-      savedSnapTypeRef.current = null;
+      savedSnapTypeRef.value = null;
     }
 
     const thumb =
-      currentOrientationRef.current === 'vertical' ? thumbYRef.current : thumbXRef.current;
+      currentOrientationRef.value === 'vertical' ? thumbYRef.value : thumbXRef.value;
     if (thumb?.hasPointerCapture(event.pointerId)) {
       thumb.releasePointerCapture(event.pointerId);
     }
   };
 
   const handlePointerMove = (event: PointerEvent) => {
-    if (event.pointerId !== activePointerIdRef.current) {
+    if (event.pointerId !== activePointerIdRef.value) {
       return;
     }
 
@@ -168,14 +168,14 @@ export const ScrollAreaRoot = defineComponent(function (componentProps: ScrollAr
       return;
     }
 
-    const viewportEl = viewportRef.current;
+    const viewportEl = viewportRef.value;
     if (!viewportEl) {
       return;
     }
 
-    const vertical = currentOrientationRef.current === 'vertical';
-    const thumbEl = vertical ? thumbYRef.current : thumbXRef.current;
-    const scrollbarEl = vertical ? scrollbarYRef.current : scrollbarXRef.current;
+    const vertical = currentOrientationRef.value === 'vertical';
+    const thumbEl = vertical ? thumbYRef.value : thumbXRef.value;
+    const scrollbarEl = vertical ? scrollbarYRef.value : scrollbarXRef.value;
     if (!thumbEl || !scrollbarEl) {
       return;
     }
@@ -186,12 +186,12 @@ export const ScrollAreaRoot = defineComponent(function (componentProps: ScrollAr
     const thumbSizePx = vertical ? thumbEl.offsetHeight : thumbEl.offsetWidth;
     const trackSize = vertical ? scrollbarEl.offsetHeight : scrollbarEl.offsetWidth;
     const maxThumbOffset = trackSize - thumbSizePx - scrollbarOffset - thumbOffset;
-    const delta = vertical ? event.clientY - startYRef.current : event.clientX - startXRef.current;
+    const delta = vertical ? event.clientY - startYRef.value : event.clientX - startXRef.value;
     const scrollRatio = maxThumbOffset <= 0 ? 0 : delta / maxThumbOffset;
 
     const scrollableSize = vertical ? viewportEl.scrollHeight : viewportEl.scrollWidth;
     const viewportSize = vertical ? viewportEl.clientHeight : viewportEl.clientWidth;
-    const startScroll = vertical ? startScrollTopRef.current : startScrollLeftRef.current;
+    const startScroll = vertical ? startScrollTopRef.value : startScrollLeftRef.value;
     const nextScroll = startScroll + scrollRatio * (scrollableSize - viewportSize);
 
     if (vertical) {

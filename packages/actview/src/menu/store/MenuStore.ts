@@ -5,6 +5,8 @@ import type { MenuParent, MenuRoot } from '../root/MenuRoot';
 import { FloatingTreeStore } from '@/floating-ui-react/components/FloatingTreeStore';
 import type { HTMLProps } from '@/internals/types';
 import type { AdaptiveOriginMiddleware } from '@/utils/adaptiveOriginConstants';
+import { shallowRef } from 'actview';
+import type { Ref } from 'actview';
 import {
   createInitialPopupStoreState,
   popupStoreSelectors,
@@ -40,8 +42,8 @@ type Context = PopupStoreContext<MenuRoot.ChangeEventDetails> & {
   readonly positionerRef: {value: HTMLElement | null};
   readonly popupRef: {value: HTMLElement | null};
   readonly typingRef: {value: boolean};
-  readonly itemDomElements: {current: (HTMLElement | null)[]};
-  readonly itemLabels: {current: (string | null)[]};
+  readonly itemDomElements: Ref<(HTMLElement | null)[]>;
+  readonly itemLabels: Ref<(string | null)[]>;
   allowMouseUpTriggerRef: {value: boolean};
   readonly triggerFocusTargetRef: {value: HTMLElement | null};
   readonly beforeContentFocusGuardRef: {value: HTMLElement | null};
@@ -184,8 +186,8 @@ function createInitialContext(triggerElements: PopupTriggerMap): Context {
     positionerRef: {value: null},
     popupRef: {value: null},
     typingRef: {value: false},
-    itemDomElements: {current: []},
-    itemLabels: {current: []},
+    itemDomElements: shallowRef([]),
+    itemLabels: shallowRef([]),
     allowMouseUpTriggerRef: {value: false},
     triggerFocusTargetRef: {value: null},
     beforeContentFocusGuardRef: {value: null},

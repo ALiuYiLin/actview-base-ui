@@ -43,7 +43,7 @@ export const ScrollAreaScrollbar = defineComponent(function (
       return;
     }
 
-    const viewportEl = rootContextRef.value.viewportRef.current;
+    const viewportEl = rootContextRef.value.viewportRef.value;
     const scrollbarEl = scrollbarRef.value;
 
     if (!scrollbarEl) {
@@ -141,7 +141,7 @@ export const ScrollAreaScrollbar = defineComponent(function (
         }
 
         const target = getTarget(event.nativeEvent ?? event) as Element | null;
-        const thumbEl = vertical ? thumbYRef.current : thumbXRef.current;
+        const thumbEl = vertical ? thumbYRef.value : thumbXRef.value;
 
         // Ignore clicks on thumb, including cases where React retargets the
         // synthetic event to the track host across a shadow boundary.
@@ -149,7 +149,7 @@ export const ScrollAreaScrollbar = defineComponent(function (
           return;
         }
 
-        const viewportEl = viewportRef.current;
+        const viewportEl = viewportRef.value;
         if (!viewportEl) {
           return;
         }

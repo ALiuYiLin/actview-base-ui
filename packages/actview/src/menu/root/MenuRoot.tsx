@@ -144,10 +144,10 @@ export const MenuRoot = defineComponent(function MenuRoot<Payload>(
   const payload = store.useState('payload') as unknown as Ref<Payload | undefined>;
   const floatingParentNodeId = store.useState('floatingParentNodeId');
 
-  const openEventRef = {current: null as Event | null};
-  const allowOutsidePressDismissalRef = {current: parent.value.type !== 'context-menu'};
+  const openEventRef = ref(null as Event | null);
+  const allowOutsidePressDismissalRef = ref(parent.value.type !== 'context-menu');
   const allowOutsidePressDismissalTimeout = useTimeout();
-  const allowTouchToCloseRef = {current: true};
+  const allowTouchToCloseRef = ref(true);
   const allowTouchToCloseTimeout = useTimeout();
 
   const nested = floatingParentNodeId != null;
@@ -212,7 +212,7 @@ export const MenuRoot = defineComponent(function MenuRoot<Payload>(
     () => [open.value, parent.value.type] as const,
     () => {
       if (!open.value) {
-        openEventRef.current = null;
+        openEventRef.value = null;
       }
 
       if (parent.value.type !== 'context-menu') {
@@ -221,7 +221,7 @@ export const MenuRoot = defineComponent(function MenuRoot<Payload>(
 
       if (!open.value) {
         allowOutsidePressDismissalTimeout.clear();
-        allowOutsidePressDismissalRef.current = false;
+        allowOutsidePressDismissalRef.value = false;
         return;
       }
 
@@ -229,7 +229,7 @@ export const MenuRoot = defineComponent(function MenuRoot<Payload>(
       // needs to be a grace period after opening to ensure the dismissal event
       // doesn't fire immediately after open.
       allowOutsidePressDismissalTimeout.start(500, () => {
-        allowOutsidePressDismissalRef.current = true;
+        allowOutsidePressDismissalRef.value = true;
       });
     },
     {flush: 'post', immediate: true},
@@ -289,19 +289,19 @@ export const MenuRoot = defineComponent(function MenuRoot<Payload>(
         nextOpen === false &&
         nativeEvent?.type === 'click' &&
         (nativeEvent as PointerEvent).pointerType === 'touch' &&
-        !allowTouchToCloseRef.current
+        !allowTouchToCloseRef.value
       ) {
         return;
       }
 
       // Prevent the menu from closing on mobile devices that have a delayed click event.
       if (nextOpen && reason === REASONS.triggerFocus) {
-        allowTouchToCloseRef.current = false;
+        allowTouchToCloseRef.value = false;
         allowTouchToCloseTimeout.start(300, () => {
-          allowTouchToCloseRef.current = true;
+          allowTouchToCloseRef.value = true;
         });
       } else {
-        allowTouchToCloseRef.current = true;
+        allowTouchToCloseRef.value = true;
         allowTouchToCloseTimeout.clear();
       }
 
@@ -312,7 +312,7 @@ export const MenuRoot = defineComponent(function MenuRoot<Payload>(
         (nativeEvent as MouseEvent).detail === 0;
       const isDismissClose = !nextOpen && (reason === REASONS.escapeKey || reason == null);
 
-      openEventRef.current = eventDetails.event;
+      openEventRef.value = eventDetails.event;
 
       const popupOpenState = createPopupOpenState(
         store.state,
@@ -409,11 +409,11 @@ export const MenuRoot = defineComponent(function MenuRoot<Payload>(
     enabled: !disabled.value,
     bubbles: {escapeKey: closeParentOnEsc && parent.value.type === 'menu'},
     outsidePress() {
-      if (parent.value.type !== 'context-menu' || openEventRef.current?.type === 'contextmenu') {
+      if (parent.value.type !== 'context-menu' || openEventRef.value?.type === 'contextmenu') {
         return true;
       }
 
-      return allowOutsidePressDismissalRef.current;
+      return allowOutsidePressDismissalRef.value;
     },
     externalTree: nested ? floatingTreeRoot.value : undefined,
   });
@@ -570,7 +570,7 @@ function useMenuRootStore<Payload>(
   // The store is owned by this Root instance and created exactly once.
   const store = useRefWithInit(
     () => new MenuStore<Payload>(initialState, floatingId, nested),
-  ).current;
+  ).value;
 
   return store;
 }

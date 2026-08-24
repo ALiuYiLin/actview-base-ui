@@ -67,13 +67,13 @@ export function useCollapsiblePanel(
     }
   };
 
-  // React useValueAsRef(open)：latestOpen.current 始终是最新 open（避免
+  // React useValueAsRef(open)：latestOpen.value 始终是最新 open（避免
   // 异步回调读到旧闭包值）
-  const latestOpen = {current: toValue(open) ?? false};
+  const latestOpen = ref(toValue(open) ?? false);
   watch(
     () => toValue(open),
     (v) => {
-      latestOpen.current = v ?? false;
+      latestOpen.value = v ?? false;
     },
   );
 
@@ -348,7 +348,7 @@ export function useCollapsiblePanel(
         // Same post-paint race as the `useOpenChangeComplete` callback above, except `open` is
         // captured by this effect's closure and always `false` here, so read the latest value from
         // a ref. Unmounting a panel that has already reopened would drop it from the DOM.
-        if (latestOpen.current) {
+        if (latestOpen.value) {
           return;
         }
 

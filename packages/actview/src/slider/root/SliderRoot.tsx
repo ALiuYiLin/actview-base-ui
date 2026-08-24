@@ -1,4 +1,4 @@
-import { computed, defineComponent, ref, toValue, watch } from 'actview';
+import {computed, defineComponent, ref, toValue, watch, shallowRef} from 'actview';
 import type { ComputedRef } from 'actview';
 import { ownerDocument } from '@/utils/owner';
 import { useControlled } from '@/utils/useControlled';
@@ -112,18 +112,18 @@ export const SliderRoot = defineComponent(function <Value extends number | reado
     name: 'Slider',
   });
 
-  const sliderRef = {current: null as HTMLElement | null};
-  const controlRef = {current: null as HTMLElement | null};
-  const thumbRefs = {current: [] as (HTMLElement | null)[]};
+  const sliderRef = ref(null as HTMLElement | null);
+  const controlRef = ref(null as HTMLElement | null);
+  const thumbRefs = shallowRef([] as (HTMLElement | null)[]);
   // The px distance between the pointer and the center of a pressed thumb.
-  const pressedThumbCenterOffsetRef = {current: null as number | null};
+  const pressedThumbCenterOffsetRef = ref(null as number | null);
   // The index of the pressed thumb, or the closest thumb if the `Control` was pressed.
   // This is updated on pointerdown, which is sooner than the `active/activeIndex`
   // state which is updated later when the nested `input` receives focus.
-  const pressedThumbIndexRef = {current: -1};
+  const pressedThumbIndexRef = ref(-1);
   // The values when the current drag interaction started.
-  const pressedValuesRef = {current: null as readonly number[] | null};
-  const lastChangeReasonRef = {current: REASONS.none as SliderRoot.ChangeEventReason};
+  const pressedValuesRef = ref(null as readonly number[] | null);
+  const lastChangeReasonRef = ref(REASONS.none as SliderRoot.ChangeEventReason);
 
   // We can't use the :active browser pseudo-classes.
   // - The active state isn't triggered when clicking on the rail.
@@ -144,7 +144,7 @@ export const SliderRoot = defineComponent(function <Value extends number | reado
 
   const registerFieldControlRef = (element: HTMLElement | null) => {
     if (element) {
-      controlRef.current = element;
+      controlRef.value = element;
     }
   };
 
@@ -215,7 +215,7 @@ export const SliderRoot = defineComponent(function <Value extends number | reado
       return false;
     }
 
-    lastChangeReasonRef.current = details.reason;
+    lastChangeReasonRef.value = details.reason;
 
     setValueUnwrapped(newValue as Value);
 
@@ -260,8 +260,8 @@ export const SliderRoot = defineComponent(function <Value extends number | reado
         return;
       }
 
-      const activeEl = activeElement(ownerDocument(sliderRef.current));
-      if (contains(sliderRef.current, activeEl)) {
+      const activeEl = activeElement(ownerDocument(sliderRef.value));
+      if (contains(sliderRef.value, activeEl)) {
         // This is necessary because Firefox and Safari will keep focus
         // on a disabled element:
         // https://codesandbox.io/p/sandbox/mui-pr-22247-forked-h151h?file=/src/App.js

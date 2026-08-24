@@ -2,6 +2,7 @@ import { defineComponent, toValue } from 'actview';
 import { FloatingPortal } from '@/floating-ui-react';
 import { useMenuRootContext } from '../root/MenuRootContext';
 import { MenuPortalContext } from './MenuPortalContext';
+import type { Ref } from 'actview';
 
 /**
  * A portal element that moves the popup to a different part of the DOM.
@@ -47,7 +48,7 @@ export interface MenuPortalProps {
   container?:
     | HTMLElement
     | ShadowRoot
-    | {current: HTMLElement | ShadowRoot | null}
+    | Ref<HTMLElement | ShadowRoot | null>
     | null
     | undefined;
   children?: any;

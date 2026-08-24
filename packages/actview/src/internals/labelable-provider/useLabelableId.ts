@@ -1,4 +1,4 @@
-import { watch } from 'actview';
+import {watch, ref} from 'actview';
 import { NOOP } from '@/internals/noop';
 import { useBaseUiId } from '@/internals/useBaseUiId';
 import { useLabelableContext } from './LabelableContext';
@@ -12,17 +12,17 @@ export function useLabelableId(params: UseLabelableIdParameters = {}): string {
   // `id` prop is removed, leaving the control on a stale id forever.
   const defaultId = useBaseUiId();
 
-  const controlSourceRef = {current: Symbol()};
-  const hasRegisteredRef = {current: false};
-  const hadExplicitIdRef = {current: false};
+  const controlSourceRef = ref(Symbol());
+  const hasRegisteredRef = ref(false);
+  const hadExplicitIdRef = ref(false);
 
   const unregisterControlId = () => {
-    if (!hasRegisteredRef.current || registerControlId === NOOP) {
+    if (!hasRegisteredRef.value || registerControlId === NOOP) {
       return;
     }
 
-    hasRegisteredRef.current = false;
-    registerControlId(controlSourceRef.current, undefined);
+    hasRegisteredRef.value = false;
+    registerControlId(controlSourceRef.value, undefined);
   };
 
   // React 版 useIsoLayoutEffect（注册）
@@ -37,9 +37,9 @@ export function useLabelableId(params: UseLabelableIdParameters = {}): string {
       let nextId: string | null | undefined;
 
       if (id !== undefined) {
-        hadExplicitIdRef.current = true;
+        hadExplicitIdRef.value = true;
         nextId = id;
-      } else if (hadExplicitIdRef.current) {
+      } else if (hadExplicitIdRef.value) {
         nextId = defaultId;
       } else {
         // An id-less replacement must claim the provider's fallback so a previously registered
@@ -55,8 +55,8 @@ export function useLabelableId(params: UseLabelableIdParameters = {}): string {
         return;
       }
 
-      hasRegisteredRef.current = true;
-      registerControlId(controlSourceRef.current, nextId);
+      hasRegisteredRef.value = true;
+      registerControlId(controlSourceRef.value, nextId);
     },
     {flush: 'post', immediate: true},
   );

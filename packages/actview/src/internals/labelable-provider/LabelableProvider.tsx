@@ -1,4 +1,4 @@
-import { computed, defineComponent, ref, toValue } from 'actview';
+import {computed, defineComponent, ref, toValue, shallowRef} from 'actview';
 import type { HTMLProps } from '@/internals/types';
 import { useBaseUiId } from '@/internals/useBaseUiId';
 import { LabelableContext, useLabelableContext } from './LabelableContext';
@@ -19,12 +19,12 @@ export const LabelableProvider = defineComponent(function (props: LabelableProvi
   const labelId = computed(() => labelIdState.value);
   const messageIds = computed(() => messageIdsState.value);
 
-  const registrationsRef = {current: new Map<symbol, string | null>()};
+  const registrationsRef = shallowRef(new Map<symbol, string | null>());
 
   const {messageIds: parentMessageIds} = toValue(useLabelableContext());
 
   const registerControlId = (source: symbol, nextId: string | null | undefined) => {
-    const registrations = registrationsRef.current;
+    const registrations = registrationsRef.value;
 
     if (nextId === undefined) {
       registrations.delete(source);
@@ -58,7 +58,7 @@ export const LabelableProvider = defineComponent(function (props: LabelableProvi
   };
 
   const resetControlId = () => {
-    if (registrationsRef.current.size === 0) {
+    if (registrationsRef.value.size === 0) {
       controlIdState.value = defaultId;
     }
   };

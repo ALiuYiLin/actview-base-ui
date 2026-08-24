@@ -1,4 +1,4 @@
-import { computed, defineComponent, toValue, useRootElement, watch } from 'actview';
+import {computed, defineComponent, toValue, useRootElement, watch, shallowRef} from 'actview';
 import { useControlled } from '@/utils/useControlled';
 import { EMPTY_ARRAY } from '@/internals/noop';
 import type { BaseUIComponentProps, HTMLProps, Orientation } from '@/internals/types';
@@ -51,7 +51,7 @@ export const AccordionRoot = defineComponent(function (componentProps: Accordion
     );
   }
 
-  const accordionItemRefs = {current: [] as (HTMLElement | null)[]};
+  const accordionItemRefs = shallowRef([] as (HTMLElement | null)[]);
 
   const handleValueChange = (
     newValue: any,

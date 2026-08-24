@@ -58,7 +58,7 @@ export const DrawerBackdrop = defineComponent(function DrawerBackdrop(
         (componentProps.ref as any)(el);
       } else if (componentProps.ref) {
         (componentProps.ref as any).value = el;
-        (componentProps.ref as any).current = el;
+        
       }
     };
 

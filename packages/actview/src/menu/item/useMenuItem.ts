@@ -3,6 +3,8 @@ import { mergeProps } from '@/merge-props';
 import type { HTMLProps } from '@/internals/types';
 import type { MenuStore } from '../store/MenuStore';
 import { useMenuItemCommonProps } from './useMenuItemCommonProps';
+import {ref} from 'actview';
+import type { Ref } from 'actview';
 
 export const REGULAR_ITEM = {
   type: 'regular-item' as const,
@@ -21,7 +23,7 @@ export function useMenuItem(params: UseMenuItemParameters): UseMenuItemReturnVal
     nodeId,
   } = params;
 
-  const itemRef = {current: null as HTMLElement | null};
+  const itemRef = ref(null as HTMLElement | null);
 
   const {getButtonProps, buttonRef} = useButton({
     disabled,
@@ -36,7 +38,7 @@ export function useMenuItem(params: UseMenuItemParameters): UseMenuItemReturnVal
     id,
     nodeId,
     store,
-    typingRef: typingRef as {current: boolean},
+    typingRef: typingRef as Ref<boolean>,
     itemRef,
     itemMetadata,
   });
@@ -59,7 +61,7 @@ export function useMenuItem(params: UseMenuItemParameters): UseMenuItemReturnVal
   };
 
   const mergedRef = (el: HTMLElement | null) => {
-    itemRef.current = el;
+    itemRef.value = el;
     buttonRef(el);
   };
 
@@ -108,7 +110,7 @@ export interface UseMenuItemParameters {
    * Whether a typeahead session is in progress.
    * @default store.context.typingRef
    */
-  typingRef?: {current: boolean} | undefined;
+  typingRef?: Ref<boolean> | undefined;
 }
 
 export type UseMenuItemMetadata =

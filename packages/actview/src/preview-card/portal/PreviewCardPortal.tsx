@@ -2,6 +2,7 @@ import { defineComponent, toValue } from 'actview';
 import { FloatingPortal } from '@/floating-ui-react';
 import { usePreviewCardRootContext } from '../root/PreviewCardRootContext';
 import { PreviewCardPortalContext } from './PreviewCardPortalContext';
+import type { Ref } from 'actview';
 
 /**
  * A portal element that moves the popup to a different part of the DOM.
@@ -44,7 +45,7 @@ export interface PreviewCardPortalProps {
   container?:
     | HTMLElement
     | ShadowRoot
-    | {current: HTMLElement | ShadowRoot | null}
+    | Ref<HTMLElement | ShadowRoot | null>
     | null
     | undefined;
   children?: any;
