@@ -1,4 +1,4 @@
-import { defineComponent, toValue } from 'actview';
+import { defineComponent, rawRef, toValue } from 'actview';
 import type { CompositeMetadata } from '@/internals/composite/list/CompositeList';
 import { CompositeList } from '@/internals/composite/list/CompositeList';
 import { useCompositeRoot } from './useCompositeRoot';
@@ -138,7 +138,7 @@ export function CompositeRoot<Metadata extends {}, State extends Record<string, 
     return (
       <CompositeRootContext.Provider value={contextValue as any}>
         <CompositeList
-          elementsRef={elementsRef}
+          elementsRef={rawRef(elementsRef)}
           onMapChange={(newMap: Map<Element, CompositeMetadata<Metadata>>) => {
             onMapChangeProp?.(newMap);
             onMapChangeUnwrapped(newMap);

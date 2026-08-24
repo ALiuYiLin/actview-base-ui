@@ -1,4 +1,4 @@
-import {defineComponent, ref, toValue, watch, shallowRef} from 'actview';
+import {defineComponent, rawRef, ref, toValue, watch, shallowRef} from 'actview';
 import type { Ref } from 'actview';
 import { useControlled } from '@/utils/useControlled';
 import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
@@ -404,7 +404,7 @@ export const TabsRoot = defineComponent(function (componentProps: TabsRoot.Props
 
     return (
       <TabsRootContext.Provider value={tabsContextValue as any}>
-        <CompositeList elementsRef={tabPanelRefs}>{element}</CompositeList>
+        <CompositeList elementsRef={rawRef(tabPanelRefs)}>{element}</CompositeList>
       </TabsRootContext.Provider>
     );
   };

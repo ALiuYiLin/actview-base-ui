@@ -1,4 +1,4 @@
-import {computed, defineComponent, ref, toValue, watch, shallowRef} from 'actview';
+import {computed, defineComponent, rawRef, ref, toValue, watch, shallowRef} from 'actview';
 import type { ComputedRef } from 'actview';
 import { ownerDocument } from '@/utils/owner';
 import { useControlled } from '@/utils/useControlled';
@@ -382,7 +382,7 @@ export const SliderRoot = defineComponent(function <Value extends number | reado
 
     return (
       <SliderRootContext.Provider value={contextValue as any}>
-        <CompositeList elementsRef={thumbRefs} onMapChange={(m) => (thumbMap.value = m)}>
+        <CompositeList elementsRef={rawRef(thumbRefs)} onMapChange={(m) => (thumbMap.value = m)}>
           {element}
         </CompositeList>
       </SliderRootContext.Provider>

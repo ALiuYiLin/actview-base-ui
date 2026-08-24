@@ -14,6 +14,7 @@ import {
   computed,
   defineComponent,
   onMounted,
+  rawRef,
   ref,
   watch,
   type Ref,
@@ -120,7 +121,7 @@ const App = defineComponent(function (props: AppProps) {
         <FloatingFocusManager
           {...props}
           initialFocus={
-            props.initialFocus === 'two' ? twoRef : props.initialFocus
+            props.initialFocus === 'two' ? rawRef(twoRef) : props.initialFocus
           }
           context={context}
         >
@@ -1331,7 +1332,7 @@ describe('FloatingFocusManager', () => {
               sideChildren={
                 <NestedDialog
                   modal
-                  open={sideDialogOpen}
+                  open={rawRef(sideDialogOpen)}
                   render={({ close }: { close: () => void }) => (
                     <button
                       onClick={close}
@@ -2471,7 +2472,7 @@ describe('FloatingFocusManager', () => {
             <FloatingFocusManager
               context={context}
               restoreFocus={props.restoreFocus ?? true}
-              initialFocus={twoRef}
+              initialFocus={rawRef(twoRef)}
             >
               <div
                 ref={refs.setFloating}

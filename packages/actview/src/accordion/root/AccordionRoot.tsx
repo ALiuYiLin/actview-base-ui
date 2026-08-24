@@ -1,4 +1,4 @@
-import {computed, defineComponent, toValue, useRootElement, watch, shallowRef} from 'actview';
+import {computed, defineComponent, rawRef, toValue, useRootElement, watch, shallowRef} from 'actview';
 import { useControlled } from '@/utils/useControlled';
 import { EMPTY_ARRAY } from '@/internals/noop';
 import type { BaseUIComponentProps, HTMLProps, Orientation } from '@/internals/types';
@@ -142,7 +142,7 @@ export const AccordionRoot = defineComponent(function (componentProps: Accordion
 
     return (
       <AccordionRootContext.Provider value={contextValue}>
-        <CompositeList elementsRef={accordionItemRefs}>{element}</CompositeList>
+        <CompositeList elementsRef={rawRef(accordionItemRefs)}>{element}</CompositeList>
       </AccordionRootContext.Provider>
     );
   };

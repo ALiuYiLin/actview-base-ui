@@ -1,4 +1,4 @@
-import {defineComponent, toValue, watch, ref} from 'actview';
+import {defineComponent, rawRef, toValue, watch, ref} from 'actview';
 import type { ComputedRef } from 'actview';
 import { inertValue } from '@/utils/inertValue';
 import { FloatingNode } from '@/floating-ui-react';
@@ -367,8 +367,8 @@ export const MenuPositioner = defineComponent(function MenuPositioner(
         )}
         <FloatingNode id={floatingNodeId.value}>
           <CompositeList
-            elementsRef={store.context.itemDomElements}
-            labelsRef={store.context.itemLabels}
+            elementsRef={rawRef(store.context.itemDomElements)}
+            labelsRef={rawRef(store.context.itemLabels)}
           >
             {element()}
           </CompositeList>
