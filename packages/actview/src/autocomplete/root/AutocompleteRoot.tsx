@@ -8,7 +8,9 @@ import { AutocompleteRootContext } from './AutocompleteRootContext';
  * Groups all parts of the autocomplete.
  * Doesn't render its own HTML element.
  *
- * actview 简化：无键盘导航/focus 管理；items 按 inputValue 过滤（createComboboxItems 简化版）。
+ * actview 简化：组件未接线 floating-ui actview 层的键盘导航/focus（该层
+ * useListNavigation/FloatingFocusManager 已完整移植，见 @floating-ui/actview）；
+ * items 按 inputValue 过滤（createComboboxItems 简化版）。
  */
 export const AutocompleteRoot = defineComponent(function AutocompleteRoot(
   props: AutocompleteRoot.Props,

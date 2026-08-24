@@ -100,7 +100,8 @@ export interface ComboboxMethods {
 
 /**
  * Creates the combobox store.
- * actview 简化：无键盘导航/focus 管理/scroll arrows。
+ * actview 简化：未接线 useListNavigation/FloatingFocusManager（floating-ui actview 层
+ * 已完整移植键盘导航/focus）；无 scroll arrows。
  */
 export function createComboboxStore(initialState: Partial<State> = {}): ComboboxStore {
   const store = new ReactStore<Readonly<State>, {}, Selectors>(

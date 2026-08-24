@@ -7,7 +7,8 @@ import type { BaseUIComponentProps } from '@/internals/types';
  * Groups all parts of the select.
  * Doesn't render its own HTML element.
  *
- * actview 简化：无 focus 管理/键盘导航/滚动箭头；
+ * actview 简化：组件未接线 useListNavigation/FloatingFocusManager（floating-ui actview
+ * 层已完整移植键盘导航/focus）；无滚动箭头；
  * items 为受控数据（Record 或数组），按 index 顺序渲染。
  */
 export const SelectRoot = defineComponent(function SelectRoot(props: SelectRoot.Props) {

@@ -5,7 +5,8 @@ import { DialogStore } from '../store/DialogStore';
 /**
  * Renders the dialog root for a given mode ('dialog' | 'drawer' | 'alert-dialog').
  *
- * actview 简化：无 DialogInteractions（键盘/焦点拦截）、无 useOpenStateTransitions；
+ * actview 简化：无 DialogInteractions 键盘/焦点拦截（焦点管理由 DialogPopup 的
+ * FloatingFocusManager 承担，floating-ui actview 层已完整移植）、无 useOpenStateTransitions；
  * payload 为 store 的 payload 快照。
  */
 export function useRenderDialogRoot(

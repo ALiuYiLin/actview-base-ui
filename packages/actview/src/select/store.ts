@@ -154,7 +154,8 @@ export interface SelectMethods {
 
 /**
  * Creates the select store.
- * actview 简化：无滚动箭头检测（hasScrollArrows 恒 false）、无 focus 管理（focusTrigger 未迁移）。
+ * actview 简化：无滚动箭头检测（hasScrollArrows 恒 false）；focus 管理未接线
+ * （floating-ui actview 层 FloatingFocusManager 已完整移植，focusTrigger 未迁移）。
  */
 export function createSelectStore(initialState: Partial<State> = {}): SelectStore {
   const store = new ReactStore<Readonly<State>, {}, Selectors>(

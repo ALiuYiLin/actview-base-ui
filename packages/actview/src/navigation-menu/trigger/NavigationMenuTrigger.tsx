@@ -5,7 +5,8 @@ import { useNavigationMenuRootContext } from '../root/NavigationMenuRootContext'
  * A trigger for the navigation menu.
  * Renders a `<button>` element.
  *
- * actview 简化：hover/点击均切换 open（鼠标进入与按下）；键盘导航未迁移。
+ * actview 简化：hover/点击均切换 open（鼠标进入与按下）；键盘导航未接线
+ * （floating-ui actview 层 useListNavigation 已完整移植）。
  */
 export const NavigationMenuTrigger = defineComponent(function NavigationMenuTrigger(
   componentProps: NavigationMenuTrigger.Props,
