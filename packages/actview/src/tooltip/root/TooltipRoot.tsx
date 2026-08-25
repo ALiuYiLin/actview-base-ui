@@ -53,8 +53,11 @@ export const TooltipRoot = defineComponent(function TooltipRoot<Payload>(
     triggerIdProp,
   });
 
-  store.useControlledProp('openProp', openProp);
-  store.useControlledProp('triggerIdProp', triggerIdProp);
+  // 受控 prop 传 getter：setup 解构的 openProp 是快照，受控值运行时变化
+  // （hover 打开链：onOpenChange → 受控 open 更新）不会触发 useControlledProp
+  // 的 watch——传 () => props.open 让 watch 追踪 props 代理（PD-15）。
+  store.useControlledProp('openProp', () => props.open);
+  store.useControlledProp('triggerIdProp', () => props.triggerId);
 
   const openState = store.useState('open');
   const open = ref(!disabled && openState.value);

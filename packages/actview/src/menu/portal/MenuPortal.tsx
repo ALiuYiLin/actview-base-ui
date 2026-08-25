@@ -12,8 +12,6 @@ import type { Ref } from 'actview';
  * Documentation: [Base UI Menu](https://base-ui.com/react/components/menu)
  */
 export const MenuPortal = defineComponent(function MenuPortal(props: MenuPortal.Props) {
-  const {keepMounted = false, ...portalProps} = props;
-
   const {store, parent} = useMenuRootContext();
   const mounted = store.useState('mounted');
 
@@ -21,6 +19,10 @@ export const MenuPortal = defineComponent(function MenuPortal(props: MenuPortal.
     parent.type === 'menu' || parent.type === 'menubar' ? 'group' : undefined;
 
   return () => {
+    // PD-15：props（含 children）必须在 render 期展开——setup 快照会让
+    // 动态 children（payload 驱动的 viewport 内容）永远停留首次渲染。
+    const {keepMounted = false, ...portalProps} = props;
+
     const shouldRender = mounted.value || keepMounted;
     if (!shouldRender) {
       return null;

@@ -63,13 +63,16 @@ export interface FloatingNodeProps {
  * @internal
  */
 export const FloatingNode = defineComponent(function (props: FloatingNodeProps) {
-  const {children, id} = props;
-
   const parentId = useFloatingParentNodeId();
 
-  return () => (
-    <FloatingNodeContext.Provider value={{id, parentId}}>{children}</FloatingNodeContext.Provider>
-  );
+  return () => {
+    // PD-15：children 必须 render 期求值（setup 快照会让 payload 驱动的
+    // 动态子树永远停留首次渲染）。
+    const {children, id} = props;
+    return (
+      <FloatingNodeContext.Provider value={{id, parentId}}>{children}</FloatingNodeContext.Provider>
+    );
+  };
 });
 
 export interface FloatingTreeProps {

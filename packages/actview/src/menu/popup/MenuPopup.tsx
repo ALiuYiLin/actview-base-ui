@@ -24,8 +24,6 @@ import { useToolbarRootContext } from '@/toolbar/root/ToolbarRootContext';
 export const MenuPopup = defineComponent(function MenuPopup(componentProps: MenuPopup.Props) {
   const {finalFocus} = componentProps;
 
-  const children = toValue(componentProps.children);
-
   const {store} = useMenuRootContext();
   const positionerContext = useMenuPositionerContext();
   const toolbarContextRef = useToolbarRootContext(true);
@@ -91,6 +89,9 @@ export const MenuPopup = defineComponent(function MenuPopup(componentProps: Menu
 
   return () => {
     const {render, className, style, ...elementProps} = componentProps as any;
+    // PD-15：children 必须 render 期求值（setup 快照让动态 children——
+    // payload 驱动的 viewport 内容——永远停留首次渲染）。
+    const children = toValue(componentProps.children);
 
     const stateValue = state();
     const stateAttributes = popupTransitionStateMapping as any;

@@ -1,4 +1,4 @@
-import { defineComponent, toValue } from 'actview';
+import { computed, defineComponent, toValue } from 'actview';
 import { mergePropsN } from '@/merge-props';
 import { useMenuRootContext } from '../root/MenuRootContext';
 import { useMenuPositionerContext } from '../positioner/MenuPositionerContext';
@@ -13,18 +13,20 @@ import { popupViewportStateMapping, usePopupViewport } from '@/utils/usePopupVie
 export const MenuViewport = defineComponent(function MenuViewport(
   componentProps: MenuViewport.Props,
 ) {
-  const children = toValue(componentProps.children);
-
   const {store} = useMenuRootContext();
   const positionerContext = useMenuPositionerContext(true);
   const side = positionerContext?.value?.side;
 
   const instantType = store.useState('instantType');
 
+  // children 以 computed 传入（render 期求值 props）：payload 驱动的
+  // viewport 内容在 trigger 切换后更新，setup 快照会停留首次渲染。
+  const childrenRef = computed(() => toValue(componentProps.children));
+
   const {children: childrenToRender, state: viewportState} = usePopupViewport({
     store: store as any,
     side,
-    children,
+    children: childrenRef,
   });
 
   const state = (): MenuViewportState => ({
@@ -37,7 +39,7 @@ export const MenuViewport = defineComponent(function MenuViewport(
     const {render, className: cls, style: st, ...elementProps} = componentProps as any;
     const stateValue = state();
 
-    const merged: any = mergePropsN<any>([elementProps, {children: childrenToRender}]);
+    const merged: any = mergePropsN<any>([elementProps, {children: childrenToRender.value}]);
 
     if (stateValue.activationDirection) {
       merged['data-activation-direction'] = stateValue.activationDirection;
@@ -64,9 +66,9 @@ export const MenuViewport = defineComponent(function MenuViewport(
           ? `${merged.className} ${renderClassName}`.trim()
           : (merged.className ?? renderClassName);
       mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={mergedRefs}>{childrenToRender}</Tag>;
+      return <Tag key={render.key} {...mergedRenderProps} ref={mergedRefs}>{childrenToRender.value}</Tag>;
     }
-    return <div {...merged} ref={mergedRefs}>{childrenToRender}</div>;
+    return <div {...merged} ref={mergedRefs}>{childrenToRender.value}</div>;
   };
 });
 

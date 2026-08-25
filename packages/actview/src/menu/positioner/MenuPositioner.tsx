@@ -158,6 +158,25 @@ export const MenuPositioner = defineComponent(function MenuPositioner(
     {flush: 'post', immediate: true},
   );
 
+  // 对齐 react：open/floatingNodeId/floatingParentNodeId 变化时广播
+  // menuopenchange 事件（含受控 open 变化），子菜单按父关闭传播关闭。
+  watch(
+    () => [open.value, floatingNodeId.value, floatingParentNodeId.value] as const,
+    () => {
+      const events = floatingTreeRoot.value?.events;
+      if (!events) {
+        return;
+      }
+      events.emit('menuopenchange', {
+        open: open.value,
+        nodeId: floatingNodeId.value,
+        parentNodeId: floatingParentNodeId.value,
+        reason: lastOpenChangeReason.value,
+      });
+    },
+    {flush: 'post', immediate: true},
+  );
+
   watch(
     () => [store, floatingTreeRoot.value] as const,
     () => {

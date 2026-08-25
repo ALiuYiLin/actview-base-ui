@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { defineComponent, ref } from 'actview';
 import { Menu } from '@/menu';
-import { render, screen, fireEvent, act } from '#test-utils/rtl';
+import { render, screen, fireEvent, act, waitFor } from '#test-utils/rtl';
+import { REASONS } from '@/internals/reasons';
 
 async function settle() {
   await act(async () => {});
@@ -27,9 +29,47 @@ describe('<Menu.Positioner />', () => {
   });
 
   // react 版验证「受控父菜单关闭时子菜单以 sibling-open reason 关闭」。
-  // actview 遗留：受控 open prop 变化直接更新 store（不经过 dispatchOpenChange），
-  // 子菜单的 menuopenchange 监听收不到父关闭事件——待受控关闭传播修复后补。
-  it.skip('closes an open submenu with a sibling reason when its controlled parent closes', async () => {});
+  // MenuPositioner 在 open/floatingNodeId/floatingParentNodeId 变化时广播
+  // menuopenchange 事件（含受控 open 变化），子菜单经 onParentClose 关闭。
+  it('closes an open submenu with a sibling reason when its controlled parent closes', async () => {
+    const onSubmenuOpenChange = vi.fn();
+    const openRef = ref(true);
+
+    const Test = defineComponent(function Test() {
+      return () => (
+        <Menu.Root open={openRef.value}>
+          <Menu.Trigger>Open</Menu.Trigger>
+          <Menu.Portal keepMounted>
+            <Menu.Positioner>
+              <Menu.Popup>
+                <Menu.SubmenuRoot defaultOpen onOpenChange={onSubmenuOpenChange}>
+                  <Menu.SubmenuTrigger>More</Menu.SubmenuTrigger>
+                  <Menu.Portal>
+                    <Menu.Positioner>
+                      <Menu.Popup data-testid="submenu-popup" />
+                    </Menu.Positioner>
+                  </Menu.Portal>
+                </Menu.SubmenuRoot>
+              </Menu.Popup>
+            </Menu.Positioner>
+          </Menu.Portal>
+        </Menu.Root>
+      );
+    });
+
+    await render(<Test />);
+    await settle();
+    expect(screen.queryByTestId('submenu-popup')).not.toBe(null);
+
+    openRef.value = false;
+    await settle();
+    await settle();
+
+    await waitFor(() => {
+      expect(onSubmenuOpenChange.mock.lastCall?.[0]).toBe(false);
+    });
+    expect(onSubmenuOpenChange.mock.lastCall?.[1].reason).toBe(REASONS.siblingOpen);
+  });
 
   it('when keepMounted=false, unmounts the content when closed', async () => {
     await render(

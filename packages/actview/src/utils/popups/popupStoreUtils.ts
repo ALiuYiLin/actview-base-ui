@@ -1,4 +1,4 @@
-import { onUnmounted, ref, toValue, watch } from 'actview';
+import { computed, onUnmounted, ref, toValue, watch } from 'actview';
 import type { Ref } from 'actview';
 import type { ReactStore } from '@/internals/store/ReactStore';
 import { useStableCallback } from '@/utils/useStableCallback';
@@ -390,7 +390,12 @@ export function useOpenStateTransitions<State extends PopupStoreState<unknown>>(
   const preventUnmountingOnClose = store.useState('preventUnmountingOnClose');
   // Opening starts a new close cycle. Clear during render so the close-completion hook below
   // reads the synchronized value on the same pass.
-  const syncedPreventUnmountingOnClose = open ? false : preventUnmountingOnClose.value;
+  // PD-15：setup 期的三元快照（open ? false : preventUnmountingOnClose.value）会在
+  // 首次渲染后冻结——hover 关闭（open=false + preventUnmountOnClose）时 enabled
+  // 判断读到旧值 false → forceUnmount 仍卸载 popup。computed 让该值响应 store。
+  const syncedPreventUnmountingOnClose = computed(() =>
+    toValue(open) ? false : preventUnmountingOnClose.value,
+  );
 
   // mounted / transitionStatus 是响应式 ref（useTransitionStatus 内部），
   // useSyncedValues 的对象快照无法跟踪——这里逐个 watch 同步到 store。
@@ -411,7 +416,7 @@ export function useOpenStateTransitions<State extends PopupStoreState<unknown>>(
   watch(
     () => syncedPreventUnmountingOnClose,
     () => {
-      store.set('preventUnmountingOnClose', syncedPreventUnmountingOnClose);
+      store.set('preventUnmountingOnClose', syncedPreventUnmountingOnClose.value);
     },
     {flush: 'post', immediate: true},
   );
@@ -429,7 +434,7 @@ export function useOpenStateTransitions<State extends PopupStoreState<unknown>>(
   });
 
   useOpenChangeComplete({
-    enabled: () => mounted.value && !toValue(open) && !syncedPreventUnmountingOnClose,
+    enabled: () => mounted.value && !toValue(open) && !syncedPreventUnmountingOnClose.value,
     open,
     ref: store.context.popupRef as any,
     onComplete() {

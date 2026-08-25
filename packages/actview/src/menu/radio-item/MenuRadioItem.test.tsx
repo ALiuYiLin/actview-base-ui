@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Menu } from '@/menu';
-import { render, screen, fireEvent, act } from '#test-utils/rtl';
+import { render, screen, fireEvent, act, waitFor } from '#test-utils/rtl';
 
 async function settle() {
   await act(async () => {});
@@ -169,9 +169,58 @@ describe('<Menu.RadioItem />', () => {
   });
 
   // react 版验证「keepMounted 的 popup DOM 保留时选择状态不丢」。
-  // actview 遗留：keepMounted 的 popup DOM 更新（hidden/位置）存在时序问题，
-  // 且重开后有重复 DOM——受控 value 验证同样失败，待 keepMounted/重复渲染专项修复后补。
-  it.skip('keeps the state when closed and reopened', async () => {});
+  it('keeps the state when closed and reopened', async () => {
+    await render(
+      <Menu.Root modal={false}>
+        <Menu.Trigger>Open</Menu.Trigger>
+        <Menu.Portal keepMounted>
+          <Menu.Positioner>
+            <Menu.Popup>
+              <Menu.RadioGroup defaultValue={0}>
+                <Menu.RadioItem value={1}>Item</Menu.RadioItem>
+              </Menu.RadioGroup>
+            </Menu.Popup>
+          </Menu.Positioner>
+        </Menu.Portal>
+      </Menu.Root>,
+    );
+    await settle();
+
+    const trigger = screen.getByRole('button', {name: 'Open'});
+    fireEvent.mouseDown(trigger);
+    fireEvent.mouseUp(trigger);
+    fireEvent.click(trigger);
+    await settle();
+    await settle();
+
+    const item = screen.getByRole('menuitemradio');
+    fireEvent.mouseUp(item);
+    fireEvent.click(item);
+    await settle();
+    await settle();
+
+    // close the menu
+    fireEvent.mouseDown(trigger);
+    fireEvent.mouseUp(trigger);
+    fireEvent.click(trigger);
+    await settle();
+    await settle();
+
+    await waitFor(() => {
+      expect(screen.queryByRole('menu')).toBe(null);
+    });
+
+    // reopen the menu
+    fireEvent.mouseDown(trigger);
+    fireEvent.mouseUp(trigger);
+    fireEvent.click(trigger);
+    await settle();
+    await settle();
+
+    const itemAfterReopen = await screen.findByRole('menuitemradio');
+    expect(itemAfterReopen).toHaveAttribute('aria-checked', 'true');
+    expect(itemAfterReopen).toHaveAttribute('data-checked', '');
+  });
 
 
   it('when `closeOnClick=true`, closes the menu when the item is clicked', async () => {

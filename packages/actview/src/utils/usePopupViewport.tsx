@@ -1,4 +1,4 @@
-import { ref, watch } from 'actview';
+import { computed, ref, toValue, watch } from 'actview';
 import type { ComputedRef, Ref } from 'actview';
 import type { StateAttributesMapping } from '@/internals/getStateAttributesProps';
 import { useAnimationsFinished } from '@/internals/useAnimationsFinished';
@@ -170,23 +170,26 @@ export function usePopupViewport(
     {flush: 'post', immediate: true},
   );
 
+  // children 支持响应式（ref/computed）：payload 驱动的 viewport 内容在
+  // trigger 切换后更新，setup 快照会让其永远停留首次渲染。
   const isTransitioning = () => previousContentNode.value != null;
 
-  let childrenToRender: any;
-  if (!isTransitioning()) {
-    childrenToRender = (
-      <div
-        data-current
-        ref={(el: HTMLDivElement | null) => {
-          currentContainerRef.value = el;
-        }}
-        key={currentContentKey.value}
-      >
-        {children}
-      </div>
-    );
-  } else {
-    childrenToRender = (
+  const childrenToRender = computed(() => {
+    const childContent = toValue(children);
+    if (!isTransitioning()) {
+      return (
+        <div
+          data-current
+          ref={(el: HTMLDivElement | null) => {
+            currentContainerRef.value = el;
+          }}
+          key={currentContentKey.value}
+        >
+          {childContent}
+        </div>
+      );
+    }
+    return (
       <>
         <div
           data-previous
@@ -205,11 +208,11 @@ export function usePopupViewport(
           key={currentContentKey.value}
           data-starting-style={showStartingStyleAttribute.value ? '' : undefined}
         >
-          {children}
+          {childContent}
         </div>
       </>
     ) as any;
-  }
+  });
 
   const state: PopupViewportState = {
     activationDirection: undefined,

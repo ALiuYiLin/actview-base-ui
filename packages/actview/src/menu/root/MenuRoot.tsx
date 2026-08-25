@@ -122,8 +122,11 @@ export const MenuRoot = defineComponent(function MenuRoot<Payload>(
     floatingParentNodeIdFromContext != null,
   );
 
-  store.useControlledProp('openProp', openProp);
-  store.useControlledProp('triggerIdProp', triggerIdProp);
+  // 受控 prop 传 getter：setup 解构的 openProp 是快照（props 代理的惰性读），
+  // 受控值后续变化（运行时切换 open）不会触发 useControlledProp 的 watch——
+  // 传 () => props.open 让 watch 追踪 props 代理。
+  store.useControlledProp('openProp', () => props.open);
+  store.useControlledProp('triggerIdProp', () => props.triggerId);
 
   store.useContextCallback('onOpenChangeComplete', onOpenChangeComplete);
 
@@ -548,8 +551,10 @@ export const MenuRoot = defineComponent(function MenuRoot<Payload>(
     // set up a FloatingTree to provide the context to nested menus
     return () => {
       // PD-15：children 必须 render 期求值（setup 快照会让动态 children——
-      // 如条件渲染的 Trigger——永远停留首次渲染）。
-      const children = toValue(props.children);
+      // 如条件渲染的 Trigger——永远停留首次渲染）。render prop（({payload}) =>
+      // ...）不能经 toValue（会把函数当 getter 无参调用致 payload 解构报错）。
+      const rawChildren = props.children;
+      const children = typeof rawChildren === 'function' ? rawChildren : toValue(rawChildren);
       return (
         <FloatingTree externalTree={floatingTreeRoot.value}>
           <MenuRootContext.Provider value={context as MenuRootContext}>
@@ -562,7 +567,8 @@ export const MenuRoot = defineComponent(function MenuRoot<Payload>(
   }
 
   return () => {
-    const children = toValue(props.children);
+    const rawChildren = props.children;
+    const children = typeof rawChildren === 'function' ? rawChildren : toValue(rawChildren);
     return (
       <MenuRootContext.Provider value={context as MenuRootContext}>
         {handle && <PopupHandleAttachment handle={handle} store={store} />}

@@ -99,14 +99,15 @@ export class ReactStore<
   useControlledProp<Key extends keyof State>(key: Key, controlled: State[Key] | undefined): void {
     // eslint-disable-next-line consistent-this
     const store = this;
-    const isControlled = controlled !== undefined;
 
+    // 支持 getter/ref 形态（PD-15：setup 解构的 props 是快照，受控值后续
+    // 变化不会触发 watch——传 () => props.x 让 watch 追踪 props 代理）。
     watch(
-      () => controlled,
-      () => {
-        if (isControlled && !Object.is(store.state[key], controlled)) {
+      () => (typeof controlled === 'function' ? (controlled as any)() : controlled),
+      (value) => {
+        if (value !== undefined && !Object.is(store.state[key], value)) {
           // Set the internal state to match the controlled value.
-          store.setState({...store.state, [key]: controlled as State[Key]});
+          store.setState({...store.state, [key]: value as State[Key]});
         }
       },
       {flush: 'post', immediate: true},

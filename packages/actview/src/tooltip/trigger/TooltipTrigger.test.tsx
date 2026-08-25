@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { defineComponent, ref } from 'actview';
 import { Tooltip } from '@/tooltip';
 import { render, screen, fireEvent, act } from '#test-utils/rtl';
 
@@ -17,10 +18,54 @@ describe('<Tooltip.Trigger />', () => {
     expect(error?.message).toMatch(/root|handle/i);
   });
 
-  // actview 遗留：受控 tooltip 的 hover 打开链（onOpenChange → 受控 open 更新 →
-  // data-popup-open 同步）时序未接——受控 open 与 hover dispatch 存在覆盖竞争。
-  // 待受控 hover 链修复后补。
-  it.skip('removes `data-popup-open` as soon as `open` becomes false', async () => {});
+  // 受控 open + preventUnmountOnClose：mouseLeave 关闭后 popup DOM 保留
+  // （keepMounted 语义），但 trigger 的 data-popup-open 需随 open 移除。
+  it('removes `data-popup-open` as soon as `open` becomes false', async () => {
+    const openRef = ref(false);
+
+    const TooltipWithPreventedUnmount = defineComponent(function Test() {
+      return () => (
+        <Tooltip.Root
+          open={openRef.value}
+          onOpenChange={(nextOpen: boolean, eventDetails: any) => {
+            if (!nextOpen) {
+              eventDetails.preventUnmountOnClose();
+            }
+            openRef.value = nextOpen;
+          }}
+        >
+          <Tooltip.Trigger data-testid="trigger" delay={0} closeDelay={0}>
+            Trigger
+          </Tooltip.Trigger>
+          <Tooltip.Portal>
+            <Tooltip.Positioner>
+              <Tooltip.Popup>Content</Tooltip.Popup>
+            </Tooltip.Positioner>
+          </Tooltip.Portal>
+        </Tooltip.Root>
+      );
+    });
+
+    await render(<TooltipWithPreventedUnmount />);
+    await settle();
+
+    const trigger = screen.getByTestId('trigger');
+
+    fireEvent.mouseEnter(trigger);
+    fireEvent.mouseMove(trigger);
+    await settle();
+    await settle();
+
+    expect(trigger).toHaveAttribute('data-popup-open');
+    expect(screen.getByText('Content')).not.toBe(null);
+
+    fireEvent.mouseLeave(trigger);
+    await settle();
+    await settle();
+
+    expect(trigger).not.toHaveAttribute('data-popup-open');
+    expect(screen.getByText('Content')).not.toBe(null);
+  });
 
   it('opens when the rendered trigger element has its own id', async () => {
     await render(
