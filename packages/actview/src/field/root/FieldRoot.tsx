@@ -21,22 +21,26 @@ const FieldRootInner = defineComponent(function (componentProps: FieldRoot.Props
 
   const {errors, validationMode: formValidationMode, submitAttemptedRef} = toValue(useFormContext());
 
-  const disabledFieldset = useFieldsetRootContext(true).value?.disabled;
+  // context.use() 返回响应式 Ref + props 走 toValue：disabled 须在 computed 里
+  // 读取（不能在 setup 快照），fieldset 祖先/父级 disabled 变化时自动重算。
+  // （hook 调用留在 setup：computed 惰性求值可能在渲染期外，context.use() 依赖实例）
+  const fieldsetContext = useFieldsetRootContext(true);
+  const disabledFieldset = computed(() => fieldsetContext.value?.disabled);
+  const disabled = computed(
+    () => disabledFieldset.value || (toValue(componentProps.disabled) ?? false),
+  );
 
   // toValue 会把函数型 prop 当 getter 调用——validate 是函数 prop，直接读取
   const validateProp = componentProps.validate;
   const validationDebounceTime = toValue(componentProps.validationDebounceTime) ?? 0;
   const validationMode = toValue(componentProps.validationMode) ?? formValidationMode;
   const name = toValue(componentProps.name);
-  const disabledProp = toValue(componentProps.disabled) ?? false;
   const invalidProp = toValue(componentProps.invalid);
   const dirtyProp = toValue(componentProps.dirty);
   const touchedProp = toValue(componentProps.touched);
 
   type NonUndefinedValidate = Exclude<FieldRoot.Props['validate'], undefined>;
   const validate = (validateProp || (() => null)) as NonUndefinedValidate;
-
-  const disabled = disabledFieldset || disabledProp;
 
   const touchedState = ref(false);
   const dirtyState = ref(false);
@@ -120,10 +124,10 @@ const FieldRootInner = defineComponent(function (componentProps: FieldRoot.Props
   // App-controlled invalidity (the `invalid` prop and `<Form>` errors) keeps the field marked
   // invalid even while disabled. Only computed validity (native constraints and `validate`)
   // is suppressed when disabled, matching `:disabled` not participating in constraint validation.
-  const valid = computed(() => !invalid.value && (disabled ? null : validityData.value.state.valid));
+  const valid = computed(() => !invalid.value && (disabled.value ? null : validityData.value.state.valid));
 
   const state = computed<FieldRootState>(() => ({
-    disabled,
+    disabled: disabled.value,
     touched: touched.value,
     dirty: dirty.value,
     valid: valid.value,
@@ -172,7 +176,7 @@ const FieldRootInner = defineComponent(function (componentProps: FieldRoot.Props
     name: effectiveName,
     validityData,
     setValidityData,
-    disabled: computed(() => disabled),
+    disabled: computed(() => disabled.value),
     setTouched,
     setDirty,
     setFilled,

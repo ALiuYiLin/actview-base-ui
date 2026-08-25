@@ -1,4 +1,4 @@
-import {defineComponent, toValue, useRootElement, watch, ref} from 'actview';
+import {computed, defineComponent, toValue, useRootElement, watch, ref} from 'actview';
 import { useControlled } from '@/utils/useControlled';
 import { useFieldRootContext } from '@/internals/field-root-context/FieldRootContext';
 import { useRegisterFieldControl } from '@/internals/field-register-control/useRegisterFieldControl';
@@ -42,7 +42,10 @@ export const FieldControl = defineComponent(function (componentProps: FieldContr
   } = toValue(useFieldRootContext());
   const {clearErrors} = toValue(useFormContext());
 
-  const disabledProp = toValue(componentProps.disabled) ?? false;
+  // disabled 须响应式：fieldset 祖先/Field.Root disabled 变化时联动
+  const disabled = computed(
+    () => fieldDisabled.value || (toValue(componentProps.disabled) ?? false),
+  );
   const nameProp = toValue(componentProps.name);
   const idProp = toValue(componentProps.id);
   const valueProp = toValue(componentProps.value);
@@ -50,7 +53,6 @@ export const FieldControl = defineComponent(function (componentProps: FieldContr
   const autoFocus = toValue(componentProps.autoFocus) ?? false;
   const onValueChange = componentProps.onValueChange;
 
-  const disabled = fieldDisabled.value || disabledProp;
   const name = fieldName.value ?? nameProp;
 
   const {labelId} = toValue(useLabelableContext());
@@ -76,7 +78,7 @@ export const FieldControl = defineComponent(function (componentProps: FieldContr
     id,
     serializedValue,
     getValueFromInput,
-    !disabled,
+    !disabled.value,
     nameProp,
   );
 
@@ -122,7 +124,7 @@ export const FieldControl = defineComponent(function (componentProps: FieldContr
 
     const stateValue: FieldControlState = {
       ...fieldState.value,
-      disabled,
+      disabled: disabled.value,
     };
     const stateAttributes = getStateAttributesProps(stateValue, fieldValidityMapping);
 
@@ -131,7 +133,7 @@ export const FieldControl = defineComponent(function (componentProps: FieldContr
       merged,
       {
         id,
-        disabled,
+        disabled: disabled.value,
         name,
         'aria-labelledby': labelId.value,
         autoFocus,
@@ -190,7 +192,7 @@ export const FieldControl = defineComponent(function (componentProps: FieldContr
       merged.style = style;
     }
 
-    const finalProps = validation.getValidationProps(disabled, merged);
+    const finalProps = validation.getValidationProps(disabled.value, merged);
 
     const refCallback = (el: any) => {
       validation.inputRef.value = el;

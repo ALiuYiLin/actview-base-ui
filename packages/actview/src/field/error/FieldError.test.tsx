@@ -1,7 +1,12 @@
 import { expect } from 'vitest';
 import { Field } from '@/field';
+import { Form } from '@/form';
 import { createRenderer } from '#test-utils';
-import { screen, waitFor } from '#test-utils/rtl';
+import { act, fireEvent, screen, waitFor } from '#test-utils/rtl';
+
+async function settle() {
+  await act(async () => {});
+}
 
 describe('<Field.Error />', () => {
   const { render } = createRenderer();
@@ -30,8 +35,32 @@ describe('<Field.Error />', () => {
     expect(screen.getByText('Error text')).toHaveAttribute('data-invalid');
   });
 
-  it.skip('renders the custom validator error message with match="customError" (needs validation trigger)', () => {
-    // React 版通过用户交互触发验证（commit）；actview 的 validate 需在
-    // FieldControl 交互后才会执行——待 FieldControl 完整交互测试补全。
+  it('renders the custom validator error message with match="customError" (needs validation trigger)', async () => {
+    await render(
+      Form,
+      {
+        children: (
+          <>
+            <Field.Root validate={() => 'error'}>
+              <Field.Control />
+              <Field.Error match="customError">Message</Field.Error>
+            </Field.Root>
+            <button type="submit">submit</button>
+          </>
+        ),
+      },
+    );
+
+    const input = screen.getByRole<HTMLInputElement>('textbox');
+
+    fireEvent.focus(input);
+    fireEvent.change(input, {target: {value: 'a'}});
+    fireEvent.blur(input);
+    await settle();
+    expect(screen.queryByText('Message')).toBe(null);
+
+    fireEvent.click(screen.getByText('submit'));
+    await settle();
+    expect(screen.queryByText('Message')).not.toBe(null);
   });
 });
