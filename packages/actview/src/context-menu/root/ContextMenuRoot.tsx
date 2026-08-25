@@ -13,9 +13,6 @@ import type { MenuRoot } from '@/menu/root/MenuRoot';
  * Documentation: [Base UI Context Menu](https://base-ui.com/react/components/context-menu)
  */
 export const ContextMenuRoot = defineComponent(function ContextMenuRoot(props: ContextMenuRoot.Props) {
-  const children = toValue(props.children);
-  const restProps = {...props, children: undefined};
-
   const anchorRef = ref({
     getBoundingClientRect() {
       return DOMRect.fromRect({width: 0, height: 0, x: 0, y: 0});
@@ -47,13 +44,20 @@ export const ContextMenuRoot = defineComponent(function ContextMenuRoot(props: C
     rootId: id,
   };
 
-  return () => (
-    <ContextMenuRootContext.Provider value={contextValue}>
-      <MenuRootContext.Provider value={undefined}>
-        <Menu.Root {...restProps}>{children}</Menu.Root>
-      </MenuRootContext.Provider>
-    </ContextMenuRootContext.Provider>
-  );
+  return () => {
+    // PD-15：children/restProps 必须 render 期解构（setup 快照会让动态
+    // children——如条件渲染的 Trigger——永远停留首次渲染）。
+    const children = toValue(props.children);
+    const restProps = {...props, children: undefined};
+
+    return (
+      <ContextMenuRootContext.Provider value={contextValue}>
+        <MenuRootContext.Provider value={undefined}>
+          <Menu.Root {...restProps}>{children}</Menu.Root>
+        </MenuRootContext.Provider>
+      </ContextMenuRootContext.Provider>
+    );
+  };
 });
 
 export interface ContextMenuRootState {}

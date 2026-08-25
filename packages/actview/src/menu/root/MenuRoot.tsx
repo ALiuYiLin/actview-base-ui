@@ -69,8 +69,6 @@ export const MenuRoot = defineComponent(function MenuRoot<Payload>(
     highlightItemOnHover = true,
   } = props;
 
-  const childrenProp = toValue(props.children);
-
   const contextMenuContext = useContextMenuRootContext(true);
   const parentMenuRootContext = useMenuRootContext(true);
   const menubarContext = useMenubarContext(true);
@@ -546,20 +544,32 @@ export const MenuRoot = defineComponent(function MenuRoot<Payload>(
     parent: parentFromContext,
   };
 
-  const content = (
-    <MenuRootContext.Provider value={context as MenuRootContext}>
-      {handle && <PopupHandleAttachment handle={handle} store={store} />}
-      {typeof childrenProp === 'function'
-        ? childrenProp({payload: payload.value})
-        : childrenProp}    </MenuRootContext.Provider>
-  );
-
   if (parent.value.type === undefined || parent.value.type === 'context-menu') {
     // set up a FloatingTree to provide the context to nested menus
-    return () => <FloatingTree externalTree={floatingTreeRoot.value}>{content}</FloatingTree>;
+    return () => {
+      // PD-15：children 必须 render 期求值（setup 快照会让动态 children——
+      // 如条件渲染的 Trigger——永远停留首次渲染）。
+      const children = toValue(props.children);
+      return (
+        <FloatingTree externalTree={floatingTreeRoot.value}>
+          <MenuRootContext.Provider value={context as MenuRootContext}>
+            {handle && <PopupHandleAttachment handle={handle} store={store} />}
+            {typeof children === 'function' ? children({payload: payload.value}) : children}
+          </MenuRootContext.Provider>
+        </FloatingTree>
+      );
+    };
   }
 
-  return () => content;
+  return () => {
+    const children = toValue(props.children);
+    return (
+      <MenuRootContext.Provider value={context as MenuRootContext}>
+        {handle && <PopupHandleAttachment handle={handle} store={store} />}
+        {typeof children === 'function' ? children({payload: payload.value}) : children}
+      </MenuRootContext.Provider>
+    );
+  };
 });
 
 function useMenuRootStore<Payload>(

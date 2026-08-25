@@ -1,4 +1,4 @@
-import { createContext, defineComponent, ref, watch } from 'actview';
+import { createContext, defineComponent, ref, toValue, watch } from 'actview';
 import type { Ref } from 'actview';
 import { useId } from '@/utils/useId';
 import { useRefWithInit } from '@/utils/useRefWithInit';
@@ -84,11 +84,16 @@ export interface FloatingTreeProps {
  * @internal
  */
 export const FloatingTree = defineComponent(function (props: FloatingTreeProps) {
-  const {children, externalTree} = props;
+  const externalTree = toValue(props.externalTree);
 
   const tree = useRefWithInit(() => externalTree ?? new FloatingTreeStore()).value;
 
-  return () => (
-    <FloatingTreeContext.Provider value={tree}>{children}</FloatingTreeContext.Provider>
-  );
+  return () => {
+    // PD-15：children 必须 render 期解构（setup 快照会让动态 children——
+    // 如条件渲染的 Trigger——永远停留首次渲染）。
+    const children = toValue(props.children);
+    return (
+      <FloatingTreeContext.Provider value={tree}>{children}</FloatingTreeContext.Provider>
+    );
+  };
 });
