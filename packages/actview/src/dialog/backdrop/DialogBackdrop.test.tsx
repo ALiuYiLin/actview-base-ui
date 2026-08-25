@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { defineComponent, ref } from 'actview';
 import { Dialog } from '@/dialog';
 import { render, screen, act } from '#test-utils/rtl';
 
@@ -46,7 +47,35 @@ describe('<Dialog.Backdrop />', () => {
     expect(screen.getByTestId('backdrop')).not.toBe(null);
   });
 
-  // actview 遗留：nested 对话框的 backdrop 计数/渲染（nestedOpenDialogCount 联动）未迁移，
-  // forceRender 的 nested 行为待 nested 支持后补充。
-  it.skip('renders only the root backdrop when nested', async () => {});
+  it('renders only the root backdrop when nested', async () => {
+    const App = defineComponent(function () {
+      const nestedOpen = ref(true);
+      return () => (
+        <Dialog.Root open>
+          <Dialog.Backdrop data-testid="root-backdrop" />
+          <Dialog.Portal>
+            <Dialog.Popup>
+              Root dialog
+              <Dialog.Root
+                open={nestedOpen.value}
+                onOpenChange={(o: boolean) => (nestedOpen.value = o)}
+              >
+                <Dialog.Backdrop data-testid="nested-backdrop" />
+                <Dialog.Portal>
+                  <Dialog.Popup>Nested dialog</Dialog.Popup>
+                </Dialog.Portal>
+              </Dialog.Root>
+            </Dialog.Popup>
+          </Dialog.Portal>
+        </Dialog.Root>
+      );
+    });
+
+    await render(App);
+    await settle();
+    await settle();
+
+    expect(screen.getByTestId('root-backdrop')).not.toBe(null);
+    expect(screen.queryByTestId('nested-backdrop')).toBe(null);
+  });
 });

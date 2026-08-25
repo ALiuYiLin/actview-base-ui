@@ -16,10 +16,16 @@ export const DialogBackdrop = defineComponent(function DialogBackdrop(
   const store = useDialogRootContext(false);
   const open = store.useState('open');
   const mounted = store.useState('mounted');
+  const nested = store.useState('nested');
   const transitionStatus = store.useState('transitionStatus');
 
   return () => {
-    const {render, className, style, ...elementProps} = componentProps as any;
+    const {forceRender = false, render, className, style, ...elementProps} = componentProps as any;
+
+    // 嵌套对话框只渲染 root backdrop（除非 forceRender）——对齐 React 语义。
+    if (!forceRender && nested.value) {
+      return null;
+    }
 
     const state: DialogBackdropState = {
       open: open.value,
@@ -93,6 +99,11 @@ export interface DialogBackdropState {
 }
 
 export interface DialogBackdropProps extends BaseUIComponentProps<'div', DialogBackdropState> {
+  /**
+   * Whether the backdrop is forced to render even when nested.
+   * @default false
+   */
+  forceRender?: boolean | undefined;
   children?: any;
   [key: string]: any;
 }

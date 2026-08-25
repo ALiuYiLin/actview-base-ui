@@ -12,7 +12,7 @@ function openViaClick() {
   fireEvent.mouseDown(screen.getByRole('button', {name: 'Open'}));
 }
 
-describe('<Dialog.Close />', () => { (globalThis as any).__DSH_DEBUG_CLOSE = true;
+describe('<Dialog.Close />', () => {
   it('disables the button', async () => {
     const handleOpenChange = vi.fn();
 
@@ -75,9 +75,30 @@ describe('<Dialog.Close />', () => { (globalThis as any).__DSH_DEBUG_CLOSE = tru
     expect(handleOpenChange.mock.calls[1][0]).toBe(false);
   });
 
-  // actview 遗留：event.preventBaseUIHandler()（Base UI click handler 取消机制）未迁移，
-  // 待 click handler 链补全后恢复。
-  it.skip('does not close the dialog when the Base UI click handler is prevented', async () => {});
+  it('does not close the dialog when the Base UI click handler is prevented', async () => {
+    const handleOpenChange = vi.fn();
+
+    await render(
+      <Dialog.Root defaultOpen modal={false} onOpenChange={handleOpenChange}>
+        <Dialog.Portal>
+          <Dialog.Popup>
+            <Dialog.Close onClick={(event: any) => event.preventBaseUIHandler()}>
+              Close
+            </Dialog.Close>
+          </Dialog.Popup>
+        </Dialog.Portal>
+      </Dialog.Root>,
+    );
+    await settle();
+    await settle();
+
+    fireEvent.click(screen.getByRole('button', {name: 'Close'}));
+    await settle();
+    await settle();
+
+    expect(screen.getByRole('dialog')).not.toBe(null);
+    expect(handleOpenChange.mock.calls.length).toBe(0);
+  });
 
   it('does not request another close when clicked after the dialog has closed', async () => {
     const handleOpenChange = vi.fn();

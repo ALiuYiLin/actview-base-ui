@@ -500,6 +500,9 @@ export function useDismiss(
         if (
           getOutsidePressEvent() !== 'sloppy' ||
           event.pointerType === 'touch' ||
+          // React 语义：非主键（右键等）的 outside press 不关闭（对齐
+          // DialogRoot 测试 "does not close on a right-button outside press"）。
+          event.button !== 0 ||
           !store.select('open') ||
           !enabled ||
           isEventWithinOwnElements(event)

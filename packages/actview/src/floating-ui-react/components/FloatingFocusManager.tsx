@@ -224,7 +224,6 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
 ): any {
   const {
     context,
-    children,
     disabled = false,
     initialFocus = true,
     returnFocus = true,
@@ -931,8 +930,12 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
   const shouldRenderGuards =
     !disabled && (modal ? !isUntrappedTypeableCombobox : true) && (isInsidePortal || modal);
 
-  return () => (
-    <>
+  return () => {
+    // PD-15：children 必须在 render 期解构（props 代理追踪），
+    // setup 快照会让子组件（如 Dialog.Popup 的 element vnode）永远停留首次渲染。
+    const {children} = props;
+    return (
+      <>
       {shouldRenderGuards && (
         <FocusGuard
           data-type="inside"
@@ -993,5 +996,6 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
         />
       )}
     </>
-  );
+    );
+  };
 });

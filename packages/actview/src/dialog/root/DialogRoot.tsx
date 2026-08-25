@@ -46,11 +46,17 @@ export const DialogRoot = defineComponent(function DialogRoot<Payload>(
     children,
   } = props as any;
 
+  // 嵌套检测：React 版用 parentStore != null（DialogRootContext），
+  // 而非 FloatingParentNodeId（actview 无 FloatingNode 生产渲染，恒 null）。
+  const parentStore = useDialogRootContext(true);
+  const nested = parentStore != null;
+
   const store = useDialogRootStore<Payload>(handle, {
     open: defaultOpen,
     openProp,
     activeTriggerId: defaultTriggerIdProp,
     triggerIdProp,
+    nested,
   });
 
   store.useControlledProp('openProp', openProp);

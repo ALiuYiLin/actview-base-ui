@@ -35,7 +35,7 @@ export const DialogClose = defineComponent(function DialogClose(
           return;
         }
         userOnClick?.(event);
-        if (!event.defaultPrevented) {
+        if (!event.defaultPrevented && !event.baseUIHandlerPrevented) {
           store.setOpen(false, createChangeEventDetails(REASONS.closePress, event.nativeEvent ?? event));
         }
       },
