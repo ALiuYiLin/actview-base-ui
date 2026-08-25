@@ -363,7 +363,7 @@ export function useDismiss(
         const targetIsInsideChildren =
           tree &&
           getNodeChildren(tree.nodesRef.value, nodeId).some((node) =>
-            isEventTargetWithin(event, node.context?.elements.floating),
+            isEventTargetWithin(event, (node.context?.elements.floating as any)?.value),
           );
 
         return isEventWithinOwnElements(event) || targetIsInsideChildren;

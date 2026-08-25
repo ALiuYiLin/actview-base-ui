@@ -463,7 +463,8 @@ export function useListNavigation(
       }
 
       const nodes = tree.nodesRef.value;
-      const parent = nodes.find((node) => node.id === parentId)?.context?.elements.floating;
+      const parent = (nodes.find((node) => node.id === parentId)?.context?.elements
+        .floating as any)?.value as HTMLElement | null | undefined;
       const activeEl = activeElement(ownerDocument(domReferenceElement.value ?? parent ?? null));
       const treeContainsActiveEl = nodes.some(
         (node) => node.context && contains((node.context.elements.floating as any)?.value, activeEl),

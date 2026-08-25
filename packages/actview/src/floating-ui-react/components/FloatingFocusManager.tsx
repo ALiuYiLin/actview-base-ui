@@ -466,12 +466,20 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
                   contains((node.context?.elements.domReference as any)?.value, relatedTarget),
               ) ||
                 getNodeAncestors(tree.nodesRef.value, nodeId).find(
-                  (node) =>
-                    [
-                      node.context?.elements.floating,
-                      getFloatingFocusElement(node.context?.elements.floating),
-                    ].includes(relatedTarget) ||
-                    node.context?.elements.domReference === relatedTarget,
+                  (node) => {
+                    // elements.{floating,domReference} 是 store 的 computed ref
+                    // （FloatingRootStore），需 .value 解包（React 版为普通对象）。
+                    const ancestorFloatingElement = (node.context?.elements
+                      .floating as any)?.value as HTMLElement | null | undefined;
+                    return (
+                      [
+                        ancestorFloatingElement,
+                        getFloatingFocusElement(ancestorFloatingElement),
+                      ].includes(relatedTarget) ||
+                      (node.context?.elements.domReference as any)?.value ===
+                        relatedTarget
+                    );
+                  },
                 )))
           );
 
@@ -583,9 +591,9 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
       );
 
       const ancestors = tree ? getNodeAncestors(tree.nodesRef.value, getNodeId()) : [];
-      const rootAncestorComboboxDomReference = ancestors.find((node) =>
+      const rootAncestorComboboxDomReference = (ancestors.find((node) =>
         isTypeableCombobox((node.context?.elements.domReference as any)?.value || null),
-      )?.context?.elements.domReference;
+      )?.context?.elements.domReference as any)?.value as HTMLElement | Element | null | undefined;
 
       const controlInsideElements = [
         floating.value,
