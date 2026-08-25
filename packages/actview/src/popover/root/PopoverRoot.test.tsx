@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Popover } from '@/popover';
-import { render, screen, fireEvent, act } from '#test-utils/rtl';
+import { render, screen, fireEvent, act, waitFor } from '#test-utils/rtl';
 
 async function settle() {
   await act(async () => {});
@@ -167,7 +167,51 @@ describe('<Popover.Root />', () => {
   // actview 遗留：Escape 关闭后 FFM 的 returnFocus（focus 回 trigger）与
   // 立即重开点击存在时序竞争——重开点击被 focus-out 关闭的过渡状态吞掉
   // （react 的 user.click 真实事件序列无此问题）。待重开交互链修复后补。
-  it.skip('rewires dismiss interactions after closing and reopening', async () => {});
+  it('rewires dismiss interactions after closing and reopening', async () => {
+    await render(
+      <Popover.Root modal={false}>
+        <Popover.Trigger>Open</Popover.Trigger>
+        <Popover.Portal>
+          <Popover.Positioner>
+            <Popover.Popup>
+              <p>Content</p>
+              <Popover.Close>Close</Popover.Close>
+            </Popover.Popup>
+          </Popover.Positioner>
+        </Popover.Portal>
+      </Popover.Root>,
+    );
+    await settle();
+
+    const trigger = screen.getByRole('button', {name: 'Open'});
+
+    fireEvent.mouseDown(trigger);
+    fireEvent.mouseUp(trigger);
+    fireEvent.click(trigger);
+    await settle();
+    await settle();
+    expect(screen.queryByRole('dialog')).not.toBe(null);
+
+    fireEvent.keyDown(document, {key: 'Escape'});
+    await settle();
+    await settle();
+    expect(screen.queryByRole('dialog')).toBe(null);
+
+    // 重开后 dismiss 交互（Escape / outside press）必须重新生效。
+    fireEvent.mouseDown(trigger);
+    fireEvent.mouseUp(trigger);
+    fireEvent.click(trigger);
+    await settle();
+    await settle();
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBe(null);
+    });
+
+    fireEvent.click(document.body);
+    await settle();
+    await settle();
+    expect(screen.queryByRole('dialog')).toBe(null);
+  });
 
   describe('prop: defaultOpen', () => {
     it('should open when the component is rendered', async () => {

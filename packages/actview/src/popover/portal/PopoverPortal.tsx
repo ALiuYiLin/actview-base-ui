@@ -12,12 +12,13 @@ import type { Ref } from 'actview';
  * Documentation: [Base UI Popover](https://base-ui.com/react/components/popover)
  */
 export const PopoverPortal = defineComponent(function PopoverPortal(props: PopoverPortal.Props) {
-  const {keepMounted = false, ...portalProps} = props;
-
   const store = usePopoverRootContext(false);
   const mounted = store.useState('mounted');
 
   return () => {
+    // PD-15：props 在 render 期解构——setup 快照会让 render prop 重建的
+    // children（Positioner vnode 树）永远停留首次渲染。
+    const {keepMounted = false, ...portalProps} = props;
     const shouldRender = mounted.value || keepMounted;
     if (!shouldRender) {
       return null;

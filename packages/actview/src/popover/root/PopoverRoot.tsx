@@ -214,12 +214,18 @@ export const PopoverRoot = defineComponent(function PopoverRoot<Payload = unknow
   const shouldRenderInteractions = () => open.value || mounted.value;
 
   return () => {
-    const child = toValue(children);
+    // PD-15：render prop children 是函数（{payload}) => ...），不能经 toValue
+    // （会把函数当 getter 无参调用，payload 解构 undefined 报错）；render 期
+    // 从 props 读以追踪更新。
+    const rawChildren = (props as any).children;
+    const child = typeof rawChildren === 'function' ? rawChildren : toValue(rawChildren);
+    const renderedChild =
+      typeof child === 'function' ? child({payload: payload.value}) : child;
     return (
       <PopoverRootContext.Provider value={store as unknown as PopoverRootContext<unknown>}>
         {handle && <PopupHandleAttachment handle={handle} store={store} />}
         {shouldRenderInteractions() && <PopoverInteractions store={store} modal={modal} />}
-        {typeof child === 'function' ? child({payload: payload.value}) : child}
+        {renderedChild}
       </PopoverRootContext.Provider>
     );
   };

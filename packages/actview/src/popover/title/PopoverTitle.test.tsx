@@ -7,8 +7,29 @@ async function settle() {
 }
 
 describe('<Popover.Title /> + <Popover.Description />', () => {
-  // actview 遗留：store 的 titleElementId/descriptionElementId 同步成功
-  // （state 有值），但 Popup 渲染函数未随其变化重渲染（aria-labelledby/
-  // aria-describedby 缺失）——actview 渲染依赖追踪限制。待修复后补。
-  it.skip('associates title and description with the popup via aria', async () => {});
+  it('associates title and description with the popup via aria', async () => {
+    await render(
+      <Popover.Root open>
+        <Popover.Trigger>Trigger</Popover.Trigger>
+        <Popover.Portal>
+          <Popover.Positioner>
+            <Popover.Popup>
+              <Popover.Title>Title</Popover.Title>
+              <Popover.Description>Description</Popover.Description>
+            </Popover.Popup>
+          </Popover.Positioner>
+        </Popover.Portal>
+      </Popover.Root>,
+    );
+    await settle();
+    await settle();
+
+    // Title/Description 经 store 同步（post watch → store.set → popup 重渲染）
+    // 是异步链，用 waitFor 等待 aria 属性就位。
+    await waitFor(() => {
+      const popup = screen.getByRole('dialog');
+      expect(document.querySelector('h2')?.id).toBe(popup.getAttribute('aria-labelledby'));
+      expect(document.querySelector('p')?.id).toBe(popup.getAttribute('aria-describedby'));
+    });
+  });
 });

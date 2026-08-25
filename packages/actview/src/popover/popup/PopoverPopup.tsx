@@ -23,7 +23,6 @@ export const PopoverPopup = defineComponent(function PopoverPopup(
   componentProps: PopoverPopup.Props,
 ) {
   const {finalFocus, initialFocus} = componentProps;
-  const children = toValue(componentProps.children);
 
   const store = usePopoverRootContext(false);
   const positioner = usePopoverPositionerContext();
@@ -75,6 +74,9 @@ export const PopoverPopup = defineComponent(function PopoverPopup(
   });
 
   return () => {
+    // PD-15：children 在 render 期解构（props 代理追踪）——setup 快照会
+    // 让 payload 等动态内容（render prop 输出）永远停留首次渲染。
+    const children = toValue(componentProps.children);
     const {render, className, style, ...elementProps} = componentProps as any;
 
     const stateValue = state();

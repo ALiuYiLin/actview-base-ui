@@ -531,6 +531,15 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
             !isPointerDownRef.value &&
             (isUntrappedTypeableCombobox || relatedTarget !== getPreviouslyFocusedElement())
           ) {
+            // actview 异步渲染：popup 重挂时 floatingElement state 就绪晚于
+            // initialFocus 的 focus（focusout 事件先于 ref 回调），此时
+            // floating 仍是上一个（已卸载）元素，relatedTarget（新 popup 内
+            // 元素）与其包含关系判定不可靠——若强行关闭会把刚重开的 popup
+            // 误关（rewires-dismiss 场景）。等 floatingElement 就绪后的
+            // 后续 focusout 再做真实判定。
+            if (floating.value && !floating.value.isConnected) {
+              return;
+            }
             preventReturnFocusRef.value = true;
             store.setOpen(false, createChangeEventDetails(REASONS.focusOut, event));
           }
@@ -695,6 +704,15 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
 
             if (hadFocusInside) {
               return true;
+            }
+
+            // actview 异步渲染：open 变化时 popup 可能尚未挂载，elToFocus 仍
+            // 是上一个（已卸载）popup 的 detached 元素——focus 它会触发
+            // focusout（trigger → detached 元素），被 closeOnFocusOut 判为
+            // movedToUnrelatedNode 而关闭刚重开的 popup。等 floating.value
+            // 更新后的第二次 watch 重新 enqueueFocus（新元素 isConnected）。
+            if (elToFocus && !elToFocus.isConnected) {
+              return false;
             }
 
             const currentActiveElement = activeElement(doc);
