@@ -76,29 +76,37 @@ export const FloatingPortal = defineComponent(function FloatingPortal(
   const focusInsideDisabledRef = ref(false);
 
   // Create the portal node and append it to the resolved container.
+  // getter 手动解两层（对齐 React 版 `containerProp.current ?? document.body`）：
+  // container 经 props 包装后 `toValue` 只解一层得到用户 ref/元素——再读其
+  // `.value` 建立对用户 ref 的依赖追踪，容器元素挂载后 watch 重跑并迁移节点。
+  // （依赖 `() => container` 只追踪 props 包装 ref 的引用，节点会永远留在
+  // 初始解析出的 body 上。）
   watch(
-    () => container,
     () => {
-      if (portalNode.value) {
-        return;
-      }
-
       const containerProp = toValue(container);
       const resolvedContainer =
         (containerProp && (containerProp as any).nodeType != null
           ? containerProp
           : (containerProp as any)?.value) ??
         document.body;
-
+      return resolvedContainer;
+    },
+    (resolvedContainer) => {
       if (resolvedContainer == null) {
         return;
       }
 
-      const node = document.createElement('div');
-      node.id = portalNodeId ?? '';
-      node.setAttribute(attr, '');
-      resolvedContainer.appendChild(node);
-      portalNode.value = node;
+      if (!portalNode.value) {
+        const node = document.createElement('div');
+        node.id = portalNodeId ?? '';
+        node.setAttribute(attr, '');
+        resolvedContainer.appendChild(node);
+        portalNode.value = node;
+      } else if (portalNode.value.parentElement !== resolvedContainer) {
+        // 容器变化（如 ref 容器挂载后）：迁移已有节点（保持 id/attr，
+        // Teleport 内容随节点移动）。
+        resolvedContainer.appendChild(portalNode.value);
+      }
     },
     {flush: 'post', immediate: true},
   );
@@ -238,7 +246,9 @@ export const FloatingPortal = defineComponent(function FloatingPortal(
 
     return (
       <>
-        <TeleportContainer node={node}>{children}</TeleportContainer>
+        {/* 直接 Teleport（对齐 floating-ui actview 版；TeleportContainer 包装
+            层会导致内容挂载路径与普通渲染不同，hook 上下文报错）。 */}
+        <Teleport to={node}>{children}</Teleport>
         {provider}
       </>
     );
@@ -248,10 +258,6 @@ export const FloatingPortal = defineComponent(function FloatingPortal(
 import { Teleport } from 'actview';
 import type { Ref } from 'actview';
 
-function TeleportContainer(props: {node: HTMLElement; children: any}) {
-  return () => <Teleport mount={props.node}>{props.children}</Teleport>;
-}
-
 export interface FloatingPortalState {}
 
 export namespace FloatingPortal {
@@ -259,6 +265,8 @@ export namespace FloatingPortal {
   export interface Props<TState> {
     /**
      * A parent element to render the portal element into.
+     * 传 ref 需用 `rawRef(ref)`（actview JSX 层默认解包 Ref prop 为静态值，
+     * rawRef 标记跳过解包，组件收到 ref 对象本体并追踪其 `.value`）。
      */
     container?: HTMLElement | ShadowRoot | null | Ref<HTMLElement | ShadowRoot | null> | undefined;
     /**

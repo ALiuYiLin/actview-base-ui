@@ -40,6 +40,8 @@ export interface MenuPortalProps {
   keepMounted?: boolean | undefined;
   /**
    * A parent element to render the portal element into.
+   * 传 ref 需用 `rawRef(ref)`（actview JSX 层默认解包 Ref prop 为静态值，
+   * rawRef 标记跳过解包，组件收到 ref 对象本体并追踪其 `.value`）。
    */
   container?:
     | HTMLElement

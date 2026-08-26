@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { defineComponent, ref } from 'actview';
+import { defineComponent, ref, rawRef } from 'actview';
 import { ContextMenu } from '@/context-menu';
 import { isJSDOM } from '@actview/floating-ui/utils';
 import { render, screen, fireEvent, act, waitFor } from '#test-utils/rtl';
@@ -386,7 +386,9 @@ describe('<ContextMenu.Trigger />', () => {
           Right click me
           <div ref={portalContainerRef} />
         </ContextMenu.Trigger>
-        <ContextMenu.Portal container={portalContainerRef}>
+        {/* rawRef：actview JSX 层默认解包 Ref prop（读 .value → 静态 null），
+            rawRef 标记跳过解包——组件收到 ref 对象本体（对齐 React 版传 ref）。 */}
+        <ContextMenu.Portal container={rawRef(portalContainerRef)}>
           <ContextMenu.Positioner>
             <ContextMenu.Popup data-testid="popup" />
           </ContextMenu.Positioner>

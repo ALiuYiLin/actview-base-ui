@@ -37,6 +37,7 @@ export function DialogPopup(componentProps: DialogPopup.Props) {
   const titleElementId = store.useState('titleElementId');
   const transitionStatus = store.useState('transitionStatus');
   const role = store.useState('role');
+  const nested = store.useState('nested');
   const floatingId = (floatingRootContext.value as any)?.useState('floatingId');
 
   useOpenChangeComplete({
@@ -64,7 +65,9 @@ export function DialogPopup(componentProps: DialogPopup.Props) {
 
   const state = (): DialogPopupState => ({
     open: open.value,
-    nested: (store.useState('nested') as any).value,
+    // nested 在 setup 解构（useState 内含 onUnmounted——渲染期调用会在
+    // Teleport 内容挂载路径报"生命周期钩子只能在组件 setup 中调用"）。
+    nested: nested.value,
     transitionStatus: transitionStatus.value,
     nestedDialogOpen: nestedOpenDialogCount.value > 0,
   });
