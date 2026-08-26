@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Select } from '@/select';
-import { render, screen, act } from '#test-utils/rtl';
+import { render, screen, fireEvent, act } from '#test-utils/rtl';
 
 async function settle() {
   await act(async () => {});
@@ -26,31 +26,31 @@ function BasicSelect(props: any = {}) {
   );
 }
 
-describe('<Select.Root />', () => {
-  it('is closed by default', async () => {
+describe('<Select.Trigger />', () => {
+  it('opens the list on trigger click', async () => {
     await render(<BasicSelect />);
     await settle();
 
-    expect(screen.queryByRole('option')).toBe(null);
-  });
-
-  it('supports the children render prop with state', async () => {
-    await render(
-      <Select.Root defaultValue="x">
-        {(state: any) => (
-          <div data-testid={`state-${String(state.value)}-${state.open}-${state.multiple}`} />
-        )}
-      </Select.Root>,
-    );
+    fireEvent.click(screen.getByRole('button'));
+    await settle();
     await settle();
 
-    expect(screen.getByTestId('state-x-false-false')).not.toBe(null);
+    expect(screen.getByRole('option', {name: 'Apple'})).not.toBe(null);
+    expect(screen.getByRole('option', {name: 'Banana'})).not.toBe(null);
   });
 
-  it('is disabled when disabled', async () => {
-    await render(<BasicSelect rootProps={{disabled: true}} />);
+  it('toggles closed on a second trigger click', async () => {
+    await render(<BasicSelect />);
     await settle();
 
-    expect(screen.getByRole('button')).toHaveAttribute('disabled');
+    fireEvent.click(screen.getByRole('button'));
+    await settle();
+    await settle();
+    expect(screen.getAllByRole('option').length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole('button'));
+    await settle();
+    await settle();
+    expect(screen.queryAllByRole('option').length).toBe(0);
   });
 });

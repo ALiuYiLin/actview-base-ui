@@ -26,31 +26,19 @@ function BasicSelect(props: any = {}) {
   );
 }
 
-describe('<Select.Root />', () => {
-  it('is closed by default', async () => {
+describe('<Select.Value />', () => {
+  it('renders the trigger with placeholder', async () => {
     await render(<BasicSelect />);
     await settle();
 
-    expect(screen.queryByRole('option')).toBe(null);
+    expect(screen.getByText('Choose...')).not.toBe(null);
   });
 
-  it('supports the children render prop with state', async () => {
-    await render(
-      <Select.Root defaultValue="x">
-        {(state: any) => (
-          <div data-testid={`state-${String(state.value)}-${state.open}-${state.multiple}`} />
-        )}
-      </Select.Root>,
-    );
+  it('renders the selected value in Select.Value', async () => {
+    await render(<BasicSelect rootProps={{defaultValue: 'cherry'}} />);
+    await settle();
     await settle();
 
-    expect(screen.getByTestId('state-x-false-false')).not.toBe(null);
-  });
-
-  it('is disabled when disabled', async () => {
-    await render(<BasicSelect rootProps={{disabled: true}} />);
-    await settle();
-
-    expect(screen.getByRole('button')).toHaveAttribute('disabled');
+    expect(screen.getByText('cherry')).not.toBe(null);
   });
 });
