@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { defineComponent, ref } from 'actview';
 import { ContextMenu } from '@/context-menu';
 import { isJSDOM } from '@actview/floating-ui/utils';
-import { render, screen, fireEvent, act } from '#test-utils/rtl';
+import { render, screen, fireEvent, act, waitFor } from '#test-utils/rtl';
 
 async function settle() {
   await act(async () => {});
@@ -398,14 +398,17 @@ describe('<ContextMenu.Trigger />', () => {
     // jsdom：actview Teleport 不移动内容，popup 渲染在容器内而非 trigger 子树，
     // 验证阻止链对 trigger 子树内元素（portal 容器）生效；浏览器：popup 真实
     // 移入 portal 容器，验证 popup 本身。
+    // 浏览器中 Teleport 的 DOM 移动与 document 级监听器注册依赖 post-flush/
+    // 渲染帧——waitFor 重试消除慢环境下的时序 flake（settle 只 flush 微任务）。
     const target = isJSDOM()
       ? (portalContainerRef.value as HTMLElement)
-      : screen.getByTestId('popup');
+      : await waitFor(() => screen.getByTestId('popup'));
 
-    const event = new MouseEvent('contextmenu', {bubbles: true, cancelable: true});
-    target.dispatchEvent(event);
-
-    expect(event.defaultPrevented).toBe(true);
+    await waitFor(() => {
+      const event = new MouseEvent('contextmenu', {bubbles: true, cancelable: true});
+      target.dispatchEvent(event);
+      expect(event.defaultPrevented).toBe(true);
+    });
   });
 
   // react 版的 preventBaseUIHandler / long press 测试依赖 react 合成事件与
