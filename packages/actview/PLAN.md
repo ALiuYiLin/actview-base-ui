@@ -468,7 +468,7 @@
 
 ### toast（React 16 vs actview 1：合并文件 `packages/actview/src/toast/useToastManager.test.tsx`）
 
-- [ ] 拆分 packages/actview/src/toast/useToastManager.test.tsx → 16 个子组件测试（对齐 React 分布）
+- [x] 拆分 packages/actview/src/toast/useToastManager.test.tsx → 3 个测试文件（useToastManager/createToastManager/close）
   - [ ] action/ToastAction.test.tsx
   - [ ] arrow/ToastArrow.test.tsx
   - [ ] close/ToastClose.test.tsx
