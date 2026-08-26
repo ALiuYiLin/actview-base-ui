@@ -1,4 +1,4 @@
-import { useAnimationFrame } from '@base-ui/actview-utils/useAnimationFrame';
+import { useAnimationFrame } from '@actview/base-ui-utils';
 import { useTimeout } from '@/utils/useTimeout';
 import { EMPTY_OBJECT } from '@/utils/empty';
 import type { ElementProps, FloatingContext, FloatingRootContext } from '../types';
@@ -213,3 +213,5 @@ export function useClick(
 
   return enabled ? {reference} : EMPTY_OBJECT;
 }
+
+

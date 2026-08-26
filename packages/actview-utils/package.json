@@ -1,5 +1,5 @@
 {
-  "name": "@base-ui/actview-utils",
+  "name": "@actview/base-ui-utils",
   "version": "0.1.0",
   "author": "MUI Team",
   "description": "A collection of ActView utility functions for Base UI.",
@@ -10,29 +10,30 @@
     "directory": "packages/actview-utils"
   },
   "exports": {
-    "./store": "./src/store/index.ts",
-    "./platform": "./src/platform/index.ts",
-    "./*": "./src/*.ts",
-    "./*.test": null,
-    "./*.spec": null
-  },
-  "imports": {
-    "#formatErrorMessage": "./src/formatErrorMessage.ts"
+    ".": {
+      "types": "./build/index.d.ts",
+      "import": "./dist/index.mjs"
+    }
   },
   "scripts": {
+    "build": "node -e \"fs.rmSync('build',{recursive:true,force:true});fs.rmSync('tsconfig.build.tsbuildinfo',{force:true})\" && vite build && tsgo -b tsconfig.build.json",
+    "prepublishOnly": "pnpm build",
     "test": "cross-env VITEST_ENV=jsdom vitest",
     "typescript": "tsgo -b tsconfig.json"
   },
   "dependencies": {
-    "@actview/core": "link:../../../actview/packages/core",
-    "@actview/jsx": "link:../../../actview/packages/jsx",
     "@floating-ui/utils": "^0.2.12",
-    "actview": "link:../../../actview/packages/actview",
     "reselect": "^5.2.0"
   },
+  "peerDependencies": {
+    "@actview/core": "^1.1.0",
+    "@actview/jsx": "^1.1.0",
+    "actview": "^1.1.1"
+  },
   "devDependencies": {
-    "@actview/plugin-vite": "link:../../../actview/plugins/vite",
-    "@actview/testing": "link:../../../actview/packages/testing",
+    "@actview/plugin-scoped": "1.0.5",
+    "@actview/plugin-vite": "^1.1.1",
+    "@actview/testing": "^0.1.1",
     "@testing-library/jest-dom": "6.9.1"
   },
   "sideEffects": false,
@@ -40,3 +41,4 @@
     "node": ">=22.22.3"
   }
 }
+

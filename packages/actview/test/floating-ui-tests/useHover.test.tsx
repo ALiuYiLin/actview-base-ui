@@ -1,8 +1,8 @@
 import { vi, test, describe, expect } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import { defineComponent, ref } from '@actview/core';
-import { useFloating, useHover, useInteractions } from '@floating-ui/actview';
-import { isJSDOM } from '@floating-ui/actview/utils';
+import { useFloating, useHover, useInteractions } from '@actview/floating-ui';
+import { isJSDOM } from '@actview/floating-ui/utils';
 import {
   act,
   cleanup,

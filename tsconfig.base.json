@@ -18,11 +18,12 @@
       "@base-ui/react": ["./packages/react/src"],
       "@base-ui/react/*": ["./packages/react/src/*"],
       "@base-ui/utils/*": ["./packages/utils/src/*"],
-      "@base-ui/actview": ["./packages/actview/src"],
-      "@base-ui/actview/*": ["./packages/actview/src/*"],
-      "@base-ui/actview-utils/*": ["./packages/actview-utils/src/*"],
+      "@actview/base-ui": ["./packages/actview/src"],
+      "@actview/base-ui/*": ["./packages/actview/src/*"],
+      "@actview/base-ui-utils/*": ["./packages/actview-utils/src/*"],
       "docs/*": ["./docs/*"]
     }
   },
   "exclude": ["**/.*/", "**/build", "**/build-tests", "**/node_modules", "docs/export"]
 }
+

@@ -4,7 +4,7 @@ import { Avatar } from '@/avatar';
 import { AvatarRootContext } from '@/avatar/root/AvatarRootContext';
 import { act, screen, waitFor } from '#test-utils/rtl';
 import { describeConformance, createRenderer } from '#test-utils';
-import { isJSDOM } from '@floating-ui/actview/utils';
+import { isJSDOM } from '@actview/floating-ui/utils';
 
 type MockImage = {
   complete: boolean;

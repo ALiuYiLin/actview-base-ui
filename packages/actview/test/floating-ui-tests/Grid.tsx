@@ -6,7 +6,7 @@ import {
   useFloating,
   useInteractions,
   useListNavigation,
-} from '@floating-ui/actview';
+} from '@actview/floating-ui';
 
 // 样式隔离：import 带 ?scoped 即开启（@actview/plugin-scoped），本文件所有
 // JSX 元素自动注入 data-v-<hash>，Grid.css 选择器同步追加属性选择器。

@@ -1,7 +1,7 @@
 import { afterEach, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
-import { reset as resetError } from '@base-ui/actview-utils/error';
-import { resetAnimationFrameScheduler } from '@base-ui/actview-utils/useAnimationFrame';
+import { reset as resetError } from '@actview/base-ui-utils';
+import { resetAnimationFrameScheduler } from '@actview/base-ui-utils';
 import { cleanup } from '@actview/testing';
 // rtl（floating-ui 迁移测试层）自行创建的挂载容器（id="testing-N"）与
 // portal 节点，@actview/testing 的 cleanup 不负责移除；用例间必须清理，
@@ -51,3 +51,5 @@ if (typeof window !== 'undefined') {
     return nativeRequestAnimationFrame(cb);
   };
 }
+
+

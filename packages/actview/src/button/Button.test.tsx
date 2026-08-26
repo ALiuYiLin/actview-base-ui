@@ -2,7 +2,7 @@ import { expect, vi } from 'vitest';
 import { defineComponent, ref } from '@actview/core';
 import { fireEvent, screen, waitFor, userEvent } from '#test-utils/rtl';
 import { describeConformance, createRenderer } from '#test-utils';
-import { isJSDOM } from '@floating-ui/actview/utils';
+import { isJSDOM } from '@actview/floating-ui/utils';
 import { Button } from '@/button';
 
 describe('<Button />', () => {

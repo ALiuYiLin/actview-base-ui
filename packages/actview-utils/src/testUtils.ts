@@ -1,7 +1,8 @@
 /**
- * Whether the test runs in JSDOM environment
+ * Whether the test runs in JSDOM environment.
+ * Guarded so importing the package in Node/SSR (no `window`) is safe.
  */
-export const isJSDOM = /jsdom/.test(window.navigator.userAgent);
+export const isJSDOM = typeof window !== 'undefined' && /jsdom/.test(window.navigator.userAgent);
 
 // https://stackoverflow.com/questions/53807517/how-to-test-if-two-types-are-exactly-the-same
 export type IfEquals<T, U, Y = unknown, N = never> =

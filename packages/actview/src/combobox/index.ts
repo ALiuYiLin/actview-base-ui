@@ -26,7 +26,8 @@ export type * from './chip-remove/ComboboxChipRemove';
 export type * from './row/ComboboxRow';
 export type * from './collection/ComboboxCollection';
 
-export { createComboboxStore, selectors } from './store';
+export { createComboboxStore } from './store';
 export type { ComboboxStore, State as ComboboxStoreState } from './store';
 export { createComboboxItems } from './items/createItems';
 export type { ComboboxPrimitiveValue } from './items/createItems';
+

@@ -12,7 +12,7 @@ import {
   useHover,
   useInteractions,
   useMergeRefs,
-} from '@floating-ui/actview';
+} from '@actview/floating-ui';
 import './Navigation.css?scoped';
 
 interface SubItemProps {

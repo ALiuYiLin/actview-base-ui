@@ -1,9 +1,9 @@
 import type { Ref } from 'actview';
 import type { FloatingRootStore } from './components/FloatingRootStore';
 import type { FloatingTreeStore } from './components/FloatingTreeStore';
-import type { ReferenceType } from '@floating-ui/actview';
+import type { ReferenceType } from '@actview/floating-ui';
 
-export type { ReferenceType } from '@floating-ui/actview';
+export type { ReferenceType } from '@actview/floating-ui';
 
 export interface VirtualElement {
   getBoundingClientRect(): DOMRect;

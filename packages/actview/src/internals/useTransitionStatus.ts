@@ -1,6 +1,6 @@
 import { computed, ref, toValue, watch } from 'actview';
 import type { MaybeRefOrGetter } from '@/internals/types';
-import { AnimationFrame } from '@base-ui/actview-utils/useAnimationFrame';
+import { AnimationFrame } from '@actview/base-ui-utils';
 
 export type TransitionStatus = 'starting' | 'ending' | 'idle' | undefined;
 
@@ -123,3 +123,5 @@ export function useTransitionStatus(
     transitionStatus: computed(() => transitionStatus.value),
   };
 }
+
+

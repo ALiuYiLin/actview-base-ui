@@ -64,7 +64,7 @@ export {
   inner,
   useInnerOffset,
   useListItem,
-} from '@floating-ui/actview';
+} from '@actview/floating-ui';
 
 // DOM/core primitives come from @floating-ui/dom (not re-exported by the actview build).
 export {

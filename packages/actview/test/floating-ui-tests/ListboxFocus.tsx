@@ -6,7 +6,7 @@ import {
   useListItem,
   useListNavigation,
   useTypeahead,
-} from '@floating-ui/actview';
+} from '@actview/floating-ui';
 
 interface SelectContextValue {
   activeIndex: Ref<number | null>;

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { defineComponent, ref } from 'actview';
 import { ContextMenu } from '@/context-menu';
-import { isJSDOM } from '@floating-ui/actview/utils';
+import { isJSDOM } from '@actview/floating-ui/utils';
 import { render, screen, fireEvent, act } from '#test-utils/rtl';
 
 async function settle() {
@@ -358,7 +358,7 @@ describe('<ContextMenu.Trigger />', () => {
     // jsdom：actview Teleport 不移动内容，internal backdrop 渲染在容器内
     // （position: fixed 的 presentation 层）；浏览器：portal 节点直接子级。
     const internalBackdrop = document.querySelector(
-      isJSDOM
+      isJSDOM()
         ? '[role="presentation"][data-base-ui-inert][style*="position: fixed"]'
         : '[data-base-ui-portal] > [data-base-ui-inert][role="presentation"]',
     )!;
@@ -398,7 +398,7 @@ describe('<ContextMenu.Trigger />', () => {
     // jsdom：actview Teleport 不移动内容，popup 渲染在容器内而非 trigger 子树，
     // 验证阻止链对 trigger 子树内元素（portal 容器）生效；浏览器：popup 真实
     // 移入 portal 容器，验证 popup 本身。
-    const target = isJSDOM
+    const target = isJSDOM()
       ? (portalContainerRef.value as HTMLElement)
       : screen.getByTestId('popup');
 

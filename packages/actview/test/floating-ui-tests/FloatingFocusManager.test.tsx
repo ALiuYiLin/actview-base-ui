@@ -30,7 +30,7 @@ import {
   waitFor,
   within,
 } from '../rtl';
-import { isJSDOM } from '@floating-ui/actview/utils';
+import { isJSDOM } from '@actview/floating-ui/utils';
 import {
   FloatingFocusManager,
   FloatingNode,
@@ -43,7 +43,7 @@ import {
   useFloatingParentNodeId,
   useHover,
   useInteractions,
-} from '@floating-ui/actview';
+} from '@actview/floating-ui';
 import { Main as Navigation } from './Navigation';
 
 // iframe 嵌套 document 的焦点检查：@mui/internal-test-utils 的 toHaveFocus
@@ -3305,3 +3305,4 @@ describe('FloatingFocusManager', () => {
     });
   });
 });
+

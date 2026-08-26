@@ -1,5 +1,5 @@
 import { computed, ref, toValue, watch } from 'actview';
-import { useFloating as usePosition } from '@floating-ui/actview';
+import { useFloating as usePosition } from '@actview/floating-ui';
 import { isElement } from '@floating-ui/utils/dom';
 import type { FloatingRootStore } from '../components/FloatingRootStore';
 import { useFloatingTree } from '../components/FloatingTree';

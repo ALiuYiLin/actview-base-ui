@@ -2,7 +2,7 @@ import { expect, vi } from 'vitest';
 import { defineComponent } from 'actview';
 import { Accordion } from '@/accordion';
 import { describeConformance, createRenderer } from '#test-utils';
-import { isJSDOM } from '@floating-ui/actview/utils';
+import { isJSDOM } from '@actview/floating-ui/utils';
 import { screen, userEvent } from '#test-utils/rtl';
 
 describe('<Accordion.Item />', () => {

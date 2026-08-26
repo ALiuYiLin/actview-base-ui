@@ -95,8 +95,13 @@ export class ReactStore<
   /**
    * Registers a controllable prop pair (`controlled`, `defaultValue`) for a specific key. If `controlled`
    * is non-undefined, the store's state at `key` is updated to match `controlled`.
+   * `controlled` may also be a getter `() => value` (see PD-15: setup-destructured props are snapshots,
+   * so callers pass `() => props.x` to make the watch track the props proxy).
    */
-  useControlledProp<Key extends keyof State>(key: Key, controlled: State[Key] | undefined): void {
+  useControlledProp<Key extends keyof State>(
+    key: Key,
+    controlled: State[Key] | undefined | (() => State[Key] | undefined),
+  ): void {
     // eslint-disable-next-line consistent-this
     const store = this;
 

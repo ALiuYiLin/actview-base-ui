@@ -9,7 +9,7 @@ import { AutocompleteRootContext } from './AutocompleteRootContext';
  * Doesn't render its own HTML element.
  *
  * actview 简化：组件未接线 floating-ui actview 层的键盘导航/focus（该层
- * useListNavigation/FloatingFocusManager 已完整移植，见 @floating-ui/actview）；
+ * useListNavigation/FloatingFocusManager 已完整移植，见 @actview/floating-ui）；
  * items 按 inputValue 过滤（createComboboxItems 简化版）。
  */
 export const AutocompleteRoot = defineComponent(function AutocompleteRoot(

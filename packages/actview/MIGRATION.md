@@ -1,6 +1,6 @@
 # React → ActView 迁移案例库
 
-> 目标：`packages/react` → `packages/actview`（@base-ui/actview）
+> 目标：`packages/react` → `packages/actview`（@actview/base-ui）
 > 本文档记录迁移过程中的**典型案例**：为什么这样改、这样做的好处，作为后续组件的参考范式。
 > 同类问题只保留一个完整案例，其余案例引用之。
 
@@ -1147,3 +1147,4 @@ export const Xxx = defineComponent(function (componentProps: Xxx.Props) {
 | 测试组件怎么写？ | `function Demo() { setup; return JSX; }` 函数声明，Babel 自动转换（案例 19） |
 | 测试 render prop 函数？ | `const renderFn = function() { return JSX; }` 函数表达式，Babel 不转换，保留函数形态（案例 19） |
 | 源码组件 vs 测试组件？ | 源码：`defineComponent(fn)` + `return () => {...}`；测试：`function Demo() { setup; return JSX; }`（案例 19） |
+

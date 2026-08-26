@@ -6,7 +6,7 @@ import {
   useFloating,
   useInteractions,
   useListNavigation,
-} from '@floating-ui/actview';
+} from '@actview/floating-ui';
 import './ComplexGrid.css?scoped';
 import { gridNavigationWithColumns } from './gridNavigationWithColumns';
 

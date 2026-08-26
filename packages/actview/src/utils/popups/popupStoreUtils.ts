@@ -7,7 +7,7 @@ import { useRefWithInit } from '@/utils/useRefWithInit';
 import { EMPTY_OBJECT } from '@/utils/empty';
 import type { InteractionType } from '@/utils/useEnhancedClickHandler';
 import { FOCUSABLE_ATTRIBUTE } from '@/floating-ui-react/utils/constants';
-import { useFloatingParentNodeId } from '@floating-ui/actview';
+import { useFloatingParentNodeId } from '@actview/floating-ui';
 import {
   useSyncedFloatingRootContext,
   type SyncedFloatingRootContextStore,

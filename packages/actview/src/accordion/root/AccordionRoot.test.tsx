@@ -4,7 +4,7 @@ import { fireEvent, screen, waitFor } from '#test-utils/rtl';
 import { userEvent } from '#test-utils/rtl';
 import { Accordion } from '@/accordion';
 import { createRenderer, describeConformance } from '#test-utils';
-import { isJSDOM } from '@floating-ui/actview/utils';
+import { isJSDOM } from '@actview/floating-ui/utils';
 import { REASONS } from '@/internals/reasons';
 
 const PANEL_CONTENT_1 = 'Panel contents 1';

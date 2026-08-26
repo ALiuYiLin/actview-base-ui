@@ -1,4 +1,4 @@
-import { gridNavigation } from '@floating-ui/actview';
+import { gridNavigation } from '@actview/floating-ui';
 
 export function gridNavigationWithColumns(cols: number): typeof gridNavigation {
   return (

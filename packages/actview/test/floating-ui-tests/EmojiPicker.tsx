@@ -9,7 +9,7 @@ import {
   useId,
   useInteractions,
   useListNavigation,
-} from '@floating-ui/actview';
+} from '@actview/floating-ui';
 import { Button } from './Button';
 import { gridNavigationWithColumns } from './gridNavigationWithColumns';
 import './EmojiPicker.css?scoped';

@@ -3,7 +3,7 @@ import { defineComponent, ref } from '@actview/core';
 import { screen, userEvent } from '#test-utils/rtl';
 import { Collapsible } from '@/collapsible';
 import { createRenderer, describeConformance } from '#test-utils';
-import { isJSDOM } from '@floating-ui/actview/utils';
+import { isJSDOM } from '@actview/floating-ui/utils';
 import { REASONS } from '@/internals/reasons';
 
 const PANEL_CONTENT = 'This is panel content';

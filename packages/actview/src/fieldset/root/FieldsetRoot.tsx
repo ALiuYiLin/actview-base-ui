@@ -90,7 +90,13 @@ export interface FieldsetRootState {
   disabled: boolean;
 }
 
-export interface FieldsetRootProps extends BaseUIComponentProps<'fieldset', FieldsetRootState> {}
+export interface FieldsetRootProps extends BaseUIComponentProps<'fieldset', FieldsetRootState> {
+  /**
+   * Whether to disable all the fields inside the fieldset.
+   * @default false
+   */
+  disabled?: boolean | undefined;
+}
 
 export namespace FieldsetRoot {
   export type State = FieldsetRootState;

@@ -25,7 +25,7 @@ export function gridNavigation(config: CompositeGridConfig): CompositeGridNaviga
   void config;
   return () => {
     throw new Error(
-      'Base UI: grid navigation is not yet available in @base-ui/actview. ' +
+      'Base UI: grid navigation is not yet available in @actview/base-ui. ' +
         'Do not pass the `grid` prop to Composite.Root until it is migrated.',
     );
   };
@@ -43,3 +43,4 @@ export interface CompositeGridNavigationState {
   disabledIndices?: number[] | undefined;
   rtl: boolean;
 }
+

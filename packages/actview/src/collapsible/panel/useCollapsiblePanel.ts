@@ -1,7 +1,7 @@
 import { computed, onUnmounted, ref, toValue, watch } from 'actview';
 import type { ComputedRef, Ref } from 'actview';
 import { addEventListener } from '@/utils/addEventListener';
-import { AnimationFrame } from '@base-ui/actview-utils/useAnimationFrame';
+import { AnimationFrame } from '@actview/base-ui-utils';
 import type { HTMLProps, MaybeRefOrGetter } from '@/internals/types';
 import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
@@ -592,5 +592,7 @@ export interface UseCollapsiblePanelReturnValue {
   transitionStatus: ComputedRef<TransitionStatus>;
   width: ComputedRef<number | undefined>;
 }
+
+
 
 

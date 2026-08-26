@@ -7,16 +7,22 @@ import path from 'path';
 export default defineProject({
   plugins: [actviewPlugin(), ...actviewScopedPlugin()],
   resolve: {
+    dedupe: ['@actview/core', '@actview/jsx'],
     alias: {
       '@': path.resolve(__dirname, 'src'),
       '#': path.resolve(__dirname),
       // @floating-ui/actview 走源码（vite 转译）——与 floating-ui/actview
       // 自身测试一致（其测试直接 import src）；dist 仅用于包解析/类型。
-      '@floating-ui/actview/utils': path.resolve(
+      '@actview/floating-ui/utils': path.resolve(
         'E:/code3/floating-ui/packages/actview/src/utils.ts',
       ),
-      '@floating-ui/actview': path.resolve(
+      '@actview/floating-ui': path.resolve(
         'E:/code3/floating-ui/packages/actview/src/index.ts',
+      ),
+      // @actview/base-ui-utils 走源码（聚合 index）——测试不依赖 dist 构建产物。
+      '@actview/base-ui-utils': path.resolve(
+        __dirname,
+        '../actview-utils/src/index.ts',
       ),
     },
   },
@@ -46,3 +52,4 @@ export default defineProject({
     },
   },
 });
+

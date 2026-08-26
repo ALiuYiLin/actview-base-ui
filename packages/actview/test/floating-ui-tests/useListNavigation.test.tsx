@@ -7,8 +7,8 @@ import {
   useFloating,
   useInteractions,
   useListNavigation,
-} from '@floating-ui/actview';
-import { isJSDOM } from '@floating-ui/actview/utils';
+} from '@actview/floating-ui';
+import { isJSDOM } from '@actview/floating-ui/utils';
 import {
   act,
   cleanup,
@@ -25,7 +25,7 @@ import { Main as ListboxFocus } from './ListboxFocus';
 import { Main as NestedMenu } from './Menu';
 import { HorizontalMenu } from './MenuOrientation';
 import { gridNavigationWithColumns } from './gridNavigationWithColumns';
-import { gridNavigation } from '@floating-ui/actview';
+import { gridNavigation } from '@actview/floating-ui';
 
 /* eslint-disable testing-library/no-unnecessary-act */
 

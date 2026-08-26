@@ -14,7 +14,7 @@ import {
   useHover,
   useId,
   useInteractions,
-} from '@floating-ui/actview';
+} from '@actview/floating-ui';
 import { Button } from './Button';
 import './Popover.css?scoped';
 

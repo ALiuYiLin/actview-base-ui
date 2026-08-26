@@ -1,4 +1,4 @@
-import { AnimationFrame } from '@base-ui/actview-utils/useAnimationFrame';
+import { AnimationFrame } from '@actview/base-ui-utils';
 import { resolveRef } from '../utils/resolveRef';
 
 /**
@@ -115,3 +115,5 @@ export function useAnimationsFinished(
     frame.request(exec);
   };
 }
+
+

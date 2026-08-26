@@ -1,1 +1,9 @@
 *.tsbuildinfo
+vitest.config.mts
+vite.config.ts
+test/
+tsconfig.json
+tsconfig.build.json
+tsconfig.test.json
+**/*.test.ts
+**/*.test.tsx

@@ -83,7 +83,7 @@ export class FloatingRootStore extends ReactStore<
       },
       {
         onOpenChange,
-        // 统一 .value 语义：MenuStore 与 @floating-ui/actview 均读 .value。
+        // 统一 .value 语义：MenuStore 与 @actview/floating-ui 均读 .value。
         dataRef: {value: contextData} as any,
         events: createEventEmitter(),
         nested,
@@ -94,7 +94,7 @@ export class FloatingRootStore extends ReactStore<
 
     this.syncOnly = syncOnly;
 
-    // actview useFloating（@floating-ui/actview）读取 rootContext.elements：
+    // actview useFloating（@actview/floating-ui）读取 rootContext.elements：
     // {reference, floating, domReference} 均为 Ref（.value 读取）。
     this.elements = {
       reference: computed(() => this.select('referenceElement')) as Ref<ReferenceType | null>,
@@ -109,7 +109,7 @@ export class FloatingRootStore extends ReactStore<
   };
 
   /**
-   * Direct-property aliases matching @floating-ui/actview's FloatingRootContext surface:
+   * Direct-property aliases matching @actview/floating-ui's FloatingRootContext surface:
    * actview useFloating reads `rootContext.dataRef`, `rootContext.events`, etc. directly.
    */
   get dataRef() {

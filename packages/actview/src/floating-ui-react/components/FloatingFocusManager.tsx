@@ -7,7 +7,7 @@ import { useStableCallback } from '@/utils/useStableCallback';
 import { useTimeout } from '@/utils/useTimeout';
 import { platform } from '@/utils/platform';
 import type { InteractionType } from '@/utils/useEnhancedClickHandler';
-import { useAnimationFrame } from '@base-ui/actview-utils/useAnimationFrame';
+import { useAnimationFrame } from '@actview/base-ui-utils';
 import { ownerDocument, ownerWindow } from '@/internals/owner';
 import { FocusGuard } from '@/utils/FocusGuard';
 import {
@@ -1017,3 +1017,5 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
     );
   };
 });
+
+

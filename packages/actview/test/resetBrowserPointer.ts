@@ -1,4 +1,4 @@
-import { isJSDOM } from '@base-ui/actview-utils/testUtils';
+import { isJSDOM } from '@actview/base-ui-utils';
 
 /**
  * Resets the Playwright/WebDriver pointer state that persists between browser tests.
@@ -9,3 +9,5 @@ export async function resetBrowserPointer() {
     await userEvent.unhover(document.body);
   }
 }
+
+

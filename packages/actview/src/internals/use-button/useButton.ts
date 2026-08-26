@@ -1,7 +1,7 @@
 import { onMounted, ref, toValue, watch } from 'actview';
 import type { MaybeRefOrGetter } from '../types';
 import { isHTMLElement } from '@floating-ui/utils/dom';
-import { error } from '@base-ui/actview-utils/error';
+import { error } from '@actview/base-ui-utils';
 import { makeEventPreventable, mergeProps } from '../../merge-props';
 import { useCompositeRootContext } from '../composite/root/CompositeRootContext';
 import type { BaseUIEvent } from '../types';
@@ -309,3 +309,5 @@ export interface UseButtonReturnValue {
 }
 
 export interface UseButtonState {}
+
+

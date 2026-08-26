@@ -1,4 +1,4 @@
-import { AnimationFrame } from '@base-ui/actview-utils/useAnimationFrame';
+import { AnimationFrame } from '@actview/base-ui-utils';
 import {
   createChangeEventDetails,
   type BaseUIChangeEventDetails,
@@ -225,3 +225,5 @@ export class BasePopupHandle<
     attachedStore.setOpen(false, createChangeEventDetails(REASONS.imperativeAction));
   }
 }
+
+

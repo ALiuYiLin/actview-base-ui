@@ -1,6 +1,6 @@
 import {computed, onMounted, watch, ref} from 'actview';
 import type { Ref } from 'actview';
-import { useAnimationFrame } from '@base-ui/actview-utils/useAnimationFrame';
+import { useAnimationFrame } from '@actview/base-ui-utils';
 import { ownerDocument } from '@/internals/owner';
 import { useStableCallback } from '@/utils/useStableCallback';
 import { useValueAsRef } from '@/utils/useValueAsRef';
@@ -880,3 +880,5 @@ export function useListNavigation(
 
   return enabled ? {reference, floating, item, trigger} : {};
 }
+
+

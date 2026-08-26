@@ -21,7 +21,7 @@ import {
   useListNavigation,
   useMergeRefs,
   useTypeahead,
-} from '@floating-ui/actview';
+} from '@actview/floating-ui';
 import { GRID_COLUMN_COUNT, renderGridRows } from './renderGridRows';
 import './Menu.css?scoped';
 

@@ -1,11 +1,10 @@
 import { defineConfig } from 'vite';
 import path from 'path';
 
-// 发布构建：把 src 的 TS/JSX 转译成单个 ESM 产物（dist/index.js）。
-// peerDependencies 与 dependencies 一律 external——由宿主/安装方提供，
-// 避免把 @actview/core、@floating-ui/dom 等打包进产物造成双实例。
+// 发布构建：把 src 的 TS 转译成单个 ESM 产物（dist/index.mjs）。
+// peerDependencies 与 dependencies 一律 external——由宿主/安装方提供。
 // 插件用动态 import：@actview/plugin-* 是 ESM-only 包，vite 配置加载器
-// 对顶层 import 走 require 会失败（vitest.config.mts 无此问题）。
+// 对顶层 import 走 require 会失败。
 export default defineConfig(async () => {
   const [{actviewPlugin}, {default: actviewScopedPlugin}] = await Promise.all([
     import('@actview/plugin-vite'),
@@ -34,13 +33,10 @@ export default defineConfig(async () => {
           '@actview/core',
           '@actview/jsx',
           'actview',
-          '@floating-ui/dom',
           '@floating-ui/utils',
-          '@actview/base-ui-utils',
-          'clsx',
+          'reselect',
         ],
       },
     },
   };
 });
-
