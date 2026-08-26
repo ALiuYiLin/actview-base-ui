@@ -6,6 +6,7 @@ import type { BaseUIComponentProps, NativeButtonProps } from '@/internals/types'
 import { useToggleGroupContext } from '@/toggle-group/ToggleGroupContext';
 import { useButton } from '@/internals/use-button/useButton';
 import { CompositeItem } from '@/internals/composite/item/CompositeItem';
+import { useRenderElement } from '@/internals/useRenderElement';
 import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
@@ -127,38 +128,17 @@ export const Toggle = defineComponent(function <Value extends string>(
       );
     }
 
-    const merged: Record<string, any> = {};
-    for (const prop of props) {
-      const resolved = typeof prop === 'function' ? prop(merged) : prop;
-      Object.assign(merged, resolved);
-    }
-    if (typeof className === 'function') {
-      merged.className = className(state);
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof style === 'function') {
-      merged.style = style(state);
-    } else if (style !== undefined) {
-      merged.style = style;
-    }
-
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ...state, ref: buttonRef} as any);
-      }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof merged.className === 'string' && typeof renderClassName === 'string'
-          ? `${merged.className} ${renderClassName}`.trim()
-          : (merged.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={buttonRef} />;
-    }
-    return <button {...merged} ref={buttonRef}>{componentProps.children}</button>;
+    const {element} = useRenderElement({
+      props: () => props,
+      state: () => state,
+      className: () => className,
+      style: () => style,
+      render: () => render,
+      refs: () => refs,
+      children: () => componentProps.children,
+      defaultTag: 'button',
+    });
+    return element();
   };
 }) as unknown as <Value extends string>(props: Toggle.Props<Value>) => JSX.Element;
 

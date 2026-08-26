@@ -1,9 +1,9 @@
 import { defineComponent, toValue, useRootElement } from 'actview';
-import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { useRenderElement } from '@/internals/useRenderElement';
 import { useToolbarRootContext } from '../root/ToolbarRootContext';
 import { ToolbarGroupContext } from './ToolbarGroupContext';
 import type { ToolbarRootState } from '../root/ToolbarRoot';
-import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
 
 /**
  * A container for grouping a set of toolbar controls.
@@ -35,43 +35,19 @@ export const ToolbarGroup = defineComponent(function (componentProps: ToolbarGro
       orientation,
     };
 
-    const stateAttributes = getStateAttributesProps(stateValue, {});
-
-    const merged: HTMLProps = {};
-    Object.assign(merged, {role: 'group'}, elementProps, stateAttributes);
-    if (typeof className === 'function') {
-      merged.className = className(stateValue);
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof style === 'function') {
-      merged.style = style(stateValue);
-    } else if (style !== undefined) {
-      merged.style = style;
-    }
-
-    let element: any;
-    if (render) {
-      if (typeof render === 'function') {
-        element = render({...merged, ...stateValue, ref: rootRef} as any);
-      } else {
-        const renderProps = render.props ?? {};
-        const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-        const Tag = render.type as any;
-        const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-        mergedRenderProps.className =
-          typeof merged.className === 'string' && typeof renderClassName === 'string'
-            ? `${merged.className} ${renderClassName}`.trim()
-            : (merged.className ?? renderClassName);
-        mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-        element = <Tag key={render.key} {...mergedRenderProps} ref={rootRef} />;
-      }
-    } else {
-      element = <div {...merged} ref={rootRef} />;
-    }
+    const {element} = useRenderElement({
+      props: () => [{role: 'group'}, elementProps],
+      state: stateValue,
+      stateAttributesMapping: {},
+      className: () => className,
+      style: () => style,
+      render: () => render,
+      refs: () => [rootRef],
+      defaultTag: 'div',
+    });
 
     return (
-      <ToolbarGroupContext.Provider value={contextValue as any}>{element}</ToolbarGroupContext.Provider>
+      <ToolbarGroupContext.Provider value={contextValue as any}>{element()}</ToolbarGroupContext.Provider>
     );
   };
 }) as unknown as (props: ToolbarGroup.Props) => JSX.Element;

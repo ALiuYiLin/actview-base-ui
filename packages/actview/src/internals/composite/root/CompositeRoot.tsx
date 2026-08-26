@@ -3,11 +3,12 @@ import type { CompositeMetadata } from '@/internals/composite/list/CompositeList
 import { CompositeList } from '@/internals/composite/list/CompositeList';
 import { useCompositeRoot } from './useCompositeRoot';
 import { CompositeRootContext } from './CompositeRootContext';
-import type { HTMLProps, BaseUIComponentProps } from '@/internals/types';
+import type { BaseUIComponentProps } from '@/internals/types';
+import { useRenderElement } from '@/internals/useRenderElement';
 import type { ModifierKey } from '@/internals/composite/composite';
 import type { CompositeGridNavigator } from './gridNavigation';
 import { useDirection } from '@/internals/direction-context/DirectionContext';
-import { getStateAttributesProps, StateAttributesMapping } from '@/internals/getStateAttributesProps';
+import type { StateAttributesMapping } from '@/internals/getStateAttributesProps';
 import type { Ref } from 'actview';
 
 export function CompositeRoot<Metadata extends {}, State extends Record<string, any>>(
@@ -94,46 +95,19 @@ export function CompositeRoot<Metadata extends {}, State extends Record<string, 
     } = componentProps;
 
     const stateValue = toValue(state) as State;
-    const stateAttributes = getStateAttributesProps(stateValue, stateAttributesMapping);
 
-    const merged: HTMLProps = {};
-    for (const prop of [...props, elementProps]) {
-      const resolved = typeof prop === 'function' ? prop() : prop;
-      Object.assign(merged, resolved);
-    }
-    Object.assign(merged, defaultProps, stateAttributes);
-
-    if (typeof className === 'function') {
-      merged.className = className(stateValue);
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof style === 'function') {
-      merged.style = style(stateValue);
-    } else if (style !== undefined) {
-      merged.style = style;
-    }
-
-    const Tag = tag as any;
-    let element: any;
-    if (render) {
-      if (typeof render === 'function') {
-        element = render({...merged, ...stateValue});
-      } else {
-        const renderProps = render.props ?? {};
-        const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-        const RenderTag = render.type as any;
-        const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-        mergedRenderProps.className =
-          typeof merged.className === 'string' && typeof renderClassName === 'string'
-            ? `${merged.className} ${renderClassName}`.trim()
-            : (merged.className ?? renderClassName);
-        mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-        element = <RenderTag key={render.key} {...mergedRenderProps} />;
-      }
-    } else {
-      element = <Tag {...merged}>{children}</Tag>;
-    }
+    const {element} = useRenderElement({
+      props: () => [...props, elementProps, defaultProps],
+      state: stateValue,
+      stateAttributesMapping: stateAttributesMapping ?? {},
+      className: () => className,
+      style: () => style,
+      render: () => render,
+      children: () => children,
+      defaultTag: () => tag,
+      // 原实现 render 函数形式不带 ref（与全库其他组件不同），保持行为。
+      refToRender: false,
+    });
 
     return (
       <CompositeRootContext.Provider value={contextValue as any}>
@@ -144,7 +118,7 @@ export function CompositeRoot<Metadata extends {}, State extends Record<string, 
             onMapChangeUnwrapped(newMap);
           }}
         >
-          {element}
+          {element()}
         </CompositeList>
       </CompositeRootContext.Provider>
     );

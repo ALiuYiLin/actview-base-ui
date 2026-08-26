@@ -1,9 +1,10 @@
-import { computed, defineComponent, toValue } from 'actview';
+import { computed, toRefs, toValue, unrefs } from 'actview';
 import type { ComputedRef } from 'actview';
 import { useControlled } from '@/utils/useControlled';
 import { EMPTY_ARRAY } from '@/utils/empty';
 import type { BaseUIComponentProps, HTMLProps, Orientation } from '@/internals/types';
 import { CompositeRoot } from '@/internals/composite/root/CompositeRoot';
+import { useRenderElement } from '@/internals/useRenderElement';
 import { ToggleGroupContext } from './ToggleGroupContext';
 import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
@@ -11,40 +12,53 @@ import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
 import type { StateAttributesMapping } from '@/internals/getStateAttributesProps';
 import { useToolbarRootContext } from '@/toolbar/root/ToolbarRootContext';
 import { useToolbarGroupContext } from '@/toolbar/group/ToolbarGroupContext';
-import type { Ref } from 'actview';
 
 /**
  * Provides a shared state to a series of toggle buttons.
  *
  * Documentation: [Base UI Toggle Group](https://base-ui.com/react/components/toggle-group)
+ *
+ * 裸函数组件写法（插件转换）：函数体 = setup（执行一次），最后 return JSX
+ * 作为渲染模板——JSX 里 refs 自动解包（solid 风格编译）。
  */
-export const ToggleGroup = defineComponent(function <Value extends string>(
-  componentProps: ToggleGroup.Props<Value>,
-) {
-  // ============ setup（只执行一次）：一次性初始化 ============
-  const defaultValueProp = toValue(componentProps.defaultValue);
-  const disabledProp = toValue(componentProps.disabled) ?? false;
-  const loopFocus = toValue(componentProps.loopFocus) ?? true;
-  const onValueChange = componentProps.onValueChange;
-  const orientation = toValue(componentProps.orientation) ?? 'horizontal';
-  const multiple = toValue(componentProps.multiple) ?? false;
-  const valueProp = toValue(componentProps.value);
-
-  const defaultValue = defaultValueProp ?? EMPTY_ARRAY;
-  // Use the raw prop to distinguish an omitted value from the empty default.
-  const isValueInitialized = valueProp !== undefined || defaultValueProp !== undefined;
+export function ToggleGroup<Value extends string>(props: ToggleGroup.Props<Value>) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
+  const {
+    className,
+    render,
+    style,
+    children,
+    defaultValue,
+    value,
+    disabled,
+    loopFocus,
+    multiple,
+    onValueChange,
+    orientation,
+    ...elementProps
+  } = toRefs(props);
 
   const toolbarContextRef = useToolbarRootContext(true);
   const toolbarGroupContextRef = useToolbarGroupContext();
 
-  const disabled =
-    (toolbarContextRef.value?.disabled ?? false) ||
-    (toolbarGroupContextRef.value?.disabled ?? false) ||
-    disabledProp;
+  // 用 raw prop 区分"省略 value"与"空数组默认值"。
+  const isValueInitialized = computed(
+    () => value?.value !== undefined || defaultValue?.value !== undefined,
+  );
+
+  const disabledState = computed(
+    () =>
+      (toolbarContextRef.value?.disabled ?? false) ||
+      (toolbarGroupContextRef.value?.disabled ?? false) ||
+      (disabled?.value ?? false),
+  );
+
+  const multipleState = computed(() => multiple?.value ?? false);
+  const orientationState = computed(() => orientation?.value ?? 'horizontal');
 
   const [groupValue, setValueState] = useControlled({
-    controlled: valueProp,
-    default: defaultValue,
+    controlled: () => value?.value,
+    default: computed(() => defaultValue?.value ?? EMPTY_ARRAY),
     name: 'ToggleGroup',
     state: 'value',
   });
@@ -54,9 +68,9 @@ export const ToggleGroup = defineComponent(function <Value extends string>(
     nextPressed: boolean,
     eventDetails: BaseUIChangeEventDetails<typeof REASONS.none>,
   ) => {
-    const currentGroupValue = toValue(groupValue) as Value[];
+    const currentGroupValue = (toValue(groupValue) ?? []).slice();
     let newGroupValue: Value[];
-    if (multiple) {
+    if (multipleState.value) {
       newGroupValue = currentGroupValue.slice();
       if (nextPressed) {
         newGroupValue.push(newValue);
@@ -67,7 +81,7 @@ export const ToggleGroup = defineComponent(function <Value extends string>(
       newGroupValue = nextPressed ? [newValue] : [];
     }
 
-    onValueChange?.(newGroupValue, eventDetails);
+    onValueChange?.value?.(newGroupValue, eventDetails);
 
     if (eventDetails.isCanceled) {
       return;
@@ -76,87 +90,62 @@ export const ToggleGroup = defineComponent(function <Value extends string>(
     setValueState(newGroupValue);
   };
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {className, render, style, ...elementProps} = componentProps;
+  const stateValue = computed<ToggleGroupState>(() => ({
+    disabled: disabledState.value,
+    multiple: multipleState.value,
+    orientation: orientationState.value,
+  }));
 
-    const stateValue: ToggleGroupState = {disabled, multiple, orientation};
+  const contextValue = computed<ToggleGroupContext<Value>>(() => ({
+    disabled: disabledState.value,
+    setGroupValue,
+    value: groupValue as unknown as ComputedRef<readonly Value[]>,
+    isValueInitialized: isValueInitialized.value,
+  }));
 
-    const contextValue: ToggleGroupContext<Value> = {
-      disabled,
-      setGroupValue,
-      value: groupValue as ComputedRef<readonly Value[]>,
-      isValueInitialized,
-    };
+  const stateAttributes = computed(() =>
+    getStateAttributesProps(stateValue.value, toggleGroupStateAttributesMapping),
+  );
 
-    const stateAttributes = getStateAttributesProps(
-      stateValue,
-      toggleGroupStateAttributesMapping,
-    );
+  const defaultProps: HTMLProps = {role: 'group'};
 
-    const defaultProps: HTMLProps = {
-      role: 'group',
-    };
+  // 合并 + 渲染统一工具（含 className/style 函数形式、render prop 分支）。
+  const {merged, element: toolbarElement} = useRenderElement({
+    props: () => [defaultProps, unrefs(elementProps)],
+    state: stateValue,
+    stateAttributesMapping: toggleGroupStateAttributesMapping,
+    className,
+    style,
+    render,
+    children,
+  });
 
-    const merged: HTMLProps = {};
-    Object.assign(merged, defaultProps, elementProps, stateAttributes);
-    if (typeof className === 'function') {
-      merged.className = className(stateValue);
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof style === 'function') {
-      merged.style = style(stateValue);
-    } else if (style !== undefined) {
-      merged.style = style;
-    }
-
-    const element = (refs?: Array<((el: HTMLElement | null) => void) | Ref<HTMLElement | null>>) => {
-      if (render) {
-        if (typeof render === 'function') {
-          return render({...merged, ...stateValue, ref: refs?.[0]} as any);
-        }
-        const renderProps = render.props ?? {};
-        const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-        const Tag = render.type as any;
-        const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-        mergedRenderProps.className =
-          typeof merged.className === 'string' && typeof renderClassName === 'string'
-            ? `${merged.className} ${renderClassName}`.trim()
-            : (merged.className ?? renderClassName);
-        mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-        return <Tag key={render.key} {...mergedRenderProps} ref={refs?.[0]} />;
-      }
-      return <div {...merged}>{componentProps.children}</div>;
-    };
-
-    const toolbarContext = toolbarContextRef.value;
-
-    return (
-      <ToggleGroupContext.Provider value={contextValue as any}>
-        {toolbarContext ? (
-          element()
-        ) : (
-          <CompositeRoot
-            render={undefined}
-            className={undefined}
-            style={undefined}
-            state={stateValue}
-            refs={[]}
-            props={[defaultProps, elementProps, stateAttributes]}
-            loopFocus={loopFocus}
-            enableHomeAndEndKeys
-            orientation={orientation}
-          >
-            {componentProps.children}
-          </CompositeRoot>
-        )}
-      </ToggleGroupContext.Provider>
-    );
-  };
-}) as unknown as <Value extends string>(
-  props: ToggleGroup.Props<Value>,
-) => JSX.Element;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return (
+    <ToggleGroupContext.Provider value={contextValue.value}>
+      {toolbarContextRef.value ? (
+        toolbarElement()
+      ) : (
+        <CompositeRoot
+          render={undefined}
+          state={stateValue.value}
+          refs={[]}
+          props={[
+            defaultProps,
+            unrefs(elementProps),
+            stateAttributes.value,
+            {className: merged().className, style: merged().style},
+          ]}
+          loopFocus={loopFocus?.value ?? true}
+          enableHomeAndEndKeys
+          orientation={orientationState.value}
+        >
+          {children?.value}
+        </CompositeRoot>
+      )}
+    </ToggleGroupContext.Provider>
+  );
+}
 
 export interface ToggleGroupState {
   /**
