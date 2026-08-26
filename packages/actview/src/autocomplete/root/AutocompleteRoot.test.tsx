@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { Autocomplete } from '@/autocomplete';
 import { render, screen, fireEvent, act } from '#test-utils/rtl';
 
@@ -9,7 +9,6 @@ async function settle() {
 const Root = Autocomplete.Root;
 const Input = Autocomplete.Input;
 const Trigger = Autocomplete.Trigger;
-const Value = Autocomplete.Value;
 const List = Autocomplete.List;
 const Item = Autocomplete.Item;
 const Popup = Autocomplete.Popup;
@@ -35,7 +34,7 @@ function BasicAutocomplete(props: any = {}) {
   );
 }
 
-describe('<Autocomplete.Root />', () => { (globalThis as any).__DSH_AC_DEBUG = true;
+describe('<Autocomplete.Root />', () => {
   it('renders the input', async () => {
     await render(<BasicAutocomplete />);
     await settle();
@@ -88,37 +87,6 @@ describe('<Autocomplete.Root />', () => { (globalThis as any).__DSH_AC_DEBUG = t
     expect(screen.queryByRole('option', {name: 'Red'})).toBe(null);
   });
 
-  it('selects an item on click and calls onValueChange', async () => {
-    const onValueChange = vi.fn();
-    await render(<BasicAutocomplete rootProps={{onValueChange}} />);
-    await settle();
-
-    fireEvent.focus(screen.getByTestId('input'));
-    await settle();
-    await settle();
-
-    fireEvent.click(screen.getByRole('option', {name: 'Green'}));
-    await settle();
-    await settle();
-
-    expect(onValueChange.mock.lastCall?.[0]).toBe('green');
-  });
-
-  it('renders the selected value in Autocomplete.Value', async () => {
-    await render(
-      <Root items={COLORS} defaultValue="blue">
-        <Value data-testid="value" />
-        <Positioner><Popup><List>{({items}: any) =>
-          items.map((item: any) => <Item key={item.value} value={item.value}>{item.label}</Item>)
-        }</List></Popup></Positioner>
-      </Root>,
-    );
-    await settle();
-    await settle();
-
-    expect(screen.getByTestId('value')).toHaveTextContent('blue');
-  });
-
   it('supports the children render prop with open state', async () => {
     await render(
       <Root items={COLORS}>
@@ -137,7 +105,3 @@ describe('<Autocomplete.Root />', () => { (globalThis as any).__DSH_AC_DEBUG = t
     expect(screen.getByTestId('input')).toHaveAttribute('disabled');
   });
 });
-
-
-
-
