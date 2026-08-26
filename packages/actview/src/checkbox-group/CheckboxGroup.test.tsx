@@ -407,5 +407,15 @@ describe('<CheckboxGroup />', () => {
       expect(validateSpy).toHaveBeenCalledTimes(2);
       expect(validateSpy.mock.lastCall?.[0]).toEqual([]);
     });
+
+    it('updates disabled state when the prop changes dynamically', async () => {
+      const {setProps} = await render(CheckboxGroup, {'data-testid': 'group'});
+
+      const group = screen.getByTestId('group');
+      expect(group).not.toHaveAttribute('data-disabled');
+
+      await setProps({disabled: true});
+      expect(group).toHaveAttribute('data-disabled');
+    });
   });
 });

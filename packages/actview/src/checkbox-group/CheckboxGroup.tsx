@@ -43,12 +43,14 @@ export function CheckboxGroup(componentProps: CheckboxGroup.Props) {
   const {labelId, registerControlId, getDescriptionProps} = toValue(useLabelableContext());
   const {clearErrors, elementRef} = toValue(useFormContext());
 
-  const disabledProp = toValue(componentProps.disabled) ?? false;
   const defaultValueProp = toValue(componentProps.defaultValue);
   const idProp = toValue(componentProps.id);
   const onValueChange = componentProps.onValueChange;
 
-  const disabled = fieldDisabled.value || disabledProp;
+  // setup 快照（用于 useRegisterFieldControl 等 setup 期注册）；渲染期的
+  // contextValue/stateFn 会重新计算 disabled（Field.Root 或本组件 disabled
+  // 动态变化时实时生效——见下方注释）。
+  const disabled = fieldDisabled.value || (toValue(componentProps.disabled) ?? false);
   const defaultValue = defaultValueProp ?? EMPTY_ARRAY;
 
   const [value, setValueUnwrapped] = useControlled<string[]>({
@@ -139,12 +141,13 @@ export function CheckboxGroup(componentProps: CheckboxGroup.Props) {
 
   // computed：value/disabled/allValues 变化时重建 contextValue（新对象引用）——
   // Provider 只响应 value 引用变化，setup 快照对象会导致子组件不重渲染。
+  // disabled 在 getter 内渲染期求值（componentProps 响应式）——动态变化实时生效。
   const contextValue = computed(() => ({
     allValues: toValue(componentProps.allValues),
     value,
     setValue,
     parent,
-    disabled,
+    disabled: fieldDisabled.value || (toValue(componentProps.disabled) ?? false),
     validation,
     registerControlId,
   }));
@@ -152,7 +155,10 @@ export function CheckboxGroup(componentProps: CheckboxGroup.Props) {
   // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
   const {className, render, style, children, ...elementProps} = toRefs(componentProps);
 
-  const stateFn = (): CheckboxGroupState => ({...fieldState.value, disabled});
+  const stateFn = (): CheckboxGroupState => ({
+    ...fieldState.value,
+    disabled: fieldDisabled.value || (toValue(componentProps.disabled) ?? false),
+  });
 
   const {element} = useRenderElement({
     props: () => {
