@@ -20,17 +20,20 @@ export function MeterLabel(componentProps: MeterLabel.Props) {
 
   const rootContextRef = useMeterRootContext();
 
+  // useLabel 必须在 setup 调用（useRegisteredLabelId 含 watch/computed/
+  // onUnmounted——渲染期调用会每次渲染累积副作用）。
+  // setLabelId 是 Root 的稳定函数（setup 定义一次），setup 快照安全。
+  const {setLabelId} = rootContextRef.value;
+  const labelProps = useLabel({
+    setLabelId: setLabelId as any,
+    id: (componentProps as any).id,
+  });
+
   // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
   const {render, className, style, children, ...elementProps} = toRefs(componentProps);
 
   const {element} = useRenderElement({
     props: () => {
-      const {setLabelId} = rootContextRef.value;
-
-      const labelProps = useLabel({
-        setLabelId: setLabelId as any,
-      });
-
       // Keep label id derived from the root and ignore runtime `id` overrides from untyped consumers.
       const elementPropsWithoutId = {...unrefs(elementProps)} as any;
       delete elementPropsWithoutId.id;
