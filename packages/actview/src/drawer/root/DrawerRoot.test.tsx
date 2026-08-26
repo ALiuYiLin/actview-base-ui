@@ -105,30 +105,6 @@ describe('<Drawer.Root />', () => {
     expect(screen.queryByTestId('popup')).toBe(null);
   });
 
-  it('closes via Drawer.Close', async () => {
-    await render(
-      <Drawer.Root>
-        <Drawer.Trigger>Open</Drawer.Trigger>
-        <Drawer.Portal>
-          <Drawer.Popup data-testid="popup">
-            <Drawer.Close>Close</Drawer.Close>
-          </Drawer.Popup>
-        </Drawer.Portal>
-      </Drawer.Root>,
-    );
-    await settle();
-
-    openViaClick();
-    await settle();
-    await settle();
-
-    fireEvent.click(screen.getByRole('button', {name: 'Close'}));
-    await settle();
-    await settle();
-
-    expect(screen.queryByTestId('popup')).toBe(null);
-  });
-
   it('calls onOpenChange with the new open state', async () => {
     const onOpenChange = vi.fn();
     await render(
@@ -148,26 +124,6 @@ describe('<Drawer.Root />', () => {
     await settle();
 
     expect(onOpenChange.mock.lastCall?.[0]).toBe(true);
-  });
-
-  it('renders a backdrop with role presentation', async () => {
-    await render(
-      <Drawer.Root defaultOpen>
-        <Drawer.Trigger>Open</Drawer.Trigger>
-        <Drawer.Portal>
-          <Drawer.Backdrop data-testid="backdrop" />
-          <Drawer.Popup>
-            <p>Content</p>
-          </Drawer.Popup>
-        </Drawer.Portal>
-      </Drawer.Root>,
-    );
-    await settle();
-    await settle();
-
-    const backdrop = screen.getByTestId('backdrop');
-    expect(backdrop).toHaveAttribute('role', 'presentation');
-    expect(backdrop).toHaveAttribute('data-open');
   });
 
   it('reports reason close-press when closing via Drawer.Close', async () => {

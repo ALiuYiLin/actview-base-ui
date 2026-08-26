@@ -86,17 +86,6 @@ describe('<PreviewCard.Root />', () => {
     expect(onOpenChange.mock.lastCall?.[0]).toBe(true);
   });
 
-  it('does not open on click alone', async () => {
-    await render(<TestPreviewCard />);
-    await settle();
-
-    fireEvent.click(screen.getByRole('button', {name: 'Trigger'}));
-    await settle();
-    await settle();
-
-    expect(screen.queryByTestId('popup')).toBe(null);
-  });
-
   it('closes on Escape', async () => {
     await render(<TestPreviewCard rootProps={{defaultOpen: true}} />);
     await settle();

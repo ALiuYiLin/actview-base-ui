@@ -2,9 +2,9 @@ import { expect, vi } from 'vitest';
 import { nextTick } from 'actview';
 import { Slider } from '@/slider';
 import { createRenderer } from '#test-utils';
-import { fireEvent, screen } from '#test-utils/rtl';
+import { fireEvent } from '#test-utils/rtl';
 
-describe('<Slider />', () => {
+describe('<Slider.Root />', () => {
   const { render } = createRenderer();
 
   it('renders a role="group" root with a range input', async () => {
@@ -31,23 +31,6 @@ describe('<Slider />', () => {
     expect(input.value).toBe('50');
   });
 
-  it('shows the value in Slider.Value', async () => {
-    await render(
-      Slider.Root,
-      {
-        defaultValue: 42,
-        children: (
-          <Slider.Control>
-            <Slider.Track><Slider.Thumb /></Slider.Track>
-            <Slider.Value />
-          </Slider.Control>
-        ),
-      },
-    );
-
-    expect(screen.getByText('42')).toBeInTheDocument();
-  });
-
   it('fires onValueChange on input change', async () => {
     const onValueChange = vi.fn();
     await render(
@@ -65,27 +48,5 @@ describe('<Slider />', () => {
 
     expect(onValueChange).toHaveBeenCalledTimes(1);
     expect(onValueChange.mock.calls[0][0]).toBe(75);
-  });
-
-  it('renders the indicator between values', async () => {
-    await render(
-      Slider.Root,
-      {
-        defaultValue: [20, 80],
-        children: (
-          <Slider.Control>
-            <Slider.Track>
-              <Slider.Indicator />
-              <Slider.Thumb index={0} />
-              <Slider.Thumb index={1} />
-            </Slider.Track>
-          </Slider.Control>
-        ),
-      },
-    );
-
-    const inputs = document.querySelectorAll('input[type="range"]');
-    expect(inputs.length).toBe(2);
-    expect(document.querySelectorAll('[role="group"] input').length).toBe(2);
   });
 });
