@@ -34,11 +34,10 @@ import {
  *
  * Documentation: [Base UI PreviewCard](https://base-ui.com/react/components/preview-card)
  */
-export const PreviewCardRoot = defineComponent(function PreviewCardRoot<Payload = unknown>(
+export function PreviewCardRoot<Payload = unknown>(
   props: PreviewCardRoot.Props<Payload>,
 ) {
   const {
-    children,
     open: openProp,
     defaultOpen = false,
     onOpenChange,
@@ -219,17 +218,22 @@ export const PreviewCardRoot = defineComponent(function PreviewCardRoot<Payload 
 
   const shouldRenderInteractions = () => open.value || mounted.value;
 
-  return () => {
-    const child = toValue(children);
-    return (
-      <PreviewCardRootContext.Provider value={store as unknown as PreviewCardRootContext<unknown>}>
-        {handle && <PopupHandleAttachment handle={handle} store={store} />}
-        {shouldRenderInteractions() && <PreviewCardInteractions store={store} modal={modal} />}
-        {typeof child === 'function' ? child({payload: payload.value}) : child}
-      </PreviewCardRootContext.Provider>
-    );
-  };
-});
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  // children（render-prop 或 vnode）渲染期从 props 读取（PD-15）
+  return (
+    <PreviewCardRootContext.Provider value={store as unknown as PreviewCardRootContext<unknown>}>
+      {handle && <PopupHandleAttachment handle={handle} store={store} />}
+      {shouldRenderInteractions() && <PreviewCardInteractions store={store} modal={modal} />}
+      {(() => {
+        const rawChildren = (props as any).children;
+        const child = typeof rawChildren === 'function' ? rawChildren : toValue(rawChildren);
+        return typeof child === 'function'
+          ? (child as PayloadChildRenderFunction<Payload>)({payload: payload.value})
+          : child;
+      })()}
+    </PreviewCardRootContext.Provider>
+  );
+}
 
 function usePreviewCardRootStore<Payload>(
   handle: PreviewCardHandle<Payload> | undefined,

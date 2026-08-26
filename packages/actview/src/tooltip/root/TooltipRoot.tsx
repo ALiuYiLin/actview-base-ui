@@ -1,4 +1,4 @@
-import { defineComponent, onUnmounted, ref, toValue, watch } from 'actview';
+import { onUnmounted, ref, toValue, watch } from 'actview';
 import type { Ref } from 'actview';
 import { useId } from '@/utils/useId';
 import { useStableCallback } from '@/utils/useStableCallback';
@@ -29,9 +29,7 @@ import {
  *
  * Documentation: [Base UI Tooltip](https://base-ui.com/react/components/tooltip)
  */
-export const TooltipRoot = defineComponent(function TooltipRoot<Payload>(
-  props: TooltipRoot.Props<Payload>,
-) {
+export function TooltipRoot<Payload>(props: TooltipRoot.Props<Payload>) {
   const {
     disabled = false,
     defaultOpen = false,
@@ -43,7 +41,6 @@ export const TooltipRoot = defineComponent(function TooltipRoot<Payload>(
     handle,
     triggerId: triggerIdProp,
     defaultTriggerId: defaultTriggerIdProp = null,
-    children,
   } = props as any;
 
   const store = useTooltipRootStore<Payload>(handle, {
@@ -210,19 +207,25 @@ export const TooltipRoot = defineComponent(function TooltipRoot<Payload>(
 
   const shouldRenderInteractions = () => open.value || mounted.value;
 
-  return () => {
-    const child = toValue(children);
-    return (
-      <TooltipRootContext.Provider value={store as unknown as TooltipRootContext<unknown>}>
-        {handle && <PopupHandleAttachment handle={handle} store={store} />}
-        {shouldRenderInteractions() && (
-          <TooltipInteractions store={store} disabled={disabled} />
-        )}
-        {typeof child === 'function' ? (child as any)({payload: payload.value}) : child}
-      </TooltipRootContext.Provider>
-    );
-  };
-});
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  // children（render-prop 或 vnode）渲染期从 props 读取（PD-15）
+  return (
+    <TooltipRootContext.Provider value={store as unknown as TooltipRootContext<unknown>}>
+      {handle && <PopupHandleAttachment handle={handle} store={store} />}
+      {shouldRenderInteractions() && (
+        <TooltipInteractions store={store} disabled={disabled} />
+      )}
+      {(() => {
+        const rawChildren = (props as any).children;
+        const child =
+          typeof rawChildren === 'function' ? rawChildren : toValue(rawChildren);
+        return typeof child === 'function'
+          ? (child as PayloadChildRenderFunction<Payload>)({payload: payload.value})
+          : child;
+      })()}
+    </TooltipRootContext.Provider>
+  );
+}
 
 function useTooltipRootStore<Payload>(
   _handle: TooltipHandle<Payload> | undefined,

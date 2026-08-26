@@ -1,34 +1,30 @@
-import { defineComponent, toValue } from 'actview';
+import { toRefs, unrefs } from 'actview';
 import { useComboboxRootContext } from '../root/ComboboxRootContext';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /** Positions the popup. Renders a `<div>` element. actview 简化：无定位计算。 */
-export const ComboboxPositioner = defineComponent(function ComboboxPositioner(
-  props: ComboboxPositioner.Props,
-) {
+export function ComboboxPositioner(props: ComboboxPositioner.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
   const context = useComboboxRootContext(false);
-  const children = toValue(props.children);
+  const {render, className, style, children, ref, ...elementProps} = toRefs(props);
 
-  return () => {
-    const {render, className, style, ...elementProps} = props as any;
-    const merged: any = {...elementProps};
-    const ref = (el: any) => {
-      context.store.setPositionerElement(el ?? null);
-      if (props.ref) {
-        if (typeof props.ref === 'function') (props.ref as any)(el);
-        else {
-          (props.ref as any).value = el;
-          
-        }
-      }
-    };
-    if (render) {
-      if (typeof render === 'function') return render({...merged, ref} as any);
-      const Tag = render.type as any;
-      return <Tag {...render.props} {...merged} ref={ref}>{children}</Tag>;
-    }
-    return <div {...merged} ref={ref}>{children}</div>;
+  const positionerRef = (el: any) => {
+    context.store.setPositionerElement(el ?? null);
   };
-});
+
+  const {element} = useRenderElement({
+    props: () => [{...unrefs(elementProps)}],
+    className,
+    style,
+    render,
+    refs: () => (props.ref !== undefined ? [positionerRef, ref] : [positionerRef]),
+    children,
+    defaultTag: 'div',
+  });
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface ComboboxPositionerProps {
   children?: any;

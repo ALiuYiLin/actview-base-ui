@@ -67,6 +67,9 @@ export function useRenderElement<State extends Record<string, any>>(
     const mergedRefs = (el: HTMLElement | null) => {
       const refs = [...(toValue(options.refs) ?? []), ...(extraRefs ?? [])];
       for (const r of refs) {
+        if (!r) {
+          continue;
+        }
         const resolved =
           typeof r === 'function' ? r : (element: HTMLElement | null) => (r.value = element);
         resolved(el);
@@ -77,8 +80,19 @@ export function useRenderElement<State extends Record<string, any>>(
     if (renderValue) {
       if (typeof renderValue === 'function') {
         const renderFunctionProps = {...merged(), ...getState()};
+        const childrenValue = toValue(options.children);
+        if (childrenValue !== undefined) {
+          renderFunctionProps.children = childrenValue;
+        }
         if (options.refToRender !== false) {
-          renderFunctionProps.ref = mergedRefs;
+          // 单一非函数 ref（Ref 对象）直接透传（render 函数可读 `.value`——
+          // 对齐 React 契约）；多个 refs / 函数 refs 合并为 mergedRefs。
+          const refs = toValue(options.refs) ?? [];
+          if (refs.length === 1 && typeof refs[0] !== 'function') {
+            renderFunctionProps.ref = refs[0];
+          } else {
+            renderFunctionProps.ref = mergedRefs;
+          }
         }
         return renderValue(renderFunctionProps as any);
       }
@@ -93,9 +107,17 @@ export function useRenderElement<State extends Record<string, any>>(
           : (m.className ?? renderClassName);
       mergedRenderProps.style = Object.assign({}, m.style, renderStyle);
       if (options.refToRender !== false) {
-        return <Tag key={renderValue.key} {...mergedRenderProps} ref={mergedRefs} />;
+        return (
+          <Tag key={renderValue.key} {...mergedRenderProps} ref={mergedRefs}>
+            {toValue(options.children)}
+          </Tag>
+        );
       }
-      return <Tag key={renderValue.key} {...mergedRenderProps} />;
+      return (
+        <Tag key={renderValue.key} {...mergedRenderProps}>
+          {toValue(options.children)}
+        </Tag>
+      );
     }
 
     const Tag = (toValue(options.defaultTag) ?? 'div') as any;

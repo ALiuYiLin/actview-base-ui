@@ -1,11 +1,12 @@
-import { defineComponent, toValue, useRootElement } from 'actview';
-import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { toRefs, unrefs } from 'actview';
+import type { BaseUIComponentProps } from '@/internals/types';
 import { valueToPercent } from '@/utils/valueToPercent';
 import { useIsHydrating } from '@/utils/useIsHydrating';
 import { useSliderRootContext } from '../root/SliderRootContext';
 import { sliderStateAttributesMapping } from '../root/stateAttributesMapping';
-import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
 import type { SliderRootState } from '../root/SliderRoot';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useRootElementFragment } from '@/internals/useRootElementFragment';
 
 function getIndicatorStyles(
   vertical: boolean,
@@ -49,66 +50,59 @@ function getIndicatorStyles(
  *
  * Documentation: [Base UI Slider](https://base-ui.com/react/components/slider)
  */
-export const SliderIndicator = defineComponent(function (componentProps: SliderIndicator.Props) {
+export function SliderIndicator(componentProps: SliderIndicator.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  const rootRef = useRootElement();
+  // Fragment 根（`<>{element()}</>`）下 actview 内置 useRootElement 的
+  // subTree.el 恒 null——用 Fragment 兼容版本。
+  const rootRef = useRootElementFragment();
 
   const rootContextRef = useSliderRootContext();
 
   const isHydrating = useIsHydrating();
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {render, className, style: styleProp, ...elementProps} = componentProps;
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
 
-    const {indicatorPosition, inset, max, min, orientation, renderBeforeHydration, state, values} =
-      rootContextRef.value;
+  const {element} = useRenderElement({
+    props: () => {
+      const {indicatorPosition, inset, max, min, orientation, renderBeforeHydration, state, values} =
+        rootContextRef.value;
 
-    const vertical = orientation === 'vertical';
-    const range = values.length > 1;
+      const vertical = orientation === 'vertical';
+      const range = values.length > 1;
 
-    const style = getIndicatorStyles(
-      vertical,
-      range,
-      inset,
-      inset ? indicatorPosition[0] : valueToPercent(values[0], min, max),
-      inset ? indicatorPosition[1] : valueToPercent(values[values.length - 1], min, max),
-      inset && renderBeforeHydration && isHydrating,
-    );
+      const resolvedStyle =
+        typeof style?.value === 'function' ? style.value(state) : style?.value;
 
-    const stateValue = state;
-    const stateAttributes = getStateAttributesProps(stateValue, sliderStateAttributesMapping);
+      const merged: any = {
+        ...unrefs(elementProps),
+        style: Object.assign(
+          {},
+          getIndicatorStyles(
+            vertical,
+            range,
+            inset,
+            inset ? indicatorPosition[0] : valueToPercent(values[0], min, max),
+            inset ? indicatorPosition[1] : valueToPercent(values[values.length - 1], min, max),
+            inset && renderBeforeHydration && isHydrating,
+          ),
+          resolvedStyle,
+        ),
+      };
+      return [merged];
+    },
+    state: () => rootContextRef.value.state,
+    stateAttributesMapping: sliderStateAttributesMapping as any,
+    className,
+    render,
+    refs: () => [rootRef as any],
+    children,
+    defaultTag: 'div',
+  });
 
-    const merged: HTMLProps = {};
-    Object.assign(merged, elementProps, stateAttributes, {style});
-    if (typeof className === 'function') {
-      merged.className = className(stateValue);
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof styleProp === 'function') {
-      merged.style = Object.assign({}, style, styleProp(stateValue));
-    } else if (styleProp !== undefined) {
-      merged.style = Object.assign({}, style, styleProp);
-    }
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ...stateValue, ref: rootRef} as any);
-      }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof merged.className === 'string' && typeof renderClassName === 'string'
-          ? `${merged.className} ${renderClassName}`.trim()
-          : (merged.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={rootRef} />;
-    }
-    return <div {...merged} ref={rootRef} />;
-  };
-}) as unknown as (props: SliderIndicator.Props) => JSX.Element;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface SliderIndicatorState extends SliderRootState {}
 

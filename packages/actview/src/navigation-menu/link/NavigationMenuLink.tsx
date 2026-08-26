@@ -1,41 +1,40 @@
-import { defineComponent, toValue } from 'actview';
+import { toRefs, unrefs } from 'actview';
 import { useNavigationMenuRootContext } from '../root/NavigationMenuRootContext';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /** A link in the navigation menu. Renders an `<a>` element. */
-export const NavigationMenuLink = defineComponent(function NavigationMenuLink(
-  componentProps: NavigationMenuLink.Props,
-) {
-  const children = toValue(componentProps.children);
+export function NavigationMenuLink(componentProps: NavigationMenuLink.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
   const context = useNavigationMenuRootContext(true);
+  const {render, className, style, children, ref: refProp, value, ...elementProps} =
+    toRefs(componentProps);
 
-  return () => {
-    const {render, className, style, value, ...elementProps} = componentProps as any;
-    const merged: any = {
-      ...elementProps,
-      href: elementProps.href ?? '#',
-      onClick: () => {
-        if (value != null) {
-          context?.setValue?.(value);
-        }
-      },
-    };
-    const ref = (el: any) => {
-      if (componentProps.ref) {
-        if (typeof componentProps.ref === 'function') (componentProps.ref as any)(el);
-        else {
-          (componentProps.ref as any).value = el;
-          
-        }
-      }
-    };
-    if (render) {
-      if (typeof render === 'function') return render({...merged, ref} as any);
-      const Tag = render.type as any;
-      return <Tag {...render.props} {...merged} ref={ref}>{children}</Tag>;
-    }
-    return <a {...merged} ref={ref}>{children}</a>;
-  };
-});
+  const {element} = useRenderElement({
+    props: () => {
+      const elementPropsValue = unrefs(elementProps);
+      return [
+        {
+          ...elementPropsValue,
+          href: elementPropsValue.href ?? '#',
+          onClick: () => {
+            if (value?.value != null) {
+              context?.setValue?.(value.value);
+            }
+          },
+        },
+      ];
+    },
+    className,
+    style,
+    render,
+    refs: () => (componentProps.ref !== undefined ? [refProp as any] : []),
+    children,
+    defaultTag: 'a',
+  });
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface NavigationMenuLinkProps {
   /**

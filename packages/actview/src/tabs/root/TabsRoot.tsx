@@ -1,7 +1,7 @@
-import {defineComponent, rawRef, ref, toValue, watch, shallowRef} from 'actview';
+import {rawRef, ref, toValue, watch, shallowRef, toRefs, unrefs} from 'actview';
 import type { Ref } from 'actview';
 import { useControlled } from '@/utils/useControlled';
-import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import type { BaseUIComponentProps } from '@/internals/types';
 import { CompositeList } from '@/internals/composite/list/CompositeList';
 import type { CompositeMetadata } from '@/internals/composite/list/CompositeList';
 import { TabsRootContext } from './TabsRootContext';
@@ -11,7 +11,7 @@ import type { TabsPanel } from '../panel/TabsPanel';
 import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
-import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 function findTabElement(
   tabMap: Map<Node, CompositeMetadata<TabsTab.Metadata>>,
@@ -77,7 +77,7 @@ function computeActivationDirection(
  *
  * Documentation: [Base UI Tabs](https://base-ui.com/react/components/tabs)
  */
-export const TabsRoot = defineComponent(function (componentProps: TabsRoot.Props) {
+export function TabsRoot(componentProps: TabsRoot.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
   const defaultValueProp = toValue(componentProps.defaultValue);
   const onValueChangeProp = componentProps.onValueChange;
@@ -346,69 +346,47 @@ export const TabsRoot = defineComponent(function (componentProps: TabsRoot.Props
     {flush: 'post', immediate: true},
   );
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {className, render, style, ...elementProps} = componentProps;
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
 
-    const tabsContextValue: TabsRootContext = {
-      getTabElementBySelectedValue,
-      getTabIdByPanelValue,
-      getTabPanelIdByValue,
-      onValueChange,
-      orientation,
-      registerMountedTabPanel,
-      setTabMap,
-      tabActivationDirection,
-      value: value.value,
-    };
+  const stateFn = (): TabsRootState => ({
+    orientation,
+    tabActivationDirection,
+  });
 
-    const stateValue: TabsRootState = {
-      orientation,
-      tabActivationDirection,
-    };
+  const {element} = useRenderElement({
+    props: () => [{...unrefs(elementProps)}],
+    state: stateFn,
+    stateAttributesMapping: tabsStateAttributesMapping as any,
+    className,
+    style,
+    render,
+    children,
+    defaultTag: 'div',
+  });
 
-    const stateAttributes = getStateAttributesProps(stateValue, tabsStateAttributesMapping);
-
-    const merged: HTMLProps = {};
-    Object.assign(merged, elementProps, stateAttributes);
-    if (typeof className === 'function') {
-      merged.className = className(stateValue);
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof style === 'function') {
-      merged.style = style(stateValue);
-    } else if (style !== undefined) {
-      merged.style = style;
-    }
-
-    let element: any;
-    if (render) {
-      if (typeof render === 'function') {
-        element = render({...merged, ...stateValue} as any);
-      } else {
-        const renderProps = render.props ?? {};
-        const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-        const Tag = render.type as any;
-        const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-        mergedRenderProps.className =
-          typeof merged.className === 'string' && typeof renderClassName === 'string'
-            ? `${merged.className} ${renderClassName}`.trim()
-            : (merged.className ?? renderClassName);
-        mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-        element = <Tag key={render.key} {...mergedRenderProps} />;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  // Provider 根（`<TabsRootContext.Provider>`）——contextValue 渲染期构建（PD-15）。
+  return (
+    <TabsRootContext.Provider
+      value={
+        {
+          getTabElementBySelectedValue,
+          getTabIdByPanelValue,
+          getTabPanelIdByValue,
+          onValueChange,
+          orientation,
+          registerMountedTabPanel,
+          setTabMap,
+          tabActivationDirection,
+          value: value.value,
+        } as any
       }
-    } else {
-      element = <div {...merged}>{componentProps.children}</div>;
-    }
-
-    return (
-      <TabsRootContext.Provider value={tabsContextValue as any}>
-        <CompositeList elementsRef={rawRef(tabPanelRefs)}>{element}</CompositeList>
-      </TabsRootContext.Provider>
-    );
-  };
-}) as unknown as (props: TabsRoot.Props) => JSX.Element;
+    >
+      <CompositeList elementsRef={rawRef(tabPanelRefs)}>{element()}</CompositeList>
+    </TabsRootContext.Provider>
+  );
+}
 
 export type TabsRootOrientation = 'horizontal' | 'vertical';
 

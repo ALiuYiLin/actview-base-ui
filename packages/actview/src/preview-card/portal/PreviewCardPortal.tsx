@@ -1,4 +1,3 @@
-import { defineComponent, toValue } from 'actview';
 import { FloatingPortal } from '@/floating-ui-react';
 import { usePreviewCardRootContext } from '../root/PreviewCardRootContext';
 import { PreviewCardPortalContext } from './PreviewCardPortalContext';
@@ -11,25 +10,30 @@ import type { Ref } from 'actview';
  *
  * Documentation: [Base UI PreviewCard](https://base-ui.com/react/components/preview-card)
  */
-export const PreviewCardPortal = defineComponent(function PreviewCardPortal(props: PreviewCardPortal.Props) {
-  const {keepMounted = false, ...portalProps} = props;
-
+export function PreviewCardPortal(props: PreviewCardPortal.Props) {
   const store = usePreviewCardRootContext(false);
   const mounted = store.useState('mounted');
 
-  return () => {
-    const shouldRender = mounted.value || keepMounted;
-    if (!shouldRender) {
-      return null;
-    }
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  // props（keepMounted/portalProps）渲染期读取（PD-15）
+  return (
+    <>
+      {(() => {
+        const {keepMounted = false, ...portalProps} = props;
+        const shouldRender = mounted.value || keepMounted;
+        if (!shouldRender) {
+          return null;
+        }
 
-    return (
-      <PreviewCardPortalContext.Provider value={keepMounted}>
-        <FloatingPortal {...(portalProps as any)} />
-      </PreviewCardPortalContext.Provider>
-    );
-  };
-});
+        return (
+          <PreviewCardPortalContext.Provider value={keepMounted}>
+            <FloatingPortal {...(portalProps as any)} />
+          </PreviewCardPortalContext.Provider>
+        );
+      })()}
+    </>
+  );
+}
 
 export interface PreviewCardPortalState {}
 

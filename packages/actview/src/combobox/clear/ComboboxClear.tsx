@@ -1,39 +1,36 @@
-import { defineComponent, toValue } from 'actview';
+import { toRefs, unrefs } from 'actview';
 import { useComboboxRootContext } from '../root/ComboboxRootContext';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /** Clears the selected value. Renders a `<button>` element. */
-export const ComboboxClear = defineComponent(function ComboboxClear(props: ComboboxClear.Props) {
+export function ComboboxClear(props: ComboboxClear.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
   const context = useComboboxRootContext(false);
-  const children = toValue(props.children);
+  const {render, className, style, children, ref, ...elementProps} = toRefs(props);
 
-  return () => {
-    const {render, className, style, ...elementProps} = props as any;
-    const merged: any = {
-      type: 'button',
-      'aria-label': 'Clear',
-      ...elementProps,
-      onClick: () => {
-        context.store.setSelectedValue(undefined);
-        context.setInputValue('');
+  const {element} = useRenderElement({
+    props: () => [
+      {
+        type: 'button',
+        'aria-label': 'Clear',
+        ...unrefs(elementProps),
+        onClick: () => {
+          context.store.setSelectedValue(undefined);
+          context.setInputValue('');
+        },
       },
-    };
-    const ref = (el: any) => {
-      if (props.ref) {
-        if (typeof props.ref === 'function') (props.ref as any)(el);
-        else {
-          (props.ref as any).value = el;
-          
-        }
-      }
-    };
-    if (render) {
-      if (typeof render === 'function') return render({...merged, ref} as any);
-      const Tag = render.type as any;
-      return <Tag {...render.props} {...merged} ref={ref}>{children}</Tag>;
-    }
-    return <button {...merged} ref={ref}>{children}</button>;
-  };
-});
+    ],
+    className,
+    style,
+    render,
+    refs: () => (props.ref !== undefined ? [ref] : []),
+    children,
+    defaultTag: 'button',
+  });
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface ComboboxClearProps {
   children?: any;

@@ -1,4 +1,4 @@
-import {defineComponent, toValue, watch, ref} from 'actview';
+import {watch, ref} from 'actview';
 import { inertValue } from '@/utils/inertValue';
 import { usePopoverRootContext } from '../root/PopoverRootContext';
 import { PopoverPositionerContext } from './PopoverPositionerContext';
@@ -23,9 +23,8 @@ import { useAnchoredPopupScrollLock } from '@/utils/useAnchoredPopupScrollLock';
  *
  * Documentation: [Base UI Popover](https://base-ui.com/react/components/popover)
  */
-export const PopoverPositioner = defineComponent(function PopoverPositioner(
-  componentProps: PopoverPositioner.Props,
-) {
+export function PopoverPositioner(componentProps: PopoverPositioner.Props) {
+  // ============ setup（只执行一次） ============
   const {
     anchor,
     positionMethod,
@@ -117,14 +116,14 @@ export const PopoverPositioner = defineComponent(function PopoverPositioner(
     triggerElement.value as HTMLElement | null,
   );
 
-  const state: PopoverPositionerState = {
+  const state = (): PopoverPositionerState => ({
     open: open.value,
     side: positioner.side,
     align: positioner.align,
     anchorHidden: positioner.anchorHidden,
     instant: instantType.value as any,
     transitionStatus: transitionStatus.value as any,
-  };
+  });
 
   const element = usePositioner(componentProps as any, state as any, {
     styles: positioner.positionerStyles,
@@ -135,7 +134,8 @@ export const PopoverPositioner = defineComponent(function PopoverPositioner(
     inert: () => !open.value,
   }) as any;
 
-  return () => (
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return (
     <PopoverPositionerContext.Provider value={positioner as any}>
       {mounted.value && trueModalNonHover() && (
         <InternalBackdrop inert={inertValue(!open.value)} cutout={triggerElement.value} />
@@ -143,7 +143,7 @@ export const PopoverPositioner = defineComponent(function PopoverPositioner(
       {element()}
     </PopoverPositionerContext.Provider>
   );
-});
+}
 
 export interface PopoverPositionerState {
   /**

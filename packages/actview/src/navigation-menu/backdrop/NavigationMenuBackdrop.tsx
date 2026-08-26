@@ -1,28 +1,26 @@
-import { defineComponent, computed, toValue } from 'actview';
+import { toRefs, unrefs, computed } from 'actview';
 import { useNavigationMenuRootContext } from '../root/NavigationMenuRootContext';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /** A backdrop for the popup. Renders a `<div>` element. */
-export const NavigationMenuBackdrop = defineComponent(function NavigationMenuBackdrop(
-  props: NavigationMenuBackdrop.Props,
-) {
-  const children = toValue(props.children);
+export function NavigationMenuBackdrop(props: NavigationMenuBackdrop.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
+  const {render, className, style, children, ...elementProps} = toRefs(props);
   const context = useNavigationMenuRootContext(false);
   const open = computed(() => context.openRef.value);
 
-  return () => {
-    if (!open.value) {
-      return null;
-    }
-    const {render, className, style, ...elementProps} = props as any;
-    const merged: any = {...elementProps};
-    if (render) {
-      if (typeof render === 'function') return render({...merged} as any);
-      const Tag = render.type as any;
-      return <Tag {...render.props} {...merged} />;
-    }
-    return <div {...merged}>{children}</div>;
-  };
-});
+  const {element} = useRenderElement({
+    props: () => [{...unrefs(elementProps)}],
+    className,
+    style,
+    render,
+    children,
+    defaultTag: 'div',
+  });
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{!open.value ? null : element()}</>;
+}
 
 export interface NavigationMenuBackdropProps {
   children?: any;

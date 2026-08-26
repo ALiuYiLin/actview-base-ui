@@ -1,12 +1,13 @@
-import {computed, defineComponent, onUnmounted, toValue, useRootElement, watch, ref} from 'actview';
+import { useRootElementFragment } from '@/internals/useRootElementFragment';
+import {computed, onUnmounted, toValue, watch, ref, toRefs, unrefs} from 'actview';
 import type { FieldRootState } from '../root/FieldRoot';
 import { useFieldRootContext } from '@/internals/field-root-context/FieldRootContext';
 import { useLabelableContext } from '@/internals/labelable-provider/LabelableContext';
 import { fieldValidityMapping } from '@/internals/field-constants/constants';
-import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
-import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import type { BaseUIComponentProps } from '@/internals/types';
 import { useBaseUiId } from '@/internals/useBaseUiId';
 import { useFieldItemContext } from '../item/FieldItemContext';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * A paragraph with additional information about the field.
@@ -14,9 +15,9 @@ import { useFieldItemContext } from '../item/FieldItemContext';
  *
  * Documentation: [Base UI Field](https://base-ui.com/react/components/field)
  */
-export const FieldDescription = defineComponent(function (componentProps: FieldDescription.Props) {
+export function FieldDescription(componentProps: FieldDescription.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  const rootRef = useRootElement();
+  const rootRef = useRootElementFragment();
 
   const generatedId = useBaseUiId();
   const id = computed(() => toValue(componentProps.id) ?? generatedId);
@@ -54,44 +55,24 @@ export const FieldDescription = defineComponent(function (componentProps: FieldD
     }
   });
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {className, render, style, ...elementProps} = componentProps;
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
 
-    const stateValue = state();
-    const stateAttributes = getStateAttributesProps(stateValue, fieldValidityMapping);
+  const {element} = useRenderElement({
+    props: () => [{id: id.value}, unrefs(elementProps)],
+    state,
+    stateAttributesMapping: fieldValidityMapping,
+    className,
+    style,
+    render,
+    refs: () => [rootRef as any],
+    children,
+    defaultTag: 'p',
+  });
 
-    const merged: HTMLProps = {};
-    Object.assign(merged, {id: id.value}, elementProps, stateAttributes);
-    if (typeof className === 'function') {
-      merged.className = className(stateValue);
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof style === 'function') {
-      merged.style = style(stateValue);
-    } else if (style !== undefined) {
-      merged.style = style;
-    }
-
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ...stateValue, ref: rootRef});
-      }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof merged.className === 'string' && typeof renderClassName === 'string'
-          ? `${merged.className} ${renderClassName}`.trim()
-          : (merged.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={rootRef} />;
-    }
-    return <p {...merged} ref={rootRef} />;
-  };
-}) as unknown as (props: FieldDescription.Props) => JSX.Element;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface FieldDescriptionState extends FieldRootState {}
 

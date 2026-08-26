@@ -1,10 +1,10 @@
-import { defineComponent, onUnmounted, ref, toValue, useRootElement, watch } from 'actview';
-import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
-import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
-import { mergeClassNames, mergeStyles } from '@/utils/mergeClassNames';
+import { onUnmounted, ref, toValue, toRefs, unrefs, watch } from 'actview';
+import type { BaseUIComponentProps } from '@/internals/types';
 import { useAvatarRootContext } from '../root/AvatarRootContext';
 import type { AvatarRootState } from '../root/AvatarRoot';
 import { avatarStateAttributesMapping } from '../root/stateAttributesMapping';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useRootElementFragment } from '@/internals/useRootElementFragment';
 
 /**
  * Rendered when the image fails to load or when no image is provided.
@@ -12,9 +12,11 @@ import { avatarStateAttributesMapping } from '../root/stateAttributesMapping';
  *
  * Documentation: [Base UI Avatar](https://base-ui.com/react/components/avatar)
  */
-export const AvatarFallback = defineComponent(function (componentProps: AvatarFallback.Props) {
+export function AvatarFallback(componentProps: AvatarFallback.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  const rootRef = useRootElement();
+  // Fragment 根（`<>{element()}</>` + 条件）下 actview 内置 useRootElement 的
+  // subTree.el 恒 null——用 Fragment 兼容版本。
+  const rootRef = useRootElementFragment();
   // setup 期读 context（AD-42）——返回 Ref，render 里 .value 取最新
   const context = useAvatarRootContext();
 
@@ -58,50 +60,39 @@ export const AvatarFallback = defineComponent(function (componentProps: AvatarFa
   );
   onUnmounted(clearDelayTimeout);
 
-  // ============ render（每次渲染执行） ============
-  return () => {
-    const {className, render, delay = 0, style, ...elementProps} = componentProps;
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
 
-    const imageLoadingStatus = context.value.imageLoadingStatus.value;
+  const stateFn = (): AvatarFallbackState => ({
+    imageLoadingStatus: context.value.imageLoadingStatus.value,
+  });
 
-    if (imageLoadingStatus === 'loaded' || !(delay === 0 || delayPassed.value)) {
-      return null;
-    }
+  const {element} = useRenderElement({
+    props: () => [{...unrefs(elementProps)}],
+    state: stateFn,
+    stateAttributesMapping: avatarStateAttributesMapping as any,
+    className,
+    style,
+    render,
+    refs: () => [rootRef as any],
+    children,
+    defaultTag: 'span',
+  });
 
-    const state: AvatarFallbackState = {
-      imageLoadingStatus,
-    };
-
-    const stateAttributes = getStateAttributesProps(state, avatarStateAttributesMapping);
-
-    const merged: HTMLProps = {};
-    Object.assign(merged, elementProps, stateAttributes);
-    if (typeof className === 'function') {
-      merged.className = className(state);
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof style === 'function') {
-      merged.style = style(state);
-    } else if (style !== undefined) {
-      merged.style = style;
-    }
-
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ...state, ref: rootRef});
-      }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className = mergeClassNames(merged.className, renderClassName);
-      mergedRenderProps.style = mergeStyles(merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={rootRef} />;
-    }
-    return <span {...merged} ref={rootRef} />;
-  };
-}) as unknown as (props: AvatarFallback.Props) => JSX.Element;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  // 条件（delay/imageLoadingStatus）必须在渲染期求值（PD-15）——IIFE 内读取。
+  return (
+    <>
+      {(() => {
+        const delay = toValue(componentProps.delay) ?? 0;
+        const imageLoadingStatus = context.value.imageLoadingStatus.value;
+        return imageLoadingStatus === 'loaded' || !(delay === 0 || delayPassed.value)
+          ? null
+          : element();
+      })()}
+    </>
+  );
+}
 
 export interface AvatarFallbackState extends AvatarRootState {}
 

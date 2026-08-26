@@ -1,7 +1,7 @@
-import { computed, defineComponent, ref, toValue, useRootElement } from 'actview';
-import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
-import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import { computed, ref, toValue, toRefs, unrefs, useRootElement } from 'actview';
+import type { BaseUIComponentProps } from '@/internals/types';
 import { FieldsetRootContext, useFieldsetRootContext } from './FieldsetRootContext';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * Groups a shared legend with related controls.
@@ -9,8 +9,9 @@ import { FieldsetRootContext, useFieldsetRootContext } from './FieldsetRootConte
  *
  * Documentation: [Base UI Fieldset](https://base-ui.com/react/components/fieldset)
  */
-export const FieldsetRoot = defineComponent(function (componentProps: FieldsetRoot.Props) {
+export function FieldsetRoot(componentProps: FieldsetRoot.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
+  // Provider 根（`<FieldsetRootContext.Provider>`），无 Fragment 根问题。
   const rootRef = useRootElement();
 
   const legendId = ref<string | undefined>(undefined);
@@ -31,57 +32,42 @@ export const FieldsetRoot = defineComponent(function (componentProps: FieldsetRo
     disabled: disabled.value,
   });
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {className, render, style, ...elementProps} = componentProps;
-    // contextValue 必须在 render 内重建（每次新引用 + 最新 disabled.value）：
-    // Provider 的 watch(() => props.value) 依赖引用变化，setup 固定引用时
-    // 消费方永远读到初始值（嵌套 disabled 不响应）。
-    const contextValue: FieldsetRootContext = {
-      legendId: legendId.value,
-      setLegendId,
-      disabled: disabled.value,
-    };
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
 
-    const stateValue = state();
-    const stateAttributes = getStateAttributesProps(stateValue, {});
+  const {element} = useRenderElement({
+    props: () => [
+      {'aria-labelledby': legendId.value, disabled: disabled.value},
+      unrefs(elementProps),
+    ],
+    state,
+    stateAttributesMapping: {},
+    className,
+    style,
+    render,
+    refs: () => [rootRef as any],
+    children,
+    defaultTag: 'fieldset',
+  });
 
-    const merged: HTMLProps = {};
-    Object.assign(merged, {'aria-labelledby': legendId.value, disabled: disabled.value}, elementProps, stateAttributes);
-    if (typeof className === 'function') {
-      merged.className = className(stateValue);
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof style === 'function') {
-      merged.style = style(stateValue);
-    } else if (style !== undefined) {
-      merged.style = style;
-    }
-
-    let element: any;
-    if (render) {
-      if (typeof render === 'function') {
-        element = render({...merged, ...stateValue, ref: rootRef});
-      } else {
-        const renderProps = render.props ?? {};
-        const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-        const Tag = render.type as any;
-        const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-        mergedRenderProps.className =
-          typeof merged.className === 'string' && typeof renderClassName === 'string'
-            ? `${merged.className} ${renderClassName}`.trim()
-            : (merged.className ?? renderClassName);
-        mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-        element = <Tag key={render.key} {...mergedRenderProps} ref={rootRef} />;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  // contextValue 必须在渲染期重建（每次新引用 + 最新 disabled.value）：
+  // Provider 的 watch(() => props.value) 依赖引用变化，setup 固定引用时
+  // 消费方永远读到初始值（嵌套 disabled 不响应）。
+  return (
+    <FieldsetRootContext.Provider
+      value={
+        {
+          legendId: legendId.value,
+          setLegendId,
+          disabled: disabled.value,
+        } as FieldsetRootContext
       }
-    } else {
-      element = <fieldset {...merged} ref={rootRef} />;
-    }
-
-    return <FieldsetRootContext.Provider value={contextValue}>{element}</FieldsetRootContext.Provider>;
-  };
-}) as unknown as (props: FieldsetRoot.Props) => JSX.Element;
+    >
+      {element()}
+    </FieldsetRootContext.Provider>
+  );
+}
 
 export interface FieldsetRootState {
   /**

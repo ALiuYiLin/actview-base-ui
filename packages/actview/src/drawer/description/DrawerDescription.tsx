@@ -1,7 +1,8 @@
-import { defineComponent, toValue } from 'actview';
+import { toRefs, unrefs } from 'actview';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { useDialogRootContext } from '@/dialog/root/DialogRootContext';
 import { useBaseUiId } from '@/internals/useBaseUiId';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * A paragraph that describes the Drawer.
@@ -9,55 +10,29 @@ import { useBaseUiId } from '@/internals/useBaseUiId';
  *
  * Documentation: [Base UI Drawer](https://base-ui.com/react/components/Drawer)
  */
-export const DrawerDescription = defineComponent(function DrawerDescription(
-  componentProps: DrawerDescription.Props,
-) {
-  const children = toValue(componentProps.children);
+export function DrawerDescription(componentProps: DrawerDescription.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
   const store = useDialogRootContext(false);
+  const {render, className, style, children, ref: refProp, ...elementProps} =
+    toRefs(componentProps);
 
   const id = useBaseUiId((componentProps as any).id);
 
   store.useSyncedValueWithCleanup('descriptionElementId', id as any);
 
-  return () => {
-    const {render, className, style, ...elementProps} = componentProps as any;
+  const {element} = useRenderElement({
+    props: () => [{id, ...unrefs(elementProps)}],
+    className,
+    style,
+    render,
+    refs: () => (componentProps.ref !== undefined ? [refProp as any] : []),
+    children,
+    defaultTag: 'p',
+  });
 
-    const merged: any = {
-      id,
-      ...elementProps,
-    };
-
-    const mergedRefs = (el: HTMLElement | null) => {
-      if (typeof componentProps.ref === 'function') {
-        (componentProps.ref as any)(el);
-      } else if (componentProps.ref) {
-        (componentProps.ref as any).value = el;
-        
-      }
-    };
-
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ref: mergedRefs} as any);
-      }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof className === 'string' && typeof renderClassName === 'string'
-          ? `${className} ${renderClassName}`.trim()
-          : (className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={mergedRefs}>{children}</Tag>;
-    }
-    return (
-      <p {...merged} className={className} ref={mergedRefs}>
-        {children}
-      </p>
-    );
-  };
-});
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface DrawerDescriptionState {}
 

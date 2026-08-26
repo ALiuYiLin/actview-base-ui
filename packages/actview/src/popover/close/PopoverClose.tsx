@@ -1,9 +1,10 @@
-import { defineComponent, toValue } from 'actview';
+import { toRefs, unrefs } from 'actview';
 import type { BaseUIComponentProps, NativeButtonProps } from '@/internals/types';
 import { usePopoverRootContext } from '../root/PopoverRootContext';
 import { useButton } from '@/internals/use-button/useButton';
 import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * A button that closes the popover.
@@ -11,11 +12,11 @@ import { REASONS } from '@/internals/reasons';
  *
  * Documentation: [Base UI Popover](https://base-ui.com/react/components/popover)
  */
-export const PopoverClose = defineComponent(function PopoverClose(
-  componentProps: PopoverClose.Props,
-) {
-  const {disabled = false, nativeButton = true, ...elementProps} = componentProps as any;
-  const children = toValue(componentProps.children);
+export function PopoverClose(componentProps: PopoverClose.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
+  const {disabled = false, nativeButton = true} = componentProps as any;
+  const {render, className, style, children, ref: refProp, ...elementProps} =
+    toRefs(componentProps);
 
   const {buttonRef, getButtonProps} = useButton({
     disabled,
@@ -25,53 +26,41 @@ export const PopoverClose = defineComponent(function PopoverClose(
 
   const store = usePopoverRootContext(false);
 
-  return () => {
-    const {render, className, style, ...rest} = elementProps as any;
-
-    const merged: any = {
-      onClick(event: any) {
-        store.setOpen(false, createChangeEventDetails(REASONS.closePress, event.nativeEvent ?? event));
+  const {element} = useRenderElement({
+    props: () => [
+      {
+        onClick(event: any) {
+          store.setOpen(
+            false,
+            createChangeEventDetails(REASONS.closePress, event.nativeEvent ?? event),
+          );
+        },
+        ...unrefs(elementProps),
+        ...(getButtonProps ?? {}),
       },
-      ...rest,
-      ...(getButtonProps ?? {}),
-    };
-
-    const mergedRefs = (el: HTMLButtonElement | null) => {
+    ],
+    className,
+    style,
+    render,
+    refs: () => {
+      const refs: any[] = [];
       if (typeof buttonRef === 'function') {
-        (buttonRef as any)(el);
+        refs.push((el: any) => (buttonRef as any)(el));
       } else if (buttonRef) {
-        (buttonRef as any).value = el;
+        refs.push((el: any) => (buttonRef as any).value = el);
       }
-      if (typeof componentProps.ref === 'function') {
-        (componentProps.ref as any)(el);
-      } else if (componentProps.ref) {
-        (componentProps.ref as any).value = el;
-        
+      if (componentProps.ref !== undefined) {
+        refs.push(refProp);
       }
-    };
+      return refs;
+    },
+    children,
+    defaultTag: 'button',
+  });
 
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ref: mergedRefs} as any);
-      }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof className === 'string' && typeof renderClassName === 'string'
-          ? `${className} ${renderClassName}`.trim()
-          : (className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={mergedRefs}>{children}</Tag>;
-    }
-    return (
-      <button {...merged} className={className} ref={mergedRefs}>
-        {children}
-      </button>
-    );
-  };
-});
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface PopoverCloseState {}
 

@@ -1,6 +1,5 @@
-import {computed, defineComponent, onUnmounted, toValue, watch, ref} from 'actview';
-import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
-import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import {computed, onUnmounted, toValue, watch, ref, toRefs, unrefs} from 'actview';
+import type { BaseUIComponentProps } from '@/internals/types';
 import { mergePropsN } from '@/merge-props';
 import { useCollapsibleRootContext } from '@/collapsible/root/CollapsibleRootContext';
 import { useCollapsiblePanel } from '@/collapsible/panel/useCollapsiblePanel';
@@ -11,6 +10,7 @@ import { useAccordionItemContext } from '../item/AccordionItemContext';
 import { accordionStateAttributesMapping } from '../item/stateAttributesMapping';
 import { AccordionPanelCssVars } from '../AccordionDataAttributes';
 import type { TransitionStatus } from '@/internals/useTransitionStatus';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * A collapsible panel with the accordion item contents.
@@ -18,7 +18,7 @@ import type { TransitionStatus } from '@/internals/useTransitionStatus';
  *
  * Documentation: [Base UI Accordion](https://base-ui.com/react/components/accordion)
  */
-export const AccordionPanel = defineComponent(function (componentProps: AccordionPanel.Props) {
+export function AccordionPanel(componentProps: AccordionPanel.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
   const {hiddenUntilFound: contextHiddenUntilFound, keepMounted: contextKeepMounted} = toValue(
     useAccordionRootContext(),
@@ -99,61 +99,46 @@ export const AccordionPanel = defineComponent(function (componentProps: Accordio
     transitionStatus: toValue(panel.transitionStatus),
   }));
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    if (!toValue(panel.shouldRender)) {
-      return null;
-    }
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
 
-    const {className, render, style, ...elementProps} = componentProps;
+  const {element} = useRenderElement({
+    props: () => {
+      const stateValue = toValue(panelState);
+      const resolvedStyle =
+        typeof style?.value === 'function' ? style.value(stateValue) : style?.value;
 
-    const stateValue = toValue(panelState);
-    const stateAttributes = getStateAttributesProps(stateValue, accordionStateAttributesMapping);
-
-    const resolvedStyle = typeof style === 'function' ? style(stateValue) : style;
-
-    const merged: HTMLProps = mergePropsN([
-      panel.props(),
-      {
-        'aria-labelledby': toValue(triggerId),
-        role: 'region',
-        style: {
-          [AccordionPanelCssVars.accordionPanelHeight as string]:
-            toValue(panel.height) === undefined ? 'auto' : `${toValue(panel.height)}px`,
-          [AccordionPanelCssVars.accordionPanelWidth as string]:
-            toValue(panel.width) === undefined ? 'auto' : `${toValue(panel.width)}px`,
+      const merged: any = mergePropsN([
+        panel.props(),
+        {
+          'aria-labelledby': toValue(triggerId),
+          role: 'region',
+          style: {
+            [AccordionPanelCssVars.accordionPanelHeight as string]:
+              toValue(panel.height) === undefined ? 'auto' : `${toValue(panel.height)}px`,
+            [AccordionPanelCssVars.accordionPanelWidth as string]:
+              toValue(panel.width) === undefined ? 'auto' : `${toValue(panel.width)}px`,
+          },
         },
-      },
-      elementProps,
-      stateAttributes,
-      resolvedStyle ? {style: resolvedStyle} : undefined,
-      toValue(panel.shouldPreventOpenAnimation) ? {style: {animationName: 'none'}} : undefined,
-    ]);
+        {...unrefs(elementProps)},
+        resolvedStyle ? {style: resolvedStyle} : undefined,
+        toValue(panel.shouldPreventOpenAnimation) ? {style: {animationName: 'none'}} : undefined,
+      ]);
+      return [merged];
+    },
+    state: () => toValue(panelState),
+    stateAttributesMapping: accordionStateAttributesMapping,
+    className,
+    style,
+    render,
+    refs: () => [panel.ref as any],
+    children,
+    defaultTag: 'div',
+  });
 
-    if (typeof className === 'function') {
-      merged.className = className(stateValue);
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ...stateValue, ref: panel.ref as any});
-      }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof merged.className === 'string' && typeof renderClassName === 'string'
-          ? `${merged.className} ${renderClassName}`.trim()
-          : (merged.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={panel.ref as any} />;
-    }
-    return <div {...merged} ref={panel.ref as any} />;
-  };
-}) as unknown as (props: AccordionPanel.Props) => JSX.Element;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{!toValue(panel.shouldRender) ? null : element()}</>;
+}
 
 export interface AccordionPanelState extends AccordionItemState {
   /**

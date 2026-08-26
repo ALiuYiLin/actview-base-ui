@@ -1,52 +1,56 @@
-import { defineComponent, toValue, computed } from 'actview';
+import { toRefs, unrefs, computed } from 'actview';
 import { useSelectRootContext } from '../root/SelectRootContext';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /** The trigger of the select. Renders a `<button>` element. */
-export const SelectTrigger = defineComponent(function SelectTrigger(
-  componentProps: SelectTrigger.Props,
-) {
+export function SelectTrigger(componentProps: SelectTrigger.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
   const store = useSelectRootContext(false);
-  const children = toValue(componentProps.children);
-  const open = computed(() => store.useState('open').value);
+  const {render, className, style, children, ref: refProp, ...elementProps} =
+    toRefs(componentProps);
 
-  return () => {
-    const {render, className, style, ...elementProps} = componentProps as any;
-    const disabled = store.state.disabled ?? false;
+  const openState = store.useState('open');
+  const open = computed(() => openState.value);
 
-    const merged: any = {
-      type: 'button',
-      ...elementProps,
-      disabled,
-      'aria-haspopup': 'listbox',
-      'aria-expanded': open.value,
-      onClick: () => {
-        if (!disabled) {
-          store.toggleOpen();
-        }
-      },
-    };
-
-    const ref = (el: any) => {
-      store.setTriggerProps({ref: el as HTMLElement | null});
-      if (componentProps.ref) {
-        if (typeof componentProps.ref === 'function') (componentProps.ref as any)(el);
-        else {
-          (componentProps.ref as any).value = el;
-          
-        }
+  const {element} = useRenderElement({
+    props: () => {
+      const disabled = store.state.disabled ?? false;
+      return [
+        {
+          type: 'button',
+          ...unrefs(elementProps),
+          disabled,
+          'aria-haspopup': 'listbox',
+          'aria-expanded': open.value,
+          onClick: () => {
+            if (!disabled) {
+              store.toggleOpen();
+            }
+          },
+        },
+      ];
+    },
+    className,
+    style,
+    render,
+    refs: () => {
+      const refs: any[] = [
+        (el: any) => {
+          store.setTriggerProps({ref: el as HTMLElement | null});
+        },
+      ];
+      if (componentProps.ref !== undefined) {
+        refs.push(refProp);
       }
-    };
+      return refs;
+    },
+    children,
+    defaultTag: 'button',
+  });
 
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ref} as any);
-      }
-      const Tag = render.type as any;
-      return <Tag {...render.props} {...merged} ref={ref}>{children}</Tag>;
-    }
-    return <button {...merged} ref={ref}>{children}</button>;
-  };
-});
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface SelectTriggerProps {
   children?: any;

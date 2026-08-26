@@ -1,4 +1,3 @@
-import { defineComponent } from 'actview';
 import type { NativeButtonProps, BaseUIComponentProps } from '@/internals/types';
 import type { NumberFieldRootState } from '../root/NumberFieldRoot';
 import { useNumberFieldStepperButton } from '../root/useNumberFieldStepperButton';
@@ -9,11 +8,11 @@ import { useNumberFieldStepperButton } from '../root/useNumberFieldStepperButton
  *
  * Documentation: [Base UI Number Field](https://base-ui.com/react/components/number-field)
  */
-export const NumberFieldDecrement = defineComponent(function (
-  componentProps: NumberFieldDecrement.Props,
-) {
-  return useNumberFieldStepperButton(componentProps, false) as any;
-}) as unknown as (props: NumberFieldDecrement.Props) => JSX.Element;
+export function NumberFieldDecrement(componentProps: NumberFieldDecrement.Props) {
+  // 委托共享 hook（返回渲染函数）——最后 return JSX 包裹调用
+  const renderFn = useNumberFieldStepperButton(componentProps, false) as any;
+  return <>{renderFn()}</>;
+}
 
 export interface NumberFieldDecrementState extends NumberFieldRootState {}
 

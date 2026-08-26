@@ -1,5 +1,5 @@
-import {defineComponent, onMounted, onUnmounted, ref, toValue, useRootElement, watch, shallowRef} from 'actview';
-import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import {onMounted, onUnmounted, ref, toValue, useRootElement, watch, shallowRef, toRefs, unrefs} from 'actview';
+import type { BaseUIComponentProps } from '@/internals/types';
 import type { NumberFieldRootState } from '../root/NumberFieldRoot';
 import { useNumberFieldRootContext } from '../root/NumberFieldRootContext';
 import { stateAttributesMapping } from '../utils/stateAttributesMapping';
@@ -12,7 +12,7 @@ import { ownerDocument, ownerWindow } from '@/utils/owner';
 import { platform } from '@/utils/platform';
 import { addEventListener } from '@/utils/addEventListener';
 import { useTimeout } from '@/utils/useTimeout';
-import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 const SCRUB_AREA_STYLE: any = {
   touchAction: 'none',
@@ -26,9 +26,7 @@ const SCRUB_AREA_STYLE: any = {
  *
  * Documentation: [Base UI Number Field](https://base-ui.com/react/components/number-field)
  */
-export const NumberFieldScrubArea = defineComponent(function (
-  componentProps: NumberFieldScrubArea.Props,
-) {
+export function NumberFieldScrubArea(componentProps: NumberFieldScrubArea.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
   const direction = toValue(componentProps.direction) ?? 'horizontal';
   const pixelSensitivity = toValue(componentProps.pixelSensitivity) ?? 2;
@@ -279,99 +277,91 @@ export const NumberFieldScrubArea = defineComponent(function (
     touchCleanup?.();
   });
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {render, className, style, ...elementProps} = componentProps;
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
 
-    const defaultProps: HTMLProps = {
-      role: 'presentation',
-      style: SCRUB_AREA_STYLE,
-      async onPointerDown(event: any) {
-        if (event.defaultPrevented || readOnly || event.button || disabled) {
-          return;
-        }
+  const stateFn = () => rootContextRef.value.state;
 
-        const isTouch = event.pointerType === 'touch';
-        isTouchInput.value = isTouch;
+  const {element} = useRenderElement({
+    props: () => {
+      const defaultProps: any = {
+        role: 'presentation',
+        style: SCRUB_AREA_STYLE,
+        async onPointerDown(event: any) {
+          if (event.defaultPrevented || readOnly || event.button || disabled) {
+            return;
+          }
 
-        if (event.pointerType === 'mouse') {
-          event.preventDefault();
-          inputRef.value?.focus();
-        }
+          const isTouch = event.pointerType === 'touch';
+          isTouchInput.value = isTouch;
 
-        isScrubbingRef.value = true;
-        didMoveRef.value = false;
-        pointerDownTargetRef.value = getTarget(event.nativeEvent ?? event);
-        onScrubbingChange(true, event.nativeEvent ?? event);
+          if (event.pointerType === 'mouse') {
+            event.preventDefault();
+            inputRef.value?.focus();
+          }
 
-        // WebKit causes significant layout shift with the native message, so we can't use it.
-        if (!isTouch && !platform.engine.webkit) {
-          try {
-            // Avoid non-deterministic errors in testing environments.
-            await ownerDocument(scrubAreaRef.value).body.requestPointerLock();
-            isPointerLockDenied.value = false;
-          } catch (error) {
-            isPointerLockDenied.value = true;
-          } finally {
-            // `onScrubbingChange` already wraps its state updates, so re-emit the
-            // scrubbing state directly to reflect the resolved pointer-lock result.
-            if (isScrubbingRef.value) {
-              onScrubbingChange(true, event.nativeEvent ?? event);
+          isScrubbingRef.value = true;
+          didMoveRef.value = false;
+          pointerDownTargetRef.value = getTarget(event.nativeEvent ?? event);
+          onScrubbingChange(true, event.nativeEvent ?? event);
+
+          // WebKit causes significant layout shift with the native message, so we can't use it.
+          if (!isTouch && !platform.engine.webkit) {
+            try {
+              // Avoid non-deterministic errors in testing environments.
+              await ownerDocument(scrubAreaRef.value).body.requestPointerLock();
+              isPointerLockDenied.value = false;
+            } catch (error) {
+              isPointerLockDenied.value = true;
+            } finally {
+              // `onScrubbingChange` already wraps its state updates, so re-emit the
+              // scrubbing state directly to reflect the resolved pointer-lock result.
+              if (isScrubbingRef.value) {
+                onScrubbingChange(true, event.nativeEvent ?? event);
+              }
             }
           }
-        }
-      },
-    };
+        },
+      };
 
-    const stateAttributes = getStateAttributesProps(state, stateAttributesMapping);
+      const stateValue = stateFn();
+      const resolvedStyle =
+        typeof style?.value === 'function' ? style.value(stateValue) : style?.value;
 
-    const merged: any = {};
-    Object.assign(merged, defaultProps, elementProps, stateAttributes);
-    if (typeof className === 'function') {
-      merged.className = className(state);
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof style === 'function') {
-      merged.style = Object.assign({}, SCRUB_AREA_STYLE, style(state));
-    } else if (style !== undefined) {
-      merged.style = Object.assign({}, SCRUB_AREA_STYLE, style);
-    }
+      const merged: any = {};
+      Object.assign(
+        merged,
+        defaultProps,
+        {...unrefs(elementProps)},
+        resolvedStyle !== undefined ? {style: Object.assign({}, SCRUB_AREA_STYLE, resolvedStyle)} : undefined,
+      );
+      return [merged];
+    },
+    state: stateFn,
+    stateAttributesMapping: stateAttributesMapping as any,
+    className,
+    render,
+    refs: () => [scrubAreaRef as any],
+    children,
+    defaultTag: 'span',
+  });
 
-    let element: any;
-    if (render) {
-      if (typeof render === 'function') {
-        element = render({...merged, ...state, ref: scrubAreaRef} as any);
-      } else {
-        const renderProps = render.props ?? {};
-        const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-        const Tag = render.type as any;
-        const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-        mergedRenderProps.className =
-          typeof merged.className === 'string' && typeof renderClassName === 'string'
-            ? `${merged.className} ${renderClassName}`.trim()
-            : (merged.className ?? renderClassName);
-        mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-        element = <Tag key={render.key} {...mergedRenderProps} ref={scrubAreaRef} />;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return (
+    <NumberFieldScrubAreaContext.Provider
+      value={
+        {
+          isScrubbing: isScrubbing.value,
+          isTouchInput: isTouchInput.value,
+          isPointerLockDenied: isPointerLockDenied.value,
+          scrubAreaCursorRef,
+        } as any
       }
-    } else {
-      element = <span {...merged} ref={scrubAreaRef} />;
-    }
-
-    const contextValue: NumberFieldScrubAreaContext = {
-      isScrubbing: isScrubbing.value,
-      isTouchInput: isTouchInput.value,
-      isPointerLockDenied: isPointerLockDenied.value,
-      scrubAreaCursorRef,
-    };
-
-    return (
-      <NumberFieldScrubAreaContext.Provider value={contextValue as any}>
-        {element}
-      </NumberFieldScrubAreaContext.Provider>
-    );
-  };
-}) as unknown as (props: NumberFieldScrubArea.Props) => JSX.Element;
+    >
+      {element()}
+    </NumberFieldScrubAreaContext.Provider>
+  );
+}
 
 export interface NumberFieldScrubAreaState extends NumberFieldRootState {}
 

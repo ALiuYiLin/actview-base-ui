@@ -1,4 +1,4 @@
-import { defineComponent, ref, toValue, computed, onUnmounted } from 'actview';
+import { ref, toValue, computed, onUnmounted } from 'actview';
 import { createComboboxStore } from '@/combobox/store';
 import { createComboboxItems } from '@/combobox/items/createItems';
 import { ComboboxRootContext } from '@/combobox/root/ComboboxRootContext';
@@ -12,9 +12,7 @@ import { AutocompleteRootContext } from './AutocompleteRootContext';
  * useListNavigation/FloatingFocusManager 已完整移植，见 @actview/floating-ui）；
  * items 按 inputValue 过滤（createComboboxItems 简化版）。
  */
-export const AutocompleteRoot = defineComponent(function AutocompleteRoot(
-  props: AutocompleteRoot.Props,
-) {
+export function AutocompleteRoot(props: AutocompleteRoot.Props) {
   const {
     items,
     defaultValue,
@@ -23,7 +21,6 @@ export const AutocompleteRoot = defineComponent(function AutocompleteRoot(
     onValueChange,
     onInputValueChange,
     disabled = false,
-    children,
   } = props as any;
 
   const store = createComboboxStore({
@@ -66,28 +63,42 @@ export const AutocompleteRoot = defineComponent(function AutocompleteRoot(
     disabled: store.state.disabled,
   });
 
-  return () => {
-    const child = typeof children === 'function' ? children(state()) : toValue(children);
-
-    const contextValue = {
-      store,
-      inputValue: inputValue.value,
-      inputValueRef,
-      setInputValue,
-      itemsRef: filteredItems,
-      selectedValue: store.state.selectedValue,
-    };
-
-    // 同时提供 ComboboxRootContext（复用 combobox 部件读它）与 AutocompleteRootContext。
-    return (
-      <AutocompleteRootContext.Provider value={contextValue as any}>
-        <ComboboxRootContext.Provider value={contextValue as any}>
-          {child}
-        </ComboboxRootContext.Provider>
-      </AutocompleteRootContext.Provider>
-    );
-  };
-});
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  // children/contextValue 渲染期构建（PD-15）
+  return (
+    <AutocompleteRootContext.Provider
+      value={
+        {
+          store,
+          inputValue: inputValue.value,
+          inputValueRef,
+          setInputValue,
+          itemsRef: filteredItems,
+          selectedValue: store.state.selectedValue,
+        } as any
+      }
+    >
+      <ComboboxRootContext.Provider
+        value={
+          {
+            store,
+            inputValue: inputValue.value,
+            inputValueRef,
+            setInputValue,
+            itemsRef: filteredItems,
+            selectedValue: store.state.selectedValue,
+          } as any
+        }
+      >
+        {(() => {
+          const {children} = props as any;
+          const child = typeof children === 'function' ? children(state()) : toValue(children);
+          return child;
+        })()}
+      </ComboboxRootContext.Provider>
+    </AutocompleteRootContext.Provider>
+  );
+}
 
 export interface AutocompleteRootState {
   /**

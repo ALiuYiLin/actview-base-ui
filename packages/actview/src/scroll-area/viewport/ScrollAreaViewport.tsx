@@ -1,8 +1,8 @@
-import {defineComponent, onMounted, onUnmounted, ref, toValue, useRootElement, shallowRef} from 'actview';
+import {onMounted, onUnmounted, ref, toValue, toRefs, unrefs, useRootElement, shallowRef} from 'actview';
 import { platform } from '@/utils/platform';
 import { useTimeout } from '@/utils/useTimeout';
 import { clamp } from '@/utils/clamp';
-import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import type { BaseUIComponentProps } from '@/internals/types';
 import { useScrollAreaRootContext } from '../root/ScrollAreaRootContext';
 import { ScrollAreaViewportContext } from './ScrollAreaViewportContext';
 import { useDirection } from '@/internals/direction-context/DirectionContext';
@@ -12,7 +12,7 @@ import { styleDisableScrollbar } from '@/utils/styles';
 import { scrollAreaStateAttributesMapping } from '../root/stateAttributes';
 import type { HiddenState, ScrollAreaRootState } from '../root/ScrollAreaRoot';
 import { normalizeScrollOffset } from '@/utils/scrollEdges';
-import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 // CSS variable names inlined so `ScrollAreaViewportCssVars` tree-shakes out.
 const OVERFLOW_EDGE_VARS = [
@@ -64,8 +64,9 @@ function removeCSSVariableInheritance() {
  *
  * Documentation: [Base UI Scroll Area](https://base-ui.com/react/components/scroll-area)
  */
-export const ScrollAreaViewport = defineComponent(function (componentProps: ScrollAreaViewport.Props) {
+export function ScrollAreaViewport(componentProps: ScrollAreaViewport.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
+  // Provider 根（`<ScrollAreaViewportContext.Provider>`），无 Fragment 根问题。
   const rootContextRef = useScrollAreaRootContext();
   const viewportRef = useRootElement();
 
@@ -294,102 +295,77 @@ export const ScrollAreaViewport = defineComponent(function (componentProps: Scro
     programmaticScrollRef.value = false;
   }
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {render, className, style, ...elementProps} = componentProps;
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
 
-    const {
-      rootId,
-      hiddenState,
-      handleScroll,
-      touchModality,
-      viewportState,
-    } = rootContextRef.value;
+  const {element} = useRenderElement({
+    props: () => {
+      const {rootId, hiddenState, handleScroll, touchModality, viewportState} =
+        rootContextRef.value;
 
-    const props: HTMLProps = {
-      role: 'presentation',
-      ...(rootId && {'data-id': `${rootId}-viewport`}),
-      // Keep non-scrollable viewports out of tab order.
-      tabIndex: hiddenState.x && hiddenState.y ? -1 : 0,
-      className: styleDisableScrollbar.className,
-      style: {
-        overflow: 'scroll',
-      },
-      onScroll() {
-        if (!viewportRef.value) {
-          return;
-        }
+      const p: Record<string, any> = {
+        role: 'presentation',
+        ...(rootId && {'data-id': `${rootId}-viewport`}),
+        // Keep non-scrollable viewports out of tab order.
+        tabIndex: hiddenState.x && hiddenState.y ? -1 : 0,
+        className: styleDisableScrollbar.className,
+        style: {
+          overflow: 'scroll',
+        },
+        onScroll() {
+          if (!viewportRef.value) {
+            return;
+          }
 
-        computeThumbPosition();
+          computeThumbPosition();
 
-        // WebKit consumes a touch that catches an in-flight momentum scroll or
-        // rubber-band bounce without dispatching any DOM events for the whole
-        // gesture, so scrolls cannot be attributed to the user through events.
-        if (touchModality || !programmaticScrollRef.value) {
-          handleScroll({
-            x: viewportRef.value.scrollLeft,
-            y: viewportRef.value.scrollTop,
+          // WebKit consumes a touch that catches an in-flight momentum scroll or
+          // rubber-band bounce without dispatching any DOM events for the whole
+          // gesture, so scrolls cannot be attributed to the user through events.
+          if (touchModality || !programmaticScrollRef.value) {
+            handleScroll({
+              x: viewportRef.value.scrollLeft,
+              y: viewportRef.value.scrollTop,
+            });
+          }
+
+          // Debounce the restoration of the programmatic flag so that it only
+          // flips back to `true` once scrolling has come to a rest.
+          scrollEndTimeout.start(100, () => {
+            programmaticScrollRef.value = true;
           });
-        }
+        },
+        onWheel: handleUserInteraction,
+        onPointerMove: handleUserInteraction,
+        onPointerEnter: handleUserInteraction,
+        onKeyDown: handleUserInteraction,
+      };
 
-        // Debounce the restoration of the programmatic flag so that it only
-        // flips back to `true` once scrolling has come to a rest.
-        scrollEndTimeout.start(100, () => {
-          programmaticScrollRef.value = true;
-        });
-      },
-      onWheel: handleUserInteraction,
-      onPointerMove: handleUserInteraction,
-      onPointerEnter: handleUserInteraction,
-      onKeyDown: handleUserInteraction,
-    };
-
-    const stateAttributes = getStateAttributesProps(viewportState, scrollAreaStateAttributesMapping);
-
-    const merged: HTMLProps = {};
-    Object.assign(merged, props, elementProps, stateAttributes);
-    if (typeof className === 'function') {
-      merged.className = className(viewportState);
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof style === 'function') {
-      merged.style = Object.assign({}, props.style, style(viewportState) as any);
-    } else if (style !== undefined) {
-      merged.style = Object.assign({}, props.style, style);
-    }
-
-    const contextValue: ScrollAreaViewportContext = {
-      computeThumbPosition,
-    };
-
-    let element: any;
-    if (render) {
-      if (typeof render === 'function') {
-        element = render({...merged, ...viewportState, ref: viewportRef} as any);
-      } else {
-        const renderProps = render.props ?? {};
-        const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-        const Tag = render.type as any;
-        const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-        mergedRenderProps.className =
-          typeof merged.className === 'string' && typeof renderClassName === 'string'
-            ? `${merged.className} ${renderClassName}`.trim()
-            : (merged.className ?? renderClassName);
-        mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-        element = <Tag key={render.key} {...mergedRenderProps} ref={viewportRef} />;
+      const merged: any = {};
+      Object.assign(merged, p, {...unrefs(elementProps)});
+      const resolvedStyle =
+        typeof style?.value === 'function' ? style.value(viewportState) : style?.value;
+      if (resolvedStyle !== undefined) {
+        merged.style = Object.assign({}, p.style, resolvedStyle);
       }
-    } else {
-      element = <div {...merged} ref={viewportRef} />;
-    }
+      return [merged];
+    },
+    state: () => rootContextRef.value.viewportState,
+    stateAttributesMapping: scrollAreaStateAttributesMapping as any,
+    className,
+    render,
+    refs: () => [viewportRef as any],
+    children,
+    defaultTag: 'div',
+  });
 
-    return (
-      <ScrollAreaViewportContext.Provider value={contextValue as any}>
-        {element}
-      </ScrollAreaViewportContext.Provider>
-    );
-  };
-}) as unknown as (props: ScrollAreaViewport.Props) => JSX.Element;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return (
+    <ScrollAreaViewportContext.Provider value={{computeThumbPosition} as any}>
+      {element()}
+    </ScrollAreaViewportContext.Provider>
+  );
+}
 
 export interface ScrollAreaViewportProps extends BaseUIComponentProps<'div', ScrollAreaViewportState> {}
 

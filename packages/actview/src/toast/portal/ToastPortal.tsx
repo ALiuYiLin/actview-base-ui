@@ -1,11 +1,9 @@
-import { defineComponent, toValue } from 'actview';
 import { FloatingPortal } from '@/floating-ui-react';
 
 /** Moves the toast to a different part of the DOM. Renders a `<div>` element. */
-export const ToastPortal = defineComponent(function ToastPortal(props: ToastPortal.Props) {
-  const children = toValue(props.children);
-  return () => <FloatingPortal {...props}>{children}</FloatingPortal>;
-});
+export function ToastPortal(props: ToastPortal.Props) {
+  return <FloatingPortal {...props}>{props.children}</FloatingPortal>;
+}
 
 export interface ToastPortalProps {
   children?: any;

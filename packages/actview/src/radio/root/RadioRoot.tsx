@@ -1,4 +1,4 @@
-import {defineComponent, toValue, useRootElement, watch, ref} from 'actview';
+import {toValue, watch, ref} from 'actview';
 import type { ComputedRef } from 'actview';
 import { useMergedRefs } from '@/utils/useMergedRefs';
 import { visuallyHidden, visuallyHiddenInput } from '@/utils/visuallyHidden';
@@ -25,6 +25,7 @@ import { RadioRootContext } from './RadioRootContext';
 import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
 import type { BaseUIComponentProps } from '@/internals/types';
 import type { Ref } from 'actview';
+import { useRootElementFragment } from '@/internals/useRootElementFragment';
 
 /**
  * Represents the radio button itself.
@@ -32,9 +33,11 @@ import type { Ref } from 'actview';
  *
  * Documentation: [Base UI Radio](https://base-ui.com/react/components/radio)
  */
-export const RadioRoot = defineComponent(function <Value>(componentProps: RadioRoot.Props<Value>) {
+export function RadioRoot<Value>(componentProps: RadioRoot.Props<Value>) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  const rootRef = useRootElement();
+  // Fragment 根（`<>{IIFE}</>`）下 actview 内置 useRootElement 的
+  // subTree.el 恒 null——用 Fragment 兼容版本。
+  const rootRef = useRootElementFragment();
 
   const groupContextRef = useRadioGroupContext();
 
@@ -140,191 +143,196 @@ export const RadioRoot = defineComponent(function <Value>(componentProps: RadioR
     composite: false,
   });
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {render, className, style, ...elementProps} = componentProps;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  // 渲染期逻辑（rootProps/inputProps/state）在 IIFE 中执行（PD-15）
+  return (
+    <>
+      {(() => {
+        const {render, className, style, ...elementProps} = componentProps;
 
-    const groupContext = groupContextRef.value;
-    const disabled = computeDisabled();
-    const readOnly = (groupContext?.readOnly || readOnlyProp) ?? false;
-    const required = (groupContext?.required || requiredProp) ?? false;
-    const form = groupContext?.form;
-    const touched = groupContext?.touched ?? false;
-    const checked = computeChecked(groupContext?.checkedValue?.value);
-    const name = groupContext?.name;
+        const groupContext = groupContextRef.value;
+        const disabled = computeDisabled();
+        const readOnly = (groupContext?.readOnly || readOnlyProp) ?? false;
+        const required = (groupContext?.required || requiredProp) ?? false;
+        const form = groupContext?.form;
+        const touched = groupContext?.touched ?? false;
+        const checked = computeChecked(groupContext?.checkedValue?.value);
+        const name = groupContext?.name;
 
-    const rootProps: Record<string, any> = {
-      role: 'radio',
-      'aria-checked': checked,
-      'aria-labelledby': ariaLabelledBy,
-      [ACTIVE_COMPOSITE_ITEM as string]: checked ? '' : undefined,
-      id: nativeButton ? inputId : id,
-      onKeyDown(event: any) {
-        if (event.key === 'Enter') {
-          // Radio only activates with Space. Preventing the keydown's default
-          // stops useButton from turning Enter into a click.
-          event.preventDefault();
+        const rootProps: Record<string, any> = {
+          role: 'radio',
+          'aria-checked': checked,
+          'aria-labelledby': ariaLabelledBy,
+          [ACTIVE_COMPOSITE_ITEM as string]: checked ? '' : undefined,
+          id: nativeButton ? inputId : id,
+          onKeyDown(event: any) {
+            if (event.key === 'Enter') {
+              // Radio only activates with Space. Preventing the keydown's default
+              // stops useButton from turning Enter into a click.
+              event.preventDefault();
+            }
+          },
+          onClick(event: any) {
+            if (event.defaultPrevented || disabled || readOnly) {
+              return;
+            }
+
+            event.preventDefault();
+
+            const input = inputRef.value;
+            if (!input) {
+              return;
+            }
+
+            dispatchClickWithModifiers(input, event);
+          },
+          onFocus(event: any) {
+            if (event.defaultPrevented || disabled || readOnly || !touched) {
+              return;
+            }
+
+            inputRef.value?.click();
+
+            groupContext?.setTouched(false);
+          },
+        };
+
+        const inputProps: Record<string, any> = {
+          type: 'radio',
+          ref: mergedInputRef,
+          form,
+          id: hiddenInputId,
+          name,
+          tabIndex: -1,
+          style: name ? visuallyHiddenInput : visuallyHidden,
+          'aria-hidden': true,
+          ...(value !== undefined ? {value: serializeValue(value)} : EMPTY_OBJECT),
+          disabled,
+          checked,
+          required,
+          readOnly,
+          onClick(event: any) {
+            // actview 的 onChange 对 input 监听 'input' 事件；radio 的激活由
+            // 原生 click 表达（click 切换 checked）——这里在 click 时执行
+            // React 版 onChange 的逻辑。
+            // Clicks dispatched on the input from the root's `onClick` and `onFocus`
+            // are an implementation detail and must not reach ancestors.
+            event.stopPropagation();
+
+            if (event.defaultPrevented) {
+              return;
+            }
+
+            if (disabled || readOnly || value === undefined) {
+              return;
+            }
+
+            const details = createChangeEventDetails(REASONS.none, event);
+
+            groupContext?.setCheckedValue(value, details);
+
+            if (details.isCanceled) {
+              return;
+            }
+
+            setFieldTouched(true);
+          },
+          onFocus() {
+            radioRef.value?.focus();
+          },
+        };
+
+        const state: RadioRootState = {
+          ...fieldState.value,
+          required,
+          disabled,
+          readOnly,
+          checked,
+        };
+
+        const contextValue: RadioRootContext = state;
+        const isRadioGroup = groupContext !== undefined;
+
+        const refs = [rootRef as any, radioRef as any, buttonRef];
+        const props = [
+          rootProps,
+          elementProps,
+          getButtonProps,
+          getDescriptionProps,
+          groupContext?.validation
+            ? (validationProps: HTMLProps) =>
+                groupContext.validation!.getValidationProps(disabled, validationProps)
+            : EMPTY_OBJECT,
+        ];
+
+        const stateAttributes = getStateAttributesProps(state, stateAttributesMapping);
+
+        const spanProps = (): Record<string, any> => {
+          const merged: Record<string, any> = {};
+          for (const prop of props) {
+            // props getter 接收 previousProps（对齐 React mergePropsN 语义）
+            const resolved = typeof prop === 'function' ? prop(merged) : prop;
+            Object.assign(merged, resolved);
+          }
+          Object.assign(merged, stateAttributes);
+          if (typeof className === 'function') {
+            merged.className = className(state);
+          } else if (className !== undefined) {
+            merged.className = className;
+          }
+          if (typeof style === 'function') {
+            merged.style = style(state);
+          } else if (style !== undefined) {
+            merged.style = style;
+          }
+          return merged;
+        };
+
+        let element: any;
+        if (render) {
+          const merged = spanProps();
+          if (typeof render === 'function') {
+            element = render({...merged, ...state, ref: rootRef} as any);
+          } else {
+            const renderProps = render.props ?? {};
+            const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
+            const Tag = render.type as any;
+            const mergedRenderProps = Object.assign({}, merged, restRenderProps);
+            mergedRenderProps.className =
+              typeof merged.className === 'string' && typeof renderClassName === 'string'
+                ? `${merged.className} ${renderClassName}`.trim()
+                : (merged.className ?? renderClassName);
+            mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
+            element = <Tag key={render.key} {...mergedRenderProps} ref={rootRef} />;
+          }
+        } else {
+          element = <span {...spanProps()} ref={rootRef} />;
         }
-      },
-      onClick(event: any) {
-        if (event.defaultPrevented || disabled || readOnly) {
-          return;
-        }
 
-        event.preventDefault();
-
-        const input = inputRef.value;
-        if (!input) {
-          return;
-        }
-
-        dispatchClickWithModifiers(input, event);
-      },
-      onFocus(event: any) {
-        if (event.defaultPrevented || disabled || readOnly || !touched) {
-          return;
-        }
-
-        inputRef.value?.click();
-
-        groupContext?.setTouched(false);
-      },
-    };
-
-    const inputProps: Record<string, any> = {
-      type: 'radio',
-      ref: mergedInputRef,
-      form,
-      id: hiddenInputId,
-      name,
-      tabIndex: -1,
-      style: name ? visuallyHiddenInput : visuallyHidden,
-      'aria-hidden': true,
-      ...(value !== undefined ? {value: serializeValue(value)} : EMPTY_OBJECT),
-      disabled,
-      checked,
-      required,
-      readOnly,
-      onClick(event: any) {
-        // actview 的 onChange 对 input 监听 'input' 事件；radio 的激活由
-        // 原生 click 表达（click 切换 checked）——这里在 click 时执行
-        // React 版 onChange 的逻辑。
-        // Clicks dispatched on the input from the root's `onClick` and `onFocus`
-        // are an implementation detail and must not reach ancestors.
-        event.stopPropagation();
-
-        if (event.defaultPrevented) {
-          return;
-        }
-
-        if (disabled || readOnly || value === undefined) {
-          return;
-        }
-
-        const details = createChangeEventDetails(REASONS.none, event);
-
-        groupContext?.setCheckedValue(value, details);
-
-        if (details.isCanceled) {
-          return;
-        }
-
-        setFieldTouched(true);
-      },
-      onFocus() {
-        radioRef.value?.focus();
-      },
-    };
-
-    const state: RadioRootState = {
-      ...fieldState.value,
-      required,
-      disabled,
-      readOnly,
-      checked,
-    };
-
-    const contextValue: RadioRootContext = state;
-    const isRadioGroup = groupContext !== undefined;
-
-    const refs = [rootRef as any, radioRef as any, buttonRef];
-    const props = [
-      rootProps,
-      elementProps,
-      getButtonProps,
-      getDescriptionProps,
-      groupContext?.validation
-        ? (validationProps: HTMLProps) =>
-            groupContext.validation!.getValidationProps(disabled, validationProps)
-        : EMPTY_OBJECT,
-    ];
-
-    const stateAttributes = getStateAttributesProps(state, stateAttributesMapping);
-
-    const spanProps = (): Record<string, any> => {
-      const merged: Record<string, any> = {};
-      for (const prop of props) {
-        // props getter 接收 previousProps（对齐 React mergePropsN 语义）
-        const resolved = typeof prop === 'function' ? prop(merged) : prop;
-        Object.assign(merged, resolved);
-      }
-      Object.assign(merged, stateAttributes);
-      if (typeof className === 'function') {
-        merged.className = className(state);
-      } else if (className !== undefined) {
-        merged.className = className;
-      }
-      if (typeof style === 'function') {
-        merged.style = style(state);
-      } else if (style !== undefined) {
-        merged.style = style;
-      }
-      return merged;
-    };
-
-    let element: any;
-    if (render) {
-      const merged = spanProps();
-      if (typeof render === 'function') {
-        element = render({...merged, ...state, ref: rootRef} as any);
-      } else {
-        const renderProps = render.props ?? {};
-        const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-        const Tag = render.type as any;
-        const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-        mergedRenderProps.className =
-          typeof merged.className === 'string' && typeof renderClassName === 'string'
-            ? `${merged.className} ${renderClassName}`.trim()
-            : (merged.className ?? renderClassName);
-        mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-        element = <Tag key={render.key} {...mergedRenderProps} ref={rootRef} />;
-      }
-    } else {
-      element = <span {...spanProps()} ref={rootRef} />;
-    }
-
-    return (
-      <RadioRootContext.Provider value={contextValue as any}>
-        {isRadioGroup ? (
-          <CompositeItem
-            tag="span"
-            render={render}
-            className={className}
-            style={style}
-            state={state}
-            refs={refs}
-            props={props}
-            stateAttributesMapping={stateAttributesMapping}
-            children={componentProps.children}
-          />
-        ) : (
-          element
-        )}
-        <input {...inputProps} />
-      </RadioRootContext.Provider>
-    );
-  };
-}) as unknown as <Value>(props: RadioRoot.Props<Value>) => JSX.Element;
+        return (
+          <RadioRootContext.Provider value={contextValue as any}>
+            {isRadioGroup ? (
+              <CompositeItem
+                tag="span"
+                render={render}
+                className={className}
+                style={style}
+                state={state}
+                refs={refs}
+                props={props}
+                stateAttributesMapping={stateAttributesMapping}
+                children={componentProps.children}
+              />
+            ) : (
+              element
+            )}
+            <input {...inputProps} />
+          </RadioRootContext.Provider>
+        );
+      })()}
+    </>
+  );
+}
 
 export interface RadioRootState extends FieldRootState {
   /**

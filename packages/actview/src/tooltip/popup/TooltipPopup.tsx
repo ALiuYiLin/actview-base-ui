@@ -1,13 +1,13 @@
-import { defineComponent, toValue } from 'actview';
+import { toRefs, unrefs } from 'actview';
 import { useTooltipRootContext } from '../root/TooltipRootContext';
 import { useTooltipPositionerContext } from '../positioner/TooltipPositionerContext';
 import type { Side, Align } from '@/internals/useAnchorPositioning';
 import type { BaseUIComponentProps } from '@/internals/types';
-import { popupTransitionStateMapping } from '@/utils/popupStateMapping';
 import { useOpenChangeComplete } from '@/internals/useOpenChangeComplete';
 import { useHoverFloatingInteraction } from '@/floating-ui-react';
 import { getDisabledMountTransitionStyles } from '@/internals/getDisabledMountTransitionStyles';
 import { mergePropsN } from '@/merge-props';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * A container for the tooltip contents.
@@ -15,11 +15,7 @@ import { mergePropsN } from '@/merge-props';
  *
  * Documentation: [Base UI Tooltip](https://base-ui.com/react/components/tooltip)
  */
-export const TooltipPopup = defineComponent(function TooltipPopup(
-  componentProps: TooltipPopup.Props,
-) {
-  const children = toValue(componentProps.children);
-
+export function TooltipPopup(componentProps: TooltipPopup.Props) {
   const store = useTooltipRootContext(false);
   const positionerContext = useTooltipPositionerContext(false);
 
@@ -56,56 +52,51 @@ export const TooltipPopup = defineComponent(function TooltipPopup(
     transitionStatus: transitionStatus.value,
   });
 
-  return () => {
-    const {render, className, style, ...elementProps} = componentProps as any;
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
 
-    const stateValue = state();
-    const attributes: Record<string, string> = {};
-    if (stateValue.open) {
-      attributes['data-open'] = '';
-    } else {
-      attributes['data-closed'] = '';
-    }
-    if (stateValue.transitionStatus === 'starting') {
-      attributes['data-starting-style'] = '';
-    } else if (stateValue.transitionStatus === 'ending') {
-      attributes['data-ending-style'] = '';
-    }
-
-    const merged: any = mergePropsN<any>([
-      {
-        tabIndex: -1,
-      },
-      popupProps.value,
-      getDisabledMountTransitionStyles(transitionStatus.value),
-      elementProps,
-    ]);
-    Object.assign(merged, attributes);
-
-    const mergedRefs = (el: HTMLElement | null) => {
-      store.context.popupRef.value = el;
-      setPopupElement(el);
-      (floatingContext.value as any)?.update?.({floatingElement: el});
-    };
-
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ...stateValue, ref: mergedRefs} as any);
+  const {element} = useRenderElement({
+    props: () => {
+      const stateValue = state();
+      const attributes: Record<string, string> = {};
+      if (stateValue.open) {
+        attributes['data-open'] = '';
+      } else {
+        attributes['data-closed'] = '';
       }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof merged.className === 'string' && typeof renderClassName === 'string'
-          ? `${merged.className} ${renderClassName}`.trim()
-          : (merged.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={mergedRefs}>{children}</Tag>;
-    }
-    return <div {...merged} ref={mergedRefs}>{children}</div>;
-  };
-});
+      if (stateValue.transitionStatus === 'starting') {
+        attributes['data-starting-style'] = '';
+      } else if (stateValue.transitionStatus === 'ending') {
+        attributes['data-ending-style'] = '';
+      }
+
+      const merged: any = mergePropsN<any>([
+        {
+          tabIndex: -1,
+        },
+        popupProps.value,
+        getDisabledMountTransitionStyles(transitionStatus.value),
+        {...unrefs(elementProps)},
+      ]);
+      Object.assign(merged, attributes);
+      return [merged];
+    },
+    state,
+    className,
+    style,
+    render,
+    refs: () => [
+      store.context.popupRef as any,
+      setPopupElement as any,
+      (el: any) => (floatingContext.value as any)?.update?.({floatingElement: el}),
+    ],
+    children,
+    defaultTag: 'div',
+  });
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface TooltipPopupState {
   /**

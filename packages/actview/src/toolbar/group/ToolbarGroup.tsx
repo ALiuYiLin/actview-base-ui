@@ -1,4 +1,4 @@
-import { defineComponent, toValue, useRootElement } from 'actview';
+import { toValue, toRefs, unrefs, useRootElement } from 'actview';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { useRenderElement } from '@/internals/useRenderElement';
 import { useToolbarRootContext } from '../root/ToolbarRootContext';
@@ -11,46 +11,44 @@ import type { ToolbarRootState } from '../root/ToolbarRoot';
  *
  * Documentation: [Base UI Toolbar](https://base-ui.com/react/components/toolbar)
  */
-export const ToolbarGroup = defineComponent(function (componentProps: ToolbarGroup.Props) {
+export function ToolbarGroup(componentProps: ToolbarGroup.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
+  // Provider 根（`<ToolbarGroupContext.Provider>`），无 Fragment 根问题。
   const rootRef = useRootElement();
 
   const rootContextRef = useToolbarRootContext();
   const disabledProp = toValue(componentProps.disabled) ?? false;
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {className, render, style, ...elementProps} = componentProps;
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
 
+  const stateFn = (): ToolbarRootState => {
     const {orientation, disabled: toolbarDisabled} = rootContextRef.value;
-
-    const disabled = toolbarDisabled || disabledProp;
-
-    const contextValue: ToolbarGroupContext = {
-      disabled,
-    };
-
-    const stateValue: ToolbarRootState = {
-      disabled,
+    return {
+      disabled: toolbarDisabled || disabledProp,
       orientation,
     };
-
-    const {element} = useRenderElement({
-      props: () => [{role: 'group'}, elementProps],
-      state: stateValue,
-      stateAttributesMapping: {},
-      className: () => className,
-      style: () => style,
-      render: () => render,
-      refs: () => [rootRef],
-      defaultTag: 'div',
-    });
-
-    return (
-      <ToolbarGroupContext.Provider value={contextValue as any}>{element()}</ToolbarGroupContext.Provider>
-    );
   };
-}) as unknown as (props: ToolbarGroup.Props) => JSX.Element;
+
+  const {element} = useRenderElement({
+    props: () => [{role: 'group'}, unrefs(elementProps)],
+    state: stateFn,
+    stateAttributesMapping: {},
+    className,
+    style,
+    render,
+    refs: () => [rootRef],
+    children,
+    defaultTag: 'div',
+  });
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return (
+    <ToolbarGroupContext.Provider value={{disabled: stateFn().disabled} as any}>
+      {element()}
+    </ToolbarGroupContext.Provider>
+  );
+}
 
 export interface ToolbarGroupState extends ToolbarRootState {}
 

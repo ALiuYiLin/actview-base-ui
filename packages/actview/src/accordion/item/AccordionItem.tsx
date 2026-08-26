@@ -1,5 +1,5 @@
-import { computed, defineComponent, ref, toValue, useRootElement, watch } from 'actview';
-import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { computed, ref, toValue, useRootElement, watch, toRefs, unrefs } from 'actview';
+import type { BaseUIComponentProps } from '@/internals/types';
 import { useBaseUiId } from '@/internals/useBaseUiId';
 import {
   useCollapsibleRoot,
@@ -12,10 +12,10 @@ import type { AccordionRootState } from '../root/AccordionRoot';
 import { useAccordionRootContext } from '../root/AccordionRootContext';
 import { AccordionItemContext } from './AccordionItemContext';
 import { accordionStateAttributesMapping } from './stateAttributesMapping';
-import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
 import { type BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
 import { AccordionItemDataAttributes } from '../AccordionDataAttributes';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * Groups an accordion header with the corresponding panel.
@@ -23,7 +23,7 @@ import { AccordionItemDataAttributes } from '../AccordionDataAttributes';
  *
  * Documentation: [Base UI Accordion](https://base-ui.com/react/components/accordion)
  */
-export const AccordionItem = defineComponent(function (componentProps: AccordionItem.Props) {
+export function AccordionItem(componentProps: AccordionItem.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
   const rootRef = useRootElement();
 
@@ -111,53 +111,30 @@ export const AccordionItem = defineComponent(function (componentProps: Accordion
     triggerId,
   };
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {className, render, style, ...elementProps} = componentProps;
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
 
-    const stateValue = toValue(state);
-    const stateAttributes = getStateAttributesProps(stateValue, accordionStateAttributesMapping);
+  const {element} = useRenderElement({
+    props: () => [{...unrefs(elementProps)}],
+    state: () => toValue(state),
+    stateAttributesMapping: accordionStateAttributesMapping,
+    className,
+    style,
+    render,
+    refs: () => [rootRef as any],
+    children,
+    defaultTag: 'div',
+  });
 
-    const merged: HTMLProps = {};
-    Object.assign(merged, elementProps, stateAttributes);
-    if (typeof className === 'function') {
-      merged.className = className(stateValue);
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof style === 'function') {
-      merged.style = style(stateValue);
-    } else if (style !== undefined) {
-      merged.style = style;
-    }
-
-    let element: any;
-    if (render) {
-      if (typeof render === 'function') {
-        element = render({...merged, ...stateValue, ref: rootRef});
-      } else {
-        const renderProps = render.props ?? {};
-        const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-        const Tag = render.type as any;
-        const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-        mergedRenderProps.className =
-          typeof merged.className === 'string' && typeof renderClassName === 'string'
-            ? `${merged.className} ${renderClassName}`.trim()
-            : (merged.className ?? renderClassName);
-        mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-        element = <Tag key={render.key} {...mergedRenderProps} ref={rootRef} />;
-      }
-    } else {
-      element = <div {...merged} ref={rootRef} />;
-    }
-
-    return (
-      <CollapsibleRootContext.Provider value={collapsibleContext}>
-        <AccordionItemContext.Provider value={accordionItemContext}>{element}</AccordionItemContext.Provider>
-      </CollapsibleRootContext.Provider>
-    );
-  };
-}) as unknown as (props: AccordionItem.Props) => JSX.Element;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return (
+    <CollapsibleRootContext.Provider value={collapsibleContext}>
+      <AccordionItemContext.Provider value={accordionItemContext}>
+        {element()}
+      </AccordionItemContext.Provider>
+    </CollapsibleRootContext.Provider>
+  );
+}
 
 export interface AccordionItemState extends AccordionRootState {
   /**

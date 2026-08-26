@@ -1,16 +1,16 @@
-import { defineComponent, ref, toValue } from 'actview';
+import { toRefs, unrefs, ref } from 'actview';
 import { MenuRadioGroupContext, type MenuRadioGroupContextValue } from './MenuRadioGroupContext';
 import { MenuGroupContext } from '../group/MenuGroupContext';
 import { useControlled } from '@/utils/useControlled';
 import { useStableCallback } from '@/utils/useStableCallback';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * Groups related radio items.
  * Renders a `<div>` element.
  */
-export const MenuRadioGroup = defineComponent(function MenuRadioGroup(
-  componentProps: MenuRadioGroup.Props,
-) {
+export function MenuRadioGroup(componentProps: MenuRadioGroup.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
   const {
     value: valueProp,
     defaultValue,
@@ -19,7 +19,8 @@ export const MenuRadioGroup = defineComponent(function MenuRadioGroup(
     'aria-labelledby': ariaLabelledByProp,
   } = componentProps as any;
 
-  const children = toValue(componentProps.children);
+  const {render, className, style, children, ref: refProp, ...elementProps} = toRefs(componentProps);
+
   const labelId = ref<string | undefined>(undefined);
 
   const setLabelId = (
@@ -44,58 +45,41 @@ export const MenuRadioGroup = defineComponent(function MenuRadioGroup(
     setValueUnwrapped(newValue);
   });
 
-  return () => {
-    const {render, className: cls, style: st, ...elementProps} = componentProps as any;
+  const {element} = useRenderElement({
+    props: () => [
+      {
+        role: 'group',
+        'aria-labelledby': ariaLabelledByProp ?? labelId.value,
+        'aria-disabled': disabled || undefined,
+      },
+      unrefs(elementProps),
+    ],
+    state: (): MenuRadioGroupState => ({disabled}),
+    className,
+    style,
+    render,
+    refs: () => (componentProps.ref !== undefined ? [refProp as any] : []),
+    children,
+    defaultTag: 'div',
+  });
 
-    const context: MenuRadioGroupContextValue = {
-      value: value.value,
-      setValue,
-      disabled,
-    };
-
-    const merged: any = {
-      role: 'group',
-      'aria-labelledby': ariaLabelledByProp ?? labelId.value,
-      'aria-disabled': disabled || undefined,
-      ...elementProps,
-    };
-
-    const mergedRefs = (el: HTMLElement | null) => {
-      if (typeof componentProps.ref === 'function') {
-        (componentProps.ref as any)(el);
-      } else if (componentProps.ref) {
-        componentProps.ref.value = el;
-      }
-    };
-
-    const element = (() => {
-      if (render) {
-        if (typeof render === 'function') {
-          return render({...merged, disabled, ref: mergedRefs} as any);
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return (
+    <MenuGroupContext.Provider value={setLabelId as any}>
+      <MenuRadioGroupContext.Provider
+        value={
+          {
+            value: value.value,
+            setValue,
+            disabled,
+          } as any
         }
-        const renderProps = render.props ?? {};
-        const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-        const Tag = render.type as any;
-        const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-        mergedRenderProps.className =
-          typeof merged.className === 'string' && typeof renderClassName === 'string'
-            ? `${merged.className} ${renderClassName}`.trim()
-            : (merged.className ?? renderClassName);
-        mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-        return <Tag key={render.key} {...mergedRenderProps} ref={mergedRefs}>{children}</Tag>;
-      }
-      return <div {...merged} ref={mergedRefs}>{children}</div>;
-    })();
-
-    return (
-      <MenuGroupContext.Provider value={setLabelId as any}>
-        <MenuRadioGroupContext.Provider value={context as any}>
-          {element}
-        </MenuRadioGroupContext.Provider>
-      </MenuGroupContext.Provider>
-    );
-  };
-});
+      >
+        {element()}
+      </MenuRadioGroupContext.Provider>
+    </MenuGroupContext.Provider>
+  );
+}
 
 export interface MenuRadioGroupProps {
   /**

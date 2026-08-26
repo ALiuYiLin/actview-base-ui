@@ -1,7 +1,8 @@
-import { defineComponent, useRootElement } from 'actview';
-import type { BaseUIComponentProps, HTMLProps, Orientation } from '@/internals/types';
+import { toRefs, toValue, unrefs } from 'actview';
+import type { BaseUIComponentProps, Orientation } from '@/internals/types';
 import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
-import { mergeClassNames, mergeStyles } from '@/utils/mergeClassNames';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useRootElementFragment } from '@/internals/useRootElementFragment';
 
 /**
  * A separator element accessible to screen readers.
@@ -9,54 +10,43 @@ import { mergeClassNames, mergeStyles } from '@/utils/mergeClassNames';
  *
  * Documentation: [Base UI Separator](https://base-ui.com/react/components/separator)
  */
-export const Separator = defineComponent(function (componentProps: Separator.Props) {
+export function Separator(componentProps: Separator.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  const rootRef = useRootElement();
+  // Fragment 根（`<>{element()}</>`）下 actview 内置 useRootElement 的
+  // subTree.el 恒 null——用 Fragment 兼容版本。
+  const rootRef = useRootElementFragment();
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {className, render, orientation = 'horizontal', style, ...elementProps} = componentProps;
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
 
-    const state: SeparatorState = {
-      orientation,
-    };
+  const stateFn = (): SeparatorState => ({
+    orientation: toValue(componentProps.orientation) ?? 'horizontal',
+  });
 
-    // state → data-* 属性（orientation → data-orientation）+ 静态 a11y 属性
-    const stateAttributes = getStateAttributesProps(state);
-    const staticProps: HTMLProps = {role: 'separator', 'aria-orientation': orientation};
+  const {element} = useRenderElement({
+    // stateAttributes（无 mapping 走默认 data-{key} 分支）+ 静态 a11y 属性
+    // 在 props getter 里手动合并。
+    props: () => {
+      const stateValue = stateFn();
+      const stateAttributes = getStateAttributesProps(stateValue);
+      const staticProps: Record<string, any> = {
+        role: 'separator',
+        'aria-orientation': stateValue.orientation,
+      };
+      return [staticProps, unrefs(elementProps), stateAttributes];
+    },
+    state: stateFn,
+    className,
+    style,
+    render,
+    refs: () => [rootRef as any],
+    children,
+    defaultTag: 'div',
+  });
 
-    // merged 顺序对齐 React 契约：静态属性 + elementProps + stateAttributes
-    // → className/style 后置覆盖
-    const merged: HTMLProps = {};
-    Object.assign(merged, staticProps, elementProps, stateAttributes);
-    if (typeof className === 'function') {
-      merged.className = className(state);
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof style === 'function') {
-      merged.style = style(state);
-    } else if (style !== undefined) {
-      merged.style = style;
-    }
-
-    // render 三形态（MIGRATION.md case 3：VNode 分支 mergeProps 合并——
-    // 事件处理器链式合并、className 拼接、style 浅合并，ref 兜底放最后）
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ...state, ref: rootRef});
-      }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className = mergeClassNames(merged.className, renderClassName);
-      mergedRenderProps.style = mergeStyles(merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={rootRef} />;
-    }
-    return <div {...merged} ref={rootRef} />;
-  };
-}) as unknown as (props: Separator.Props) => JSX.Element;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface SeparatorProps extends BaseUIComponentProps<'div', SeparatorState> {
   /**

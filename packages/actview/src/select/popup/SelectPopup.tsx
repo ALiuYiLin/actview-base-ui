@@ -1,36 +1,30 @@
-import { defineComponent, computed, toValue } from 'actview';
+import { toRefs, unrefs, computed } from 'actview';
 import { useSelectRootContext } from '../root/SelectRootContext';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /** The popup of the select. Renders a `<div>` element when open. */
-export const SelectPopup = defineComponent(function SelectPopup(props: SelectPopup.Props) {
+export function SelectPopup(props: SelectPopup.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
   const store = useSelectRootContext(false);
-  const children = toValue(props.children);
-  const open = computed(() => store.useState('open').value);
-  const mounted = computed(() => store.useState('mounted').value);
+  const {render, className, style, children, ref: refProp, ...elementProps} = toRefs(props);
+  const openState = store.useState('open');
+  const mountedState = store.useState('mounted');
+  const open = computed(() => openState.value);
+  const mounted = computed(() => mountedState.value);
 
-  return () => {
-    if (!open.value && !mounted.value) {
-      return null;
-    }
-    const {render, className, style, keepMounted, ...elementProps} = props as any;
-    const merged: any = {...elementProps};
-    const ref = (el: any) => {
-      if (props.ref) {
-        if (typeof props.ref === 'function') (props.ref as any)(el);
-        else {
-          (props.ref as any).value = el;
-          
-        }
-      }
-    };
-    if (render) {
-      if (typeof render === 'function') return render({...merged, ref} as any);
-      const Tag = render.type as any;
-      return <Tag {...render.props} {...merged} ref={ref}>{children}</Tag>;
-    }
-    return <div {...merged} ref={ref}>{children}</div>;
-  };
-});
+  const {element} = useRenderElement({
+    props: () => [{...unrefs(elementProps)}],
+    className,
+    style,
+    render,
+    refs: () => (props.ref !== undefined ? [refProp as any] : []),
+    children,
+    defaultTag: 'div',
+  });
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{!open.value && !mounted.value ? null : element()}</>;
+}
 
 export interface SelectPopupProps {
   children?: any;

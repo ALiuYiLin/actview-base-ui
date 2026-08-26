@@ -1,4 +1,3 @@
-import { defineComponent, toValue } from 'actview';
 import { MenuRoot } from '../root/MenuRoot';
 import { useMenuRootContext } from '../root/MenuRootContext';
 import { MenuSubmenuRootContext } from './MenuSubmenuRootContext';
@@ -9,21 +8,19 @@ export { useMenuSubmenuRootContext } from './MenuSubmenuRootContext';
  * Groups all parts of a submenu.
  * Doesn't render its own HTML element.
  */
-export const MenuSubmenuRoot = defineComponent(function MenuSubmenuRoot(
-  props: MenuSubmenuRoot.Props,
-) {
+export function MenuSubmenuRoot(props: MenuSubmenuRoot.Props) {
+  // ============ setup（只执行一次） ============
   const parentMenu = useMenuRootContext().store;
 
   const contextValue = {parentMenu};
 
-  const children = toValue(props.children);
-
-  return () => (
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return (
     <MenuSubmenuRootContext.Provider value={contextValue}>
-      <MenuRoot {...(props as any)}>{children}</MenuRoot>
+      <MenuRoot {...(props as any)}>{props.children}</MenuRoot>
     </MenuSubmenuRootContext.Provider>
   );
-});
+}
 
 export interface MenuSubmenuRootProps {
   /**

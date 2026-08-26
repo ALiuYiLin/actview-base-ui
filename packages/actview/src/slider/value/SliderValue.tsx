@@ -1,10 +1,11 @@
-import { defineComponent, toValue, useRootElement } from 'actview';
-import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { toRefs, toValue, unrefs } from 'actview';
+import type { BaseUIComponentProps } from '@/internals/types';
 import { formatNumber } from '@/utils/formatNumber';
 import { useSliderRootContext } from '../root/SliderRootContext';
 import { sliderStateAttributesMapping } from '../root/stateAttributesMapping';
-import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
 import type { SliderRootState } from '../root/SliderRoot';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useRootElementFragment } from '@/internals/useRootElementFragment';
 
 /**
  * Displays the current value of the slider.
@@ -12,76 +13,62 @@ import type { SliderRootState } from '../root/SliderRoot';
  *
  * Documentation: [Base UI Slider](https://base-ui.com/react/components/slider)
  */
-export const SliderValue = defineComponent(function (componentProps: SliderValue.Props) {
+export function SliderValue(componentProps: SliderValue.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  const rootRef = useRootElement();
+  // Fragment 根（`<>{element()}</>`）下 actview 内置 useRootElement 的
+  // subTree.el 恒 null——用 Fragment 兼容版本。
+  const rootRef = useRootElementFragment();
 
   const rootContextRef = useSliderRootContext();
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {'aria-live': ariaLive = 'off', render, className, children, style, ...elementProps} =
-      componentProps;
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
 
-    const {thumbMap, state, values, format, locale} = rootContextRef.value;
+  const {element} = useRenderElement({
+    props: () => {
+      const {thumbMap, state, values, format, locale} = rootContextRef.value;
 
-    const outputFor =
-      Array.from(thumbMap.values(), ({inputId}) => inputId)
-        .join(' ')
-        .trim() || undefined;
+      const ariaLive = toValue(componentProps['aria-live']) ?? 'off';
 
-    const formattedValues = values.map((v) => formatNumber(v, locale, format));
+      const outputFor =
+        Array.from(thumbMap.values(), ({inputId}) => inputId)
+          .join(' ')
+          .trim() || undefined;
 
-    const defaultDisplayValue = formattedValues.join(' – ');
+      const formattedValues = values.map((v) => formatNumber(v, locale, format));
 
-    const stateValue = state;
-    const stateAttributes = getStateAttributesProps(stateValue, sliderStateAttributesMapping);
+      const defaultDisplayValue = formattedValues.join(' – ');
 
-    const merged: HTMLProps = {};
-    Object.assign(
-      merged,
-      {
+      const merged: any = {
         // off by default because it will keep announcing when the slider is being dragged
         // and also when the value is changing (but not yet committed)
         'aria-live': ariaLive,
-        children:
-          typeof children === 'function'
-            ? (children as any)(formattedValues, values)
-            : defaultDisplayValue,
         htmlFor: outputFor,
-      },
-      elementProps,
-      stateAttributes,
-    );
-    if (typeof className === 'function') {
-      merged.className = className(stateValue);
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof style === 'function') {
-      merged.style = style(stateValue);
-    } else if (style !== undefined) {
-      merged.style = style;
-    }
+        ...unrefs(elementProps),
+      };
+      return [merged];
+    },
+    state: () => rootContextRef.value.state,
+    stateAttributesMapping: sliderStateAttributesMapping as any,
+    className,
+    style,
+    render,
+    refs: () => [rootRef as any],
+    // children：render-prop（(formattedValues, values) => any）渲染期求值
+    children: () => {
+      const {values, format, locale} = rootContextRef.value;
+      const formattedValues = values.map((v) => formatNumber(v, locale, format));
+      const childrenValue = children?.value;
+      return typeof childrenValue === 'function'
+        ? (childrenValue as any)(formattedValues, values)
+        : formattedValues.join(' – ');
+    },
+    defaultTag: 'output',
+  });
 
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ...stateValue, ref: rootRef} as any);
-      }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof merged.className === 'string' && typeof renderClassName === 'string'
-          ? `${merged.className} ${renderClassName}`.trim()
-          : (merged.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={rootRef} />;
-    }
-    return <output {...merged} ref={rootRef} />;
-  };
-}) as unknown as (props: SliderValue.Props) => JSX.Element;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface SliderValueState extends SliderRootState {}
 

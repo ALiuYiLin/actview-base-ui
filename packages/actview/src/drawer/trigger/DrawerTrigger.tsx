@@ -1,4 +1,4 @@
-import { defineComponent, ref, toValue } from 'actview';
+import { ref, toRefs, unrefs } from 'actview';
 import { useDialogRootContext } from '@/dialog/root/DialogRootContext';
 import type { BaseUIComponentProps, NativeButtonProps } from '@/internals/types';
 import { triggerOpenStateMapping } from '@/utils/popupStateMapping';
@@ -9,6 +9,8 @@ import { DialogHandle } from '@/dialog/store/DialogHandle';
 import { useClick } from '@/floating-ui-react';
 import { useButton } from '@/internals/use-button/useButton';
 import { useTriggerFocusGuards } from '@/utils/popups/useTriggerFocusGuards';
+import { FocusGuard } from '@/utils/FocusGuard';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * A button that opens the Drawer.
@@ -16,11 +18,11 @@ import { useTriggerFocusGuards } from '@/utils/popups/useTriggerFocusGuards';
  *
  * Documentation: [Base UI Drawer](https://base-ui.com/react/components/Drawer)
  */
-export const DrawerTrigger = defineComponent(function DrawerTrigger(
-  componentProps: DrawerTrigger.Props,
-) {
+export function DrawerTrigger(componentProps: DrawerTrigger.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
   const {disabled = false, nativeButton = true, handle} = componentProps as any;
-  const children = toValue(componentProps.children);
+  const {render, className, style, children, ref: refProp, ...elementProps} =
+    toRefs(componentProps);
 
   const DialogHandleStore = usePopupHandleStore(handle as any);
   const handleStore = DialogHandleStore.value;
@@ -54,87 +56,75 @@ export const DrawerTrigger = defineComponent(function DrawerTrigger(
     native: nativeButton,
   });
 
-  const state: DrawerTriggerState = {
-    disabled,
-    open: isOpenedByThisTrigger.value,
-  };
+  const {preFocusGuardRef, handlePreFocusGuardFocus, handleFocusTargetFocus} =
+    useTriggerFocusGuards(store, triggerElementRef);
 
-  const {preFocusGuardRef, handlePreFocusGuardFocus, handleFocusTargetFocus} = useTriggerFocusGuards(
-    store,
-    triggerElementRef,
-  );
-
-  const propsList = [
-    click.reference ?? {},
-    {
-      id: thisTriggerId,
-      'aria-haspopup': 'Drawer' as const,
-    },
-    componentProps,
-    getButtonProps,
-  ];
-
-  const refs = [
-    (el: HTMLElement | null) => {
-      triggerElementRef.value = el;
-    },
-    buttonRef,
-    registerTrigger,
-  ] as any[];
-
-  return () => {
-    const {render, className, style, ...elementProps} = componentProps as any;
-
-    const merged: any = mergePropsN<any>([...propsList]);
-    const openAttr = triggerOpenStateMapping.open(isOpenedByThisTrigger.value);
-    if (openAttr) {
-      Object.assign(merged, openAttr);
-    }
-    if (disabled) {
-      merged['data-disabled'] = '';
-    } else {
-      delete merged['data-disabled'];
-    }
-
-    const element = (
-      <button {...merged} ref={mergeRefs(refs)}>
-        {children}
-      </button>
-    );
-
-    // actview 渲染无法原地 patch 结构切换，始终使用稳定的 div 包裹结构。
-    return (
-      <div key={`${thisTriggerId}-guards`}>
-        <FocusGuard
-          ref={(el: any) => (preFocusGuardRef.value = el)}
-          onFocus={handlePreFocusGuardFocus}
-        />
-        {element}
-        <FocusGuard
-          ref={(el: any) => (store.context.triggerFocusTargetRef.value = el)}
-          onFocus={handleFocusTargetFocus}
-        />
-      </div>
-    );
-  };
-});
-
-function mergeRefs(refs: any[]) {
-  return (el: HTMLElement | null) => {
-    for (const r of refs) {
-      if (!r) continue;
-      if (typeof r === 'function') {
-        r(el);
-      } else if (r.value !== undefined) {
-        r.value = el;
-      } else {
-        r.value = el;
+  const {element} = useRenderElement({
+    props: () => {
+      const merged: any = mergePropsN<any>([
+        click.reference ?? {},
+        {
+          id: thisTriggerId,
+          'aria-haspopup': 'Drawer' as const,
+        },
+        {...unrefs(elementProps)},
+        getButtonProps,
+      ]);
+      const openAttr = triggerOpenStateMapping.open(isOpenedByThisTrigger.value);
+      if (openAttr) {
+        Object.assign(merged, openAttr);
       }
-    }
-  };
-}
+      if (disabled) {
+        merged['data-disabled'] = '';
+      } else {
+        delete merged['data-disabled'];
+      }
+      return [merged];
+    },
+    state: () => ({
+      disabled,
+      open: isOpenedByThisTrigger.value,
+    }),
+    className,
+    style,
+    render,
+    refs: () => {
+      const refs: any[] = [
+        (el: HTMLElement | null) => {
+          triggerElementRef.value = el;
+        },
+      ];
+      if (buttonRef) {
+        refs.push(buttonRef);
+      }
+      if (registerTrigger) {
+        refs.push(registerTrigger);
+      }
+      if (componentProps.ref !== undefined) {
+        refs.push(refProp);
+      }
+      return refs;
+    },
+    children,
+    defaultTag: 'button',
+  });
 
-import { FocusGuard } from '@/utils/FocusGuard';
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  // actview 渲染无法原地 patch 结构切换，始终使用稳定的 div 包裹结构。
+  return (
+    <div key={`${thisTriggerId}-guards`}>
+      <FocusGuard
+        ref={(el: any) => (preFocusGuardRef.value = el)}
+        onFocus={handlePreFocusGuardFocus}
+      />
+      {element()}
+      <FocusGuard
+        ref={(el: any) => (store.context.triggerFocusTargetRef.value = el)}
+        onFocus={handleFocusTargetFocus}
+      />
+    </div>
+  );
+}
 
 export interface DrawerTriggerState {
   /**

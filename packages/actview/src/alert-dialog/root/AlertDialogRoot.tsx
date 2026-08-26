@@ -29,9 +29,7 @@ import {
  *
  * Documentation: [Base UI AlertDialog](https://base-ui.com/react/components/AlertDialog)
  */
-export const AlertDialogRoot = defineComponent(function AlertDialogRoot<Payload>(
-  props: AlertDialogRoot.Props<Payload>,
-) {
+export function AlertDialogRoot<Payload>(props: AlertDialogRoot.Props<Payload>) {
   const {
     open: openProp,
     defaultOpen = false,
@@ -43,7 +41,6 @@ export const AlertDialogRoot = defineComponent(function AlertDialogRoot<Payload>
     handle,
     triggerId: triggerIdProp,
     defaultTriggerId: defaultTriggerIdProp = null,
-    children,
   } = props as any;
 
   const store = useAlertDialogRootStore<Payload>(handle, {
@@ -186,19 +183,19 @@ export const AlertDialogRoot = defineComponent(function AlertDialogRoot<Payload>
 
   const shouldRenderInteractions = () => open.value || mounted.value;
 
-  return () => {
-    const child = toValue(children);
-    return (
-      <DialogRootContext.Provider value={store as unknown as DialogRootContext<unknown>}>
-        {handle && <PopupHandleAttachment handle={handle} store={store} />}
-        {shouldRenderInteractions() && (
-          <AlertDialogInteractions store={store} modal={modal} />
-        )}
-        {typeof child === 'function' ? (child as any)({payload: payload.value}) : child}
-      </DialogRootContext.Provider>
-    );
-  };
-});
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  // children/payload 渲染期读取（PD-15）——IIFE
+  return (
+    <DialogRootContext.Provider value={store as unknown as DialogRootContext<unknown>}>
+      {handle && <PopupHandleAttachment handle={handle} store={store} />}
+      {shouldRenderInteractions() && <AlertDialogInteractions store={store} modal={modal} />}
+      {(() => {
+        const child = toValue((props as any).children);
+        return typeof child === 'function' ? (child as any)({payload: payload.value}) : child;
+      })()}
+    </DialogRootContext.Provider>
+  );
+}
 
 function useAlertDialogRootStore<Payload>(
   _handle: DialogHandle<Payload> | undefined,

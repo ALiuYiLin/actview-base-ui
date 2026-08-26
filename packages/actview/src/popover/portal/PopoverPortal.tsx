@@ -1,4 +1,3 @@
-import { defineComponent, toValue } from 'actview';
 import { FloatingPortal } from '@/floating-ui-react';
 import { usePopoverRootContext } from '../root/PopoverRootContext';
 import { PopoverPortalContext } from './PopoverPortalContext';
@@ -11,26 +10,22 @@ import type { Ref } from 'actview';
  *
  * Documentation: [Base UI Popover](https://base-ui.com/react/components/popover)
  */
-export const PopoverPortal = defineComponent(function PopoverPortal(props: PopoverPortal.Props) {
+export function PopoverPortal(props: PopoverPortal.Props) {
+  // ============ setup（只执行一次） ============
   const store = usePopoverRootContext(false);
   const mounted = store.useState('mounted');
 
-  return () => {
-    // PD-15：props 在 render 期解构——setup 快照会让 render prop 重建的
-    // children（Positioner vnode 树）永远停留首次渲染。
-    const {keepMounted = false, ...portalProps} = props;
-    const shouldRender = mounted.value || keepMounted;
-    if (!shouldRender) {
-      return null;
-    }
-
-    return (
-      <PopoverPortalContext.Provider value={keepMounted}>
-        <FloatingPortal {...(portalProps as any)} />
-      </PopoverPortalContext.Provider>
-    );
-  };
-});
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  // PD-15：props 在 render 期读取（代理 spread/属性读）——setup 快照会让
+  // render prop 重建的 children（Positioner vnode 树）永远停留首次渲染。
+  return (
+    <PopoverPortalContext.Provider value={props.keepMounted ?? false}>
+      {mounted.value || props.keepMounted ? (
+        <FloatingPortal {...(props as any)} />
+      ) : null}
+    </PopoverPortalContext.Provider>
+  );
+}
 
 export interface PopoverPortalState {}
 

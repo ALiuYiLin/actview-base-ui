@@ -1,4 +1,4 @@
-import { defineComponent, onUnmounted, ref, toValue, watch } from 'actview';
+import { onUnmounted, ref, toValue, watch, toRefs } from 'actview';
 import type { Ref } from 'actview';
 import { useId } from '@/utils/useId';
 import { useStableCallback } from '@/utils/useStableCallback';
@@ -29,9 +29,8 @@ import {
  *
  * Documentation: [Base UI Drawer](https://base-ui.com/react/components/Drawer)
  */
-export const DrawerRoot = defineComponent(function DrawerRoot<Payload>(
-  props: DrawerRoot.Props<Payload>,
-) {
+export function DrawerRoot<Payload>(props: DrawerRoot.Props<Payload>) {
+  // ============ setup（只执行一次） ============
   const {
     open: openProp,
     defaultOpen = false,
@@ -43,8 +42,9 @@ export const DrawerRoot = defineComponent(function DrawerRoot<Payload>(
     handle,
     triggerId: triggerIdProp,
     defaultTriggerId: defaultTriggerIdProp = null,
-    children,
   } = props as any;
+
+  const {children} = toRefs(props);
 
   const store = useDrawerRootStore<Payload>(handle, {
     open: defaultOpen,
@@ -185,19 +185,18 @@ export const DrawerRoot = defineComponent(function DrawerRoot<Payload>(
 
   const shouldRenderInteractions = () => open.value || mounted.value;
 
-  return () => {
-    const child = toValue(children);
-    return (
-      <DialogRootContext.Provider value={store as unknown as any}>
-        {handle && <PopupHandleAttachment handle={handle} store={store} />}
-        {shouldRenderInteractions() && (
-          <DrawerInteractions store={store} modal={modal} />
-        )}
-        {typeof child === 'function' ? (child as any)({payload: payload.value}) : child}
-      </DialogRootContext.Provider>
-    );
-  };
-});
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return (
+    <DialogRootContext.Provider value={store as unknown as any}>
+      {handle && <PopupHandleAttachment handle={handle} store={store} />}
+      {shouldRenderInteractions() && <DrawerInteractions store={store} modal={modal} />}
+      {(() => {
+        const child = toValue(children);
+        return typeof child === 'function' ? (child as any)({payload: payload.value}) : child;
+      })()}
+    </DialogRootContext.Provider>
+  );
+}
 
 function useDrawerRootStore<Payload>(
   _handle: DialogHandle<Payload> | undefined,

@@ -1,5 +1,5 @@
-import { defineComponent, ref, toValue } from 'actview';
-import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { ref, toValue, toRefs, unrefs } from 'actview';
+import type { BaseUIComponentProps } from '@/internals/types';
 import { CompositeRoot } from '@/internals/composite/root/CompositeRoot';
 import type { CompositeMetadata } from '@/internals/composite/list/CompositeList';
 import { ToolbarRootContext } from './ToolbarRootContext';
@@ -10,7 +10,7 @@ import { ToolbarRootContext } from './ToolbarRootContext';
  *
  * Documentation: [Base UI Toolbar](https://base-ui.com/react/components/toolbar)
  */
-export const ToolbarRoot = defineComponent(function (componentProps: ToolbarRoot.Props) {
+export function ToolbarRoot(componentProps: ToolbarRoot.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
   const disabledProp = toValue(componentProps.disabled) ?? false;
   const loopFocus = toValue(componentProps.loopFocus);
@@ -21,51 +21,50 @@ export const ToolbarRoot = defineComponent(function (componentProps: ToolbarRoot
     itemMap.value = m;
   };
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {className, render, style, ...elementProps} = componentProps;
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
 
-    const disabledIndices: number[] = [];
-    for (const itemMetadata of itemMap.value.values()) {
-      // Only items that are disabled and not focusable when disabled
-      // are removed from roving focus.
-      if (itemMetadata.disabled && !itemMetadata.focusableWhenDisabled) {
-        disabledIndices.push(itemMetadata.index);
-      }
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  const disabledIndices: number[] = [];
+  for (const itemMetadata of itemMap.value.values()) {
+    // Only items that are disabled and not focusable when disabled
+    // are removed from roving focus.
+    if (itemMetadata.disabled && !itemMetadata.focusableWhenDisabled) {
+      disabledIndices.push(itemMetadata.index);
     }
+  }
 
-    const toolbarRootContext: ToolbarRootContext = {
-      disabled: disabledProp,
-      orientation,
-    };
-
-    const stateValue: ToolbarRootState = {disabled: disabledProp, orientation};
-
-    const defaultProps: HTMLProps = {
-      'aria-orientation': orientation,
-      role: 'toolbar',
-    };
-
-    return (
-      <ToolbarRootContext.Provider value={toolbarRootContext as any}>
-        <CompositeRoot
-          render={render as any}
-          className={className as any}
-          style={style as any}
-          state={stateValue as any}
-          refs={[]}
-          props={[defaultProps, elementProps]}
-          disabledIndices={disabledIndices}
-          loopFocus={loopFocus}
-          onMapChange={setItemMap}
-          orientation={orientation}
-        >
-          {componentProps.children}
-        </CompositeRoot>
-      </ToolbarRootContext.Provider>
-    );
+  const toolbarRootContext: ToolbarRootContext = {
+    disabled: disabledProp,
+    orientation,
   };
-}) as unknown as (props: ToolbarRoot.Props) => JSX.Element;
+
+  const stateValue: ToolbarRootState = {disabled: disabledProp, orientation};
+
+  const defaultProps: Record<string, any> = {
+    'aria-orientation': orientation,
+    role: 'toolbar',
+  };
+
+  return (
+    <ToolbarRootContext.Provider value={toolbarRootContext as any}>
+      <CompositeRoot
+        render={render as any}
+        className={className as any}
+        style={style as any}
+        state={stateValue as any}
+        refs={[]}
+        props={[defaultProps, unrefs(elementProps)]}
+        disabledIndices={disabledIndices}
+        loopFocus={loopFocus}
+        onMapChange={setItemMap}
+        orientation={orientation}
+      >
+        {children?.value}
+      </CompositeRoot>
+    </ToolbarRootContext.Provider>
+  );
+}
 
 export interface ToolbarRootItemMetadata {
   disabled: boolean;

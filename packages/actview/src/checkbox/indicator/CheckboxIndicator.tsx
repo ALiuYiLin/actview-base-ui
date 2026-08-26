@@ -1,13 +1,15 @@
-import { computed, defineComponent, toValue, useRootElement } from 'actview';
+import { computed, toValue, toRefs, unrefs } from 'actview';
 import { useCheckboxRootContext } from '../root/CheckboxRootContext';
 import { getCheckboxStateAttributesMapping } from '../utils/getCheckboxStateAttributesMapping';
 import type { CheckboxRootState } from '../root/CheckboxRoot';
-import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
-import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import type { BaseUIComponentProps } from '@/internals/types';
 import { useOpenChangeComplete } from '@/internals/useOpenChangeComplete';
 import { type TransitionStatus, useTransitionStatus } from '@/internals/useTransitionStatus';
 import type { StateAttributesMapping } from '@/internals/getStateAttributesProps';
+import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
 import { transitionStatusMapping } from '@/internals/stateAttributesMapping';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useRootElementFragment } from '@/internals/useRootElementFragment';
 
 /**
  * Indicates whether the checkbox is ticked.
@@ -15,9 +17,11 @@ import { transitionStatusMapping } from '@/internals/stateAttributesMapping';
  *
  * Documentation: [Base UI Checkbox](https://base-ui.com/react/components/checkbox)
  */
-export const CheckboxIndicator = defineComponent(function (componentProps: CheckboxIndicator.Props) {
+export function CheckboxIndicator(componentProps: CheckboxIndicator.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  const rootRef = useRootElement();
+  // Fragment 根（`<>{element()}</>` + 条件）下 actview 内置 useRootElement 的
+  // subTree.el 恒 null——用 Fragment 兼容版本。
+  const rootRef = useRootElementFragment();
 
   const rootState = useCheckboxRootContext();
 
@@ -42,55 +46,34 @@ export const CheckboxIndicator = defineComponent(function (componentProps: Check
     },
   });
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const shouldRender = keepMounted || mounted.value;
-    if (!shouldRender) {
-      return null;
-    }
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
 
-    const {className, render, style, ...elementProps} = componentProps;
+  const {element} = useRenderElement({
+    // stateAttributesMapping 依赖渲染期 state（mapping 动态）——props getter
+    // 里手动合并 data-* 属性（hook 的 stateAttributesMapping 仅支持静态对象）。
+    props: () => {
+      const stateValue = state();
+      const baseStateAttributesMapping = getCheckboxStateAttributesMapping(stateValue);
+      const mapping: StateAttributesMapping<CheckboxIndicatorState> = {
+        ...baseStateAttributesMapping,
+        ...transitionStatusMapping,
+      };
+      const stateAttributes = getStateAttributesProps(stateValue, mapping);
+      return [{...unrefs(elementProps), ...stateAttributes}];
+    },
+    state,
+    className,
+    style,
+    render,
+    refs: () => [rootRef as any],
+    children,
+    defaultTag: 'span',
+  });
 
-    const stateValue = state();
-    const baseStateAttributesMapping = getCheckboxStateAttributesMapping(stateValue);
-
-    const stateAttributesMapping: StateAttributesMapping<CheckboxIndicatorState> = {
-      ...baseStateAttributesMapping,
-      ...transitionStatusMapping,
-    };
-    const stateAttributes = getStateAttributesProps(stateValue, stateAttributesMapping);
-
-    const merged: HTMLProps = {};
-    Object.assign(merged, elementProps, stateAttributes);
-    if (typeof className === 'function') {
-      merged.className = className(stateValue);
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof style === 'function') {
-      merged.style = style(stateValue);
-    } else if (style !== undefined) {
-      merged.style = style;
-    }
-
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ...stateValue, ref: rootRef} as any);
-      }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof merged.className === 'string' && typeof renderClassName === 'string'
-          ? `${merged.className} ${renderClassName}`.trim()
-          : (merged.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={rootRef} />;
-    }
-    return <span {...merged} ref={rootRef} />;
-  };
-}) as unknown as (props: CheckboxIndicator.Props) => JSX.Element;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{keepMounted || mounted.value ? element() : null}</>;
+}
 
 export interface CheckboxIndicatorState extends CheckboxRootState {
   /**

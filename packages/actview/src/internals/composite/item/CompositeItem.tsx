@@ -48,7 +48,7 @@ export interface CompositeItemProps<Metadata, State extends Record<string, any>>
   metadata?: Metadata | undefined;
   refs?: Array<((element: HTMLElement | null) => void) | Ref<HTMLElement | null>> | undefined;
   props?: Array<Record<string, any> | (() => Record<string, any>)> | undefined;
-  state?: State | undefined;
+  state?: State | Ref<State | undefined> | (() => State | undefined) | undefined;
   stateAttributesMapping?: StateAttributesMapping<State> | undefined;
   tag?: keyof JSX.IntrinsicElements | undefined;
 }

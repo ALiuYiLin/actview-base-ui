@@ -1,4 +1,4 @@
-import {defineComponent, onUnmounted, toValue, useRootElement, ref} from 'actview';
+import {onUnmounted, toValue, ref, toRefs, unrefs} from 'actview';
 import { ownerDocument, ownerWindow } from '@/utils/owner';
 import { clamp } from '@/utils/clamp';
 import { roundValueToStep } from '../utils/roundValueToStep';
@@ -13,10 +13,11 @@ import { useValueAsRef } from '@/utils/useValueAsRef';
 import { useAnimationFrame } from '@/utils/useAnimationFrame';
 import { useSliderRootContext } from '../root/SliderRootContext';
 import { sliderStateAttributesMapping } from '../root/stateAttributesMapping';
-import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
-import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import type { BaseUIComponentProps } from '@/internals/types';
 import type { SliderRootState } from '../root/SliderRoot';
 import type { Ref } from 'actview';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useRootElementFragment } from '@/internals/useRootElementFragment';
 
 const INTENTIONAL_DRAG_COUNT_THRESHOLD = 3;
 
@@ -87,9 +88,11 @@ function getFingerCoords(
  *
  * Documentation: [Base UI Slider](https://base-ui.com/react/components/slider)
  */
-export const SliderControl = defineComponent(function (componentProps: SliderControl.Props) {
+export function SliderControl(componentProps: SliderControl.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  const rootRef = useRootElement();
+  // Fragment 根（`<>{element()}</>`）下 actview 内置 useRootElement 的
+  // subTree.el 恒 null——用 Fragment 兼容版本。
+  const rootRef = useRootElementFragment();
 
   const rootContextRef = useSliderRootContext();
   const {
@@ -449,116 +452,98 @@ export const SliderControl = defineComponent(function (componentProps: SliderCon
     cleanupRef.value?.();
   });
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {render: renderProp, className, style, ...elementProps} = componentProps;
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render: renderProp, style, children, ...elementProps} = toRefs(componentProps);
 
-    const stateValue = state;
-    const stateAttributes = getStateAttributesProps(stateValue, sliderStateAttributesMapping);
+  const {element} = useRenderElement({
+    props: () => {
+      const stateValue = toValue(state);
 
-    const merged: HTMLProps = {};
-    Object.assign(
-      merged,
-      {
-        ['data-base-ui-slider-control' as string]: renderBeforeHydration ? '' : undefined,
-        onPointerDown(event: any) {
-          const control = controlRef.value;
-          const target = getTarget(event);
+      const merged: any = {};
+      Object.assign(
+        merged,
+        {
+          ['data-base-ui-slider-control' as string]: renderBeforeHydration ? '' : undefined,
+          onPointerDown(event: any) {
+            const control = controlRef.value;
+            const target = getTarget(event);
 
-          if (
-            !control ||
-            disabled ||
-            event.defaultPrevented ||
-            !isElement(target) ||
-            // Only handle left clicks
-            event.button !== 0
-          ) {
-            return;
-          }
+            if (
+              !control ||
+              disabled ||
+              event.defaultPrevented ||
+              !isElement(target) ||
+              // Only handle left clicks
+              event.button !== 0
+            ) {
+              return;
+            }
 
-          if (isTargetDisabledThumb(target)) {
-            resetPressedThumb();
-            return;
-          }
+            if (isTargetDisabledThumb(target)) {
+              resetPressedThumb();
+              return;
+            }
 
-          const fingerCoords = {x: event.clientX, y: event.clientY};
-          startPressing(fingerCoords);
+            const fingerCoords = {x: event.clientX, y: event.clientY};
+            startPressing(fingerCoords);
 
-          const finger = getFingerState(fingerCoords);
+            const finger = getFingerState(fingerCoords);
 
-          if (finger == null) {
-            return;
-          }
+            if (finger == null) {
+              return;
+            }
 
-          const pressedOnFocusedThumb = contains(
-            thumbRefs.value[finger.thumbIndex],
-            activeElement(ownerDocument(control)),
-          );
+            const pressedOnFocusedThumb = contains(
+              thumbRefs.value[finger.thumbIndex],
+              activeElement(ownerDocument(control)),
+            );
 
-          if (pressedOnFocusedThumb) {
-            event.preventDefault();
-          } else {
-            focusFrame.request(() => {
-              focusThumb(finger.thumbIndex);
-            });
-          }
+            if (pressedOnFocusedThumb) {
+              event.preventDefault();
+            } else {
+              focusFrame.request(() => {
+                focusThumb(finger.thumbIndex);
+              });
+            }
 
-          setDragging(true);
+            setDragging(true);
 
-          const pressedOnAnyThumb = pressedThumbCenterOffsetRef.value != null;
-          if (!pressedOnAnyThumb) {
-            setValueFromPointer(finger, REASONS.trackPress, event);
-          }
+            const pressedOnAnyThumb = pressedThumbCenterOffsetRef.value != null;
+            if (!pressedOnAnyThumb) {
+              setValueFromPointer(finger, REASONS.trackPress, event);
+            }
 
-          if (event.pointerId) {
-            control.setPointerCapture(event.pointerId);
-          }
+            if (event.pointerId) {
+              control.setPointerCapture(event.pointerId);
+            }
 
-          moveCountRef.value = 0;
-          const doc = ownerDocument(control);
-          doc.addEventListener('pointermove', handleTouchMove as any, {passive: true});
-          doc.addEventListener('pointerup', handleTouchEnd as any, {once: true});
+            moveCountRef.value = 0;
+            const doc = ownerDocument(control);
+            doc.addEventListener('pointermove', handleTouchMove as any, {passive: true});
+            doc.addEventListener('pointerup', handleTouchEnd as any, {once: true});
+          },
         },
-      },
-      elementProps,
-      stateAttributes,
-    );
+        {...unrefs(elementProps)},
+      );
+      return [merged];
+    },
+    state: () => toValue(state),
+    stateAttributesMapping: sliderStateAttributesMapping as any,
+    className,
+    style,
+    render: renderProp,
+    refs: () => [
+      rootRef as any,
+      registerFieldControlRef as any,
+      setStylesRef as any,
+    ],
+    children,
+    defaultTag: 'div',
+  });
 
-    if (typeof className === 'function') {
-      merged.className = className(stateValue);
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof style === 'function') {
-      merged.style = style(stateValue);
-    } else if (style !== undefined) {
-      merged.style = style;
-    }
-
-    const refs = (el: HTMLElement | null) => {
-      registerFieldControlRef?.(el);
-      controlRef.value = el;
-      setStylesRef(el);
-    };
-
-    if (renderProp) {
-      if (typeof renderProp === 'function') {
-        return renderProp({...merged, ...stateValue, ref: refs} as any);
-      }
-      const renderProps = renderProp.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = renderProp.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof merged.className === 'string' && typeof renderClassName === 'string'
-          ? `${merged.className} ${renderClassName}`.trim()
-          : (merged.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={renderProp.key} {...mergedRenderProps} ref={[rootRef, refs]} />;
-    }
-    return <div {...merged} ref={[rootRef, refs]}>{componentProps.children}</div>;
-  };
-}) as unknown as (props: SliderControl.Props) => JSX.Element;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface SliderControlState extends SliderRootState {}
 

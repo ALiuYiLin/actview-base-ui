@@ -1,5 +1,6 @@
-import { defineComponent, toValue } from 'actview';
+import { toRefs, unrefs } from 'actview';
 import { useToastProviderContext } from '../provider/ToastProviderContext';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * A container viewport for toasts.
@@ -8,58 +9,42 @@ import { useToastProviderContext } from '../provider/ToastProviderContext';
  * actview 简化：children 为渲染函数 `(toast, index) => ReactNode`；
  * 布局元数据（offsetY/height）未迁移。
  */
-export const ToastViewport = defineComponent(function ToastViewport(
-  componentProps: ToastViewport.Props,
-) {
+export function ToastViewport(componentProps: ToastViewport.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
   const store = useToastProviderContext(false);
-
   const toasts = store.useState('toasts');
+  const {render, className, style, children, ref: refProp, ...elementProps} =
+    toRefs(componentProps);
 
-  return () => {
-    const {render, className, style, children, ...elementProps} = componentProps as any;
-
-    const merged: any = {...elementProps};
-
-    const mergedRefs = (el: HTMLDivElement | null) => {
-      store.state.viewport = el;
-      if (typeof componentProps.ref === 'function') {
-        (componentProps.ref as any)(el);
-      } else if (componentProps.ref) {
-        (componentProps.ref as any).value = el;
-        
+  const {element} = useRenderElement({
+    props: () => [{...unrefs(elementProps)}],
+    className,
+    style,
+    render,
+    refs: () => {
+      const refs: any[] = [
+        (el: HTMLDivElement | null) => {
+          store.state.viewport = el;
+        },
+      ];
+      if (componentProps.ref !== undefined) {
+        refs.push(refProp);
       }
-    };
-
-    const toastNodes = toasts.value.map((toast: any, index: number) => {
-      if (typeof children === 'function') {
-        return children(toast, index);
-      }
-      if (render) {
-        if (typeof render === 'function') {
-          return render({toast, ...toast});
-        }
-        const Tag = render.type as any;
-        return <Tag {...render.props} toast={toast} />;
+      return refs;
+    },
+    children: () => {
+      const childFn = children?.value;
+      if (typeof childFn === 'function') {
+        return toasts.value.map((toast: any, index: number) => childFn(toast, index));
       }
       return null;
-    });
+    },
+    defaultTag: 'div',
+  });
 
-    if (render && typeof render !== 'function') {
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof merged.className === 'string' && typeof renderClassName === 'string'
-          ? `${merged.className} ${renderClassName}`.trim()
-          : (merged.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={mergedRefs}>{toastNodes}</Tag>;
-    }
-
-    return <div {...merged} ref={mergedRefs}>{toastNodes}</div>;
-  };
-});
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface ToastViewportState {}
 

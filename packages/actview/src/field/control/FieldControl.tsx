@@ -1,4 +1,5 @@
-import {computed, defineComponent, toValue, useRootElement, watch, ref} from 'actview';
+import { useRootElementFragment } from '@/internals/useRootElementFragment';
+import {computed, toValue, watch, ref, toRefs, unrefs} from 'actview';
 import { useControlled } from '@/utils/useControlled';
 import { useFieldRootContext } from '@/internals/field-root-context/FieldRootContext';
 import { useRegisterFieldControl } from '@/internals/field-register-control/useRegisterFieldControl';
@@ -6,13 +7,13 @@ import { useFormContext } from '@/internals/form-context/FormContext';
 import { useLabelableContext } from '@/internals/labelable-provider/LabelableContext';
 import { useLabelableId } from '@/internals/labelable-provider/useLabelableId';
 import { fieldValidityMapping } from '@/internals/field-constants/constants';
-import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
-import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import type { BaseUIComponentProps } from '@/internals/types';
 import { useValueChanged } from '@/internals/useValueChanged';
 import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
 import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import type { FieldRootState } from '../root/FieldRoot';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * The form control to label and validate.
@@ -24,9 +25,9 @@ import type { FieldRootState } from '../root/FieldRoot';
  *
  * Documentation: [Base UI Field](https://base-ui.com/react/components/field)
  */
-export const FieldControl = defineComponent(function (componentProps: FieldControl.Props) {
+export function FieldControl(componentProps: FieldControl.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  const rootRef = useRootElement();
+  const rootRef = useRootElementFragment();
 
   const {
     state: fieldState,
@@ -118,106 +119,89 @@ export const FieldControl = defineComponent(function (componentProps: FieldContr
     {flush: 'post', immediate: true},
   );
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {className, render, style, ...elementProps} = componentProps;
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, ...elementProps} = toRefs(componentProps);
 
-    const stateValue: FieldControlState = {
+  const {element} = useRenderElement({
+    props: () => {
+      const merged: any = {};
+      Object.assign(
+        merged,
+        {
+          id,
+          disabled: disabled.value,
+          name,
+          'aria-labelledby': labelId.value,
+          autoFocus,
+          ...(isControlled ? {value} : {defaultValue}),
+          onChange(event: Event) {
+            const inputValue = (event.currentTarget as HTMLInputElement).value;
+            const details = createChangeEventDetails(REASONS.none, event as any);
+            onValueChange?.(inputValue, details as any);
+
+            // Controlled values sync from the `value` prop instead, so that a value the consumer
+            // rejects or rewrites never reaches the field state.
+            if (isControlled) {
+              return;
+            }
+
+            // `validation.change` reads `markedDirtyRef`, so update dirty before validating.
+            setDirty(inputValue !== (validityData.value.initialValue ?? ''));
+            setFilled(inputValue !== '');
+
+            // Workaround for https://github.com/react/react/issues/9023
+            if (!(event as any).nativeEvent?.defaultPrevented && !details.isCanceled) {
+              clearErrors(name);
+              validation.change(inputValue);
+            }
+          },
+          onFocus() {
+            setFocused(true);
+          },
+          onBlur(event: Event) {
+            const inputValue = (event.currentTarget as HTMLInputElement).value;
+            setTouched(true);
+            setFocused(false);
+
+            if (validationMode.value === 'onBlur') {
+              validation.commit(inputValue);
+            }
+          },
+          onKeyDown(event: KeyboardEvent) {
+            if (
+              (event.currentTarget as HTMLInputElement).tagName === 'INPUT' &&
+              event.key === 'Enter'
+            ) {
+              setTouched(true);
+              validation.commit((event.currentTarget as HTMLInputElement).value);
+            }
+          },
+        },
+        unrefs(elementProps),
+      );
+      return [validation.getValidationProps(disabled.value, merged)];
+    },
+    state: () => ({
       ...fieldState.value,
       disabled: disabled.value,
-    };
-    const stateAttributes = getStateAttributesProps(stateValue, fieldValidityMapping);
-
-    const merged: HTMLProps = {};
-    Object.assign(
-      merged,
-      {
-        id,
-        disabled: disabled.value,
-        name,
-        'aria-labelledby': labelId.value,
-        autoFocus,
-        ...(isControlled ? {value} : {defaultValue}),
-        onChange(event: Event) { console.log('[DBG] onChange fired', (event.currentTarget as any)?.value);
-          const inputValue = (event.currentTarget as HTMLInputElement).value;
-          const details = createChangeEventDetails(REASONS.none, event as any);
-          onValueChange?.(inputValue, details as any);
-
-          // Controlled values sync from the `value` prop instead, so that a value the consumer
-          // rejects or rewrites never reaches the field state.
-          if (isControlled) {
-            return;
-          }
-
-          // `validation.change` reads `markedDirtyRef`, so update dirty before validating.
-          setDirty(inputValue !== (validityData.value.initialValue ?? ''));
-          setFilled(inputValue !== '');
-
-          // Workaround for https://github.com/react/react/issues/9023
-          if (!(event as any).nativeEvent?.defaultPrevented && !details.isCanceled) {
-            clearErrors(name);
-            validation.change(inputValue);
-          }
-        },
-        onFocus() {
-          setFocused(true);
-        },
-        onBlur(event: Event) {
-          const inputValue = (event.currentTarget as HTMLInputElement).value;
-          setTouched(true);
-          setFocused(false);
-
-          if (validationMode.value === 'onBlur') {
-            validation.commit(inputValue);
-          }
-        },
-        onKeyDown(event: KeyboardEvent) {
-          if ((event.currentTarget as HTMLInputElement).tagName === 'INPUT' && event.key === 'Enter') {
-            setTouched(true);
-            validation.commit((event.currentTarget as HTMLInputElement).value);
-          }
-        },
+    }),
+    stateAttributesMapping: fieldValidityMapping,
+    className,
+    style,
+    render,
+    refs: () => [
+      (el: any) => {
+        validation.inputRef.value = el;
+        inputRef.value = el;
+        rootRef.value = el;
       },
-      elementProps,
-      stateAttributes,
-    );
-    if (typeof className === 'function') {
-      merged.className = className(stateValue);
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof style === 'function') {
-      merged.style = style(stateValue);
-    } else if (style !== undefined) {
-      merged.style = style;
-    }
+    ],
+    defaultTag: 'input',
+  });
 
-    const finalProps = validation.getValidationProps(disabled.value, merged);
-
-    const refCallback = (el: any) => {
-      validation.inputRef.value = el;
-      inputRef.value = el;
-      rootRef.value = el;
-    };
-
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...finalProps, ...stateValue, ref: refCallback} as any);
-      }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, finalProps, restRenderProps);
-      mergedRenderProps.className =
-        typeof finalProps.className === 'string' && typeof renderClassName === 'string'
-          ? `${finalProps.className} ${renderClassName}`.trim()
-          : (finalProps.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, finalProps.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={refCallback} />;
-    }
-    return <input {...finalProps} ref={refCallback} />;
-  };
-}) as unknown as (props: FieldControl.Props) => JSX.Element;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 function activeElement(doc: Document | null): Element | null {
   return doc?.activeElement ?? null;

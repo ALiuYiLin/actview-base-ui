@@ -1,5 +1,6 @@
-import { defineComponent, computed, toValue } from 'actview';
+import { toRefs, unrefs, computed } from 'actview';
 import { useNavigationMenuRootContext } from '../root/NavigationMenuRootContext';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * A trigger for the navigation menu.
@@ -8,58 +9,48 @@ import { useNavigationMenuRootContext } from '../root/NavigationMenuRootContext'
  * actview 简化：hover/点击均切换 open（鼠标进入与按下）；键盘导航未接线
  * （floating-ui actview 层 useListNavigation 已完整移植）。
  */
-export const NavigationMenuTrigger = defineComponent(function NavigationMenuTrigger(
-  componentProps: NavigationMenuTrigger.Props,
-) {
+export function NavigationMenuTrigger(componentProps: NavigationMenuTrigger.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
   const context = useNavigationMenuRootContext(false);
-  const children = toValue(componentProps.children);
-  const isActive = computed(() => context.valueRef.value === (componentProps as any).value);
+  const {render, className, style, children, ref: refProp, value, ...elementProps} =
+    toRefs(componentProps);
+  const isActive = computed(() => context.valueRef.value === value?.value);
 
-  return () => {
-    const {render, className, style, value, ...elementProps} = componentProps as any;
-
-    const handleEnter = () => {
-      if (!context.disabled && value != null) {
-        context.setValue(value);
-      }
-    };
-
-    const handleClick = () => {
-      if (!context.disabled) {
-        if (value != null) {
-          context.setValue(context.valueRef.value === value ? null : value);
+  const {element} = useRenderElement({
+    props: () => {
+      const handleEnter = () => {
+        if (!context.disabled && value?.value != null) {
+          context.setValue(value.value);
         }
-      }
-    };
-
-    const merged: any = {
-      type: 'button',
-      ...elementProps,
-      'data-active': isActive.value ? '' : undefined,
-      onClick: handleClick,
-      onMouseEnter: handleEnter,
-    };
-
-    const ref = (el: any) => {
-      if (componentProps.ref) {
-        if (typeof componentProps.ref === 'function') (componentProps.ref as any)(el);
-        else {
-          (componentProps.ref as any).value = el;
-          
+      };
+      const handleClick = () => {
+        if (!context.disabled) {
+          if (value?.value != null) {
+            context.setValue(context.valueRef.value === value.value ? null : value.value);
+          }
         }
-      }
-    };
+      };
+      return [
+        {
+          type: 'button',
+          ...unrefs(elementProps),
+          'data-active': isActive.value ? '' : undefined,
+          onClick: handleClick,
+          onMouseEnter: handleEnter,
+        },
+      ];
+    },
+    className,
+    style,
+    render,
+    refs: () => (componentProps.ref !== undefined ? [refProp as any] : []),
+    children,
+    defaultTag: 'button',
+  });
 
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ref} as any);
-      }
-      const Tag = render.type as any;
-      return <Tag {...render.props} {...merged} ref={ref}>{children}</Tag>;
-    }
-    return <button {...merged} ref={ref}>{children}</button>;
-  };
-});
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface NavigationMenuTriggerProps {
   /**

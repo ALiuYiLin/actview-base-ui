@@ -1,11 +1,13 @@
-import { computed, defineComponent, toValue, useRootElement } from 'actview';
-import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { computed, toValue, toRefs, unrefs } from 'actview';
+import type { BaseUIComponentProps } from '@/internals/types';
 import type { RadioRootState } from '../root/RadioRoot';
 import { useRadioRootContext } from '../root/RadioRootContext';
 import { stateAttributesMapping } from '../utils/stateAttributesMapping';
 import { useOpenChangeComplete } from '@/internals/useOpenChangeComplete';
 import { type TransitionStatus, useTransitionStatus } from '@/internals/useTransitionStatus';
 import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useRootElementFragment } from '@/internals/useRootElementFragment';
 
 /**
  * Indicates whether the radio button is selected.
@@ -13,9 +15,11 @@ import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
  *
  * Documentation: [Base UI Radio](https://base-ui.com/react/components/radio)
  */
-export const RadioIndicator = defineComponent(function (componentProps: RadioIndicator.Props) {
+export function RadioIndicator(componentProps: RadioIndicator.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  const rootRef = useRootElement();
+  // Fragment 根（`<>{element()}</>` + 条件）下 actview 内置 useRootElement 的
+  // subTree.el 恒 null——用 Fragment 兼容版本。
+  const rootRef = useRootElementFragment();
 
   const rootState = useRadioRootContext();
 
@@ -40,49 +44,27 @@ export const RadioIndicator = defineComponent(function (componentProps: RadioInd
     },
   });
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const shouldRender = keepMounted || mounted.value;
-    if (!shouldRender) {
-      return null;
-    }
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
 
-    const {className, render, style, ...elementProps} = componentProps;
+  const {element} = useRenderElement({
+    props: () => {
+      const stateValue = state();
+      const stateAttributes = getStateAttributesProps(stateValue, stateAttributesMapping);
+      return [{...unrefs(elementProps), ...stateAttributes}];
+    },
+    state,
+    className,
+    style,
+    render,
+    refs: () => [rootRef as any],
+    children,
+    defaultTag: 'span',
+  });
 
-    const stateValue = state();
-    const stateAttributes = getStateAttributesProps(stateValue, stateAttributesMapping);
-
-    const merged: HTMLProps = {};
-    Object.assign(merged, elementProps, stateAttributes);
-    if (typeof className === 'function') {
-      merged.className = className(stateValue);
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof style === 'function') {
-      merged.style = style(stateValue);
-    } else if (style !== undefined) {
-      merged.style = style;
-    }
-
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ...stateValue, ref: rootRef} as any);
-      }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof merged.className === 'string' && typeof renderClassName === 'string'
-          ? `${merged.className} ${renderClassName}`.trim()
-          : (merged.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={rootRef} />;
-    }
-    return <span {...merged} ref={rootRef} />;
-  };
-}) as unknown as (props: RadioIndicator.Props) => JSX.Element;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{keepMounted || mounted.value ? element() : null}</>;
+}
 
 export interface RadioIndicatorProps extends BaseUIComponentProps<'span', RadioIndicatorState> {
   /**

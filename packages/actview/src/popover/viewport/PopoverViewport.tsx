@@ -1,9 +1,10 @@
-import { defineComponent, toValue } from 'actview';
+import { toRefs, unrefs, toValue } from 'actview';
 import { mergePropsN } from '@/merge-props';
 import { usePopoverRootContext } from '../root/PopoverRootContext';
 import { usePopoverPositionerContext } from '../positioner/PopoverPositionerContext';
-import { popupViewportStateMapping, usePopupViewport } from '@/utils/usePopupViewport';
+import { usePopupViewport } from '@/utils/usePopupViewport';
 import type { BaseUIComponentProps } from '@/internals/types';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * A viewport for displaying content transitions.
@@ -11,21 +12,20 @@ import type { BaseUIComponentProps } from '@/internals/types';
  * changes based on the trigger, and switching between them is animated.
  * Renders a `<div>` element.
  */
-export const PopoverViewport = defineComponent(function PopoverViewport(
-  componentProps: PopoverViewport.Props,
-) {
-  const children = toValue(componentProps.children);
-
+export function PopoverViewport(componentProps: PopoverViewport.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
   const store = usePopoverRootContext(false);
   const positionerContext = usePopoverPositionerContext();
   const side = positionerContext?.side;
+  const {render, className, style, children, ref: refProp, ...elementProps} =
+    toRefs(componentProps);
 
   const instantType = store.useState('instantType');
 
   const {children: childrenToRender, state: viewportState} = usePopupViewport({
     store: store as any,
     side,
-    children,
+    children: children as any,
   });
 
   const state = (): PopoverViewportState => ({
@@ -34,43 +34,26 @@ export const PopoverViewport = defineComponent(function PopoverViewport(
     instant: instantType.value as any,
   });
 
-  return () => {
-    const {render, className: cls, style: st, ...elementProps} = componentProps as any;
-    const stateValue = state();
-
-    const merged: any = mergePropsN<any>([elementProps, {children: childrenToRender}]);
-
-    if (stateValue.activationDirection) {
-      merged['data-activation-direction'] = stateValue.activationDirection;
-    }
-
-    const mergedRefs = (el: HTMLDivElement | null) => {
-      if (typeof componentProps.ref === 'function') {
-        (componentProps.ref as any)(el);
-      } else if (componentProps.ref) {
-        (componentProps.ref as any).value = el;
-        
+  const {element} = useRenderElement({
+    props: () => {
+      const merged: any = mergePropsN<any>([{...unrefs(elementProps)}]);
+      if (state().activationDirection) {
+        merged['data-activation-direction'] = state().activationDirection;
       }
-    };
+      return [merged];
+    },
+    state,
+    className,
+    style,
+    render,
+    refs: () => (componentProps.ref !== undefined ? [refProp as any] : []),
+    children: () => toValue(childrenToRender as any),
+    defaultTag: 'div',
+  });
 
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ...stateValue, ref: mergedRefs} as any);
-      }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof merged.className === 'string' && typeof renderClassName === 'string'
-          ? `${merged.className} ${renderClassName}`.trim()
-          : (merged.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={mergedRefs}>{childrenToRender}</Tag>;
-    }
-    return <div {...merged} ref={mergedRefs}>{childrenToRender}</div>;
-  };
-});
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface PopoverViewportState {
   /**

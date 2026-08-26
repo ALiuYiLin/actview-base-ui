@@ -1,9 +1,10 @@
-import { defineComponent, toValue, useRootElement } from 'actview';
-import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
-import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import { toValue, toRefs, unrefs } from 'actview';
+import type { BaseUIComponentProps } from '@/internals/types';
 import type { AccordionItemState } from '../item/AccordionItem';
 import { useAccordionItemContext } from '../item/AccordionItemContext';
 import { accordionStateAttributesMapping } from '../item/stateAttributesMapping';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useRootElementFragment } from '@/internals/useRootElementFragment';
 
 /**
  * A heading that labels the corresponding panel.
@@ -11,49 +12,31 @@ import { accordionStateAttributesMapping } from '../item/stateAttributesMapping'
  *
  * Documentation: [Base UI Accordion](https://base-ui.com/react/components/accordion)
  */
-export const AccordionHeader = defineComponent(function (componentProps: AccordionHeader.Props) {
+export function AccordionHeader(componentProps: AccordionHeader.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  const rootRef = useRootElement();
+  // Fragment 根（`<>{element()}</>`）下 actview 内置 useRootElement 的
+  // subTree.el 恒 null——用 Fragment 兼容版本。
+  const rootRef = useRootElementFragment();
   const {state} = toValue(useAccordionItemContext());
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {className, render, style, ...elementProps} = componentProps;
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
 
-    const stateValue = toValue(state);
-    const stateAttributes = getStateAttributesProps(stateValue, accordionStateAttributesMapping);
+  const {element} = useRenderElement({
+    props: () => [{...unrefs(elementProps)}],
+    state: () => toValue(state),
+    stateAttributesMapping: accordionStateAttributesMapping,
+    className,
+    style,
+    render,
+    refs: () => [rootRef as any],
+    children,
+    defaultTag: 'h3',
+  });
 
-    const merged: HTMLProps = {};
-    Object.assign(merged, elementProps, stateAttributes);
-    if (typeof className === 'function') {
-      merged.className = className(stateValue);
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof style === 'function') {
-      merged.style = style(stateValue);
-    } else if (style !== undefined) {
-      merged.style = style;
-    }
-
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ...stateValue, ref: rootRef});
-      }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof merged.className === 'string' && typeof renderClassName === 'string'
-          ? `${merged.className} ${renderClassName}`.trim()
-          : (merged.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={rootRef} />;
-    }
-    return <h3 {...merged} ref={rootRef} />;
-  };
-}) as unknown as (props: AccordionHeader.Props) => JSX.Element;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface AccordionHeaderState extends AccordionItemState {}
 

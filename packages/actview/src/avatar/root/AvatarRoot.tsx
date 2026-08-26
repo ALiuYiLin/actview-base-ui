@@ -1,9 +1,8 @@
-import { defineComponent, ref, useRootElement } from 'actview';
-import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
-import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
-import { mergeClassNames, mergeStyles } from '@/utils/mergeClassNames';
+import { ref, toRefs, unrefs, useRootElement } from 'actview';
+import type { BaseUIComponentProps } from '@/internals/types';
 import { AvatarRootContext } from './AvatarRootContext';
 import { avatarStateAttributesMapping } from './stateAttributesMapping';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * Displays a user's profile picture, initials, or fallback icon.
@@ -11,8 +10,9 @@ import { avatarStateAttributesMapping } from './stateAttributesMapping';
  *
  * Documentation: [Base UI Avatar](https://base-ui.com/react/components/avatar)
  */
-export const AvatarRoot = defineComponent(function (componentProps: AvatarRoot.Props) {
+export function AvatarRoot(componentProps: AvatarRoot.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
+  // Provider 根（`<AvatarRootContext.Provider>`），无 Fragment 根问题。
   const rootRef = useRootElement();
   const imageLoadingStatus = ref<ImageLoadingStatus>('idle');
 
@@ -26,49 +26,28 @@ export const AvatarRoot = defineComponent(function (componentProps: AvatarRoot.P
     setImageLoadingStatus,
   };
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {className, render, style, ...elementProps} = componentProps;
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
 
-    const state: AvatarRootState = {
-      imageLoadingStatus: imageLoadingStatus.value,
-    };
+  const stateFn = (): AvatarRootState => ({
+    imageLoadingStatus: imageLoadingStatus.value,
+  });
 
-    const stateAttributes = getStateAttributesProps(state, avatarStateAttributesMapping);
+  const {element} = useRenderElement({
+    props: () => [{...unrefs(elementProps)}],
+    state: stateFn,
+    stateAttributesMapping: avatarStateAttributesMapping as any,
+    className,
+    style,
+    render,
+    refs: () => [rootRef as any],
+    children,
+    defaultTag: 'span',
+  });
 
-    const merged: HTMLProps = {};
-    Object.assign(merged, elementProps, stateAttributes);
-    if (typeof className === 'function') {
-      merged.className = className(state);
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof style === 'function') {
-      merged.style = style(state);
-    } else if (style !== undefined) {
-      merged.style = style;
-    }
-
-    let element: any;
-    if (render) {
-      if (typeof render === 'function') {
-        element = render({...merged, ...state, ref: rootRef});
-      } else {
-        const renderProps = render.props ?? {};
-        const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-        const Tag = render.type as any;
-        const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-        mergedRenderProps.className = mergeClassNames(merged.className, renderClassName);
-        mergedRenderProps.style = mergeStyles(merged.style, renderStyle);
-        element = <Tag key={render.key} {...mergedRenderProps} ref={rootRef} />;
-      }
-    } else {
-      element = <span {...merged} ref={rootRef} />;
-    }
-
-    return <AvatarRootContext.Provider value={contextValue}>{element}</AvatarRootContext.Provider>;
-  };
-}) as unknown as (props: AvatarRoot.Props) => JSX.Element;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <AvatarRootContext.Provider value={contextValue}>{element()}</AvatarRootContext.Provider>;
+}
 
 export type ImageLoadingStatus = 'idle' | 'loading' | 'loaded' | 'error';
 

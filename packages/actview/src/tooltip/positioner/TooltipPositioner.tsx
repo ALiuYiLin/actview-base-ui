@@ -1,4 +1,4 @@
-import {defineComponent, watch, ref} from 'actview';
+import {watch, ref} from 'actview';
 import { useTooltipRootContext } from '../root/TooltipRootContext';
 import { TooltipPositionerContext } from './TooltipPositionerContext';
 import {
@@ -19,9 +19,7 @@ import { usePositioner } from '@/utils/usePositioner';
  *
  * Documentation: [Base UI Tooltip](https://base-ui.com/react/components/tooltip)
  */
-export const TooltipPositioner = defineComponent(function TooltipPositioner(
-  componentProps: TooltipPositioner.Props,
-) {
+export function TooltipPositioner(componentProps: TooltipPositioner.Props) {
   const {
     anchor,
     positionMethod,
@@ -119,12 +117,13 @@ export const TooltipPositioner = defineComponent(function TooltipPositioner(
     inert: () => !open.value,
   }) as any;
 
-  return () => (
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return (
     <TooltipPositionerContext.Provider value={positioner as any}>
       {element()}
     </TooltipPositionerContext.Provider>
   );
-});
+}
 
 export interface TooltipPositionerState {
   /**

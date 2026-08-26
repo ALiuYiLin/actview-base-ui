@@ -1,19 +1,16 @@
-import { defineComponent, toValue } from 'actview';
+import { toRefs, toValue, unrefs } from 'actview';
 import { mergePropsN } from '@/merge-props';
 import { useTooltipRootContext } from '../root/TooltipRootContext';
 import { useTooltipPositionerContext } from '../positioner/TooltipPositionerContext';
-import { popupViewportStateMapping, usePopupViewport } from '@/utils/usePopupViewport';
+import { usePopupViewport } from '@/utils/usePopupViewport';
 import type { BaseUIComponentProps } from '@/internals/types';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * A viewport for displaying content transitions.
  * Renders a `<div>` element.
  */
-export const TooltipViewport = defineComponent(function TooltipViewport(
-  componentProps: TooltipViewport.Props,
-) {
-  const children = toValue(componentProps.children);
-
+export function TooltipViewport(componentProps: TooltipViewport.Props) {
   const store = useTooltipRootContext(false);
   const positionerContext = useTooltipPositionerContext();
   const side = positionerContext?.side;
@@ -23,7 +20,7 @@ export const TooltipViewport = defineComponent(function TooltipViewport(
   const {children: childrenToRender, state: viewportState} = usePopupViewport({
     store: store as any,
     side,
-    children,
+    children: () => toValue(componentProps.children),
   });
 
   const state = (): TooltipViewportState => ({
@@ -32,43 +29,34 @@ export const TooltipViewport = defineComponent(function TooltipViewport(
     instant: instantType.value as any,
   });
 
-  return () => {
-    const {render, className: cls, style: st, ...elementProps} = componentProps as any;
-    const stateValue = state();
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, ref: refProp, ...elementProps} = toRefs(componentProps);
 
-    const merged: any = mergePropsN<any>([elementProps, {children: childrenToRender}]);
+  const {element} = useRenderElement({
+    props: () => {
+      const stateValue = state();
 
-    if (stateValue.activationDirection) {
-      merged['data-activation-direction'] = stateValue.activationDirection;
-    }
+      const merged: any = mergePropsN<any>([
+        {...unrefs(elementProps)},
+        {children: toValue(childrenToRender)},
+      ]);
 
-    const mergedRefs = (el: HTMLDivElement | null) => {
-      if (typeof componentProps.ref === 'function') {
-        (componentProps.ref as any)(el);
-      } else if (componentProps.ref) {
-        (componentProps.ref as any).value = el;
-        
+      if (stateValue.activationDirection) {
+        merged['data-activation-direction'] = stateValue.activationDirection;
       }
-    };
+      return [merged];
+    },
+    state,
+    className,
+    style,
+    render,
+    refs: () => [refProp as any],
+    defaultTag: 'div',
+  });
 
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ...stateValue, ref: mergedRefs} as any);
-      }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof merged.className === 'string' && typeof renderClassName === 'string'
-          ? `${merged.className} ${renderClassName}`.trim()
-          : (merged.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={mergedRefs}>{childrenToRender}</Tag>;
-    }
-    return <div {...merged} ref={mergedRefs}>{childrenToRender}</div>;
-  };
-});
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface TooltipViewportState {
   /**

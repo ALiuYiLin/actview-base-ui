@@ -1,10 +1,10 @@
-import { defineComponent, onUnmounted, ref, toValue, useRootElement, watch } from 'actview';
+import { onUnmounted, ref, toValue, watch } from 'actview';
 import { useMergedRefs } from '@/utils/useMergedRefs';
 import { visuallyHidden } from '@/utils/visuallyHidden';
 import { ownerWindow } from '@/utils/owner';
 import { clamp } from '@/utils/clamp';
 import { formatNumber } from '@/utils/formatNumber';
-import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import type { BaseUIComponentProps } from '@/internals/types';
 import { useBaseUiId } from '@/internals/useBaseUiId';
 import { useIsHydrating } from '@/utils/useIsHydrating';
 import { valueToPercent } from '@/utils/valueToPercent';
@@ -32,6 +32,7 @@ import { useSliderRootContext } from '../root/SliderRootContext';
 import { sliderStateAttributesMapping } from '../root/stateAttributesMapping';
 import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
 import type { Ref } from 'actview';
+import { useRootElementFragment } from '@/internals/useRootElementFragment';
 
 const ALL_KEYS = new Set([...COMPOSITE_KEYS, PAGE_UP, PAGE_DOWN]);
 
@@ -90,9 +91,11 @@ function getNewValue(
  *
  * Documentation: [Base UI Slider](https://base-ui.com/react/components/slider)
  */
-export const SliderThumb = defineComponent(function (componentProps: SliderThumb.Props) {
+export function SliderThumb(componentProps: SliderThumb.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  const rootRef = useRootElement();
+  // Fragment 根（`<>{element()}</>`）下 actview 内置 useRootElement 的
+  // subTree.el 恒 null——用 Fragment 兼容版本。
+  const rootRef = useRootElementFragment();
 
   const idProp = toValue(componentProps.id);
   const ariaDescribedByProp = toValue(componentProps['aria-describedby']);
@@ -258,256 +261,262 @@ export const SliderThumb = defineComponent(function (componentProps: SliderThumb
   const startEdge = vertical ? 'bottom' : 'insetInlineStart';
   const crossOffsetProperty = vertical ? 'left' : 'top';
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {render, className, children: childrenProp, style, ...elementProps} = componentProps;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  // 渲染期逻辑（zIndex/thumbStyle/inputBase/merged/render 分支）在 IIFE 中执行
+  return (
+    <>
+      {(() => {
+        const {render, className, children: childrenProp, style, ...elementProps} =
+          componentProps as any;
 
-    let zIndex: number | undefined;
-    if (range) {
-      if (activeIndex === index) {
-        zIndex = 2;
-      } else if (safeLastUsedThumbIndex === index) {
-        zIndex = 1;
-      }
-    } else if (activeIndex === index) {
-      zIndex = 1;
-    }
-
-    let thumbStyle: Record<string, any>;
-    if (!inset && !Number.isFinite(thumbValuePercent)) {
-      thumbStyle = visuallyHidden;
-    } else {
-      thumbStyle = {
-        position: 'absolute',
-        [startEdge]: inset ? 'var(--position)' : `${thumbValuePercent}%`,
-        [crossOffsetProperty]: '50%',
-        translate: `${(vertical || !rtl ? -1 : 1) * 50}% ${(vertical ? 1 : -1) * 50}%`,
-        zIndex,
-        ...(inset && {
-          ['--position' as string]: `${positionPercent.value ?? 0}%`,
-          visibility:
-            (renderBeforeHydration && isHydrating) || positionPercent.value === undefined
-              ? ('hidden' as const)
-              : undefined,
-        }),
-      };
-    }
-
-    let cssWritingMode: string | undefined;
-    if (vertical) {
-      cssWritingMode = rtl ? 'vertical-rl' : 'vertical-lr';
-    }
-
-    const ariaLabel =
-      typeof getAriaLabelProp === 'function' ? getAriaLabelProp(index) : ariaLabelProp;
-
-    const inputBase = {
-      'aria-label': ariaLabel,
-      'aria-labelledby': ariaLabelledByProp ?? (ariaLabel == null ? labelId : undefined),
-      'aria-describedby': ariaDescribedByProp,
-      'aria-orientation': orientation,
-      'aria-valuenow': thumbValue,
-      'aria-valuetext':
-        typeof getAriaValueTextProp === 'function'
-          ? getAriaValueTextProp(formatNumber(thumbValue, locale, format), thumbValue, index)
-          : (ariaValueTextProp ?? getDefaultAriaValueText(sliderValues, index, format, locale)),
-      disabled,
-      form,
-      id: inputId,
-      max,
-      min,
-      name,
-      onChange(event: any) {
-        handleInputChange(event.currentTarget.valueAsNumber, index, event);
-      },
-      onFocus(event: any) {
-        const isRestoringFocusVisible = restoringFocusVisibleRef.value;
-        restoringFocusVisibleRef.value = false;
-        setActive(index);
-        setFocused(true);
-
-        if (isRestoringFocusVisible) {
-          event.stopPropagation();
-        }
-      },
-      onBlur(event: any) {
-        if (restoringFocusVisibleRef.value) {
-          event.stopPropagation();
-          return;
-        }
-
-        setActive(-1);
-
-        // Keep field-level blur logic from running while focus moves to another thumb
-        // of the same slider, so validation doesn't commit mid-interaction.
-        if (thumbRefs.value.some((thumb) => contains(thumb, event.relatedTarget))) {
-          return;
-        }
-
-        setTouched(true);
-        setFocused(false);
-
-        if (validationMode.value === 'onBlur') {
-          validation.commit(getSliderValue(thumbValue, index, min, max, range, sliderValues));
-        }
-      },
-      onKeyDown(event: any) {
-        if (event.defaultPrevented) {
-          return;
-        }
-
-        if (!ALL_KEYS.has(event.key)) {
-          return;
-        }
-
-        if (COMPOSITE_KEYS.has(event.key)) {
-          event.stopPropagation();
-        }
-
-        let newValue = null as number | null;
-        let direction = 0;
-        let increment = event.shiftKey ? largeStep : step;
-        const roundedValue = roundValueToStep(thumbValue, step, min);
-        switch (event.key) {
-          case ARROW_UP:
-            direction = 1;
-            break;
-          case ARROW_RIGHT:
-            direction = rtl ? -1 : 1;
-            break;
-          case ARROW_DOWN:
-            direction = -1;
-            break;
-          case ARROW_LEFT:
-            direction = rtl ? 1 : -1;
-            break;
-          case PAGE_UP:
-            increment = largeStep;
-            direction = 1;
-            break;
-          case PAGE_DOWN:
-            increment = largeStep;
-            direction = -1;
-            break;
-          case END:
-            newValue =
-              range && Number.isFinite(sliderValues[index + 1])
-                ? sliderValues[index + 1] - step * minStepsBetweenValues
-                : max;
-            break;
-          case HOME:
-            newValue =
-              range && Number.isFinite(sliderValues[index - 1])
-                ? sliderValues[index - 1] + step * minStepsBetweenValues
-                : min;
-            break;
-          default:
-            break;
-        }
-
-        if (direction !== 0) {
-          newValue = getNewValue(roundedValue, increment, direction, min, max);
-        }
-
-        if (newValue !== null) {
-          const input = event.currentTarget as HTMLInputElement;
-
-          if (!matchesFocusVisible(input)) {
-            restoringFocusVisibleRef.value = true;
-            input.blur();
-            input.focus({preventScroll: true});
+        let zIndex: number | undefined;
+        if (range) {
+          if (activeIndex === index) {
+            zIndex = 2;
+          } else if (safeLastUsedThumbIndex === index) {
+            zIndex = 1;
           }
-
-          handleInputChange(newValue, index, event);
-          event.preventDefault();
+        } else if (activeIndex === index) {
+          zIndex = 1;
         }
-      },
-      step,
-      style: {
-        ...visuallyHidden,
-        // So that VoiceOver's focus indicator matches the thumb's dimensions
-        width: '100%',
-        height: '100%',
-        writingMode: cssWritingMode,
-      },
-      tabIndex: tabIndexProp,
-      type: 'range',
-      value: thumbValue ?? '',
-    };
 
-    const mergedInputRef = useMergedRefs(
-      inputRef as any,
-      validation.inputRef as any,
-      inputRefProp,
-    );
+        let thumbStyle: Record<string, any>;
+        if (!inset && !Number.isFinite(thumbValuePercent)) {
+          thumbStyle = visuallyHidden;
+        } else {
+          thumbStyle = {
+            position: 'absolute',
+            [startEdge]: inset ? 'var(--position)' : `${thumbValuePercent}%`,
+            [crossOffsetProperty]: '50%',
+            translate: `${(vertical || !rtl ? -1 : 1) * 50}% ${(vertical ? 1 : -1) * 50}%`,
+            zIndex,
+            ...(inset && {
+              ['--position' as string]: `${positionPercent.value ?? 0}%`,
+              visibility:
+                (renderBeforeHydration && isHydrating) || positionPercent.value === undefined
+                  ? ('hidden' as const)
+                  : undefined,
+            }),
+          };
+        }
 
-    const merged = (): Record<string, any> => {
-      const stateValue = state;
-      const stateAttributes = getStateAttributesProps(stateValue, sliderStateAttributesMapping);
+        let cssWritingMode: string | undefined;
+        if (vertical) {
+          cssWritingMode = rtl ? 'vertical-rl' : 'vertical-lr';
+        }
 
-      const out: Record<string, any> = {};
-      Object.assign(
-        out,
-        {
-          ['data-index' as string]: index,
-          id,
-          onPointerDown(event: any) {
-            // Keep disabled thumbs from writing transient pointer state.
-            if (disabled) {
+        const ariaLabel =
+          typeof getAriaLabelProp === 'function' ? getAriaLabelProp(index) : ariaLabelProp;
+
+        const inputBase = {
+          'aria-label': ariaLabel,
+          'aria-labelledby': ariaLabelledByProp ?? (ariaLabel == null ? labelId : undefined),
+          'aria-describedby': ariaDescribedByProp,
+          'aria-orientation': orientation,
+          'aria-valuenow': thumbValue,
+          'aria-valuetext':
+            typeof getAriaValueTextProp === 'function'
+              ? getAriaValueTextProp(formatNumber(thumbValue, locale, format), thumbValue, index)
+              : (ariaValueTextProp ?? getDefaultAriaValueText(sliderValues, index, format, locale)),
+          disabled,
+          form,
+          id: inputId,
+          max,
+          min,
+          name,
+          onChange(event: any) {
+            handleInputChange(event.currentTarget.valueAsNumber, index, event);
+          },
+          onFocus(event: any) {
+            const isRestoringFocusVisible = restoringFocusVisibleRef.value;
+            restoringFocusVisibleRef.value = false;
+            setActive(index);
+            setFocused(true);
+
+            if (isRestoringFocusVisible) {
+              event.stopPropagation();
+            }
+          },
+          onBlur(event: any) {
+            if (restoringFocusVisibleRef.value) {
+              event.stopPropagation();
               return;
             }
 
-            pressedThumbIndexRef.value = index;
-            const midpoint = getMidpoint(event.currentTarget, vertical);
-            pressedThumbCenterOffsetRef.value =
-              (vertical ? event.clientY : event.clientX) - midpoint;
+            setActive(-1);
+
+            // Keep field-level blur logic from running while focus moves to another thumb
+            // of the same slider, so validation doesn't commit mid-interaction.
+            if (thumbRefs.value.some((thumb) => contains(thumb, event.relatedTarget))) {
+              return;
+            }
+
+            setTouched(true);
+            setFocused(false);
+
+            if (validationMode.value === 'onBlur') {
+              validation.commit(getSliderValue(thumbValue, index, min, max, range, sliderValues));
+            }
           },
-          style: thumbStyle,
-        },
-        elementProps,
-        stateAttributes,
-      );
+          onKeyDown(event: any) {
+            if (event.defaultPrevented) {
+              return;
+            }
 
-      const validationProps = validation.getValidationProps(disabled, out);
-      Object.assign(out, validationProps);
+            if (!ALL_KEYS.has(event.key)) {
+              return;
+            }
 
-      if (typeof className === 'function') {
-        out.className = className(stateValue);
-      } else if (className !== undefined) {
-        out.className = className;
-      }
-      if (typeof style === 'function') {
-        out.style = Object.assign({}, thumbStyle, style(stateValue));
-      }
+            if (COMPOSITE_KEYS.has(event.key)) {
+              event.stopPropagation();
+            }
 
-      out.children = (
-        <>
-          {childrenProp}
-          <input ref={mergedInputRef} {...(inputBase as any)} />
-        </>
-      );
-      return out;
-    };
+            let newValue = null as number | null;
+            let direction = 0;
+            let increment = event.shiftKey ? largeStep : step;
+            const roundedValue = roundValueToStep(thumbValue, step, min);
+            switch (event.key) {
+              case ARROW_UP:
+                direction = 1;
+                break;
+              case ARROW_RIGHT:
+                direction = rtl ? -1 : 1;
+                break;
+              case ARROW_DOWN:
+                direction = -1;
+                break;
+              case ARROW_LEFT:
+                direction = rtl ? 1 : -1;
+                break;
+              case PAGE_UP:
+                increment = largeStep;
+                direction = 1;
+                break;
+              case PAGE_DOWN:
+                increment = largeStep;
+                direction = -1;
+                break;
+              case END:
+                newValue =
+                  range && Number.isFinite(sliderValues[index + 1])
+                    ? sliderValues[index + 1] - step * minStepsBetweenValues
+                    : max;
+                break;
+              case HOME:
+                newValue =
+                  range && Number.isFinite(sliderValues[index - 1])
+                    ? sliderValues[index - 1] + step * minStepsBetweenValues
+                    : min;
+                break;
+              default:
+                break;
+            }
 
-    if (render) {
-      const out = merged();
-      if (typeof render === 'function') {
-        return render({...out, ...state, ref: rootRef} as any);
-      }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, out, restRenderProps);
-      mergedRenderProps.className =
-        typeof out.className === 'string' && typeof renderClassName === 'string'
-          ? `${out.className} ${renderClassName}`.trim()
-          : (out.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, out.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={rootRef} />;
-    }
-    return <div {...merged()} ref={rootRef} />;
-  };
-}) as unknown as (props: SliderThumb.Props) => JSX.Element;
+            if (direction !== 0) {
+              newValue = getNewValue(roundedValue, increment, direction, min, max);
+            }
+
+            if (newValue !== null) {
+              const input = event.currentTarget as HTMLInputElement;
+
+              if (!matchesFocusVisible(input)) {
+                restoringFocusVisibleRef.value = true;
+                input.blur();
+                input.focus({preventScroll: true});
+              }
+
+              handleInputChange(newValue, index, event);
+              event.preventDefault();
+            }
+          },
+          step,
+          style: {
+            ...visuallyHidden,
+            // So that VoiceOver's focus indicator matches the thumb's dimensions
+            width: '100%',
+            height: '100%',
+            writingMode: cssWritingMode,
+          },
+          tabIndex: tabIndexProp,
+          type: 'range',
+          value: thumbValue ?? '',
+        };
+
+        const mergedInputRef = useMergedRefs(
+          inputRef as any,
+          validation.inputRef as any,
+          inputRefProp,
+        );
+
+        const merged = (): Record<string, any> => {
+          const stateValue = toValue(state);
+          const stateAttributes = getStateAttributesProps(stateValue, sliderStateAttributesMapping);
+
+          const out: Record<string, any> = {};
+          Object.assign(
+            out,
+            {
+              ['data-index' as string]: index,
+              id,
+              onPointerDown(event: any) {
+                // Keep disabled thumbs from writing transient pointer state.
+                if (disabled) {
+                  return;
+                }
+
+                pressedThumbIndexRef.value = index;
+                const midpoint = getMidpoint(event.currentTarget, vertical);
+                pressedThumbCenterOffsetRef.value =
+                  (vertical ? event.clientY : event.clientX) - midpoint;
+              },
+              style: thumbStyle,
+            },
+            elementProps,
+            stateAttributes,
+          );
+
+          const validationProps = validation.getValidationProps(disabled, out);
+          Object.assign(out, validationProps);
+
+          if (typeof className === 'function') {
+            out.className = className(stateValue);
+          } else if (className !== undefined) {
+            out.className = className;
+          }
+          if (typeof style === 'function') {
+            out.style = Object.assign({}, thumbStyle, style(stateValue));
+          }
+
+          out.children = (
+            <>
+              {childrenProp}
+              <input ref={mergedInputRef} {...(inputBase as any)} />
+            </>
+          );
+          return out;
+        };
+
+        if (render) {
+          const out = merged();
+          if (typeof render === 'function') {
+            return render({...out, ...toValue(state), ref: rootRef} as any);
+          }
+          const renderProps = render.props ?? {};
+          const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
+          const Tag = render.type as any;
+          const mergedRenderProps = Object.assign({}, out, restRenderProps);
+          mergedRenderProps.className =
+            typeof out.className === 'string' && typeof renderClassName === 'string'
+              ? `${out.className} ${renderClassName}`.trim()
+              : (out.className ?? renderClassName);
+          mergedRenderProps.style = Object.assign({}, out.style, renderStyle);
+          return <Tag key={render.key} {...mergedRenderProps} ref={rootRef} />;
+        }
+        return <div {...merged()} ref={rootRef} />;
+      })()}
+    </>
+  );
+}
 
 export interface ThumbMetadata {
   inputId: string | undefined;

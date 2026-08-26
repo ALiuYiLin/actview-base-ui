@@ -1,7 +1,8 @@
-import { defineComponent, ref, toValue } from 'actview';
+import { ref, toValue, toRefs, unrefs } from 'actview';
 import { MenubarContext, useMenubarContext } from './MenubarContext';
 import type { MenuRoot } from '@/menu/root/MenuRoot';
 import type { BaseUIComponentProps } from '@/internals/types';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * A horizontal or vertical menu bar.
@@ -9,13 +10,12 @@ import type { BaseUIComponentProps } from '@/internals/types';
  *
  * Documentation: [Base UI Menubar](https://base-ui.com/react/components/menubar)
  */
-export const Menubar = defineComponent(function Menubar(props: Menubar.Props) {
+export function Menubar(props: Menubar.Props) {
   const {
     modal = false,
     disabled = false,
     orientation = 'horizontal',
     allowMouseUpTriggerRef = {value: false},
-    children,
   } = props as any;
 
   const contentElement = ref<HTMLElement | null>(null);
@@ -27,69 +27,57 @@ export const Menubar = defineComponent(function Menubar(props: Menubar.Props) {
     orientation,
   });
 
-  const context = {
-    modal,
-    disabled,
-    contentElement: contentElement.value,
-    setContentElement: (element: HTMLElement | null) => (contentElement.value = element),
-    hasSubmenuOpen: hasSubmenuOpen.value,
-    setHasSubmenuOpen: (open: boolean) => (hasSubmenuOpen.value = open),
-    orientation,
-    allowMouseUpTriggerRef,
-    rootId: (props as any).id,
-  };
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {render, className, style, ...elementProps} = toRefs(props as any);
 
-  return () => {
-    const {render, className, style, ...elementProps} = props as any;
-    const child = typeof children === 'function' ? children(state()) : toValue(children);
+  const {element} = useRenderElement({
+    props: () => [
+      {
+        role: 'menubar',
+        'aria-orientation': orientation,
+        ...(modal ? {'data-modal': ''} : {}),
+        'data-orientation': orientation,
+      },
+      unrefs(elementProps),
+    ],
+    state,
+    className,
+    style,
+    render,
+    refs: () => [
+      contentElement as any,
+      (props as any).ref,
+    ],
+    // children：render-prop（(state) => any）渲染期求值
+    children: () => {
+      const {children} = props as any;
+      return typeof children === 'function' ? children(state()) : toValue(children);
+    },
+    defaultTag: 'div',
+  });
 
-    const merged: any = {
-      role: 'menubar',
-      'aria-orientation': orientation,
-      ...elementProps,
-    };
-
-    if (modal) {
-      merged['data-modal'] = '';
-    }
-    merged['data-orientation'] = orientation;
-
-    const mergedRefs = (el: HTMLElement | null) => {
-      contentElement.value = el;
-      if (typeof props.ref === 'function') {
-        (props.ref as any)(el);
-      } else if (props.ref) {
-        (props.ref as any).value = el;
-        
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  // context 渲染期重建（contentElement/hasSubmenuOpen 最新值）
+  return (
+    <MenubarContext.Provider
+      value={
+        {
+          modal,
+          disabled,
+          contentElement: contentElement.value,
+          setContentElement: (element: HTMLElement | null) => (contentElement.value = element),
+          hasSubmenuOpen: hasSubmenuOpen.value,
+          setHasSubmenuOpen: (open: boolean) => (hasSubmenuOpen.value = open),
+          orientation,
+          allowMouseUpTriggerRef,
+          rootId: (props as any).id,
+        } as any
       }
-    };
-
-    const element = (() => {
-      if (render) {
-        if (typeof render === 'function') {
-          return render({...merged, ...state(), ref: mergedRefs} as any);
-        }
-        const renderProps = render.props ?? {};
-        const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-        const Tag = render.type as any;
-        const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-        mergedRenderProps.className =
-          typeof merged.className === 'string' && typeof renderClassName === 'string'
-            ? `${merged.className} ${renderClassName}`.trim()
-            : (merged.className ?? renderClassName);
-        mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-        return <Tag key={render.key} {...mergedRenderProps} ref={mergedRefs}>{child}</Tag>;
-      }
-      return <div {...merged} ref={mergedRefs}>{child}</div>;
-    })();
-
-    return (
-      <MenubarContext.Provider value={context as any}>
-        {element}
-      </MenubarContext.Provider>
-    );
-  };
-});
+    >
+      {element()}
+    </MenubarContext.Provider>
+  );
+}
 
 export interface MenubarState {
   /**

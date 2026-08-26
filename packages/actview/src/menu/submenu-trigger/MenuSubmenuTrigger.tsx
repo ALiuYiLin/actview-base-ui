@@ -1,4 +1,4 @@
-import { computed, defineComponent, ref, toValue } from 'actview';
+import { computed, ref, toRefs, unrefs, toValue } from 'actview';
 import { mergePropsN } from '@/merge-props';
 import { EMPTY_OBJECT } from '@/utils/empty';
 import { safePolygon, useClick, useHoverReferenceInteraction } from '@/floating-ui-react';
@@ -13,6 +13,7 @@ import { useTriggerRegistration } from '@/utils/popups';
 import { useMenuSubmenuRootContext } from '../submenu-root/MenuSubmenuRootContext';
 import { REASONS } from '@/internals/reasons';
 import type { Ref } from 'actview';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 const VOICE_OVER_EXPANDED_PROPS = {'aria-expanded': undefined};
 
@@ -20,9 +21,8 @@ const VOICE_OVER_EXPANDED_PROPS = {'aria-expanded': undefined};
  * A menu item that opens a submenu.
  * Renders a `<div>` element.
  */
-export const MenuSubmenuTrigger = defineComponent(function MenuSubmenuTrigger(
-  componentProps: MenuSubmenuTrigger.Props,
-) {
+export function MenuSubmenuTrigger(componentProps: MenuSubmenuTrigger.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
   const {
     label,
     id: idProp,
@@ -33,7 +33,7 @@ export const MenuSubmenuTrigger = defineComponent(function MenuSubmenuTrigger(
     disabled: disabledProp = false,
   } = componentProps;
 
-  const children = toValue(componentProps.children);
+  const {render, className, style, children, ref: refProp, ...elementProps} = toRefs(componentProps);
 
   const submenuRootContext = useMenuSubmenuRootContext();
   if (!submenuRootContext?.parentMenu) {
@@ -159,72 +159,68 @@ export const MenuSubmenuTrigger = defineComponent(function MenuSubmenuTrigger(
   const voiceOver = false;
   const shouldOmitExpanded = () => open.value && openedByKeyboard() && voiceOver;
 
-  return () => {
-    const {render, className: cls, style: st, ...elementProps} = componentProps as any;
-    const stateValue = state();
+  const {element} = useRenderElement({
+    props: () => {
+      const stateValue = state();
 
-    const merged: any = mergePropsN<any>([
-      localInteractionProps,
-      hoverProps,
-      rootTriggerProps,
-      itemProps.value,
-      // VoiceOver 兼容
-      (shouldOmitExpanded() ? VOICE_OVER_EXPANDED_PROPS : undefined) as any,
-      {
-        'aria-controls': popupId.value,
-        tabIndex: open.value || highlighted.value ? 0 : -1,
-        onBlur() {
-          if (highlighted.value) {
-            parentMenuStore.set('activeIndex', null);
-          }
+      const merged: any = mergePropsN<any>([
+        localInteractionProps,
+        hoverProps,
+        rootTriggerProps,
+        itemProps.value,
+        // VoiceOver 兼容
+        (shouldOmitExpanded() ? VOICE_OVER_EXPANDED_PROPS : undefined) as any,
+        {
+          'aria-controls': popupId.value,
+          tabIndex: open.value || highlighted.value ? 0 : -1,
+          onBlur() {
+            if (highlighted.value) {
+              parentMenuStore.set('activeIndex', null);
+            }
+          },
         },
-      },
-      elementProps,
-      getItemProps as any,
-    ]);
+        unrefs(elementProps),
+        getItemProps as any,
+      ]);
 
-    if (stateValue.open) {
-      merged['data-open'] = '';
-    } else {
-      merged['data-closed'] = '';
-    }
-    if (stateValue.highlighted) {
-      merged['data-highlighted'] = '';
-    }
-    if (stateValue.disabled) {
-      merged['data-disabled'] = '';
-    }
-
-    const mergedRefs = (el: HTMLElement | null) => {
-      itemRef?.(el);
-      listItem.ref(el);
-      renderRegistered(el);
-      handleTriggerElementRef(el);
-      if (typeof componentProps.ref === 'function') {
-        (componentProps.ref as any)(el);
-      } else if (componentProps.ref) {
-        componentProps.ref.value = el;
+      if (stateValue.open) {
+        merged['data-open'] = '';
+      } else {
+        merged['data-closed'] = '';
       }
-    };
-
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ...stateValue, ref: mergedRefs} as any);
+      if (stateValue.highlighted) {
+        merged['data-highlighted'] = '';
       }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof merged.className === 'string' && typeof renderClassName === 'string'
-          ? `${merged.className} ${renderClassName}`.trim()
-          : (merged.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={mergedRefs}>{children}</Tag>;
-    }
-    return <div {...merged} ref={mergedRefs}>{children}</div>;
-  };
-});
+      if (stateValue.disabled) {
+        merged['data-disabled'] = '';
+      }
+      return [merged];
+    },
+    state,
+    className,
+    style,
+    render,
+    refs: () => {
+      const refs: any[] = [
+        (el: HTMLElement | null) => {
+          itemRef?.(el);
+          listItem.ref(el);
+          renderRegistered(el);
+          handleTriggerElementRef(el);
+        },
+      ];
+      if (componentProps.ref !== undefined) {
+        refs.push(refProp);
+      }
+      return refs;
+    },
+    children,
+    defaultTag: 'div',
+  });
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface MenuSubmenuTriggerState {
   /**

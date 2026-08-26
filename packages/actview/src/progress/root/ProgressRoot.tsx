@@ -1,12 +1,12 @@
-import { defineComponent, ref, toValue, useRootElement } from 'actview';
+import { ref, toValue, toRefs, unrefs, useRootElement } from 'actview';
 import { visuallyHidden } from '@/utils/visuallyHidden';
 import { formatNumber } from '@/utils/formatNumber';
 import { clamp } from '@/utils/clamp';
 import { valueToPercent } from '@/utils/valueToPercent';
-import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import type { BaseUIComponentProps } from '@/internals/types';
 import { ProgressRootContext } from './ProgressRootContext';
 import { progressStateAttributesMapping } from './stateAttributesMapping';
-import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * Groups all parts of the progress bar and provides the task completion status to screen readers.
@@ -14,8 +14,9 @@ import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
  *
  * Documentation: [Base UI Progress](https://base-ui.com/react/components/progress)
  */
-export const ProgressRoot = defineComponent(function (componentProps: ProgressRoot.Props) {
+export function ProgressRoot(componentProps: ProgressRoot.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
+  // Provider 根（`<ProgressRootContext.Provider>`），无 Fragment 根问题。
   const rootRef = useRootElement();
 
   const format = toValue(componentProps.format);
@@ -52,79 +53,56 @@ export const ProgressRoot = defineComponent(function (componentProps: ProgressRo
     defaultAriaValueText = formattedValue;
   }
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {render, className, children, style, ...elementProps} = componentProps;
-
-    const stateValue: ProgressRootState = {status};
-
-    const defaultProps: HTMLProps = {
-      'aria-labelledby': labelId.value,
-      'aria-valuemax': max,
-      'aria-valuemin': min,
-      'aria-valuenow': clampedValue ?? undefined,
-      'aria-valuetext': getAriaValueText
-        ? getAriaValueText(formattedValue, value)
-        : defaultAriaValueText,
-      role: 'progressbar',
-      children: (
-        <>
-          {children}
-          <span role="presentation" style={visuallyHidden}>
-            {/* force NVDA to read the label https://github.com/mui/base-ui/issues/4184 */}x
-          </span>
-        </>
-      ),
-    };
-
-    const contextValue: ProgressRootContext = {
-      formattedValue,
-      percentageValue,
-      setLabelId,
-      state: stateValue,
-      value,
-    };
-
-    const stateAttributes = getStateAttributesProps(stateValue, progressStateAttributesMapping);
-
-    const merged: HTMLProps = {};
-    Object.assign(merged, defaultProps, elementProps, stateAttributes);
-    if (typeof className === 'function') {
-      merged.className = className(stateValue);
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof style === 'function') {
-      merged.style = style(stateValue);
-    } else if (style !== undefined) {
-      merged.style = style;
-    }
-
-    let element: any;
-    if (render) {
-      if (typeof render === 'function') {
-        element = render({...merged, ...stateValue, ref: rootRef} as any);
-      } else {
-        const renderProps = render.props ?? {};
-        const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-        const Tag = render.type as any;
-        const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-        mergedRenderProps.className =
-          typeof merged.className === 'string' && typeof renderClassName === 'string'
-            ? `${merged.className} ${renderClassName}`.trim()
-            : (merged.className ?? renderClassName);
-        mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-        element = <Tag key={render.key} {...mergedRenderProps} ref={rootRef} />;
-      }
-    } else {
-      element = <div {...merged} ref={rootRef} />;
-    }
-
-    return (
-      <ProgressRootContext.Provider value={contextValue as any}>{element}</ProgressRootContext.Provider>
-    );
+  const contextValue: ProgressRootContext = {
+    formattedValue,
+    percentageValue,
+    setLabelId,
+    state: {status},
+    value,
   };
-}) as unknown as (props: ProgressRoot.Props) => JSX.Element;
+
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {render, className, children, style, ...elementProps} = toRefs(componentProps);
+
+  const stateFn = (): ProgressRootState => ({status});
+
+  const {element} = useRenderElement({
+    props: () => [
+      {
+        'aria-labelledby': labelId.value,
+        'aria-valuemax': max,
+        'aria-valuemin': min,
+        'aria-valuenow': clampedValue ?? undefined,
+        'aria-valuetext': getAriaValueText
+          ? getAriaValueText(formattedValue, value)
+          : defaultAriaValueText,
+        role: 'progressbar',
+      },
+      unrefs(elementProps),
+    ],
+    state: stateFn,
+    stateAttributesMapping: progressStateAttributesMapping as any,
+    className,
+    style,
+    render,
+    refs: () => [rootRef as any],
+    // 显式 children：用户 children + 隐藏 NVDA 朗读 span
+    children: () => (
+      <>
+        {children?.value}
+        <span role="presentation" style={visuallyHidden}>
+          {/* force NVDA to read the label https://github.com/mui/base-ui/issues/4184 */}x
+        </span>
+      </>
+    ),
+    defaultTag: 'div',
+  });
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return (
+    <ProgressRootContext.Provider value={contextValue as any}>{element()}</ProgressRootContext.Provider>
+  );
+}
 
 export type ProgressStatus = 'indeterminate' | 'progressing' | 'complete';
 

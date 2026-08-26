@@ -1,4 +1,4 @@
-import { defineComponent, onUnmounted, ref, toValue, watch } from 'actview';
+import { onUnmounted, ref, toValue, watch, toRefs } from 'actview';
 import type { Ref } from 'actview';
 import { useId } from '@/utils/useId';
 import { useStableCallback } from '@/utils/useStableCallback';
@@ -29,9 +29,8 @@ import {
  *
  * Documentation: [Base UI Dialog](https://base-ui.com/react/components/dialog)
  */
-export const DialogRoot = defineComponent(function DialogRoot<Payload>(
-  props: DialogRoot.Props<Payload>,
-) {
+export function DialogRoot<Payload>(props: DialogRoot.Props<Payload>) {
+  // ============ setup（只执行一次） ============
   const {
     open: openProp,
     defaultOpen = false,
@@ -43,8 +42,9 @@ export const DialogRoot = defineComponent(function DialogRoot<Payload>(
     handle,
     triggerId: triggerIdProp,
     defaultTriggerId: defaultTriggerIdProp = null,
-    children,
   } = props as any;
+
+  const {children} = toRefs(props);
 
   // 嵌套检测：React 版用 parentStore != null（DialogRootContext），
   // 而非 FloatingParentNodeId（actview 无 FloatingNode 生产渲染，恒 null）。
@@ -191,19 +191,18 @@ export const DialogRoot = defineComponent(function DialogRoot<Payload>(
 
   const shouldRenderInteractions = () => open.value || mounted.value;
 
-  return () => {
-    const child = toValue(children);
-    return (
-      <DialogRootContext.Provider value={store as unknown as DialogRootContext<unknown>}>
-        {handle && <PopupHandleAttachment handle={handle} store={store} />}
-        {shouldRenderInteractions() && (
-          <DialogInteractions store={store} modal={modal} />
-        )}
-        {typeof child === 'function' ? (child as any)({payload: payload.value}) : child}
-      </DialogRootContext.Provider>
-    );
-  };
-});
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return (
+    <DialogRootContext.Provider value={store as unknown as DialogRootContext<unknown>}>
+      {handle && <PopupHandleAttachment handle={handle} store={store} />}
+      {shouldRenderInteractions() && <DialogInteractions store={store} modal={modal} />}
+      {(() => {
+        const child = toValue(children);
+        return typeof child === 'function' ? (child as any)({payload: payload.value}) : child;
+      })()}
+    </DialogRootContext.Provider>
+  );
+}
 
 function useDialogRootStore<Payload>(
   _handle: DialogHandle<Payload> | undefined,

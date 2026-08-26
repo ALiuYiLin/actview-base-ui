@@ -1,7 +1,8 @@
-import { defineComponent, toValue } from 'actview';
+import { toRefs, unrefs, computed } from 'actview';
 import { useToastProviderContext } from '../provider/ToastProviderContext';
 import { ToastRootContext } from './ToastRootContext';
 import type { BaseUIComponentProps } from '@/internals/types';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * Renders a toast.
@@ -10,45 +11,48 @@ import type { BaseUIComponentProps } from '@/internals/types';
  * actview 简化：children 为渲染函数 `(props) => ReactNode`，props 包含
  * toast 的全部字段与 `close`；自动关闭计时（timeout）未迁移。
  */
-export const ToastRoot = defineComponent(function ToastRoot(componentProps: ToastRoot.Props) {
-  const {toast: toastProp, children, ...elementProps} = componentProps as any;
+export function ToastRoot(componentProps: ToastRoot.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
+  const {toast: toastProp} = componentProps as any;
+  const {children, ref: refProp, ...elementProps} = toRefs(componentProps);
 
   const store = useToastProviderContext(false);
   const toasts = store.useState('toasts');
 
-  return () => {
-    const toast = toasts.value.find((t: any) => t.id === (toastProp?.id ?? toastProp));
-    if (!toast) {
-      return null;
-    }
+  // 渲染期查找（computed 惰性求值）：toast 变化时同步更新
+  const toast = computed(() =>
+    toasts.value.find((t: any) => t.id === (toastProp?.id ?? toastProp)),
+  );
 
-    const contextValue = {
-      toast,
-      close: () => store.closeToast(toast.id),
-    };
-
-    const merged: any = {...elementProps};
-
-    const mergedRefs = (el: HTMLElement | null) => {
-      if (typeof componentProps.ref === 'function') {
-        (componentProps.ref as any)(el);
-      } else if (componentProps.ref) {
-        (componentProps.ref as any).value = el;
-        
+  const {element} = useRenderElement({
+    props: () => [{...unrefs(elementProps)}],
+    refs: () => (componentProps.ref !== undefined ? [refProp as any] : []),
+    children: () => {
+      const t = toast.value;
+      if (!t) {
+        return null;
       }
-    };
+      const content = children?.value;
+      return typeof content === 'function'
+        ? content({...t, close: () => store.closeToast(t.id)})
+        : content;
+    },
+    defaultTag: 'div',
+  });
 
-    const content = typeof children === 'function' ? children({...toast, close: contextValue.close}) : children;
-
-    return (
-      <ToastRootContext.Provider value={contextValue}>
-        <div {...merged} ref={mergedRefs}>
-          {content}
-        </div>
-      </ToastRootContext.Provider>
-    );
-  };
-});
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return (
+    <ToastRootContext.Provider
+      value={
+        toast.value
+          ? ({toast: toast.value, close: () => store.closeToast(toast.value.id)} as any)
+          : (undefined as any)
+      }
+    >
+      {toast.value ? element() : null}
+    </ToastRootContext.Provider>
+  );
+}
 
 export interface ToastRootState {}
 

@@ -8,12 +8,10 @@ import { Field, type FieldControlState } from '@/field';
  *
  * Documentation: [Base UI Input](https://base-ui.com/react/components/input)
  */
-export const Input: any = defineComponent(function (props: Input.Props) {
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    return <Field.Control {...(props as any)} />;
-  };
-}) as unknown as (props: Input.Props) => JSX.Element;
+export function Input(props: Input.Props) {
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <Field.Control {...(props as any)} />;
+}
 
 export interface InputProps extends BaseUIComponentProps<'input', InputState> {
   /**

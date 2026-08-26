@@ -1,10 +1,11 @@
-import { defineComponent, ref, toValue, useRootElement } from 'actview';
+import { ref, toValue, toRefs, unrefs, useRootElement } from 'actview';
 import { visuallyHidden } from '@/utils/visuallyHidden';
 import { formatNumber } from '@/utils/formatNumber';
 import { clamp } from '@/utils/clamp';
 import { valueToPercent } from '@/utils/valueToPercent';
-import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import type { BaseUIComponentProps } from '@/internals/types';
 import { MeterRootContext } from './MeterRootContext';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * Groups all parts of the meter and provides the current value to screen readers.
@@ -12,8 +13,9 @@ import { MeterRootContext } from './MeterRootContext';
  *
  * Documentation: [Base UI Meter](https://base-ui.com/react/components/meter)
  */
-export const MeterRoot = defineComponent(function (componentProps: MeterRoot.Props) {
+export function MeterRoot(componentProps: MeterRoot.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
+  // Provider 根（`<MeterRootContext.Provider>`），无 Fragment 根问题。
   const rootRef = useRootElement();
 
   const format = toValue(componentProps.format);
@@ -42,72 +44,50 @@ export const MeterRoot = defineComponent(function (componentProps: MeterRoot.Pro
     ariaValuetext = getAriaValueText(formattedValue, valueProp);
   }
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {render, className, children, style, ...elementProps} = componentProps;
-
-    const defaultProps: HTMLProps = {
-      'aria-labelledby': labelId.value,
-      'aria-valuemax': max,
-      'aria-valuemin': min,
-      'aria-valuenow': clampedValue,
-      'aria-valuetext': ariaValuetext,
-      role: 'meter',
-      children: (
-        <>
-          {children}
-          <span role="presentation" style={visuallyHidden}>
-            {/* force NVDA to read the label https://github.com/mui/base-ui/issues/4184 */}x
-          </span>
-        </>
-      ),
-    };
-
-    const contextValue: MeterRootContext = {
-      formattedValue,
-      percentageValue,
-      setLabelId,
-      value: valueProp,
-    };
-
-    const merged: HTMLProps = {};
-    Object.assign(merged, defaultProps, elementProps);
-    if (typeof className === 'function') {
-      merged.className = className({});
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof style === 'function') {
-      merged.style = style({});
-    } else if (style !== undefined) {
-      merged.style = style;
-    }
-
-    let element: any;
-    if (render) {
-      if (typeof render === 'function') {
-        element = render({...merged, ref: rootRef} as any);
-      } else {
-        const renderProps = render.props ?? {};
-        const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-        const Tag = render.type as any;
-        const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-        mergedRenderProps.className =
-          typeof merged.className === 'string' && typeof renderClassName === 'string'
-            ? `${merged.className} ${renderClassName}`.trim()
-            : (merged.className ?? renderClassName);
-        mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-        element = <Tag key={render.key} {...mergedRenderProps} ref={rootRef} />;
-      }
-    } else {
-      element = <div {...merged} ref={rootRef} />;
-    }
-
-    return (
-      <MeterRootContext.Provider value={contextValue as any}>{element}</MeterRootContext.Provider>
-    );
+  const contextValue: MeterRootContext = {
+    formattedValue,
+    percentageValue,
+    setLabelId,
+    value: valueProp,
   };
-}) as unknown as (props: MeterRoot.Props) => JSX.Element;
+
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {render, className, children, style, ...elementProps} = toRefs(componentProps);
+
+  const {element} = useRenderElement({
+    props: () => [
+      {
+        'aria-labelledby': labelId.value,
+        'aria-valuemax': max,
+        'aria-valuemin': min,
+        'aria-valuenow': clampedValue,
+        'aria-valuetext': ariaValuetext,
+        role: 'meter',
+      },
+      unrefs(elementProps),
+    ],
+    state: () => ({}),
+    className,
+    style,
+    render,
+    refs: () => [rootRef as any],
+    // 显式 children：用户 children + 隐藏 NVDA 朗读 span
+    children: () => (
+      <>
+        {children?.value}
+        <span role="presentation" style={visuallyHidden}>
+          {/* force NVDA to read the label https://github.com/mui/base-ui/issues/4184 */}x
+        </span>
+      </>
+    ),
+    defaultTag: 'div',
+  });
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return (
+    <MeterRootContext.Provider value={contextValue as any}>{element()}</MeterRootContext.Provider>
+  );
+}
 
 export interface MeterRootState {}
 

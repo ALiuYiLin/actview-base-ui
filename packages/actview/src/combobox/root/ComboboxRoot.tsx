@@ -1,4 +1,4 @@
-import { defineComponent, ref, toValue, computed } from 'actview';
+import { ref, toValue, computed } from 'actview';
 import { createComboboxStore } from '../store';
 import { createComboboxItems } from '../items/createItems';
 import { ComboboxRootContext } from './ComboboxRootContext';
@@ -11,7 +11,8 @@ import { ComboboxRootContext } from './ComboboxRootContext';
  * useListNavigation/FloatingFocusManager 已完整移植，见 @actview/floating-ui）；
  * items 按 inputValue 过滤（createComboboxItems 简化版）。
  */
-export const ComboboxRoot = defineComponent(function ComboboxRoot(props: ComboboxRoot.Props) {
+export function ComboboxRoot(props: ComboboxRoot.Props) {
+  // ============ setup（只执行一次） ============
   const {
     items,
     defaultValue,
@@ -63,26 +64,23 @@ export const ComboboxRoot = defineComponent(function ComboboxRoot(props: Combobo
     disabled: store.state.disabled,
   });
 
-  return () => {
-    const child = typeof children === 'function' ? children(state()) : toValue(children);
-
-    return (
-      <ComboboxRootContext.Provider
-        value={
-          {
-            store,
-            inputValue: inputValue.value,
-            inputValueRef,
-            setInputValue,
-            itemsRef: filteredItems,
-          } as any
-        }
-      >
-        {child}
-      </ComboboxRootContext.Provider>
-    );
-  };
-});
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return (
+    <ComboboxRootContext.Provider
+      value={
+        {
+          store,
+          inputValue: inputValue.value,
+          inputValueRef,
+          setInputValue,
+          itemsRef: filteredItems,
+        } as any
+      }
+    >
+      {typeof children === 'function' ? children(state()) : toValue(children)}
+    </ComboboxRootContext.Provider>
+  );
+}
 
 export interface ComboboxRootState {
   /**

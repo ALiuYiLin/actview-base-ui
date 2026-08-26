@@ -1,4 +1,4 @@
-import { defineComponent, onUnmounted, ref, toValue, watch } from 'actview';
+import { onUnmounted, ref, toValue, watch } from 'actview';
 import type { Ref } from 'actview';
 import { useId } from '@/utils/useId';
 import { useStableCallback } from '@/utils/useStableCallback';
@@ -34,11 +34,9 @@ import {
  *
  * Documentation: [Base UI Popover](https://base-ui.com/react/components/popover)
  */
-export const PopoverRoot = defineComponent(function PopoverRoot<Payload = unknown>(
-  props: PopoverRoot.Props<Payload>,
-) {
+export function PopoverRoot<Payload = unknown>(props: PopoverRoot.Props<Payload>) {
+  // ============ setup（只执行一次） ============
   const {
-    children,
     open: openProp,
     defaultOpen = false,
     onOpenChange,
@@ -213,23 +211,22 @@ export const PopoverRoot = defineComponent(function PopoverRoot<Payload = unknow
 
   const shouldRenderInteractions = () => open.value || mounted.value;
 
-  return () => {
-    // PD-15：render prop children 是函数（{payload}) => ...），不能经 toValue
-    // （会把函数当 getter 无参调用，payload 解构 undefined 报错）；render 期
-    // 从 props 读以追踪更新。
-    const rawChildren = (props as any).children;
-    const child = typeof rawChildren === 'function' ? rawChildren : toValue(rawChildren);
-    const renderedChild =
-      typeof child === 'function' ? child({payload: payload.value}) : child;
-    return (
-      <PopoverRootContext.Provider value={store as unknown as PopoverRootContext<unknown>}>
-        {handle && <PopupHandleAttachment handle={handle} store={store} />}
-        {shouldRenderInteractions() && <PopoverInteractions store={store} modal={modal} />}
-        {renderedChild}
-      </PopoverRootContext.Provider>
-    );
-  };
-});
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return (
+    <PopoverRootContext.Provider value={store as unknown as PopoverRootContext<unknown>}>
+      {handle && <PopupHandleAttachment handle={handle} store={store} />}
+      {shouldRenderInteractions() && <PopoverInteractions store={store} modal={modal} />}
+      {(() => {
+        // PD-15：render prop children 是函数（{payload}) => ...），不能经 toValue
+        // （会把函数当 getter 无参调用，payload 解构 undefined 报错）；render 期
+        // 从 props 读以追踪更新。
+        const rawChildren = (props as any).children;
+        const child = typeof rawChildren === 'function' ? rawChildren : toValue(rawChildren);
+        return typeof child === 'function' ? child({payload: payload.value}) : child;
+      })()}
+    </PopoverRootContext.Provider>
+  );
+}
 
 function usePopoverRootStore<Payload>(
   handle: PopoverHandle<Payload> | undefined,

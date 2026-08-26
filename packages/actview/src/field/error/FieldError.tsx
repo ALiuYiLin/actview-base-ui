@@ -1,16 +1,17 @@
-import { computed, defineComponent, ref, toValue, useRootElement, watch } from 'actview';
+import { useRootElementFragment } from '@/internals/useRootElementFragment';
+import { computed, ref, toValue, watch, toRefs, unrefs } from 'actview';
 import type { FieldRootState } from '../root/FieldRoot';
 import { useFieldRootContext } from '@/internals/field-root-context/FieldRootContext';
 import { useLabelableContext } from '@/internals/labelable-provider/LabelableContext';
 import { fieldValidityMapping } from '@/internals/field-constants/constants';
 import { useFormContext } from '@/internals/form-context/FormContext';
-import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import type { BaseUIComponentProps } from '@/internals/types';
 import type { StateAttributesMapping } from '@/internals/getStateAttributesProps';
-import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
 import { useBaseUiId } from '@/internals/useBaseUiId';
 import { useOpenChangeComplete } from '@/internals/useOpenChangeComplete';
 import { transitionStatusMapping } from '@/internals/stateAttributesMapping';
 import { type TransitionStatus, useTransitionStatus } from '@/internals/useTransitionStatus';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 const stateAttributesMapping: StateAttributesMapping<FieldErrorState> = {
   ...fieldValidityMapping,
@@ -23,9 +24,9 @@ const stateAttributesMapping: StateAttributesMapping<FieldErrorState> = {
  *
  * Documentation: [Base UI Field](https://base-ui.com/react/components/field)
  */
-export const FieldError = defineComponent(function (componentProps: FieldError.Props) {
+export function FieldError(componentProps: FieldError.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  const rootRef = useRootElement();
+  const rootRef = useRootElementFragment();
 
   const generatedId = useBaseUiId();
   const id = computed(() => toValue(componentProps.id) ?? generatedId);
@@ -108,21 +109,19 @@ export const FieldError = defineComponent(function (componentProps: FieldError.P
     transitionStatus: transitionStatus.value,
   });
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    if (!mounted.value) {
-      return null;
-    }
-
-    const {className, render, style, ...elementProps} = componentProps;
-
+  // 渲染期计算当前 error / errorMessage（rendered 时 children 直接用当前值，
+  // 非 rendered 时用 lastRenderedMessage 缓存保持退出动画内容）。
+  const computeError = (): string | string[] | null | undefined => {
     let error: string | string[] | null | undefined = validityData.value.error;
     if (!hasSpecificMatch.value && hasFormError.value) {
       error = formError.value as string | string[];
     } else if (validityData.value.errors.length > 1) {
       error = validityData.value.errors;
     }
+    return error;
+  };
 
+  const computeErrorMessage = (error: string | string[] | null | undefined) => {
     let errorMessage: any = error;
     if (Array.isArray(error)) {
       errorMessage =
@@ -136,49 +135,47 @@ export const FieldError = defineComponent(function (componentProps: FieldError.P
           error[0]
         );
     }
-
-    const errorKey = Array.isArray(error) ? JSON.stringify(error) : (error ?? null);
-
-    if (rendered.value && errorKey !== lastRenderedMessageKey.value) {
-      lastRenderedMessageKey.value = errorKey;
-      lastRenderedMessage.value = errorMessage;
-    }
-
-    const stateValue = state();
-    const stateAttributes = getStateAttributesProps(stateValue, stateAttributesMapping);
-
-    const merged: HTMLProps = {};
-    Object.assign(merged, {id: id.value, children: rendered.value ? errorMessage : lastRenderedMessage.value}, elementProps,
-      stateAttributes,
-    );
-    if (typeof className === 'function') { merged.className = className(stateValue);
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof style === 'function') {
-      merged.style = style(stateValue);
-    } else if (style !== undefined) {
-      merged.style = style;
-    }
-
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ...stateValue, ref: rootRef} as any);
-      }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof merged.className === 'string' && typeof renderClassName === 'string'
-          ? `${merged.className} ${renderClassName}`.trim()
-          : (merged.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={rootRef} />;
-    }
-    return <div {...merged} ref={rootRef} />;
+    return errorMessage;
   };
-}) as unknown as (props: FieldError.Props) => JSX.Element;
+
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
+
+  const {element} = useRenderElement({
+    props: () => {
+      const error = computeError();
+      const errorMessage = computeErrorMessage(error);
+
+      const errorKey = Array.isArray(error) ? JSON.stringify(error) : (error ?? null);
+
+      if (rendered.value && errorKey !== lastRenderedMessageKey.value) {
+        lastRenderedMessageKey.value = errorKey;
+        lastRenderedMessage.value = errorMessage;
+      }
+
+      return [{id: id.value}, unrefs(elementProps)];
+    },
+    state,
+    stateAttributesMapping,
+    className,
+    style,
+    render,
+    refs: () => [rootRef as any],
+    // 用户 children 优先；无用户 children 时用错误消息（rendered 用当前值，
+    // 退出动画期间用 lastRenderedMessage 缓存）。
+    children: () => {
+      const userChildren = children?.value;
+      if (userChildren !== undefined) {
+        return userChildren;
+      }
+      return rendered.value ? computeErrorMessage(computeError()) : lastRenderedMessage.value;
+    },
+    defaultTag: 'div',
+  });
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{!mounted.value ? null : element()}</>;
+}
 
 export interface FieldErrorState extends FieldRootState {
   /**

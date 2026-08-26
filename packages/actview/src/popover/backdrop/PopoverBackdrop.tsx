@@ -1,84 +1,67 @@
-import { defineComponent, toValue } from 'actview';
+import { toRefs, unrefs } from 'actview';
 import { usePopoverRootContext } from '../root/PopoverRootContext';
 import type { BaseUIComponentProps } from '@/internals/types';
-import { popupTransitionStateMapping } from '@/utils/popupStateMapping';
 import type { TransitionStatus } from '@/internals/useTransitionStatus';
 import { REASONS } from '@/internals/reasons';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * An overlay displayed beneath the popover popup.
  * Renders a `<div>` element.
  */
-export const PopoverBackdrop = defineComponent(function PopoverBackdrop(
-  componentProps: PopoverBackdrop.Props,
-) {
-  const children = toValue(componentProps.children);
-
+export function PopoverBackdrop(componentProps: PopoverBackdrop.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
   const store = usePopoverRootContext(false);
+  const {render, className, style, children, ref: refProp, ...elementProps} =
+    toRefs(componentProps);
   const open = store.useState('open');
   const mounted = store.useState('mounted');
   const transitionStatus = store.useState('transitionStatus');
   const lastOpenChangeReason = store.useState('openChangeReason');
 
-  return () => {
-    const {render, className, style, ...elementProps} = componentProps as any;
-
-    const state: PopoverBackdropState = {
+  const {element} = useRenderElement({
+    props: () => {
+      const attributes: Record<string, string> = {};
+      if (open.value) {
+        attributes['data-open'] = '';
+      } else {
+        attributes['data-closed'] = '';
+      }
+      if (transitionStatus.value === 'starting') {
+        attributes['data-starting-style'] = '';
+      } else if (transitionStatus.value === 'ending') {
+        attributes['data-ending-style'] = '';
+      }
+      return [
+        {
+          role: 'presentation',
+          hidden: !mounted.value,
+          style: {
+            pointerEvents:
+              lastOpenChangeReason.value === REASONS.triggerHover ? 'none' : undefined,
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+          },
+        },
+        unrefs(elementProps),
+        attributes,
+      ];
+    },
+    state: () => ({
       open: open.value,
       transitionStatus: transitionStatus.value,
-    };
+    }),
+    className,
+    style,
+    render,
+    refs: () => (componentProps.ref !== undefined ? [refProp as any] : []),
+    children,
+    defaultTag: 'div',
+  });
 
-    const attributes: Record<string, string> = {};
-    if (state.open) {
-      attributes['data-open'] = '';
-    } else {
-      attributes['data-closed'] = '';
-    }
-    if (state.transitionStatus === 'starting') {
-      attributes['data-starting-style'] = '';
-    } else if (state.transitionStatus === 'ending') {
-      attributes['data-ending-style'] = '';
-    }
-
-    const merged: any = {
-      role: 'presentation',
-      hidden: !mounted.value,
-      style: {
-        pointerEvents: lastOpenChangeReason.value === REASONS.triggerHover ? 'none' : undefined,
-        userSelect: 'none',
-        WebkitUserSelect: 'none',
-      },
-      ...elementProps,
-      ...attributes,
-    };
-
-    const mergedRefs = (el: HTMLDivElement | null) => {
-      if (typeof componentProps.ref === 'function') {
-        (componentProps.ref as any)(el);
-      } else if (componentProps.ref) {
-        (componentProps.ref as any).value = el;
-        
-      }
-    };
-
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ...state, ref: mergedRefs} as any);
-      }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof merged.className === 'string' && typeof renderClassName === 'string'
-          ? `${merged.className} ${renderClassName}`.trim()
-          : (merged.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={mergedRefs}>{children}</Tag>;
-    }
-    return <div {...merged} ref={mergedRefs}>{children}</div>;
-  };
-});
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface PopoverBackdropState {
   /**

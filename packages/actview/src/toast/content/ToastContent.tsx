@@ -1,31 +1,26 @@
-import { defineComponent, toValue } from 'actview';
+import { toRefs, unrefs } from 'actview';
 import { useToastRootContext } from '../root/ToastRootContext';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /** A container for the toast content. Renders a `<div>` element. */
-export const ToastContent = defineComponent(function ToastContent(props: ToastContent.Props) {
-  const children = toValue(props.children);
+export function ToastContent(props: ToastContent.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
   const context = useToastRootContext(false);
+  const {render, className, style, children, ref: refProp, ...elementProps} = toRefs(props);
 
-  return () => {
-    const {render, className, style, ...elementProps} = props as any;
-    const merged: any = {...elementProps};
-    const ref = (el: any) => {
-      if (props.ref) {
-        if (typeof props.ref === 'function') (props.ref as any)(el);
-        else {
-          (props.ref as any).value = el;
-          
-        }
-      }
-    };
-    if (render) {
-      if (typeof render === 'function') return render({...merged, ref});
-      const Tag = render.type as any;
-      return <Tag {...render.props} {...merged} ref={ref}>{children}</Tag>;
-    }
-    return <div {...merged} ref={ref}>{children}</div>;
-  };
-});
+  const {element} = useRenderElement({
+    props: () => [{...unrefs(elementProps)}],
+    className,
+    style,
+    render,
+    refs: () => (props.ref !== undefined ? [refProp as any] : []),
+    children,
+    defaultTag: 'div',
+  });
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface ToastContentProps {
   children?: any;

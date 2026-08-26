@@ -1,25 +1,25 @@
-import { defineComponent, toValue } from 'actview';
+import { toRefs, unrefs, toValue } from 'actview';
 import { mergePropsN } from '@/merge-props';
 import { useDialogRootContext } from '../root/DialogRootContext';
-import { popupViewportStateMapping, usePopupViewport } from '@/utils/usePopupViewport';
+import { usePopupViewport } from '@/utils/usePopupViewport';
 import type { BaseUIComponentProps } from '@/internals/types';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * A viewport for displaying content transitions.
  * Renders a `<div>` element.
  */
-export const DialogViewport = defineComponent(function DialogViewport(
-  componentProps: DialogViewport.Props,
-) {
-  const children = toValue(componentProps.children);
-
+export function DialogViewport(componentProps: DialogViewport.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
   const store = useDialogRootContext(false);
+  const {render, className, style, children, ref: refProp, ...elementProps} =
+    toRefs(componentProps);
   const instantType = store.useState('instantType');
 
   const {children: childrenToRender, state: viewportState} = usePopupViewport({
     store: store as any,
     side: undefined as any,
-    children,
+    children: children as any,
   });
 
   const state = (): DialogViewportState => ({
@@ -28,44 +28,36 @@ export const DialogViewport = defineComponent(function DialogViewport(
     instant: instantType.value as any,
   });
 
-  return () => {
-    const {render, className: cls, style: st, ...elementProps} = componentProps as any;
-    const stateValue = state();
-
-    const merged: any = mergePropsN<any>([elementProps, {children: childrenToRender}]);
-
-    if (stateValue.activationDirection) {
-      merged['data-activation-direction'] = stateValue.activationDirection;
-    }
-
-    const mergedRefs = (el: HTMLDivElement | null) => {
-      store.state.viewportElement = el;
-      if (typeof componentProps.ref === 'function') {
-        (componentProps.ref as any)(el);
-      } else if (componentProps.ref) {
-        (componentProps.ref as any).value = el;
-        
+  const {element} = useRenderElement({
+    props: () => {
+      const merged: any = mergePropsN<any>([{...unrefs(elementProps)}]);
+      if (state().activationDirection) {
+        merged['data-activation-direction'] = state().activationDirection;
       }
-    };
-
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ...stateValue, ref: mergedRefs} as any);
+      return [merged];
+    },
+    state,
+    className,
+    style,
+    render,
+    refs: () => {
+      const refs: any[] = [
+        (el: HTMLDivElement | null) => {
+          store.state.viewportElement = el;
+        },
+      ];
+      if (componentProps.ref !== undefined) {
+        refs.push(refProp);
       }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof merged.className === 'string' && typeof renderClassName === 'string'
-          ? `${merged.className} ${renderClassName}`.trim()
-          : (merged.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={mergedRefs}>{childrenToRender}</Tag>;
-    }
-    return <div {...merged} ref={mergedRefs}>{childrenToRender}</div>;
-  };
-});
+      return refs;
+    },
+    children: () => toValue(childrenToRender as any),
+    defaultTag: 'div',
+  });
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface DialogViewportState {
   /**

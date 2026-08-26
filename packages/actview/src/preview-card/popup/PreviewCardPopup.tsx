@@ -1,4 +1,4 @@
-import { defineComponent, toValue } from 'actview';
+import { toValue } from 'actview';
 import type { InteractionType } from '@/utils/useEnhancedClickHandler';
 import { FloatingFocusManager, useHoverFloatingInteraction } from '@/floating-ui-react';
 import { usePreviewCardRootContext } from '../root/PreviewCardRootContext';
@@ -6,7 +6,6 @@ import { usePreviewCardPositionerContext } from '../positioner/PreviewCardPositi
 import type { Side, Align } from '@/internals/useAnchorPositioning';
 import type { BaseUIComponentProps } from '@/internals/types';
 import type { TransitionStatus } from '@/internals/useTransitionStatus';
-import { popupTransitionStateMapping } from '@/utils/popupStateMapping';
 import { useOpenChangeComplete } from '@/internals/useOpenChangeComplete';
 import { REASONS } from '@/internals/reasons';
 import { getDisabledMountTransitionStyles } from '@/internals/getDisabledMountTransitionStyles';
@@ -19,11 +18,8 @@ import type { Ref } from 'actview';
  *
  * Documentation: [Base UI PreviewCard](https://base-ui.com/react/components/preview-card)
  */
-export const PreviewCardPopup = defineComponent(function PreviewCardPopup(
-  componentProps: PreviewCardPopup.Props,
-) {
+export function PreviewCardPopup(componentProps: PreviewCardPopup.Props) {
   const {finalFocus, initialFocus} = componentProps;
-  const children = toValue(componentProps.children);
 
   const store = usePreviewCardRootContext(false);
   const positioner = usePreviewCardPositionerContext();
@@ -74,80 +70,80 @@ export const PreviewCardPopup = defineComponent(function PreviewCardPopup(
     transitionStatus: transitionStatus.value,
   });
 
-  return () => {
-    const {render, className, style, ...elementProps} = componentProps as any;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  const FocusManager = FloatingFocusManager as any;
+  return (
+    <FocusManager
+      context={floatingContext.value as any}
+      openInteractionType={openMethod.value as any}
+      modal={focusManagerModal}
+      disabled={!mounted.value || openReason.value === REASONS.triggerHover}
+      initialFocus={(initialFocus === undefined ? true : initialFocus) as any}
+      returnFocus={finalFocus === undefined ? true : finalFocus}
+      restoreFocus="popup"
+      previousFocusableElement={activeTriggerElement.value as HTMLElement | null}
+      nextFocusableElement={store.context.triggerFocusTargetRef}
+      beforeContentFocusGuardRef={store.context.beforeContentFocusGuardRef}
+    >
+      {(() => {
+        // children（render-prop 或 vnode）渲染期从 props 读取（PD-15）
+        const childrenValue = toValue(componentProps.children);
 
-    const stateValue = state();
-    const attributes: Record<string, string> = {};
-    if (stateValue.open) {
-      attributes['data-open'] = '';
-    } else {
-      attributes['data-closed'] = '';
-    }
-    if (stateValue.transitionStatus === 'starting') {
-      attributes['data-starting-style'] = '';
-    } else if (stateValue.transitionStatus === 'ending') {
-      attributes['data-ending-style'] = '';
-    }
+        const {render, className, style, ...elementProps} = componentProps as any;
 
-    const merged: any = mergePropsN<any>([
-      popupProps.value,
-      {
-        id: floatingId?.value,
-        role: 'dialog',
-        tabIndex: -1,
-        'aria-labelledby': titleId.value,
-        'aria-describedby': descriptionId.value,
-      },
-      getDisabledMountTransitionStyles(transitionStatus.value),
-      elementProps,
-    ]);
-    Object.assign(merged, attributes);
-
-    const mergedRefs = (el: HTMLElement | null) => {
-      store.context.popupRef.value = el;
-      setPopupElement(el);
-      (floatingContext.value as any)?.update?.({floatingElement: el});
-    };
-
-    const element = (() => {
-      if (render) {
-        if (typeof render === 'function') {
-          return render({...merged, ...stateValue, ref: mergedRefs} as any);
+        const stateValue = state();
+        const attributes: Record<string, string> = {};
+        if (stateValue.open) {
+          attributes['data-open'] = '';
+        } else {
+          attributes['data-closed'] = '';
         }
-        const renderProps = render.props ?? {};
-        const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-        const Tag = render.type as any;
-        const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-        mergedRenderProps.className =
-          typeof merged.className === 'string' && typeof renderClassName === 'string'
-            ? `${merged.className} ${renderClassName}`.trim()
-            : (merged.className ?? renderClassName);
-        mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-        return <Tag key={render.key} {...mergedRenderProps} ref={mergedRefs}>{children}</Tag>;
-      }
-      return <div {...merged} ref={mergedRefs}>{children}</div>;
-    })();
+        if (stateValue.transitionStatus === 'starting') {
+          attributes['data-starting-style'] = '';
+        } else if (stateValue.transitionStatus === 'ending') {
+          attributes['data-ending-style'] = '';
+        }
 
-    const FocusManager = FloatingFocusManager as any;
-    return (
-      <FocusManager
-        context={floatingContext.value as any}
-        openInteractionType={openMethod.value as any}
-        modal={focusManagerModal}
-        disabled={!mounted.value || openReason.value === REASONS.triggerHover}
-        initialFocus={(initialFocus === undefined ? true : initialFocus) as any}
-        returnFocus={finalFocus === undefined ? true : finalFocus}
-        restoreFocus="popup"
-        previousFocusableElement={activeTriggerElement.value as HTMLElement | null}
-        nextFocusableElement={store.context.triggerFocusTargetRef}
-        beforeContentFocusGuardRef={store.context.beforeContentFocusGuardRef}
-      >
-        {element}
-      </FocusManager>
-    );
-  };
-});
+        const merged: any = mergePropsN<any>([
+          popupProps.value,
+          {
+            id: floatingId?.value,
+            role: 'dialog',
+            tabIndex: -1,
+            'aria-labelledby': titleId.value,
+            'aria-describedby': descriptionId.value,
+          },
+          getDisabledMountTransitionStyles(transitionStatus.value),
+          elementProps,
+        ]);
+        Object.assign(merged, attributes);
+
+        const mergedRefs = (el: HTMLElement | null) => {
+          store.context.popupRef.value = el;
+          setPopupElement(el);
+          (floatingContext.value as any)?.update?.({floatingElement: el});
+        };
+
+        if (render) {
+          if (typeof render === 'function') {
+            return render({...merged, ...stateValue, ref: mergedRefs} as any);
+          }
+          const renderProps = render.props ?? {};
+          const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
+          const Tag = render.type as any;
+          const mergedRenderProps = Object.assign({}, merged, restRenderProps);
+          mergedRenderProps.className =
+            typeof merged.className === 'string' && typeof renderClassName === 'string'
+              ? `${merged.className} ${renderClassName}`.trim()
+              : (merged.className ?? renderClassName);
+          mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
+          return <Tag key={render.key} {...mergedRenderProps} ref={mergedRefs}>{childrenValue}</Tag>;
+        }
+        return <div {...merged} ref={mergedRefs}>{childrenValue}</div>;
+      })()}
+    </FocusManager>
+  );
+}
 
 export interface PreviewCardPopupState {
   /**

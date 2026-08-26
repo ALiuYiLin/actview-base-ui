@@ -1,11 +1,9 @@
-import { defineComponent, toValue } from 'actview';
 import { FloatingPortal } from '@/floating-ui-react';
 
 /** Moves the popup to a different part of the DOM. */
-export const ComboboxPortal = defineComponent(function ComboboxPortal(props: ComboboxPortal.Props) {
-  const children = toValue(props.children);
-  return () => <FloatingPortal {...props}>{children}</FloatingPortal>;
-});
+export function ComboboxPortal(props: ComboboxPortal.Props) {
+  return <FloatingPortal {...props}>{props.children}</FloatingPortal>;
+}
 
 export interface ComboboxPortalProps {
   children?: any;

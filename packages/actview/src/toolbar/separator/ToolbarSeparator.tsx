@@ -1,4 +1,4 @@
-import { defineComponent, toValue } from 'actview';
+import { toValue } from 'actview';
 import { useToolbarRootContext } from '../root/ToolbarRootContext';
 import { Separator } from '@/separator/Separator';
 import type { SeparatorProps, SeparatorState } from '@/separator/Separator';
@@ -10,20 +10,19 @@ import type { Orientation } from '@/internals/types';
  *
  * Documentation: [Base UI Toolbar](https://base-ui.com/react/components/toolbar)
  */
-export const ToolbarSeparator = defineComponent(function (props: ToolbarSeparator.Props) {
+export function ToolbarSeparator(props: ToolbarSeparator.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
   const rootContextRef = useToolbarRootContext();
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const orientationProp = toValue(props.orientation);
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  const orientationProp = toValue(props.orientation);
 
-    const context = rootContextRef.value;
-    const orientation = orientationProp ?? (context.orientation === 'vertical' ? 'horizontal' : 'vertical');
+  const context = rootContextRef.value;
+  const orientation =
+    orientationProp ?? (context.orientation === 'vertical' ? 'horizontal' : 'vertical');
 
-    return <Separator orientation={orientation} {...(props as any)} />;
-  };
-}) as unknown as (props: ToolbarSeparator.Props) => JSX.Element;
+  return <Separator orientation={orientation} {...(props as any)} />;
+}
 
 export interface ToolbarSeparatorState extends SeparatorState {}
 

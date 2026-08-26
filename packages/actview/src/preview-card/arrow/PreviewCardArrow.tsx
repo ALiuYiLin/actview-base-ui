@@ -1,20 +1,16 @@
-import { defineComponent, toValue } from 'actview';
+import { toRefs, unrefs } from 'actview';
 import { usePreviewCardPositionerContext } from '../positioner/PreviewCardPositionerContext';
 import { usePreviewCardRootContext } from '../root/PreviewCardRootContext';
 import type { Side, Align } from '@/internals/useAnchorPositioning';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { popupStateMapping } from '@/utils/popupStateMapping';
-import type { Ref } from 'actview';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * Displays an element positioned against the preview-card anchor.
  * Renders a `<div>` element.
  */
-export const PreviewCardArrow = defineComponent(function PreviewCardArrow(
-  componentProps: PreviewCardArrow.Props,
-) {
-  const children = toValue(componentProps.children);
-
+export function PreviewCardArrow(componentProps: PreviewCardArrow.Props) {
   const store = usePreviewCardRootContext(false);
   const positionerContext = usePreviewCardPositionerContext();
   const {arrowRef, side, align, arrowUncentered, arrowStyles} = positionerContext ?? {
@@ -26,58 +22,47 @@ export const PreviewCardArrow = defineComponent(function PreviewCardArrow(
   };
   const open = store.useState('open');
 
-  return () => {
-    const {render, className, style, ...elementProps} = componentProps as any;
+  const state = (): PreviewCardArrowState => ({
+    open: open.value,
+    side,
+    align,
+    uncentered: arrowUncentered,
+  });
 
-    const state: PreviewCardArrowState = {
-      open: open.value,
-      side,
-      align,
-      uncentered: arrowUncentered,
-    };
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, children, ref: refProp, ...elementProps} = toRefs(
+    componentProps,
+  );
 
-    const attributes: Record<string, string> = {};
-    const mapping: any = popupStateMapping;
-    const openAttr = mapping.open(open.value);
-    if (openAttr) {
-      Object.assign(attributes, openAttr);
-    }
-
-    const merged: any = {
-      style: arrowStyles?.value ?? arrowStyles,
-      'aria-hidden': true,
-      ...elementProps,
-      ...attributes,
-    };
-
-    const mergedRefs = (el: HTMLDivElement | null) => {
-      arrowRef.value = el;
-      if (typeof componentProps.ref === 'function') {
-        (componentProps.ref as any)(el);
-      } else if (componentProps.ref) {
-        (componentProps.ref as any).value = el;
-        
+  const {element} = useRenderElement({
+    props: () => {
+      const attributes: Record<string, string> = {};
+      const mapping: any = popupStateMapping;
+      const openAttr = mapping.open(open.value);
+      if (openAttr) {
+        Object.assign(attributes, openAttr);
       }
-    };
 
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ...state, ref: mergedRefs} as any);
-      }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof merged.className === 'string' && typeof renderClassName === 'string'
-          ? `${merged.className} ${renderClassName}`.trim()
-          : (merged.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={mergedRefs}>{children}</Tag>;
-    }
-    return <div {...merged} ref={mergedRefs}>{children}</div>;
-  };
-});
+      const merged: any = {
+        style: arrowStyles?.value ?? arrowStyles,
+        'aria-hidden': true,
+        ...unrefs(elementProps),
+        ...attributes,
+      };
+      return [merged];
+    },
+    state,
+    className,
+    style,
+    render,
+    refs: () => [arrowRef as any, refProp as any],
+    children,
+    defaultTag: 'div',
+  });
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface PreviewCardArrowState {
   /**

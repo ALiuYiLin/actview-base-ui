@@ -1,37 +1,29 @@
-import { defineComponent, toValue } from 'actview';
+import { toRefs, unrefs } from 'actview';
 import { useComboboxRootContext } from '../root/ComboboxRootContext';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /** The popup of the combobox. Renders a `<div>` element when open. */
-export const ComboboxPopup = defineComponent(function ComboboxPopup(props: ComboboxPopup.Props) {
+export function ComboboxPopup(props: ComboboxPopup.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
   const context = useComboboxRootContext(false);
-  const children = toValue(props.children);
+  const {render, className, style, children, ref, ...elementProps} = toRefs(props);
   // useState 必须在 setup 调用（useStore 内部注册 onUnmounted）。
   const open = context.store.useState('open');
   const mounted = context.store.useState('mounted');
 
-  return () => {
-    if (!open.value && !mounted.value) {
-      return null;
-    }
-    const {render, className, style, ...elementProps} = props as any;
-    const merged: any = {...elementProps};
-    const ref = (el: any) => {
-      if (props.ref) {
-        if (typeof props.ref === 'function') (props.ref as any)(el);
-        else {
-          (props.ref as any).value = el;
-          
-        }
-      }
-    };
-    if (render) {
-      if (typeof render === 'function') return render({...merged, ref} as any);
-      const Tag = render.type as any;
-      return <Tag {...render.props} {...merged} ref={ref}>{children}</Tag>;
-    }
-    return <div {...merged} ref={ref}>{children}</div>;
-  };
-});
+  const {element} = useRenderElement({
+    props: () => [{...unrefs(elementProps)}],
+    className,
+    style,
+    render,
+    refs: () => (props.ref !== undefined ? [ref] : []),
+    children,
+    defaultTag: 'div',
+  });
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{!open.value && !mounted.value ? null : element()}</>;
+}
 
 export interface ComboboxPopupProps {
   children?: any;

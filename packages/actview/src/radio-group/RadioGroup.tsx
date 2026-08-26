@@ -1,4 +1,4 @@
-import { defineComponent, ref, toValue } from 'actview';
+import { ref, toValue, toRefs, unrefs } from 'actview';
 import type { ComputedRef } from 'actview';
 import { useControlled } from '@/utils/useControlled';
 import { useBaseUiId } from '@/internals/useBaseUiId';
@@ -28,7 +28,7 @@ const MODIFIER_KEYS = [SHIFT];
  *
  * Documentation: [Base UI Radio Group](https://base-ui.com/react/components/radio)
  */
-export const RadioGroup = defineComponent(function <Value>(componentProps: RadioGroup.Props<Value>) {
+export function RadioGroup<Value>(componentProps: RadioGroup.Props<Value>) {
   // ============ setup（只执行一次）：一次性初始化 ============
   const {
     setTouched: setFieldTouched,
@@ -235,38 +235,37 @@ export const RadioGroup = defineComponent(function <Value>(componentProps: Radio
     },
   };
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {render, className, style, ...elementProps} = componentProps;
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {render, className, style, children, ...elementProps} = toRefs(componentProps);
 
-    const state: RadioGroupState = {
-      ...fieldState.value,
-      disabled: disabled ?? false,
-      required: required ?? false,
-      readOnly: readOnly ?? false,
-    };
-
-    return (
-      <RadioGroupContext.Provider value={contextValue as any}>
-        <CompositeRoot
-          render={render}
-          className={className}
-          style={style}
-          state={state}
-          props={[
-            defaultProps,
-            elementProps,
-            (props: any) => validation.getValidationProps(disabled ?? false, props),
-          ]}
-          stateAttributesMapping={fieldValidityMapping}
-          enableHomeAndEndKeys={false}
-          modifierKeys={MODIFIER_KEYS}
-          children={componentProps.children}
-        />
-      </RadioGroupContext.Provider>
-    );
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  const state: RadioGroupState = {
+    ...fieldState.value,
+    disabled: disabled ?? false,
+    required: required ?? false,
+    readOnly: readOnly ?? false,
   };
-}) as unknown as <Value>(props: RadioGroup.Props<Value>) => JSX.Element;
+
+  return (
+    <RadioGroupContext.Provider value={contextValue as any}>
+      <CompositeRoot
+        render={render as any}
+        className={className as any}
+        style={style as any}
+        state={state as any}
+        props={[
+          defaultProps,
+          unrefs(elementProps),
+          (props: any) => validation.getValidationProps(disabled ?? false, props),
+        ]}
+        stateAttributesMapping={fieldValidityMapping}
+        enableHomeAndEndKeys={false}
+        modifierKeys={MODIFIER_KEYS}
+        children={children?.value}
+      />
+    </RadioGroupContext.Provider>
+  );
+}
 
 export interface RadioGroupState extends FieldRootState {
   /**

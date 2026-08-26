@@ -1,16 +1,16 @@
-import {defineComponent, ref, toValue, useRootElement, watch, shallowRef} from 'actview';
+import {ref, toValue, useRootElement, watch, shallowRef, toRefs, unrefs} from 'actview';
 import {
   createGenericEventDetails,
   type BaseUIGenericEventDetails,
 } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
-import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import type { BaseUIComponentProps } from '@/internals/types';
 import { FormContext } from '@/internals/form-context/FormContext';
 import type { FormContext as FormContextValue } from '@/internals/form-context/FormContext';
-import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
 import { useValueChanged } from '@/internals/useValueChanged';
 import { EMPTY_OBJECT } from '@/internals/empty';
 import type { Ref } from 'actview';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * A native form element with consolidated error handling.
@@ -18,8 +18,9 @@ import type { Ref } from 'actview';
  *
  * Documentation: [Base UI Form](https://base-ui.com/react/components/form)
  */
-export const Form: any = defineComponent(function (componentProps: Form.Props) {
+export function Form(componentProps: Form.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
+  // Provider 根（`<FormContext.Provider>`），无 Fragment 根问题。
   const rootRef = useRootElement();
 
   const formRef = shallowRef({fields: new Map<string, any>()});
@@ -128,16 +129,11 @@ export const Form: any = defineComponent(function (componentProps: Form.Props) {
     submitAttemptedRef,
   };
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {className, render, style, ...elementProps} = componentProps;
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
 
-    // errors 是响应值，contextValue 的 errors 需反映最新值
-    contextValue.errors = errorsState.value ?? EMPTY_OBJECT;
-
-    const merged: HTMLProps = {};
-    Object.assign(
-      merged,
+  const {element} = useRenderElement({
+    props: () => [
       {
         noValidate: true,
         onSubmit(event: Event) {
@@ -170,41 +166,27 @@ export const Form: any = defineComponent(function (componentProps: Form.Props) {
           }
         },
       },
-      elementProps,
-    );
-    if (typeof className === 'function') {
-      merged.className = className({});
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof style === 'function') {
-      merged.style = style({});
-    } else if (style !== undefined) {
-      merged.style = style;
-    }
+      unrefs(elementProps),
+    ],
+    state: () => ({}),
+    className,
+    style,
+    render,
+    refs: () => [rootRef as any],
+    children,
+    defaultTag: 'form',
+  });
 
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ref: rootRef} as any);
-      }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof merged.className === 'string' && typeof renderClassName === 'string'
-          ? `${merged.className} ${renderClassName}`.trim()
-          : (merged.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={rootRef} />;
-    }
-    return (
-      <FormContext.Provider value={contextValue}>
-        <form {...merged} ref={rootRef} />
-      </FormContext.Provider>
-    );
-  };
-}) as unknown as (props: Form.Props) => JSX.Element;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  // errors 是响应值，contextValue 的 errors 需反映最新值
+  contextValue.errors = errorsState.value ?? EMPTY_OBJECT;
+
+  return (
+    <FormContext.Provider value={contextValue}>
+      {element()}
+    </FormContext.Provider>
+  );
+}
 
 export type FormSubmitEventReason = typeof REASONS.none;
 export type FormSubmitEventDetails = BaseUIGenericEventDetails<Form.SubmitEventReason>;

@@ -1,5 +1,5 @@
-import { defineComponent, onUnmounted, ref, toValue } from 'actview';
-import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { onUnmounted, ref, toValue } from 'actview';
+import type { BaseUIComponentProps } from '@/internals/types';
 import { tabsStateAttributesMapping } from '../root/stateAttributesMapping';
 import { useTabsListContext } from '../list/TabsListContext';
 import { useTabsRootContext } from '../root/TabsRootContext';
@@ -24,7 +24,7 @@ const MAX_LAYOUT_ROUNDING_ERROR = 2;
  *
  * Documentation: [Base UI Tabs](https://base-ui.com/react/components/tabs)
  */
-export const TabsIndicator = defineComponent(function (componentProps: TabsIndicator.Props) {
+export function TabsIndicator(componentProps: TabsIndicator.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
   const renderBeforeHydration = toValue(componentProps.renderBeforeHydration) ?? false;
 
@@ -40,139 +40,140 @@ export const TabsIndicator = defineComponent(function (componentProps: TabsIndic
   });
   onUnmounted(unregisterListener);
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    void rerenderCount.value;
-    const {className, render, style: styleProp, ...elementProps} = componentProps;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  // 布局计算渲染期执行（IIFE）
+  return (
+    <>
+      {(() => {
+        void rerenderCount.value;
+        const {className, render, style: styleProp, ...elementProps} = componentProps as any;
 
-    const {getTabElementBySelectedValue, orientation, tabActivationDirection, value} =
-      rootContextRef.value;
-    const {tabsListElement} = listContextRef.value;
+        const {getTabElementBySelectedValue, orientation, tabActivationDirection, value} =
+          rootContextRef.value;
+        const {tabsListElement} = listContextRef.value;
 
-    let left = 0;
-    let right = 0;
-    let top = 0;
-    let bottom = 0;
-    let width = 0;
-    let height = 0;
+        let left = 0;
+        let right = 0;
+        let top = 0;
+        let bottom = 0;
+        let width = 0;
+        let height = 0;
 
-    let isTabSelected = false;
+        let isTabSelected = false;
 
-    if (value != null && tabsListElement != null) {
-      const activeTab = getTabElementBySelectedValue(value);
+        if (value != null && tabsListElement != null) {
+          const activeTab = getTabElementBySelectedValue(value);
 
-      if (activeTab != null) {
-        isTabSelected = true;
+          if (activeTab != null) {
+            isTabSelected = true;
 
-        const {width: computedWidth, height: computedHeight} = getCssDimensions(activeTab);
-        const {width: tabListWidth, height: tabListHeight} = getCssDimensions(tabsListElement);
-        const tabRect = activeTab.getBoundingClientRect();
-        const tabsListRect = tabsListElement.getBoundingClientRect();
-        const scaleX = tabListWidth > 0 ? tabsListRect.width / tabListWidth : 1;
-        const scaleY = tabListHeight > 0 ? tabsListRect.height / tabListHeight : 1;
+            const {width: computedWidth, height: computedHeight} = getCssDimensions(activeTab);
+            const {width: tabListWidth, height: tabListHeight} = getCssDimensions(tabsListElement);
+            const tabRect = activeTab.getBoundingClientRect();
+            const tabsListRect = tabsListElement.getBoundingClientRect();
+            const scaleX = tabListWidth > 0 ? tabsListRect.width / tabListWidth : 1;
+            const scaleY = tabListHeight > 0 ? tabsListRect.height / tabListHeight : 1;
 
-        // Layout offsets are immune to transforms, but lose sub-pixel precision.
-        const layoutOffset = getLayoutOffset(activeTab, tabsListElement);
-        left = layoutOffset.left;
-        top = layoutOffset.top;
+            // Layout offsets are immune to transforms, but lose sub-pixel precision.
+            const layoutOffset = getLayoutOffset(activeTab, tabsListElement);
+            left = layoutOffset.left;
+            top = layoutOffset.top;
 
-        const rectLeft =
-          (tabRect.left - tabsListRect.left) / scaleX +
-          tabsListElement.scrollLeft -
-          tabsListElement.clientLeft;
-        const rectTop =
-          (tabRect.top - tabsListRect.top) / scaleY +
-          tabsListElement.scrollTop -
-          tabsListElement.clientTop;
+            const rectLeft =
+              (tabRect.left - tabsListRect.left) / scaleX +
+              tabsListElement.scrollLeft -
+              tabsListElement.clientLeft;
+            const rectTop =
+              (tabRect.top - tabsListRect.top) / scaleY +
+              tabsListElement.scrollTop -
+              tabsListElement.clientTop;
 
-        // The rect-based offset is sub-pixel-precise but is derived from projected viewport
-        // geometry; when it agrees with the layout offset (up to layout rounding), the more
-        // precise value is safe to use.
-        const tabTranslation = getActiveTabTranslation(activeTab);
-        if (
-          Math.abs(rectLeft - tabTranslation.x - left) <= MAX_LAYOUT_ROUNDING_ERROR &&
-          Math.abs(rectTop - tabTranslation.y - top) <= MAX_LAYOUT_ROUNDING_ERROR
-        ) {
-          left = rectLeft;
-          top = rectTop;
+            // The rect-based offset is sub-pixel-precise but is derived from projected viewport
+            // geometry; when it agrees with the layout offset (up to layout rounding), the more
+            // precise value is safe to use.
+            const tabTranslation = getActiveTabTranslation(activeTab);
+            if (
+              Math.abs(rectLeft - tabTranslation.x - left) <= MAX_LAYOUT_ROUNDING_ERROR &&
+              Math.abs(rectTop - tabTranslation.y - top) <= MAX_LAYOUT_ROUNDING_ERROR
+            ) {
+              left = rectLeft;
+              top = rectTop;
+            }
+
+            width = computedWidth;
+            height = computedHeight;
+            right = tabsListElement.scrollWidth - left - width;
+            bottom = tabsListElement.scrollHeight - top - height;
+          }
         }
 
-        width = computedWidth;
-        height = computedHeight;
-        right = tabsListElement.scrollWidth - left - width;
-        bottom = tabsListElement.scrollHeight - top - height;
-      }
-    }
+        const activeTabPosition = isTabSelected ? {left, right, top, bottom} : null;
+        const activeTabSize = isTabSelected ? {width, height} : null;
 
-    const activeTabPosition = isTabSelected ? {left, right, top, bottom} : null;
-    const activeTabSize = isTabSelected ? {width, height} : null;
+        const indicatorStyle: Record<string, any> | undefined = isTabSelected
+          ? {
+              '--active-tab-left': `${left}px`,
+              '--active-tab-right': `${right}px`,
+              '--active-tab-top': `${top}px`,
+              '--active-tab-bottom': `${bottom}px`,
+              '--active-tab-width': `${width}px`,
+              '--active-tab-height': `${height}px`,
+            }
+          : undefined;
 
-    const style: Record<string, any> | undefined = isTabSelected
-      ? {
-          '--active-tab-left': `${left}px`,
-          '--active-tab-right': `${right}px`,
-          '--active-tab-top': `${top}px`,
-          '--active-tab-bottom': `${bottom}px`,
-          '--active-tab-width': `${width}px`,
-          '--active-tab-height': `${height}px`,
+        const displayIndicator = isTabSelected && width > 0 && height > 0;
+
+        const stateValue: TabsIndicatorState = {
+          orientation,
+          activeTabPosition,
+          activeTabSize,
+          tabActivationDirection,
+        };
+
+        const stateAttributes = getStateAttributesProps(stateValue, stateAttributesMapping);
+
+        const merged: Record<string, any> = {
+          role: 'presentation',
+          style: indicatorStyle,
+          hidden: !displayIndicator, // do not display the indicator before the layout is settled
+          ...elementProps,
+          ...stateAttributes,
+        };
+        if (typeof className === 'function') {
+          merged.className = className(stateValue);
+        } else if (className !== undefined) {
+          merged.className = className;
         }
-      : undefined;
+        if (typeof styleProp === 'function') {
+          merged.style = Object.assign({}, indicatorStyle, styleProp(stateValue));
+        } else if (styleProp !== undefined) {
+          merged.style = Object.assign({}, indicatorStyle, styleProp);
+        }
 
-    const displayIndicator = isTabSelected && width > 0 && height > 0;
+        if (value == null) {
+          return null;
+        }
 
-    const stateValue: TabsIndicatorState = {
-      orientation,
-      activeTabPosition,
-      activeTabSize,
-      tabActivationDirection,
-    };
-
-    const stateAttributes = getStateAttributesProps(stateValue, stateAttributesMapping);
-
-    const merged: HTMLProps = {};
-    Object.assign(
-      merged,
-      {
-        role: 'presentation',
-        style,
-        hidden: !displayIndicator, // do not display the indicator before the layout is settled
-      },
-      elementProps,
-      stateAttributes,
-    );
-    if (typeof className === 'function') {
-      merged.className = className(stateValue);
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof styleProp === 'function') {
-      merged.style = Object.assign({}, style, styleProp(stateValue));
-    } else if (styleProp !== undefined) {
-      merged.style = Object.assign({}, style, styleProp);
-    }
-
-    if (value == null) {
-      return null;
-    }
-
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ...stateValue} as any);
-      }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof merged.className === 'string' && typeof renderClassName === 'string'
-          ? `${merged.className} ${renderClassName}`.trim()
-          : (merged.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} />;
-    }
-    return <span {...merged} />;
-  };
-}) as unknown as (props: TabsIndicator.Props) => JSX.Element;
+        if (render) {
+          if (typeof render === 'function') {
+            return render({...merged, ...stateValue} as any);
+          }
+          const renderProps = render.props ?? {};
+          const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
+          const Tag = render.type as any;
+          const mergedRenderProps = Object.assign({}, merged, restRenderProps);
+          mergedRenderProps.className =
+            typeof merged.className === 'string' && typeof renderClassName === 'string'
+              ? `${merged.className} ${renderClassName}`.trim()
+              : (merged.className ?? renderClassName);
+          mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
+          return <Tag key={render.key} {...mergedRenderProps} />;
+        }
+        return <span {...merged} />;
+      })()}
+    </>
+  );
+}
 
 export interface TabsIndicatorState extends TabsRootState {
   /**

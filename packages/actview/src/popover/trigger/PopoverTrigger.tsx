@@ -1,4 +1,4 @@
-import { defineComponent, ref, toValue } from 'actview';
+import { ref, toRefs, unrefs, toValue } from 'actview';
 import { useBaseUiId } from '@/internals/useBaseUiId';
 import { useButton } from '@/internals/use-button/useButton';
 import type { BaseUIComponentProps, NativeButtonProps } from '@/internals/types';
@@ -13,6 +13,7 @@ import { useOpenMethodTriggerProps } from '@/utils/useOpenInteractionType';
 import { usePopoverRootContext } from '../root/PopoverRootContext';
 import { EMPTY_OBJECT } from '@/utils/empty';
 import { mergePropsN } from '@/merge-props';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 const OPEN_DELAY = 300;
 
@@ -22,13 +23,9 @@ const OPEN_DELAY = 300;
  *
  * Documentation: [Base UI Popover](https://base-ui.com/react/components/popover)
  */
-export const PopoverTrigger = defineComponent(function PopoverTrigger(
-  componentProps: PopoverTrigger.Props,
-) {
+export function PopoverTrigger(componentProps: PopoverTrigger.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
   const {
-    render,
-    className,
-    style,
     disabled = false,
     nativeButton = true,
     handle,
@@ -37,10 +34,9 @@ export const PopoverTrigger = defineComponent(function PopoverTrigger(
     delay = OPEN_DELAY,
     closeDelay = 0,
     id: idProp,
-    ...elementProps
   } = componentProps as any;
-
-  const children = toValue(componentProps.children);
+  const {render, className, style, children, ref: refProp, ...elementProps} =
+    toRefs(componentProps);
 
   const rootStore = usePopoverRootContext(true);
   const handleStore = usePopupHandleStore(handle);
@@ -123,81 +119,77 @@ export const PopoverTrigger = defineComponent(function PopoverTrigger(
     triggerElementRef,
   );
 
-  const state: PopoverTriggerState = {
-    disabled,
-    open: isOpenedByThisTrigger.value,
-  };
+  const {element} = useRenderElement({
+    props: () => {
+      const propsList = [
+        click.reference ?? EMPTY_OBJECT,
+        hoverProps ?? EMPTY_OBJECT,
+        rootTriggerProps.value,
+        interactionTypeProps ?? EMPTY_OBJECT,
+        {
+          id: thisTriggerId,
+          'aria-haspopup': 'dialog' as const,
+          'aria-expanded': isOpenedByThisTrigger.value,
+          'aria-controls': popupId.value,
+        },
+        unrefs(elementProps),
+        getButtonProps,
+      ];
 
-  const refs = [
-    (el: HTMLElement | null) => {
-      triggerElementRef.value = el;
-    },
-    buttonRef,
-    registerTrigger,
-  ] as any[];
-
-  const propsList = [
-    click.reference ?? EMPTY_OBJECT,
-    hoverProps ?? EMPTY_OBJECT,
-    rootTriggerProps.value,
-    interactionTypeProps ?? EMPTY_OBJECT,
-    {
-      id: thisTriggerId,
-      'aria-haspopup': 'dialog' as const,
-      'aria-expanded': isOpenedByThisTrigger.value,
-      'aria-controls': popupId.value,
-    },
-    elementProps,
-    getButtonProps,
-  ];
-
-  return () => {
-    const mergedPropsForRender = (() => {
       const merged = mergePropsN<any>([...propsList]);
       Object.assign(merged, stateAttributesMapping.open(isOpenedByThisTrigger.value));
-      // 渲染期重算（propsList 在 setup 期构建，快照会过时）
+      // 渲染期重算（propsList 在渲染期构建，保持实时）
       merged['aria-expanded'] = isOpenedByThisTrigger.value;
       if (disabled) {
         merged['data-disabled'] = '';
       } else {
         delete merged['data-disabled'];
       }
-      return merged;
-    })();
-
-    const element = (
-      <button {...mergedPropsForRender} ref={mergeRefs(refs)}>
-        {children}
-      </button>
-    );
-
-    // actview 渲染无法原地 patch 结构切换，始终使用稳定的 div 包裹结构。
-    return (
-      <div key={`${thisTriggerId}-guards`}>
-        <FocusGuard
-          ref={(el: any) => (preFocusGuardRef.value = el)}
-          onFocus={handlePreFocusGuardFocus}
-        />
-        {element}
-        <FocusGuard
-          ref={(el: any) => (store.context.triggerFocusTargetRef.value = el)}
-          onFocus={handleFocusTargetFocus}
-        />
-      </div>
-    );
-  };
-});
-
-function mergeRefs(refs: any[]) {
-  return (el: HTMLElement | null) => {
-    for (const r of refs) {
-      if (typeof r === 'function') {
-        r(el);
-      } else if (r) {
-        r.value = el;
+      return [merged];
+    },
+    state: () => ({
+      disabled,
+      open: isOpenedByThisTrigger.value,
+    }),
+    className,
+    style,
+    render,
+    refs: () => {
+      const refs: any[] = [
+        (el: HTMLElement | null) => {
+          triggerElementRef.value = el;
+        },
+      ];
+      if (buttonRef) {
+        refs.push(buttonRef);
       }
-    }
-  };
+      if (registerTrigger) {
+        refs.push(registerTrigger);
+      }
+      if (componentProps.ref !== undefined) {
+        refs.push(refProp);
+      }
+      return refs;
+    },
+    children,
+    defaultTag: 'button',
+  });
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  // actview 渲染无法原地 patch 结构切换，始终使用稳定的 div 包裹结构。
+  return (
+    <div key={`${thisTriggerId}-guards`}>
+      <FocusGuard
+        ref={(el: any) => (preFocusGuardRef.value = el)}
+        onFocus={handlePreFocusGuardFocus}
+      />
+      {element()}
+      <FocusGuard
+        ref={(el: any) => (store.context.triggerFocusTargetRef.value = el)}
+        onFocus={handleFocusTargetFocus}
+      />
+    </div>
+  );
 }
 
 export interface PopoverTriggerState {

@@ -1,4 +1,4 @@
-import { defineComponent, ref, toValue } from 'actview';
+import { ref, toValue } from 'actview';
 import { useDialogRootContext } from '@/dialog/root/DialogRootContext';
 import type { BaseUIComponentProps, NativeButtonProps } from '@/internals/types';
 import { triggerOpenStateMapping } from '@/utils/popupStateMapping';
@@ -16,11 +16,8 @@ import { useTriggerFocusGuards } from '@/utils/popups/useTriggerFocusGuards';
  *
  * Documentation: [Base UI AlertDialog](https://base-ui.com/react/components/AlertDialog)
  */
-export const AlertDialogTrigger = defineComponent(function AlertDialogTrigger(
-  componentProps: AlertDialogTrigger.Props,
-) {
+export function AlertDialogTrigger(componentProps: AlertDialogTrigger.Props) {
   const {disabled = false, nativeButton = true, handle} = componentProps as any;
-  const children = toValue(componentProps.children);
 
   const DialogHandleStore = usePopupHandleStore(handle as any);
   const handleStore = DialogHandleStore.value;
@@ -82,42 +79,49 @@ export const AlertDialogTrigger = defineComponent(function AlertDialogTrigger(
     registerTrigger,
   ] as any[];
 
-  return () => {
-    const {render, className, style, ...elementProps} = componentProps as any;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  // 渲染期逻辑（merged/openAttr）在 IIFE 中执行（PD-15）
+  return (
+    <>
+      {(() => {
+        const {render, className, style, ...elementProps} = componentProps as any;
+        const children = componentProps.children;
 
-    const merged: any = mergePropsN<any>([...propsList]);
-    const openAttr = triggerOpenStateMapping.open(isOpenedByThisTrigger.value);
-    if (openAttr) {
-      Object.assign(merged, openAttr);
-    }
-    if (disabled) {
-      merged['data-disabled'] = '';
-    } else {
-      delete merged['data-disabled'];
-    }
+        const merged: any = mergePropsN<any>([...propsList]);
+        const openAttr = triggerOpenStateMapping.open(isOpenedByThisTrigger.value);
+        if (openAttr) {
+          Object.assign(merged, openAttr);
+        }
+        if (disabled) {
+          merged['data-disabled'] = '';
+        } else {
+          delete merged['data-disabled'];
+        }
 
-    const element = (
-      <button {...merged} ref={mergeRefs(refs)}>
-        {children}
-      </button>
-    );
+        const element = (
+          <button {...merged} ref={mergeRefs(refs)}>
+            {children}
+          </button>
+        );
 
-    // actview 渲染无法原地 patch 结构切换，始终使用稳定的 div 包裹结构。
-    return (
-      <div key={`${thisTriggerId}-guards`}>
-        <FocusGuard
-          ref={(el: any) => (preFocusGuardRef.value = el)}
-          onFocus={handlePreFocusGuardFocus}
-        />
-        {element}
-        <FocusGuard
-          ref={(el: any) => (store.context.triggerFocusTargetRef.value = el)}
-          onFocus={handleFocusTargetFocus}
-        />
-      </div>
-    );
-  };
-});
+        // actview 渲染无法原地 patch 结构切换，始终使用稳定的 div 包裹结构。
+        return (
+          <div key={`${thisTriggerId}-guards`}>
+            <FocusGuard
+              ref={(el: any) => (preFocusGuardRef.value = el)}
+              onFocus={handlePreFocusGuardFocus}
+            />
+            {element}
+            <FocusGuard
+              ref={(el: any) => (store.context.triggerFocusTargetRef.value = el)}
+              onFocus={handleFocusTargetFocus}
+            />
+          </div>
+        );
+      })()}
+    </>
+  );
+}
 
 function mergeRefs(refs: any[]) {
   return (el: HTMLElement | null) => {

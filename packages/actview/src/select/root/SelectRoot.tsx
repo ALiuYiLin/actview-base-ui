@@ -1,4 +1,4 @@
-import { defineComponent, toValue, onUnmounted } from 'actview';
+import { toValue, onUnmounted } from 'actview';
 import { createSelectStore } from '../store';
 import { SelectRootContext } from './SelectRootContext';
 import type { BaseUIComponentProps } from '@/internals/types';
@@ -11,7 +11,8 @@ import type { BaseUIComponentProps } from '@/internals/types';
  * 层已完整移植键盘导航/focus）；无滚动箭头；
  * items 为受控数据（Record 或数组），按 index 顺序渲染。
  */
-export const SelectRoot = defineComponent(function SelectRoot(props: SelectRoot.Props) {
+export function SelectRoot(props: SelectRoot.Props) {
+  // ============ setup（只执行一次） ============
   const {
     value: valueProp,
     defaultValue,
@@ -54,16 +55,13 @@ export const SelectRoot = defineComponent(function SelectRoot(props: SelectRoot.
     disabled,
   });
 
-  return () => {
-    const child = typeof children === 'function' ? children(state()) : toValue(children);
-
-    return (
-      <SelectRootContext.Provider value={store as any}>
-        {child}
-      </SelectRootContext.Provider>
-    );
-  };
-});
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return (
+    <SelectRootContext.Provider value={store as any}>
+      {typeof children === 'function' ? children(state()) : toValue(children)}
+    </SelectRootContext.Provider>
+  );
+}
 
 export interface SelectRootState {
   /**

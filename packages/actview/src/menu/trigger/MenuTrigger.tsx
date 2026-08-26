@@ -1,4 +1,4 @@
-import { defineComponent, onUnmounted, ref, toValue, watch } from 'actview';
+import { onUnmounted, ref, toValue, toRefs, unrefs, watch } from 'actview';
 import type { Ref } from 'actview';
 import { useTimeout } from '@/utils/useTimeout';
 import { ownerDocument } from '@/internals/owner';
@@ -31,6 +31,7 @@ import type { MenuParent } from '../root/MenuRoot';
 import { PATIENT_CLICK_THRESHOLD } from '@/internals/constants';
 import { FocusGuard } from '@/utils/FocusGuard';
 import { mergeProps, mergePropsN } from '@/merge-props';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * A button that opens the menu.
@@ -38,13 +39,9 @@ import { mergeProps, mergePropsN } from '@/merge-props';
  *
  * Documentation: [Base UI Menu](https://base-ui.com/react/components/menu)
  */
-export const MenuTrigger = defineComponent(function MenuTrigger(
-  componentProps: MenuTrigger.Props,
-) {
+export function MenuTrigger(componentProps: MenuTrigger.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
   const {
-    render,
-    className,
-    style,
     disabled: disabledProp = false,
     nativeButton = true,
     id: idProp,
@@ -55,7 +52,7 @@ export const MenuTrigger = defineComponent(function MenuTrigger(
     payload,
   } = componentProps;
 
-  const children = toValue(componentProps.children);
+  const {render, className, style, children, ref: refProp, ...elementProps} = toRefs(componentProps);
 
   const rootContext = useMenuRootContext(true);
   const handleStore = usePopupHandleStore(handle);
@@ -193,11 +190,6 @@ export const MenuTrigger = defineComponent(function MenuTrigger(
   const {preFocusGuardRef, handlePreFocusGuardFocus, handleFocusTargetFocus} =
     useTriggerFocusGuards(store, triggerElementRef);
 
-  const state: MenuTriggerState = {
-    disabled: disabledProp,
-    open: isOpenedByThisTrigger.value,
-  };
-
   const button = useButton({
     disabled: disabledProp,
     native: nativeButton,
@@ -247,62 +239,70 @@ export const MenuTrigger = defineComponent(function MenuTrigger(
     getButtonProps,
   ];
 
-  return () => {
-    const {className: cls, style: st, render: r, ...elementProps} = componentProps;
+  const state = (): MenuTriggerState => ({
+    disabled: disabledProp,
+    open: isOpenedByThisTrigger.value,
+  });
 
-    const mergedPropsForRender = (() => {
-      const merged = mergePropsN<any>([...propsList, elementProps]);
+  const {element} = useRenderElement({
+    props: () => {
+      const merged = mergePropsN<any>([...propsList, unrefs(elementProps)]);
       const stateAttributes = {};
       if ((globalThis as any).__DSH_TRIGGER_DEBUG) {
         // eslint-disable-next-line no-console
         console.log('[MenuTrigger] render isOpened=' + String(isOpenedByThisTrigger.value));
       }
-      Object.assign(stateAttributes, pressableTriggerOpenStateMapping.open(isOpenedByThisTrigger.value));
-      Object.assign(merged, stateAttributes);
-      return merged;
-    })();
-
-    if (isInMenubar) {
-      return (
-        <CompositeItem
-          tag="button"
-          render={r}
-          className={cls}
-          style={st}
-          state={state}
-          refs={refs}
-          props={propsList}
-          stateAttributesMapping={pressableTriggerOpenStateMapping}
-        >
-          {children}
-        </CompositeItem>
+      Object.assign(
+        stateAttributes,
+        pressableTriggerOpenStateMapping.open(isOpenedByThisTrigger.value),
       );
-    }
+      Object.assign(merged, stateAttributes);
+      return [merged];
+    },
+    state,
+    className,
+    style,
+    render,
+    refs: () => refs,
+    children,
+    defaultTag: 'button',
+  });
 
-    const element = (
-      <button {...mergedPropsForRender} ref={mergeRefs(refs)}>
-        {children}
-      </button>
-    );
-
-    // actview 渲染无法原地 patch div↔button 结构切换（open 时包裹 guards、
-    // 关闭时不包裹会导致 button 元素重建，domReference 变 disconnected），
-    // 因此始终使用稳定的 div 包裹结构。
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  if (isInMenubar) {
     return (
-      <div key={`${thisTriggerId}-guards`}>
-        <FocusGuard
-          ref={(el: any) => (preFocusGuardRef.value = el)}
-          onFocus={handlePreFocusGuardFocus}
-        />
-        {element}
-        <FocusGuard
-          ref={(el: any) => (store.context.triggerFocusTargetRef.value = el)}
-          onFocus={handleFocusTargetFocus}
-        />
-      </div>
+      <CompositeItem
+        tag="button"
+        render={render}
+        className={className}
+        style={style}
+        state={state}
+        refs={refs}
+        props={propsList}
+        stateAttributesMapping={pressableTriggerOpenStateMapping}
+      >
+        {toValue(children)}
+      </CompositeItem>
     );
-  };
-});
+  }
+
+  // actview 渲染无法原地 patch div↔button 结构切换（open 时包裹 guards、
+  // 关闭时不包裹会导致 button 元素重建，domReference 变 disconnected），
+  // 因此始终使用稳定的 div 包裹结构。
+  return (
+    <div key={`${thisTriggerId}-guards`}>
+      <FocusGuard
+        ref={(el: any) => (preFocusGuardRef.value = el)}
+        onFocus={handlePreFocusGuardFocus}
+      />
+      {element()}
+      <FocusGuard
+        ref={(el: any) => (store.context.triggerFocusTargetRef.value = el)}
+        onFocus={handleFocusTargetFocus}
+      />
+    </div>
+  );
+}
 
 /**
  * Determines whether to ignore clicks after a hover-open.

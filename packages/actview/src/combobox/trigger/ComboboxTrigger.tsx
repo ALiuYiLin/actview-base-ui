@@ -1,53 +1,48 @@
-import { defineComponent, toValue } from 'actview';
+import { toRefs, unrefs } from 'actview';
 import { useComboboxRootContext } from '../root/ComboboxRootContext';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /** The trigger of the combobox. Renders a `<button>` element. */
-export const ComboboxTrigger = defineComponent(function ComboboxTrigger(
-  componentProps: ComboboxTrigger.Props,
-) {
+export function ComboboxTrigger(componentProps: ComboboxTrigger.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
   const context = useComboboxRootContext(false);
-  const children = toValue(componentProps.children);
+  const {render, className, style, children, ref, ...elementProps} = toRefs(componentProps);
   // useState 必须在 setup 调用（useStore 内部注册 onUnmounted）。
   const open = context.store.useState('open');
 
-  return () => {
-    const {render, className, style, ...elementProps} = componentProps as any;
-    const disabled = context.store.state.disabled;
-
-    const merged: any = {
-      type: 'button',
-      'aria-expanded': open.value,
-      'aria-haspopup': 'listbox',
-      ...elementProps,
-      disabled,
-      onClick: () => {
-        if (!disabled) {
-          context.store.toggleOpen();
-        }
-      },
-    };
-
-    const ref = (el: any) => {
-      context.store.setTriggerElement(el ?? null);
-      if (componentProps.ref) {
-        if (typeof componentProps.ref === 'function') (componentProps.ref as any)(el);
-        else {
-          (componentProps.ref as any).value = el;
-          
-        }
-      }
-    };
-
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ref} as any);
-      }
-      const Tag = render.type as any;
-      return <Tag {...render.props} {...merged} ref={ref}>{children}</Tag>;
-    }
-    return <button {...merged} ref={ref}>{children}</button>;
+  const triggerRef = (el: any) => {
+    context.store.setTriggerElement(el ?? null);
   };
-});
+
+  const {element} = useRenderElement({
+    props: () => {
+      const disabled = context.store.state.disabled;
+      return [
+        {
+          type: 'button',
+          'aria-expanded': open.value,
+          'aria-haspopup': 'listbox',
+          ...unrefs(elementProps),
+          disabled,
+          onClick: () => {
+            if (!disabled) {
+              context.store.toggleOpen();
+            }
+          },
+        },
+      ];
+    },
+    className,
+    style,
+    render,
+    refs: () => (componentProps.ref !== undefined ? [triggerRef, ref] : [triggerRef]),
+    children,
+    defaultTag: 'button',
+  });
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface ComboboxTriggerProps {
   children?: any;

@@ -1,19 +1,18 @@
-import { defineComponent, toValue } from 'actview';
+import { toRefs, unrefs } from 'actview';
 import { useMenuRootContext } from '../root/MenuRootContext';
 import type { BaseUIComponentProps } from '@/internals/types';
-import { popupTransitionStateMapping } from '@/utils/popupStateMapping';
 import type { TransitionStatus } from '@/internals/useTransitionStatus';
 import { useContextMenuRootContext } from '@/context-menu/root/ContextMenuRootContext';
 import { REASONS } from '@/internals/reasons';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * An overlay displayed beneath the menu popup.
  * Renders a `<div>` element.
  */
-export const MenuBackdrop = defineComponent(function MenuBackdrop(
-  componentProps: MenuBackdrop.Props,
-) {
-  const children = toValue(componentProps.children);
+export function MenuBackdrop(componentProps: MenuBackdrop.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
+  const {render, className, style, children, ref, ...elementProps} = toRefs(componentProps);
 
   const {store} = useMenuRootContext();
   const open = store.useState('open');
@@ -23,67 +22,61 @@ export const MenuBackdrop = defineComponent(function MenuBackdrop(
 
   const contextMenuContext = useContextMenuRootContext();
 
-  return () => {
-    const {render, className, style, ...elementProps} = componentProps as any;
-
-    const state: MenuBackdropState = {
+  const {element} = useRenderElement({
+    props: () => {
+      const attributes: Record<string, string> = {};
+      if (open.value) {
+        attributes['data-open'] = '';
+      } else {
+        attributes['data-closed'] = '';
+      }
+      if (transitionStatus.value === 'starting') {
+        attributes['data-starting-style'] = '';
+      } else if (transitionStatus.value === 'ending') {
+        attributes['data-ending-style'] = '';
+      }
+      return [
+        {
+          role: 'presentation',
+          hidden: !mounted.value,
+          style: {
+            pointerEvents:
+              lastOpenChangeReason.value === REASONS.triggerHover ? 'none' : undefined,
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+          },
+          ...attributes,
+        },
+        unrefs(elementProps),
+      ];
+    },
+    state: (): MenuBackdropState => ({
       open: open.value,
       transitionStatus: transitionStatus.value,
-    };
-
-    const attributes: Record<string, string> = {};
-    if (state.open) {
-      attributes['data-open'] = '';
-    } else {
-      attributes['data-closed'] = '';
-    }
-    if (state.transitionStatus === 'starting') {
-      attributes['data-starting-style'] = '';
-    } else if (state.transitionStatus === 'ending') {
-      attributes['data-ending-style'] = '';
-    }
-
-    const merged: any = {
-      role: 'presentation',
-      hidden: !mounted.value,
-      style: {
-        pointerEvents: lastOpenChangeReason.value === REASONS.triggerHover ? 'none' : undefined,
-        userSelect: 'none',
-        WebkitUserSelect: 'none',
-      },
-      ...elementProps,
-      ...attributes,
-    };
-
-    const mergedRefs = (el: HTMLDivElement | null) => {
-      if (contextMenuContext?.backdropRef) {
-        contextMenuContext.backdropRef.value = el;
+    }),
+    className,
+    style,
+    render,
+    refs: () => {
+      const refs: any[] = [
+        (el: HTMLDivElement | null) => {
+          if (contextMenuContext?.backdropRef) {
+            contextMenuContext.backdropRef.value = el;
+          }
+        },
+      ];
+      if (componentProps.ref !== undefined) {
+        refs.push(ref);
       }
-      if (typeof componentProps.ref === 'function') {
-        (componentProps.ref as any)(el);
-      } else if (componentProps.ref) {
-        componentProps.ref.value = el;
-      }
-    };
+      return refs;
+    },
+    children,
+    defaultTag: 'div',
+  });
 
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ...state, ref: mergedRefs} as any);
-      }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof merged.className === 'string' && typeof renderClassName === 'string'
-          ? `${merged.className} ${renderClassName}`.trim()
-          : (merged.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={mergedRefs}>{children}</Tag>;
-    }
-    return <div {...merged} ref={mergedRefs}>{children}</div>;
-  };
-});
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface MenuBackdropState {
   /**

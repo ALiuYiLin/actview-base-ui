@@ -1,7 +1,9 @@
-import { defineComponent, toValue, useRootElement } from 'actview';
-import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { toRefs, unrefs } from 'actview';
+import type { BaseUIComponentProps } from '@/internals/types';
 import { useMeterRootContext } from '../root/MeterRootContext';
 import type { MeterRootState } from '../root/MeterRoot';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useRootElementFragment } from '@/internals/useRootElementFragment';
 
 /**
  * Displays the current value of the meter.
@@ -9,57 +11,43 @@ import type { MeterRootState } from '../root/MeterRoot';
  *
  * Documentation: [Base UI Meter](https://base-ui.com/react/components/meter)
  */
-export const MeterValue = defineComponent(function (componentProps: MeterValue.Props) {
+export function MeterValue(componentProps: MeterValue.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  const rootRef = useRootElement();
+  // Fragment 根（`<>{element()}</>`）下 actview 内置 useRootElement 的
+  // subTree.el 恒 null——用 Fragment 兼容版本。
+  const rootRef = useRootElementFragment();
 
   const rootContextRef = useMeterRootContext();
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {className, render, children, style, ...elementProps} = componentProps;
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, children, style, ...elementProps} = toRefs(componentProps);
 
-    const {value, formattedValue} = rootContextRef.value;
-
-    const merged: HTMLProps = {};
-    Object.assign(
-      merged,
+  const {element} = useRenderElement({
+    props: () => [
       {
         'aria-hidden': true,
-        children:
-          typeof children === 'function' ? (children as any)(formattedValue, value) : formattedValue,
       },
-      elementProps,
-    );
-    if (typeof className === 'function') {
-      merged.className = className({});
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof style === 'function') {
-      merged.style = style({});
-    } else if (style !== undefined) {
-      merged.style = style;
-    }
+      unrefs(elementProps),
+    ],
+    state: () => ({}),
+    className,
+    style,
+    render,
+    refs: () => [rootRef as any],
+    // children：render-prop（(formattedValue, value) => any）渲染期求值
+    children: () => {
+      const {value, formattedValue} = rootContextRef.value;
+      const childrenValue = children?.value;
+      return typeof childrenValue === 'function'
+        ? (childrenValue as any)(formattedValue, value)
+        : formattedValue;
+    },
+    defaultTag: 'span',
+  });
 
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ref: rootRef} as any);
-      }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof merged.className === 'string' && typeof renderClassName === 'string'
-          ? `${merged.className} ${renderClassName}`.trim()
-          : (merged.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={rootRef} />;
-    }
-    return <span {...merged} ref={rootRef} />;
-  };
-}) as unknown as (props: MeterValue.Props) => JSX.Element;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface MeterValueState extends MeterRootState {}
 

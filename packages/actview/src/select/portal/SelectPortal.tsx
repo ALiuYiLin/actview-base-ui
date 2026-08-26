@@ -1,11 +1,9 @@
-import { defineComponent, toValue } from 'actview';
 import { FloatingPortal } from '@/floating-ui-react';
 
 /** Moves the popup to a different part of the DOM. */
-export const SelectPortal = defineComponent(function SelectPortal(props: SelectPortal.Props) {
-  const children = toValue(props.children);
-  return () => <FloatingPortal {...props}>{children}</FloatingPortal>;
-});
+export function SelectPortal(props: SelectPortal.Props) {
+  return <FloatingPortal {...props}>{props.children}</FloatingPortal>;
+}
 
 export interface SelectPortalProps {
   children?: any;

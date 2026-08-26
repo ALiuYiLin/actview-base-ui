@@ -1,20 +1,18 @@
-import { defineComponent, toValue } from 'actview';
+import { toRefs, unrefs } from 'actview';
 import { usePopoverPositionerContext } from '../positioner/PopoverPositionerContext';
 import { usePopoverRootContext } from '../root/PopoverRootContext';
 import type { Side, Align } from '@/internals/useAnchorPositioning';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { popupStateMapping } from '@/utils/popupStateMapping';
 import type { Ref } from 'actview';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * Displays an element positioned against the popover anchor.
  * Renders a `<div>` element.
  */
-export const PopoverArrow = defineComponent(function PopoverArrow(
-  componentProps: PopoverArrow.Props,
-) {
-  const children = toValue(componentProps.children);
-
+export function PopoverArrow(componentProps: PopoverArrow.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
   const store = usePopoverRootContext(false);
   const positionerContext = usePopoverPositionerContext();
   const {arrowRef, side, align, arrowUncentered, arrowStyles} = positionerContext ?? {
@@ -25,59 +23,53 @@ export const PopoverArrow = defineComponent(function PopoverArrow(
     arrowStyles: undefined as any,
   };
   const open = store.useState('open');
+  const {render, className, style, children, ref: refProp, ...elementProps} =
+    toRefs(componentProps);
 
-  return () => {
-    const {render, className, style, ...elementProps} = componentProps as any;
-
-    const state: PopoverArrowState = {
+  const {element} = useRenderElement({
+    props: () => {
+      const attributes: Record<string, string> = {};
+      const mapping: any = popupStateMapping;
+      const openAttr = mapping.open(open.value);
+      if (openAttr) {
+        Object.assign(attributes, openAttr);
+      }
+      return [
+        {
+          style: arrowStyles?.value ?? arrowStyles,
+          'aria-hidden': true,
+        },
+        unrefs(elementProps),
+        attributes,
+      ];
+    },
+    state: () => ({
       open: open.value,
       side,
       align,
       uncentered: arrowUncentered,
-    };
-
-    const attributes: Record<string, string> = {};
-    const mapping: any = popupStateMapping;
-    const openAttr = mapping.open(open.value);
-    if (openAttr) {
-      Object.assign(attributes, openAttr);
-    }
-
-    const merged: any = {
-      style: arrowStyles?.value ?? arrowStyles,
-      'aria-hidden': true,
-      ...elementProps,
-      ...attributes,
-    };
-
-    const mergedRefs = (el: HTMLDivElement | null) => {
-      arrowRef.value = el;
-      if (typeof componentProps.ref === 'function') {
-        (componentProps.ref as any)(el);
-      } else if (componentProps.ref) {
-        (componentProps.ref as any).value = el;
-        
+    }),
+    className,
+    style,
+    render,
+    refs: () => {
+      const refs: any[] = [
+        (el: HTMLDivElement | null) => {
+          arrowRef.value = el;
+        },
+      ];
+      if (componentProps.ref !== undefined) {
+        refs.push(refProp);
       }
-    };
+      return refs;
+    },
+    children,
+    defaultTag: 'div',
+  });
 
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ...state, ref: mergedRefs} as any);
-      }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof merged.className === 'string' && typeof renderClassName === 'string'
-          ? `${merged.className} ${renderClassName}`.trim()
-          : (merged.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={mergedRefs}>{children}</Tag>;
-    }
-    return <div {...merged} ref={mergedRefs}>{children}</div>;
-  };
-});
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface PopoverArrowState {
   /**

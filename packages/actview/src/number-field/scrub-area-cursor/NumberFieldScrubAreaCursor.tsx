@@ -1,12 +1,12 @@
-import { defineComponent, useRootElement } from 'actview';
+import { toRefs, unrefs } from 'actview';
 import type { BaseUIComponentProps } from '@/internals/types';
 import type { NumberFieldRootState } from '../root/NumberFieldRoot';
 import { useNumberFieldRootContext } from '../root/NumberFieldRootContext';
 import { useNumberFieldScrubAreaContext } from '../scrub-area/NumberFieldScrubAreaContext';
 import { stateAttributesMapping } from '../utils/stateAttributesMapping';
 import { platform } from '@/utils/platform';
-import { ownerDocument } from '@/utils/owner';
-import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useRootElementFragment } from '@/internals/useRootElementFragment';
 
 const CURSOR_STYLE: any = {
   position: 'fixed',
@@ -24,81 +24,50 @@ const CURSOR_STYLE: any = {
  *
  * Documentation: [Base UI Number Field](https://base-ui.com/react/components/number-field)
  */
-export const NumberFieldScrubAreaCursor = defineComponent(function (
-  componentProps: NumberFieldScrubAreaCursor.Props,
-) {
+export function NumberFieldScrubAreaCursor(componentProps: NumberFieldScrubAreaCursor.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
   const rootContextRef = useNumberFieldRootContext();
   const scrubAreaContextRef = useNumberFieldScrubAreaContext();
-  const cursorRef = useRootElement();
+  // Fragment 根（`<>{element()}</>`）下 actview 内置 useRootElement 的
+  // subTree.el 恒 null——用 Fragment 兼容版本。
+  const cursorRef = useRootElementFragment();
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {render, className, style, ...elementProps} = componentProps;
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, ...elementProps} = toRefs(componentProps);
 
-    const {state} = rootContextRef.value;
-    const {isScrubbing, isTouchInput, isPointerLockDenied, scrubAreaCursorRef} =
-      scrubAreaContextRef.value;
+  const {element} = useRenderElement({
+    props: () => {
+      const stateValue = rootContextRef.value.state;
+      const resolvedStyle =
+        typeof style?.value === 'function' ? style.value(stateValue) : style?.value;
+      const merged: any = {
+        role: 'presentation',
+        style: Object.assign({}, CURSOR_STYLE, resolvedStyle),
+        ...unrefs(elementProps),
+      };
+      return [merged];
+    },
+    state: () => rootContextRef.value.state,
+    stateAttributesMapping: stateAttributesMapping as any,
+    className,
+    render,
+    refs: () => [cursorRef as any, scrubAreaContextRef.value.scrubAreaCursorRef as any],
+    defaultTag: 'span',
+  });
 
-    const shouldRender =
-      isScrubbing && !platform.engine.webkit && !isTouchInput && !isPointerLockDenied;
-
-    if (!shouldRender) {
-      return null;
-    }
-
-    const stateAttributes = getStateAttributesProps(state, stateAttributesMapping);
-
-    const merged: any = {
-      role: 'presentation',
-      style: CURSOR_STYLE,
-      ...elementProps,
-      ...stateAttributes,
-    };
-    if (typeof className === 'function') {
-      merged.className = className(state);
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof style === 'function') {
-      merged.style = Object.assign({}, CURSOR_STYLE, style(state));
-    } else if (style !== undefined) {
-      merged.style = Object.assign({}, CURSOR_STYLE, style);
-    }
-
-    const mergedRefs = (el: HTMLSpanElement | null) => {
-      cursorRef.value = el;
-      scrubAreaCursorRef.value = el;
-    };
-
-    let element: any;
-    if (render) {
-      if (typeof render === 'function') {
-        element = render({...merged, ...state, ref: mergedRefs} as any);
-      } else {
-        const renderProps = render.props ?? {};
-        const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-        const Tag = render.type as any;
-        const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-        mergedRenderProps.className =
-          typeof merged.className === 'string' && typeof renderClassName === 'string'
-            ? `${merged.className} ${renderClassName}`.trim()
-            : (merged.className ?? renderClassName);
-        mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-        element = <Tag key={render.key} {...mergedRenderProps} ref={mergedRefs} />;
-      }
-    } else {
-      element = <span {...merged} ref={mergedRefs} />;
-    }
-
-    // Portal to document.body（actview 简化：渲染到 body）
-    return createPortalToBody(element);
-  };
-}) as unknown as (props: NumberFieldScrubAreaCursor.Props) => JSX.Element;
-
-function createPortalToBody(element: any) {
-  // actview 无 createPortal——直接渲染元素（挂载到当前位置）
-  return element;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  // Portal to document.body（actview 简化：渲染到当前位置）
+  return (
+    <>
+      {(() => {
+        const {isScrubbing, isTouchInput, isPointerLockDenied} = scrubAreaContextRef.value;
+        if (!isScrubbing || platform.engine.webkit || isTouchInput || isPointerLockDenied) {
+          return null;
+        }
+        return element();
+      })()}
+    </>
+  );
 }
 
 export interface NumberFieldScrubAreaCursorState extends NumberFieldRootState {}

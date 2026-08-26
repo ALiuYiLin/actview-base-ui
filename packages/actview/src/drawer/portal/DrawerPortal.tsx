@@ -1,4 +1,3 @@
-import { defineComponent } from 'actview';
 import { FloatingPortal } from '@/floating-ui-react';
 import { useDialogRootContext } from '@/dialog/root/DialogRootContext';
 import { DrawerPortalContext } from './DrawerPortalContext';
@@ -11,25 +10,20 @@ import type { Ref } from 'actview';
  *
  * Documentation: [Base UI Drawer](https://base-ui.com/react/components/Drawer)
  */
-export const DrawerPortal = defineComponent(function DrawerPortal(props: DrawerPortal.Props) {
+export function DrawerPortal(props: DrawerPortal.Props) {
+  // ============ setup（只执行一次） ============
   const {keepMounted = false, ...portalProps} = props as any;
 
   const store = useDialogRootContext(false);
   const mounted = store.useState('mounted');
 
-  return () => {
-    const shouldRender = mounted.value || keepMounted;
-    if (!shouldRender) {
-      return null;
-    }
-
-    return (
-      <DrawerPortalContext.Provider value={keepMounted}>
-        <FloatingPortal {...portalProps} />
-      </DrawerPortalContext.Provider>
-    );
-  };
-});
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return (
+    <DrawerPortalContext.Provider value={keepMounted}>
+      {mounted.value || keepMounted ? <FloatingPortal {...portalProps} /> : null}
+    </DrawerPortalContext.Provider>
+  );
+}
 
 export interface DrawerPortalState {}
 

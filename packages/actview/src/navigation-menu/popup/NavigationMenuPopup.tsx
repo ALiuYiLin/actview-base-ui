@@ -1,38 +1,37 @@
-import { defineComponent, computed, toValue } from 'actview';
+import { toRefs, unrefs, computed } from 'actview';
 import { useNavigationMenuRootContext } from '../root/NavigationMenuRootContext';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /** Renders the popup when the menu is open. Renders a `<div>` element. */
-export const NavigationMenuPopup = defineComponent(function NavigationMenuPopup(
-  props: NavigationMenuPopup.Props,
-) {
+export function NavigationMenuPopup(props: NavigationMenuPopup.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
   const context = useNavigationMenuRootContext(false);
-  const children = toValue(props.children);
+  const {render, className, style, children, ref: refProp, ...elementProps} = toRefs(props);
   const open = computed(() => context.openRef.value);
 
-  return () => {
-    if (!open.value) {
-      return null;
-    }
-    const {render, className, style, ...elementProps} = props as any;
-    const merged: any = {...elementProps};
-    const ref = (el: any) => {
-      context.setPopupElement(el ?? null);
-      if (props.ref) {
-        if (typeof props.ref === 'function') (props.ref as any)(el);
-        else {
-          (props.ref as any).value = el;
-          
-        }
+  const {element} = useRenderElement({
+    props: () => [{...unrefs(elementProps)}],
+    className,
+    style,
+    render,
+    refs: () => {
+      const refs: any[] = [
+        (el: any) => {
+          context.setPopupElement(el ?? null);
+        },
+      ];
+      if (props.ref !== undefined) {
+        refs.push(refProp);
       }
-    };
-    if (render) {
-      if (typeof render === 'function') return render({...merged, ref} as any);
-      const Tag = render.type as any;
-      return <Tag {...render.props} {...merged} ref={ref}>{children}</Tag>;
-    }
-    return <div {...merged} ref={ref}>{children}</div>;
-  };
-});
+      return refs;
+    },
+    children,
+    defaultTag: 'div',
+  });
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{!open.value ? null : element()}</>;
+}
 
 export interface NavigationMenuPopupProps {
   children?: any;

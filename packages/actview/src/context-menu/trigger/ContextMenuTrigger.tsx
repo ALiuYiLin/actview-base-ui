@@ -1,4 +1,4 @@
-import { defineComponent, onUnmounted, ref, toValue, watch } from 'actview';
+import { onUnmounted, ref, toValue, watch } from 'actview';
 import { useTimeout } from '@/utils/useTimeout';
 import { ownerDocument } from '@/internals/owner';
 import { addEventListener } from '@/internals/addEventListener';
@@ -19,11 +19,8 @@ const LONG_PRESS_DELAY = 500;
  *
  * Documentation: [Base UI Context Menu](https://base-ui.com/react/components/context-menu)
  */
-export const ContextMenuTrigger = defineComponent(function ContextMenuTrigger(
-  componentProps: ContextMenuTrigger.Props,
-) {
-  const {render, className, style, disabled: disabledProp = false, ...elementProps} = componentProps as any;
-  const children = toValue(componentProps.children);
+export function ContextMenuTrigger(componentProps: ContextMenuTrigger.Props) {
+  const {disabled: disabledProp = false} = componentProps as any;
 
   const rootContext = useContextMenuRootContext(false);
   const {store} = useMenuRootContext(false);
@@ -203,58 +200,66 @@ export const ContextMenuTrigger = defineComponent(function ContextMenuTrigger(
     docContextMenuCleanup.value?.();
   });
 
-  return () => {
-    const state: ContextMenuTriggerState = {
-      open: open.value,
-    };
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  // 渲染期逻辑（merged/refs）在 IIFE 中执行（PD-15）
+  return (
+    <>
+      {(() => {
+        const {render, className, style, ...elementProps} = componentProps as any;
+        const children = componentProps.children;
 
-    const merged: any = {
-      onContextMenu: handleContextMenu,
-      onTouchStart: handleTouchStart,
-      onTouchMove: handleTouchMove,
-      onTouchEnd: cancelLongPress,
-      onTouchCancel: cancelLongPress,
-      style: {
-        WebkitTouchCallout: 'none',
-        ...(style ?? {}),
-      },
-      ...elementProps,
-    };
+        const state: ContextMenuTriggerState = {
+          open: open.value,
+        };
 
-    Object.assign(merged, pressableTriggerOpenStateMapping.open(open.value));
+        const merged: any = {
+          onContextMenu: handleContextMenu,
+          onTouchStart: handleTouchStart,
+          onTouchMove: handleTouchMove,
+          onTouchEnd: cancelLongPress,
+          onTouchCancel: cancelLongPress,
+          style: {
+            WebkitTouchCallout: 'none',
+            ...(style ?? {}),
+          },
+          ...elementProps,
+        };
 
-    const mergedRefs = (el: HTMLDivElement | null) => {
-      triggerRef.value = el;
-      if (typeof componentProps.ref === 'function') {
-        (componentProps.ref as any)(el);
-      } else if (componentProps.ref) {
-        (componentProps.ref as any).value = el;
-        
-      }
-    };
+        Object.assign(merged, pressableTriggerOpenStateMapping.open(open.value));
 
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ...state, ref: mergedRefs} as any);
-      }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof className === 'string' && typeof renderClassName === 'string'
-          ? `${className} ${renderClassName}`.trim()
-          : (className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={mergedRefs}>{children}</Tag>;
-    }
-    return (
-      <div {...merged} className={className} ref={mergedRefs}>
-        {children}
-      </div>
-    );
-  };
-});
+        const mergedRefs = (el: HTMLDivElement | null) => {
+          triggerRef.value = el;
+          if (typeof componentProps.ref === 'function') {
+            (componentProps.ref as any)(el);
+          } else if (componentProps.ref) {
+            (componentProps.ref as any).value = el;
+          }
+        };
+
+        if (render) {
+          if (typeof render === 'function') {
+            return render({...merged, ...state, ref: mergedRefs} as any);
+          }
+          const renderProps = render.props ?? {};
+          const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
+          const Tag = render.type as any;
+          const mergedRenderProps = Object.assign({}, merged, restRenderProps);
+          mergedRenderProps.className =
+            typeof className === 'string' && typeof renderClassName === 'string'
+              ? `${className} ${renderClassName}`.trim()
+              : (className ?? renderClassName);
+          mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
+          return <Tag key={render.key} {...mergedRenderProps} ref={mergedRefs}>{children}</Tag>;
+        }
+        return (
+          <div {...merged} className={className} ref={mergedRefs}>
+            {children}
+          </div>
+        );
+      })()}
+    </>
+  );
+}
 
 export interface ContextMenuTriggerState {
   /**

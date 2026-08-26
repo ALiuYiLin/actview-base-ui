@@ -1,4 +1,4 @@
-import { computed, defineComponent, toValue, useRootElement } from 'actview';
+import { computed, toValue, toRefs, unrefs, useRootElement } from 'actview';
 import type { ComputedRef } from 'actview';
 import { useControlled } from '@/utils/useControlled';
 import { EMPTY_ARRAY } from '@/internals/noop';
@@ -11,7 +11,7 @@ import { useFieldRootContext } from '@/internals/field-root-context/FieldRootCon
 import { useRegisterFieldControl } from '@/internals/field-register-control/useRegisterFieldControl';
 import { useLabelableContext } from '@/internals/labelable-provider/LabelableContext';
 import { useLabelableId } from '@/internals/labelable-provider/useLabelableId';
-import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import type { BaseUIComponentProps } from '@/internals/types';
 import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
 import { fieldValidityMapping } from '@/internals/field-constants/constants';
 import { useCheckboxGroupParent } from './useCheckboxGroupParent';
@@ -19,14 +19,16 @@ import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDeta
 import { REASONS } from '@/internals/reasons';
 import { useFormContext } from '@/internals/form-context/FormContext';
 import { useValueChanged } from '@/internals/useValueChanged';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * Provides a shared state to a series of checkboxes.
  *
  * Documentation: [Base UI Checkbox Group](https://base-ui.com/react/components/checkbox-group)
  */
-export const CheckboxGroup = defineComponent(function (componentProps: CheckboxGroup.Props) {
+export function CheckboxGroup(componentProps: CheckboxGroup.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
+  // Provider 根（`<CheckboxGroupContext.Provider>`），无 Fragment 根问题。
   const rootRef = useRootElement();
 
   const {
@@ -145,56 +147,41 @@ export const CheckboxGroup = defineComponent(function (componentProps: CheckboxG
     registerControlId,
   };
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {className, render, style, ...elementProps} = componentProps;
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
 
-    const stateValue = {...fieldState.value, disabled};
-    const stateAttributes = getStateAttributesProps(stateValue, fieldValidityMapping);
+  const stateFn = (): CheckboxGroupState => ({...fieldState.value, disabled});
 
-    const merged: HTMLProps = {};
-    Object.assign(
-      merged,
-      {id: idProp, role: 'group', 'aria-labelledby': labelId.value},
-      elementProps,
-      stateAttributes,
-    );
-    const describedByProps = getDescriptionProps(merged);
-    Object.assign(merged, describedByProps);
+  const {element} = useRenderElement({
+    props: () => {
+      const stateValue = stateFn();
+      const stateAttributes = getStateAttributesProps(stateValue, fieldValidityMapping);
 
-    if (typeof className === 'function') {
-      merged.className = className(stateValue);
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof style === 'function') {
-      merged.style = style(stateValue);
-    } else if (style !== undefined) {
-      merged.style = style;
-    }
+      const merged: any = Object.assign(
+        {},
+        {id: idProp, role: 'group', 'aria-labelledby': labelId.value},
+        unrefs(elementProps),
+        stateAttributes,
+      );
+      const describedByProps = getDescriptionProps(merged);
+      return [merged, describedByProps];
+    },
+    state: stateFn,
+    className,
+    style,
+    render,
+    refs: () => [rootRef as any],
+    children,
+    defaultTag: 'div',
+  });
 
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ...stateValue, ref: rootRef} as any);
-      }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof merged.className === 'string' && typeof renderClassName === 'string'
-          ? `${merged.className} ${renderClassName}`.trim()
-          : (merged.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={rootRef} />;
-    }
-    return (
-      <CheckboxGroupContext.Provider value={contextValue as any}>
-        <div {...merged} ref={rootRef} />
-      </CheckboxGroupContext.Provider>
-    );
-  };
-}) as unknown as (props: CheckboxGroup.Props) => JSX.Element;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return (
+    <CheckboxGroupContext.Provider value={contextValue as any}>
+      {element()}
+    </CheckboxGroupContext.Provider>
+  );
+}
 
 export interface CheckboxGroupState extends FieldRootState {
   /**

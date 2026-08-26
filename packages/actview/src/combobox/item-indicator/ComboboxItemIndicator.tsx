@@ -1,21 +1,23 @@
-import { defineComponent, toValue } from 'actview';
+import { toRefs, unrefs } from 'actview';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /** Shows a checkmark when the item is selected. Renders a `<span>` element. */
-export const ComboboxItemIndicator = defineComponent(function ComboboxItemIndicator(
-  props: ComboboxItemIndicator.Props,
-) {
-  const children = toValue(props.children);
-  return () => {
-    const {render, className, style, ...elementProps} = props as any;
-    const merged: any = {...elementProps};
-    if (render) {
-      if (typeof render === 'function') return render({...merged} as any);
-      const Tag = render.type as any;
-      return <Tag {...render.props} {...merged} />;
-    }
-    return <span {...merged}>{children}</span>;
-  };
-});
+export function ComboboxItemIndicator(props: ComboboxItemIndicator.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
+  const {render, className, style, children, ...elementProps} = toRefs(props);
+
+  const {element} = useRenderElement({
+    props: () => [{...unrefs(elementProps)}],
+    className,
+    style,
+    render,
+    children,
+    defaultTag: 'span',
+  });
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface ComboboxItemIndicatorProps {
   children?: any;

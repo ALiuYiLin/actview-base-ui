@@ -1,4 +1,4 @@
-import { defineComponent, toValue } from 'actview';
+import { toRefs, unrefs, toValue } from 'actview';
 import { mergePropsN } from '@/merge-props';
 import type { InteractionType } from '@/utils/useEnhancedClickHandler';
 import { FloatingFocusManager, useHoverFloatingInteraction } from '@/floating-ui-react';
@@ -7,13 +7,13 @@ import type { MenuRoot } from '../root/MenuRoot';
 import { useMenuPositionerContext } from '../positioner/MenuPositionerContext';
 import type { BaseUIComponentProps } from '@/internals/types';
 import type { TransitionStatus } from '@/internals/useTransitionStatus';
-import { popupTransitionStateMapping } from '@/utils/popupStateMapping';
+import { getDisabledMountTransitionStyles } from '@/internals/getDisabledMountTransitionStyles';
 import { useOpenChangeComplete } from '@/internals/useOpenChangeComplete';
 import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
 import { COMPOSITE_KEYS } from '@/internals/composite/composite';
-import { getDisabledMountTransitionStyles } from '@/internals/getDisabledMountTransitionStyles';
 import { useToolbarRootContext } from '@/toolbar/root/ToolbarRootContext';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * A container for the menu items.
@@ -21,8 +21,10 @@ import { useToolbarRootContext } from '@/toolbar/root/ToolbarRootContext';
  *
  * Documentation: [Base UI Menu](https://base-ui.com/react/components/menu)
  */
-export const MenuPopup = defineComponent(function MenuPopup(componentProps: MenuPopup.Props) {
+export function MenuPopup(componentProps: MenuPopup.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
   const {finalFocus} = componentProps;
+  const {render, className, style, children, ...elementProps} = toRefs(componentProps);
 
   const {store} = useMenuRootContext();
   const positionerContext = useMenuPositionerContext();
@@ -87,100 +89,86 @@ export const MenuPopup = defineComponent(function MenuPopup(componentProps: Menu
   // 订阅 floating tree 的 close 事件
   useTreeCloseEvents(floatingTreeRoot, handleCloseEvent);
 
-  return () => {
-    const {render, className, style, ...elementProps} = componentProps as any;
-    // PD-15：children 必须 render 期求值（setup 快照让动态 children——
-    // payload 驱动的 viewport 内容——永远停留首次渲染）。
-    const children = toValue(componentProps.children);
-
-    const stateValue = state();
-    const stateAttributes = popupTransitionStateMapping as any;
-    const attributes: Record<string, string> = {};
-    const openAttr = stateValue.open ? {'data-open': ''} : {'data-closed': ''};
-    Object.assign(attributes, openAttr);
-    if (stateValue.transitionStatus === 'starting') {
-      attributes['data-starting-style'] = '';
-    } else if (stateValue.transitionStatus === 'ending') {
-      attributes['data-ending-style'] = '';
-    }
-
-    const merged: any = mergePropsN<any>([
-      popupProps.value,
-      {
-        onKeyDown(event: any) {
-          if (toolbarContextRef.value && COMPOSITE_KEYS.has(event.key)) {
-            event.stopPropagation();
-          }
-        },
-      },
-      getDisabledMountTransitionStyles(transitionStatus.value),
-      elementProps,
-      {'data-rootownerid': rootId.value},
-    ]);
-    Object.assign(merged, attributes);
-
-    const mergedRefs = (el: HTMLElement | null) => {
-      store.context.popupRef.value = el;
-      setPopupElement(el);
-      // 同步 floating 元素到 rootContext state（FFM/useDismiss 依赖 floatingElement）。
-      (floatingContext.value as any)?.update?.({floatingElement: el});
-    };
-
-    const element = (() => {
-      if (render) {
-        if (typeof render === 'function') {
-          return render({...merged, ...stateValue, ref: mergedRefs} as any);
-        }
-        const renderProps = render.props ?? {};
-        const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-        const Tag = render.type as any;
-        const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-        mergedRenderProps.className =
-          typeof merged.className === 'string' && typeof renderClassName === 'string'
-            ? `${merged.className} ${renderClassName}`.trim()
-            : (merged.className ?? renderClassName);
-        mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-        return <Tag key={render.key} {...mergedRenderProps} ref={mergedRefs}>{children}</Tag>;
+  const {element} = useRenderElement({
+    props: () => {
+      const stateValue = state();
+      const attributes: Record<string, string> = {};
+      const openAttr = stateValue.open ? {'data-open': ''} : {'data-closed': ''};
+      Object.assign(attributes, openAttr);
+      if (stateValue.transitionStatus === 'starting') {
+        attributes['data-starting-style'] = '';
+      } else if (stateValue.transitionStatus === 'ending') {
+        attributes['data-ending-style'] = '';
       }
-      return <div {...merged} ref={mergedRefs}>{children}</div>;
-    })();
 
-    let returnFocus = parent.value.type === undefined || isContextMenu;
-    if (
-      activeTriggerElement.value ||
-      (parent.value.type === 'menubar' && lastOpenChangeReason.value !== REASONS.outsidePress)
-    ) {
-      returnFocus = true;
-    }
+      const merged: any = mergePropsN<any>([
+        popupProps.value,
+        {
+          onKeyDown(event: any) {
+            if (toolbarContextRef.value && COMPOSITE_KEYS.has(event.key)) {
+              event.stopPropagation();
+            }
+          },
+        },
+        getDisabledMountTransitionStyles(transitionStatus.value),
+        unrefs(elementProps),
+        {'data-rootownerid': rootId.value},
+      ]);
+      Object.assign(merged, attributes);
+      return [merged];
+    },
+    state,
+    className,
+    style,
+    render,
+    refs: () => [
+      (el: HTMLElement | null) => {
+        store.context.popupRef.value = el;
+        setPopupElement(el);
+        // 同步 floating 元素到 rootContext state（FFM/useDismiss 依赖 floatingElement）。
+        (floatingContext.value as any)?.update?.({floatingElement: el});
+      },
+    ],
+    children, // PD-15：hook 渲染期求值——动态 children（payload 驱动的 viewport 内容）不停留首次渲染
+    defaultTag: 'div',
+  });
 
-    const FocusManager = FloatingFocusManager as any;
-    return (
-      <FocusManager
-        context={floatingContext.value as any}
-        openInteractionType={openMethod.value as any}
-        modal={isContextMenu}
-        disabled={!mounted.value}
-        returnFocus={finalFocus === undefined ? returnFocus : (finalFocus as any)}
-        initialFocus={parent.value.type !== 'menu'}
-        restoreFocus
-        externalTree={parent.value.type !== 'menubar' ? floatingTreeRoot.value : undefined}
-        previousFocusableElement={activeTriggerElement.value as HTMLElement | null}
-        nextFocusableElement={
-          parent.value.type === undefined
-            ? (store.context.triggerFocusTargetRef as any)
-            : undefined
-        }
-        beforeContentFocusGuardRef={
-          parent.value.type === undefined
-            ? (store.context.beforeContentFocusGuardRef as any)
-            : undefined
-        }
-      >
-        {element}
-      </FocusManager>
-    );
-  };
-});
+  let returnFocus = parent.value.type === undefined || isContextMenu;
+  if (
+    activeTriggerElement.value ||
+    (parent.value.type === 'menubar' && lastOpenChangeReason.value !== REASONS.outsidePress)
+  ) {
+    returnFocus = true;
+  }
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  const FocusManager = FloatingFocusManager as any;
+  return (
+    <FocusManager
+      context={floatingContext.value as any}
+      openInteractionType={openMethod.value as any}
+      modal={isContextMenu}
+      disabled={!mounted.value}
+      returnFocus={finalFocus === undefined ? returnFocus : (finalFocus as any)}
+      initialFocus={parent.value.type !== 'menu'}
+      restoreFocus
+      externalTree={parent.value.type !== 'menubar' ? floatingTreeRoot.value : undefined}
+      previousFocusableElement={activeTriggerElement.value as HTMLElement | null}
+      nextFocusableElement={
+        parent.value.type === undefined
+          ? (store.context.triggerFocusTargetRef as any)
+          : undefined
+      }
+      beforeContentFocusGuardRef={
+        parent.value.type === undefined
+          ? (store.context.beforeContentFocusGuardRef as any)
+          : undefined
+      }
+    >
+      {element()}
+    </FocusManager>
+  );
+}
 
 import { useTreeCloseEvents } from './useTreeCloseEvents';
 import type { Ref } from 'actview';

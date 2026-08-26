@@ -1,9 +1,10 @@
-import { defineComponent, useRootElement } from 'actview';
+import { toRefs, unrefs } from 'actview';
 import type { BaseUIComponentProps } from '@/internals/types';
 import type { NumberFieldRootState } from '../root/NumberFieldRoot';
 import { useNumberFieldRootContext } from '../root/NumberFieldRootContext';
 import { stateAttributesMapping } from '../utils/stateAttributesMapping';
-import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useRootElementFragment } from '@/internals/useRootElementFragment';
 
 /**
  * Groups the interactive parts of the number field.
@@ -11,53 +12,31 @@ import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
  *
  * Documentation: [Base UI Number Field](https://base-ui.com/react/components/number-field)
  */
-export const NumberFieldGroup = defineComponent(function (componentProps: NumberFieldGroup.Props) {
+export function NumberFieldGroup(componentProps: NumberFieldGroup.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
   const rootContextRef = useNumberFieldRootContext();
-  const rootRef = useRootElement();
+  // Fragment 根（`<>{element()}</>`）下 actview 内置 useRootElement 的
+  // subTree.el 恒 null——用 Fragment 兼容版本。
+  const rootRef = useRootElementFragment();
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {render, className, style, ...elementProps} = componentProps;
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
 
-    const {state} = rootContextRef.value;
+  const {element} = useRenderElement({
+    props: () => [{role: 'group'}, {...unrefs(elementProps)}],
+    state: () => rootContextRef.value.state,
+    stateAttributesMapping: stateAttributesMapping as any,
+    className,
+    style,
+    render,
+    refs: () => [rootRef as any],
+    children,
+    defaultTag: 'div',
+  });
 
-    const stateAttributes = getStateAttributesProps(state, stateAttributesMapping);
-
-    const merged: any = {
-      role: 'group',
-      ...elementProps,
-      ...stateAttributes,
-    };
-    if (typeof className === 'function') {
-      merged.className = className(state);
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof style === 'function') {
-      merged.style = style(state);
-    } else if (style !== undefined) {
-      merged.style = style;
-    }
-
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ...state, ref: rootRef} as any);
-      }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof merged.className === 'string' && typeof renderClassName === 'string'
-          ? `${merged.className} ${renderClassName}`.trim()
-          : (merged.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={rootRef} />;
-    }
-    return <div {...merged} ref={rootRef}>{componentProps.children}</div>;
-  };
-}) as unknown as (props: NumberFieldGroup.Props) => JSX.Element;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface NumberFieldGroupState extends NumberFieldRootState {}
 

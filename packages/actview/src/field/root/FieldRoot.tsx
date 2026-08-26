@@ -1,4 +1,4 @@
-import { computed, defineComponent, ref, toValue, useRootElement, watch } from 'actview';
+import { computed, ref, toValue, useRootElement, watch, toRefs, unrefs } from 'actview';
 import type { ComputedRef } from 'actview';
 import { FieldRootContext } from '@/internals/field-root-context/FieldRootContext';
 import type { FieldRootContext as FieldRootContextValue } from '@/internals/field-root-context/FieldRootContext';
@@ -6,16 +6,16 @@ import { DEFAULT_VALIDITY_STATE, fieldValidityMapping } from '@/internals/field-
 import { useFieldsetRootContext } from '@/fieldset/root/FieldsetRootContext';
 import { useFormContext } from '@/internals/form-context/FormContext';
 import { LabelableProvider } from '@/internals/labelable-provider';
-import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
-import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import type { BaseUIComponentProps } from '@/internals/types';
 import { useFieldValidation } from './useFieldValidation';
 import { useFieldControlRegistration } from '@/internals/field-register-control/useFieldControlRegistration';
 import type { Ref } from 'actview';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * @internal
  */
-const FieldRootInner = defineComponent(function (componentProps: FieldRoot.Props) {
+function FieldRootInner(componentProps: FieldRoot.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
   const rootRef = useRootElement();
 
@@ -188,49 +188,26 @@ const FieldRootInner = defineComponent(function (componentProps: FieldRoot.Props
     validation,
   };
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {className, render, style, ...elementProps} = componentProps;
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
 
-    const stateValue = state.value;
-    const stateAttributes = getStateAttributesProps(stateValue, fieldValidityMapping);
+  const {element} = useRenderElement({
+    props: () => [{...unrefs(elementProps)}],
+    state,
+    stateAttributesMapping: fieldValidityMapping,
+    className,
+    style,
+    render,
+    refs: () => [rootRef as any],
+    children,
+    defaultTag: 'div',
+  });
 
-    const merged: HTMLProps = {};
-    Object.assign(merged, elementProps, stateAttributes);
-    if (typeof className === 'function') {
-      merged.className = className(stateValue);
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof style === 'function') {
-      merged.style = style(stateValue);
-    } else if (style !== undefined) {
-      merged.style = style;
-    }
-
-    let element: any;
-    if (render) {
-      if (typeof render === 'function') {
-        element = render({...merged, ...stateValue, ref: rootRef});
-      } else {
-        const renderProps = render.props ?? {};
-        const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-        const Tag = render.type as any;
-        const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-        mergedRenderProps.className =
-          typeof merged.className === 'string' && typeof renderClassName === 'string'
-            ? `${merged.className} ${renderClassName}`.trim()
-            : (merged.className ?? renderClassName);
-        mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-        element = <Tag key={render.key} {...mergedRenderProps} ref={rootRef} />;
-      }
-    } else {
-      element = <div {...merged} ref={rootRef} />;
-    }
-
-    return <FieldRootContext.Provider value={contextValue}>{element}</FieldRootContext.Provider>;
-  };
-}) as unknown as (props: FieldRoot.Props) => JSX.Element;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return (
+    <FieldRootContext.Provider value={contextValue}>{element()}</FieldRootContext.Provider>
+  );
+}
 
 /**
  * Groups all parts of the field.
@@ -238,12 +215,9 @@ const FieldRootInner = defineComponent(function (componentProps: FieldRoot.Props
  *
  * Documentation: [Base UI Field](https://base-ui.com/react/components/field)
  */
-export const FieldRoot = defineComponent(function (componentProps: FieldRoot.Props) {
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    return <LabelableProvider>{<FieldRootInner {...(componentProps as any)} />}</LabelableProvider>;
-  };
-}) as unknown as (props: FieldRoot.Props) => JSX.Element;
+export function FieldRoot(componentProps: FieldRoot.Props) {
+  return <LabelableProvider>{<FieldRootInner {...(componentProps as any)} />}</LabelableProvider>;
+}
 
 export interface FieldValidityData {
   state: {

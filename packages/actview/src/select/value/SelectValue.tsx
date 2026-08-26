@@ -1,43 +1,50 @@
-import { defineComponent, toValue, computed } from 'actview';
+import { toRefs, unrefs, computed } from 'actview';
 import { useSelectRootContext } from '../root/SelectRootContext';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /** The value of the select. Renders a `<span>` element. */
-export const SelectValue = defineComponent(function SelectValue(
-  componentProps: SelectValue.Props,
-) {
+export function SelectValue(componentProps: SelectValue.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
   const store = useSelectRootContext(false);
-  const children = toValue(componentProps.children);
-  const value = computed(() => store.useState('value').value);
+  const {render, className, style, children, placeholder, ...elementProps} = toRefs(componentProps);
 
-  return () => {
-    const {render, className, style, placeholder, ...elementProps} = componentProps as any;
+  const valueState = store.useState('value');
+  const value = computed(() => valueState.value);
+
+  const hasValue = () => {
     const selectedValue = value.value;
-    const hasValue = selectedValue != null && String(selectedValue) !== '';
-
-    let display: any = children;
-    if (typeof children === 'function') {
-      display = children({value: selectedValue});
-    } else if (display == null && hasValue) {
-      display = String(selectedValue);
-    } else if (display == null && !hasValue) {
-      display = placeholder ?? '';
-    }
-
-    const merged: any = {
-      ...elementProps,
-      'data-placeholder': !hasValue ? '' : undefined,
-    };
-
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, children: display} as any);
-      }
-      const Tag = render.type as any;
-      return <Tag {...render.props} {...merged}>{display}</Tag>;
-    }
-    return <span {...merged}>{display}</span>;
+    return selectedValue != null && String(selectedValue) !== '';
   };
-});
+
+  const {element} = useRenderElement({
+    props: () => [
+      {
+        ...unrefs(elementProps),
+        'data-placeholder': !hasValue() ? '' : undefined,
+      },
+    ],
+    className,
+    style,
+    render,
+    children: () => {
+      const selectedValue = value.value;
+      const child = children?.value;
+      let display: any = child;
+      if (typeof child === 'function') {
+        display = child({value: selectedValue});
+      } else if (display == null && hasValue()) {
+        display = String(selectedValue);
+      } else if (display == null) {
+        display = placeholder?.value ?? '';
+      }
+      return display;
+    },
+    defaultTag: 'span',
+  });
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface SelectValueProps {
   /**

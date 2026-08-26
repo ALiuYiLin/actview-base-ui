@@ -1,5 +1,5 @@
-import {defineComponent, onUnmounted, ref, toValue, shallowRef} from 'actview';
-import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import {onUnmounted, ref, toValue, shallowRef, toRefs, unrefs} from 'actview';
+import type { BaseUIComponentProps } from '@/internals/types';
 import type { TabsRootState } from '../root/TabsRoot';
 import { CompositeRoot } from '@/internals/composite/root/CompositeRoot';
 import { tabsStateAttributesMapping } from '../root/stateAttributesMapping';
@@ -13,7 +13,7 @@ import { EMPTY_ARRAY } from '@/utils/empty';
  *
  * Documentation: [Base UI Tabs](https://base-ui.com/react/components/tabs)
  */
-export const TabsList = defineComponent(function (componentProps: TabsList.Props) {
+export function TabsList(componentProps: TabsList.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
   const activateOnFocus = toValue(componentProps.activateOnFocus) ?? false;
   const loopFocus = toValue(componentProps.loopFocus) ?? true;
@@ -84,57 +84,56 @@ export const TabsList = defineComponent(function (componentProps: TabsList.Props
     };
   };
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {className, render, style, ...elementProps} = componentProps;
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
 
-    const {orientation, setTabMap, tabActivationDirection} = rootContextRef.value;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  const {orientation, setTabMap, tabActivationDirection} = rootContextRef.value;
 
-    const stateValue: TabsListState = {
-      orientation,
-      tabActivationDirection,
-    };
-
-    const defaultProps: HTMLProps = {
-      'aria-orientation': orientation === 'vertical' ? 'vertical' : undefined,
-      role: 'tablist',
-    };
-
-    const tabsListContextValue: TabsListContext = {
-      activateOnFocus,
-      registerIndicatorUpdateListener,
-      registerTabResizeObserverElement,
-      tabsListElement: tabsListElement.value,
-    };
-
-    const listElementRef = (el: HTMLElement | null) => {
-      tabsListElement.value = el;
-    };
-
-    return (
-      <TabsListContext.Provider value={tabsListContextValue as any}>
-        <CompositeRoot
-          render={render as any}
-          className={className as any}
-          style={style as any}
-          state={stateValue as any}
-          refs={[listElementRef]}
-          props={[defaultProps, elementProps]}
-          stateAttributesMapping={tabsStateAttributesMapping}
-          highlightedIndex={highlightedTabIndex.value}
-          enableHomeAndEndKeys
-          loopFocus={loopFocus}
-          orientation={orientation}
-          onHighlightedIndexChange={setHighlightedTabIndex}
-          onMapChange={setTabMap}
-          disabledIndices={EMPTY_ARRAY}
-        >
-          {componentProps.children}
-        </CompositeRoot>
-      </TabsListContext.Provider>
-    );
+  const stateValue: TabsListState = {
+    orientation,
+    tabActivationDirection,
   };
-}) as unknown as (props: TabsList.Props) => JSX.Element;
+
+  const defaultProps: Record<string, any> = {
+    'aria-orientation': orientation === 'vertical' ? 'vertical' : undefined,
+    role: 'tablist',
+  };
+
+  const tabsListContextValue: TabsListContext = {
+    activateOnFocus,
+    registerIndicatorUpdateListener,
+    registerTabResizeObserverElement,
+    tabsListElement: tabsListElement.value,
+  };
+
+  const listElementRef = (el: HTMLElement | null) => {
+    tabsListElement.value = el;
+  };
+
+  return (
+    <TabsListContext.Provider value={tabsListContextValue as any}>
+      <CompositeRoot
+        render={render as any}
+        className={className as any}
+        style={style as any}
+        state={stateValue as any}
+        refs={[listElementRef]}
+        props={[defaultProps, unrefs(elementProps)]}
+        stateAttributesMapping={tabsStateAttributesMapping}
+        highlightedIndex={highlightedTabIndex.value}
+        enableHomeAndEndKeys
+        loopFocus={loopFocus}
+        orientation={orientation}
+        onHighlightedIndexChange={setHighlightedTabIndex}
+        onMapChange={setTabMap}
+        disabledIndices={EMPTY_ARRAY}
+      >
+        {children?.value}
+      </CompositeRoot>
+    </TabsListContext.Provider>
+  );
+}
 
 export interface TabsListState extends TabsRootState {}
 

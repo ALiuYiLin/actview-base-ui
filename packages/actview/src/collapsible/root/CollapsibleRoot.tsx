@@ -1,13 +1,12 @@
-import { computed, defineComponent, toValue, useRootElement } from 'actview';
-import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
-import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
-import { mergeClassNames, mergeStyles } from '@/utils/mergeClassNames';
+import { computed, toValue, toRefs, unrefs, useRootElement } from 'actview';
+import type { BaseUIComponentProps } from '@/internals/types';
 import { useCollapsibleRoot, type UseCollapsibleRootReturnValue } from './useCollapsibleRoot';
 import { CollapsibleRootContext } from './CollapsibleRootContext';
 import { collapsibleStateAttributesMapping } from './stateAttributesMapping';
 import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
 import type { TransitionStatus } from '@/internals/useTransitionStatus';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * Groups all parts of the collapsible.
@@ -15,8 +14,9 @@ import type { TransitionStatus } from '@/internals/useTransitionStatus';
  *
  * Documentation: [Base UI Collapsible](https://base-ui.com/react/components/collapsible)
  */
-export const CollapsibleRoot = defineComponent(function (componentProps: CollapsibleRoot.Props) {
+export function CollapsibleRoot(componentProps: CollapsibleRoot.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
+  // Provider 根（`<CollapsibleRootContext.Provider>`），无 Fragment 根问题。
   const rootRef = useRootElement();
 
   const collapsible = useCollapsibleRoot({
@@ -43,49 +43,26 @@ export const CollapsibleRoot = defineComponent(function (componentProps: Collaps
     state,
   };
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {className, render, style, ...elementProps} = componentProps;
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
 
-    const stateValue = toValue(state);
+  const {element} = useRenderElement({
+    props: () => [{...unrefs(elementProps)}],
+    state,
+    stateAttributesMapping: collapsibleStateAttributesMapping as any,
+    className,
+    style,
+    render,
+    refs: () => [rootRef as any],
+    children,
+    defaultTag: 'div',
+  });
 
-    const stateAttributes = getStateAttributesProps(stateValue, collapsibleStateAttributesMapping);
-
-    const merged: HTMLProps = {};
-    Object.assign(merged, elementProps, stateAttributes);
-    if (typeof className === 'function') {
-      merged.className = className(stateValue);
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof style === 'function') {
-      merged.style = style(stateValue);
-    } else if (style !== undefined) {
-      merged.style = style;
-    }
-
-    let element: any;
-    if (render) {
-      if (typeof render === 'function') {
-        element = render({...merged, ...stateValue, ref: rootRef});
-      } else {
-        const renderProps = render.props ?? {};
-        const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-        const Tag = render.type as any;
-        const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-        mergedRenderProps.className = mergeClassNames(merged.className, renderClassName);
-        mergedRenderProps.style = mergeStyles(merged.style, renderStyle);
-        element = <Tag key={render.key} {...mergedRenderProps} ref={rootRef} />;
-      }
-    } else {
-      element = <div {...merged} ref={rootRef} />;
-    }
-
-    return (
-      <CollapsibleRootContext.Provider value={contextValue}>{element}</CollapsibleRootContext.Provider>
-    );
-  };
-}) as unknown as (props: CollapsibleRoot.Props) => JSX.Element;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return (
+    <CollapsibleRootContext.Provider value={contextValue}>{element()}</CollapsibleRootContext.Provider>
+  );
+}
 
 export interface CollapsibleRootState {
   open: boolean;

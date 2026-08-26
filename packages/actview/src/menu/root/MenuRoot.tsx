@@ -1,4 +1,4 @@
-import { defineComponent, onUnmounted, ref, toValue, watch } from 'actview';
+import { onUnmounted, ref, toValue, watch } from 'actview';
 import type { Ref } from 'actview';
 import { useTimeout } from '@/utils/useTimeout';
 import { useStableCallback } from '@/utils/useStableCallback';
@@ -49,9 +49,8 @@ import { useMenuSubmenuRootContext } from '../submenu-root/MenuSubmenuRootContex
  *
  * Documentation: [Base UI Menu](https://base-ui.com/react/components/menu)
  */
-export const MenuRoot = defineComponent(function MenuRoot<Payload>(
-  props: MenuRoot.Props<Payload>,
-) {
+export function MenuRoot<Payload>(props: MenuRoot.Props<Payload>) {
+  // ============ setup（只执行一次） ============
   const {
     open: openProp,
     onOpenChange,
@@ -547,36 +546,35 @@ export const MenuRoot = defineComponent(function MenuRoot<Payload>(
     parent: parentFromContext,
   };
 
-  if (parent.value.type === undefined || parent.value.type === 'context-menu') {
-    // set up a FloatingTree to provide the context to nested menus
-    return () => {
-      // PD-15：children 必须 render 期求值（setup 快照会让动态 children——
-      // 如条件渲染的 Trigger——永远停留首次渲染）。render prop（({payload}) =>
-      // ...）不能经 toValue（会把函数当 getter 无参调用致 payload 解构报错）。
-      const rawChildren = props.children;
-      const children = typeof rawChildren === 'function' ? rawChildren : toValue(rawChildren);
-      return (
-        <FloatingTree externalTree={floatingTreeRoot.value}>
-          <MenuRootContext.Provider value={context as MenuRootContext}>
-            {handle && <PopupHandleAttachment handle={handle} store={store} />}
-            {typeof children === 'function' ? children({payload: payload.value}) : children}
-          </MenuRootContext.Provider>
-        </FloatingTree>
-      );
-    };
-  }
-
-  return () => {
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  // PD-15：children 必须 render 期求值（setup 快照会让动态 children——
+  // 如条件渲染的 Trigger——永远停留首次渲染）。render prop（({payload}) =>
+  // ...）不能经 toValue（会把函数当 getter 无参调用致 payload 解构报错）。
+  const renderChildren = () => {
     const rawChildren = props.children;
     const children = typeof rawChildren === 'function' ? rawChildren : toValue(rawChildren);
-    return (
-      <MenuRootContext.Provider value={context as MenuRootContext}>
-        {handle && <PopupHandleAttachment handle={handle} store={store} />}
-        {typeof children === 'function' ? children({payload: payload.value}) : children}
-      </MenuRootContext.Provider>
-    );
+    return typeof children === 'function' ? children({payload: payload.value}) : children;
   };
-});
+
+  if (parent.value.type === undefined || parent.value.type === 'context-menu') {
+    // set up a FloatingTree to provide the context to nested menus
+    return (
+      <FloatingTree externalTree={floatingTreeRoot.value}>
+        <MenuRootContext.Provider value={context as MenuRootContext}>
+          {handle && <PopupHandleAttachment handle={handle} store={store} />}
+          {renderChildren()}
+        </MenuRootContext.Provider>
+      </FloatingTree>
+    );
+  }
+
+  return (
+    <MenuRootContext.Provider value={context as MenuRootContext}>
+      {handle && <PopupHandleAttachment handle={handle} store={store} />}
+      {renderChildren()}
+    </MenuRootContext.Provider>
+  );
+}
 
 function useMenuRootStore<Payload>(
   initialState: Partial<MenuStoreState<Payload>>,

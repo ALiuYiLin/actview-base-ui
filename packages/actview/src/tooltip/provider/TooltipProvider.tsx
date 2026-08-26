@@ -1,4 +1,3 @@
-import { defineComponent } from 'actview';
 import { TooltipProviderContext } from './TooltipProviderContext';
 
 /**
@@ -9,17 +8,18 @@ import { TooltipProviderContext } from './TooltipProviderContext';
  *
  * Documentation: [Base UI Tooltip](https://base-ui.com/react/components/tooltip)
  */
-export const TooltipProvider = defineComponent(function TooltipProvider(
-  props: TooltipProvider.Props,
-) {
-  const {delay, closeDelay} = props as any;
-
-  return () => (
-    <TooltipProviderContext.Provider value={delay ?? closeDelay}>
-      {props.children}
+export function TooltipProvider(props: TooltipProvider.Props) {
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return (
+    <TooltipProviderContext.Provider value={(props as any).delay ?? (props as any).closeDelay}>
+      {(() => {
+        // children 渲染期读取（PD-15）
+        const child = (props as any).children;
+        return typeof child === 'function' ? (child as any)() : child;
+      })()}
     </TooltipProviderContext.Provider>
   );
-});
+}
 
 export interface TooltipProviderState {}
 

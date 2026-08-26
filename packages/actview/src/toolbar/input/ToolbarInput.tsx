@@ -1,5 +1,5 @@
-import { defineComponent, toValue } from 'actview';
-import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { toValue, toRefs, unrefs } from 'actview';
+import type { BaseUIComponentProps } from '@/internals/types';
 import type { ToolbarRootState } from '../root/ToolbarRoot';
 import { useToolbarRootContext } from '../root/ToolbarRootContext';
 import { useToolbarGroupContext } from '../group/ToolbarGroupContext';
@@ -12,62 +12,61 @@ import { useFocusableWhenDisabled } from '@/utils/useFocusableWhenDisabled';
  *
  * Documentation: [Base UI Toolbar](https://base-ui.com/react/components/toolbar)
  */
-export const ToolbarInput = defineComponent(function (componentProps: ToolbarInput.Props) {
+export function ToolbarInput(componentProps: ToolbarInput.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
   const focusableWhenDisabled = toValue(componentProps.focusableWhenDisabled) ?? true;
   const disabledProp = toValue(componentProps.disabled) ?? false;
   const rootContextRef = useToolbarRootContext();
   const groupContextRef = useToolbarGroupContext();
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {className, render, style, ...elementProps} = componentProps;
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, ...elementProps} = toRefs(componentProps);
 
-    const {disabled: toolbarDisabled, orientation} = rootContextRef.value;
-    const groupContext = groupContextRef.value;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  const {disabled: toolbarDisabled, orientation} = rootContextRef.value;
+  const groupContext = groupContextRef.value;
 
-    const disabled = toolbarDisabled || (groupContext?.disabled ?? false) || disabledProp;
+  const disabled = toolbarDisabled || (groupContext?.disabled ?? false) || disabledProp;
 
-    const itemMetadata = {disabled, focusableWhenDisabled};
+  const itemMetadata = {disabled, focusableWhenDisabled};
 
-    const {props: focusableWhenDisabledProps} = useFocusableWhenDisabled({
-      composite: true,
-      disabled,
-      focusableWhenDisabled,
-      isNativeButton: false,
-    });
+  const {props: focusableWhenDisabledProps} = useFocusableWhenDisabled({
+    composite: true,
+    disabled,
+    focusableWhenDisabled,
+    isNativeButton: false,
+  });
 
-    const stateValue: ToolbarInputState = {
-      disabled,
-      orientation,
-      focusable: focusableWhenDisabled,
-    };
-
-    const preventWhenDisabled = (event: any) => {
-      if (disabled) {
-        event.preventDefault();
-      }
-    };
-
-    const defaultProps: HTMLProps = {
-      onClick: preventWhenDisabled,
-      onPointerDown: preventWhenDisabled,
-    };
-
-    return (
-      <CompositeItem
-        tag="input"
-        render={render as any}
-        className={className as any}
-        style={style as any}
-        metadata={itemMetadata as any}
-        state={stateValue as any}
-        refs={[]}
-        props={[defaultProps, elementProps, focusableWhenDisabledProps.value]}
-      />
-    );
+  const stateValue: ToolbarInputState = {
+    disabled,
+    orientation,
+    focusable: focusableWhenDisabled,
   };
-}) as unknown as (props: ToolbarInput.Props) => JSX.Element;
+
+  const preventWhenDisabled = (event: any) => {
+    if (disabled) {
+      event.preventDefault();
+    }
+  };
+
+  const defaultProps: Record<string, any> = {
+    onClick: preventWhenDisabled,
+    onPointerDown: preventWhenDisabled,
+  };
+
+  return (
+    <CompositeItem
+      tag="input"
+      render={render as any}
+      className={className as any}
+      style={style as any}
+      metadata={itemMetadata as any}
+      state={stateValue as any}
+      refs={[]}
+      props={[defaultProps, unrefs(elementProps), focusableWhenDisabledProps.value]}
+    />
+  );
+}
 
 export interface ToolbarInputState extends ToolbarRootState {
   /**

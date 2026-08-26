@@ -1,22 +1,25 @@
-import { defineComponent, toValue } from 'actview';
+import { toRefs, unrefs } from 'actview';
 import { useSelectItemContext } from '../item/SelectItemContext';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /** The text of the item. Renders a `<span>` element. */
-export const SelectItemText = defineComponent(function SelectItemText(props: SelectItemText.Props) {
+export function SelectItemText(props: SelectItemText.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
   const context = useSelectItemContext(true);
-  const children = toValue(props.children);
+  const {render, className, style, children, ...elementProps} = toRefs(props);
 
-  return () => {
-    const {render, className, style, ...elementProps} = props as any;
-    const merged: any = {...elementProps};
-    if (render) {
-      if (typeof render === 'function') return render({...merged} as any);
-      const Tag = render.type as any;
-      return <Tag {...render.props} {...merged} />;
-    }
-    return <span {...merged}>{children}</span>;
-  };
-});
+  const {element} = useRenderElement({
+    props: () => [{...unrefs(elementProps)}],
+    className,
+    style,
+    render,
+    children,
+    defaultTag: 'span',
+  });
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface SelectItemTextProps {
   children?: any;

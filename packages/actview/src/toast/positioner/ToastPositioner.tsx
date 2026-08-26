@@ -1,27 +1,30 @@
-import { defineComponent, toValue } from 'actview';
+import { toRefs, unrefs } from 'actview';
 import { useToastRootContext } from '../root/ToastRootContext';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /** Positions the toast. Renders a `<div>` element. actview 简化：无定位计算。 */
-export const ToastPositioner = defineComponent(function ToastPositioner(
-  props: ToastPositioner.Props,
-) {
-  const children = toValue(props.children);
+export function ToastPositioner(props: ToastPositioner.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
   const context = useToastRootContext(true);
+  const {render, className, style, children, ...elementProps} = toRefs(props);
 
-  return () => {
-    const {render, className, style, ...elementProps} = props as any;
-    const merged: any = {
-      ...(context?.toast?.positionerProps ?? {}),
-      ...elementProps,
-    };
-    if (render) {
-      if (typeof render === 'function') return render({...merged});
-      const Tag = render.type as any;
-      return <Tag {...render.props} {...merged} />;
-    }
-    return <div {...merged}>{children}</div>;
-  };
-});
+  const {element} = useRenderElement({
+    props: () => [
+      {
+        ...(context?.toast?.positionerProps ?? {}),
+      },
+      unrefs(elementProps),
+    ],
+    className,
+    style,
+    render,
+    children,
+    defaultTag: 'div',
+  });
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface ToastPositionerProps {
   children?: any;

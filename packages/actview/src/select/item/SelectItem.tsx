@@ -1,63 +1,56 @@
-import { defineComponent, toValue, computed } from 'actview';
+import { toRefs, unrefs, computed } from 'actview';
 import { useSelectRootContext } from '../root/SelectRootContext';
 import { SelectItemContext } from './SelectItemContext';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /** An individual select item. Renders a `<div>` element with role option. */
-export const SelectItem = defineComponent(function SelectItem(componentProps: SelectItem.Props) {
+export function SelectItem(componentProps: SelectItem.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
   const store = useSelectRootContext(false);
-  const children = toValue(componentProps.children);
-  const {value} = componentProps as any;
+  const {render, className, style, children, ref: refProp, disabled, value, ...elementProps} =
+    toRefs(componentProps);
 
-  const selected = computed(() =>
-    store.useState('isSelected', value as any).value ?? false,
-  );
+  const selectedState = store.useState('isSelected', value?.value as any);
+  const selected = computed(() => selectedState.value ?? false);
 
-  return () => {
-    const {render, className, style, disabled = false, ...elementProps} = componentProps as any;
-
-    const merged: any = {
-      role: 'option',
-      'aria-selected': selected.value,
-      'data-selected': selected.value ? '' : undefined,
-      ...elementProps,
-      onClick: (event: any) => {
-        if (disabled) {
-          event.preventDefault();
-          return;
-        }
-        store.selectValue(value);
+  const {element} = useRenderElement({
+    props: () => [
+      {
+        role: 'option',
+        'aria-selected': selected.value,
+        'data-selected': selected.value ? '' : undefined,
+        ...unrefs(elementProps),
+        onClick: (event: any) => {
+          if (disabled?.value ?? false) {
+            event.preventDefault();
+            return;
+          }
+          store.selectValue(value?.value);
+        },
       },
-    };
+    ],
+    className,
+    style,
+    render,
+    refs: () => (componentProps.ref !== undefined ? [refProp as any] : []),
+    children,
+    defaultTag: 'div',
+  });
 
-    const contextValue = {
-      selected: selected.value,
-      value,
-    };
-
-    const ref = (el: any) => {
-      if (componentProps.ref) {
-        if (typeof componentProps.ref === 'function') (componentProps.ref as any)(el);
-        else {
-          (componentProps.ref as any).value = el;
-          
-        }
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return (
+    <SelectItemContext.Provider
+      value={
+        {
+          selected: selected.value,
+          value: value?.value,
+        } as any
       }
-    };
-
-    const element = (() => {
-      if (render) {
-        if (typeof render === 'function') {
-          return render({...merged, ref} as any);
-        }
-        const Tag = render.type as any;
-        return <Tag {...render.props} {...merged} ref={ref}>{children}</Tag>;
-      }
-      return <div {...merged} ref={ref}>{children}</div>;
-    })();
-
-    return <SelectItemContext.Provider value={contextValue as any}>{element}</SelectItemContext.Provider>;
-  };
-});
+    >
+      {element()}
+    </SelectItemContext.Provider>
+  );
+}
 
 export interface SelectItemProps {
   /**

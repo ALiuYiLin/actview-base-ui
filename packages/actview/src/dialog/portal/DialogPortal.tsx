@@ -1,4 +1,4 @@
-import { defineComponent, toValue } from 'actview';
+import { toValue } from 'actview';
 import { FloatingPortal } from '@/floating-ui-react';
 import { InternalBackdrop } from '@/utils/InternalBackdrop';
 import { inertValue } from '@/utils/inertValue';
@@ -13,22 +13,19 @@ import type { Ref } from 'actview';
  *
  * Documentation: [Base UI Dialog](https://base-ui.com/react/components/dialog)
  */
-export const DialogPortal = defineComponent(function DialogPortal(props: DialogPortal.Props) {
-  const {keepMounted = false, children, ...portalProps} = props as any;
+export function DialogPortal(props: DialogPortal.Props) {
+  // ============ setup（只执行一次） ============
+  const {keepMounted = false, ...portalProps} = props as any;
 
   const store = useDialogRootContext(false);
   const mounted = store.useState('mounted');
   const modal = store.useState('modal');
   const open = store.useState('open');
 
-  return () => {
-    const shouldRender = mounted.value || keepMounted;
-    if (!shouldRender) {
-      return null;
-    }
-
-    return (
-      <DialogPortalContext.Provider value={keepMounted}>
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return (
+    <DialogPortalContext.Provider value={keepMounted}>
+      {mounted.value || keepMounted ? (
         <FloatingPortal {...portalProps}>
           {mounted.value && modal.value === true && (
             <InternalBackdrop
@@ -36,12 +33,12 @@ export const DialogPortal = defineComponent(function DialogPortal(props: DialogP
               inert={inertValue(!toValue(open))}
             />
           )}
-          {children}
+          {props.children}
         </FloatingPortal>
-      </DialogPortalContext.Provider>
-    );
-  };
-});
+      ) : null}
+    </DialogPortalContext.Provider>
+  );
+}
 
 export interface DialogPortalState {}
 

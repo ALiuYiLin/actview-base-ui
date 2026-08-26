@@ -1,13 +1,14 @@
-import { defineComponent, toValue, useRootElement, watch } from 'actview';
+import { toValue, toRefs, unrefs, watch } from 'actview';
 import { triggerOpenStateMapping } from '@/utils/collapsibleOpenStateMapping';
 import type { StateAttributesMapping } from '@/internals/getStateAttributesProps';
 import { transitionStatusMapping } from '@/internals/stateAttributesMapping';
-import { mergeProps } from '@/merge-props';
-import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
-import type { BaseUIComponentProps, HTMLProps, NativeButtonProps } from '@/internals/types';
+import { mergePropsN } from '@/merge-props';
+import type { BaseUIComponentProps, NativeButtonProps } from '@/internals/types';
 import { useButton } from '@/internals/use-button';
 import { useCollapsibleRootContext } from '../root/CollapsibleRootContext';
 import { type CollapsibleRootState } from '../root/CollapsibleRoot';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useRootElementFragment } from '@/internals/useRootElementFragment';
 
 const stateAttributesMapping: StateAttributesMapping<CollapsibleRootState> = {
   ...triggerOpenStateMapping,
@@ -20,9 +21,11 @@ const stateAttributesMapping: StateAttributesMapping<CollapsibleRootState> = {
  *
  * Documentation: [Base UI Collapsible](https://base-ui.com/react/components/collapsible)
  */
-export const CollapsibleTrigger = defineComponent(function (componentProps: CollapsibleTrigger.Props) {
+export function CollapsibleTrigger(componentProps: CollapsibleTrigger.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  const rootRef = useRootElement();
+  // Fragment 根（`<>{element()}</>`）下 actview 内置 useRootElement 的
+  // subTree.el 恒 null——用 Fragment 兼容版本。
+  const rootRef = useRootElementFragment();
   const {panelId, open, handleTrigger, state, disabled: contextDisabled} = toValue(
     useCollapsibleRootContext(),
   );
@@ -42,63 +45,41 @@ export const CollapsibleTrigger = defineComponent(function (componentProps: Coll
     {flush: 'post', immediate: true},
   );
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {
-      className,
-      disabled: _disabled,
-      render,
-      nativeButton: _nativeButton,
-      style,
-      ...elementProps
-    } = componentProps;
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
 
-    const stateValue = toValue(state);
+  const {element} = useRenderElement({
+    props: () => {
+      const {
+        disabled: _disabled,
+        nativeButton: _nativeButton,
+        ...restElementProps
+      } = unrefs(elementProps);
+      return [
+        {
+          'aria-controls': toValue(open) ? toValue(panelId) : undefined,
+          'aria-expanded': toValue(open),
+          onClick: handleTrigger,
+        },
+        restElementProps,
+        // props getter：接收之前合并的 props 作为 externalProps，handleTrigger
+        // 成为 useButton 的 externalOnClick——disabled 时 preventDefault 且不调用
+        getButtonProps,
+      ];
+    },
+    state: () => toValue(state) as any,
+    stateAttributesMapping: stateAttributesMapping as any,
+    className,
+    style,
+    render,
+    refs: () => [rootRef as any],
+    children,
+    defaultTag: 'button',
+  });
 
-    const stateAttributes = getStateAttributesProps(stateValue, stateAttributesMapping);
-
-    const merged: HTMLProps = mergeProps(
-      {
-        'aria-controls': toValue(open) ? toValue(panelId) : undefined,
-        'aria-expanded': toValue(open),
-        onClick: handleTrigger,
-      },
-      elementProps,
-      stateAttributes,
-      // props getter：接收之前合并的 props 作为 externalProps，handleTrigger
-      // 成为 useButton 的 externalOnClick——disabled 时 preventDefault 且不调用
-      getButtonProps,
-    );
-
-    if (typeof className === 'function') {
-      merged.className = className(stateValue);
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof style === 'function') {
-      merged.style = style(stateValue);
-    } else if (style !== undefined) {
-      merged.style = style;
-    }
-
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ...stateValue, ref: rootRef});
-      }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof merged.className === 'string' && typeof renderClassName === 'string'
-          ? `${merged.className} ${renderClassName}`.trim()
-          : (merged.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={rootRef} />;
-    }
-    return <button {...merged} ref={rootRef} />;
-  };
-}) as unknown as (props: CollapsibleTrigger.Props) => JSX.Element;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface CollapsibleTriggerState extends CollapsibleRootState {}
 

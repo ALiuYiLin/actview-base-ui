@@ -1,4 +1,4 @@
-import { defineComponent, computed, ref, toValue, watch, onUnmounted } from 'actview';
+import { computed, ref, toValue, watch, onUnmounted } from 'actview';
 import type { Ref } from 'actview';
 import { useId } from '@/utils/useId';
 import { useControlled } from '@/utils/useControlled';
@@ -12,7 +12,7 @@ import { normalizeOTPValue, type OTPValidationType } from '../utils/otp';
  * actview 简化：无隐藏 validation input 与 form 联动；
  * 焦点队列（queueFocusInput）未迁移。
  */
-export const OTPFieldRoot = defineComponent(function OTPFieldRoot(props: OTPFieldRoot.Props) {
+export function OTPFieldRoot(props: OTPFieldRoot.Props) {
   const {
     length = 4,
     defaultValue = '',
@@ -25,7 +25,6 @@ export const OTPFieldRoot = defineComponent(function OTPFieldRoot(props: OTPFiel
     invalid = false,
     mask = false,
     autoComplete = 'one-time-code',
-    children,
   } = props as any;
 
   const [valueState, setValueState] = useControlled<string>({
@@ -104,18 +103,27 @@ export const OTPFieldRoot = defineComponent(function OTPFieldRoot(props: OTPFiel
     validationType,
   });
 
-  return () => {
-    // actview 的 toValue 会对函数值直接调用（ref.ts 语义），render prop 需先检测。
-    const child = typeof children === 'function' ? children : toValue(children);
-    const context = {...contextValue, value: value.value ?? '', activeIndex: activeIndex.value};
-
-    return (
-      <OTPFieldRootContext.Provider value={context as any}>
-        {typeof child === 'function' ? child(state()) : child}
-      </OTPFieldRootContext.Provider>
-    );
-  };
-});
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  // children/context 渲染期求值（PD-15）——IIFE
+  return (
+    <OTPFieldRootContext.Provider
+      value={
+        {
+          ...contextValue,
+          value: value.value ?? '',
+          activeIndex: activeIndex.value,
+        } as any
+      }
+    >
+      {(() => {
+        const {children} = props as any;
+        // actview 的 toValue 会对函数值直接调用（ref.ts 语义），render prop 需先检测。
+        const child = typeof children === 'function' ? children : toValue(children);
+        return typeof child === 'function' ? child(state()) : child;
+      })()}
+    </OTPFieldRootContext.Provider>
+  );
+}
 
 export interface OTPFieldRootState {
   /**

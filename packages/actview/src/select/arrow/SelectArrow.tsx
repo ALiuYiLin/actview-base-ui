@@ -1,19 +1,23 @@
-import { defineComponent, toValue } from 'actview';
+import { toRefs, unrefs } from 'actview';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /** Displays an arrow indicator. Renders a `<div>` element. */
-export const SelectArrow = defineComponent(function SelectArrow(props: SelectArrow.Props) {
-  const children = toValue(props.children);
-  return () => {
-    const {render, className, style, ...elementProps} = props as any;
-    const merged: any = {'aria-hidden': true, ...elementProps};
-    if (render) {
-      if (typeof render === 'function') return render({...merged} as any);
-      const Tag = render.type as any;
-      return <Tag {...render.props} {...merged} />;
-    }
-    return <div {...merged}>{children}</div>;
-  };
-});
+export function SelectArrow(props: SelectArrow.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
+  const {render, className, style, children, ...elementProps} = toRefs(props);
+
+  const {element} = useRenderElement({
+    props: () => [{'aria-hidden': true}, unrefs(elementProps)],
+    className,
+    style,
+    render,
+    children,
+    defaultTag: 'div',
+  });
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface SelectArrowProps {
   children?: any;

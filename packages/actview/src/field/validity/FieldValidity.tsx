@@ -1,4 +1,4 @@
-import { computed, defineComponent, toValue } from 'actview';
+import { computed, toValue } from 'actview';
 import { useFieldRootContext } from '@/internals/field-root-context/FieldRootContext';
 import { getCombinedFieldValidityData } from '../utils/getCombinedFieldValidityData';
 import type { FieldValidityData } from '../root/FieldRoot';
@@ -10,7 +10,7 @@ import { type TransitionStatus, useTransitionStatus } from '@/internals/useTrans
  *
  * Documentation: [Base UI Field](https://base-ui.com/react/components/field)
  */
-export const FieldValidity: any = defineComponent(function (props: FieldValidity.Props) {
+export const FieldValidity: any = function FieldValidity(props: FieldValidity.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
   const {validityData, invalid} = toValue(useFieldRootContext(false));
 
@@ -29,12 +29,9 @@ export const FieldValidity: any = defineComponent(function (props: FieldValidity
     transitionStatus: transitionStatus.value,
   }));
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const children = props.children;
-    return <>{children(fieldValidityState.value)}</>;
-  };
-}) as unknown as (props: FieldValidity.Props) => JSX.Element;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{props.children(fieldValidityState.value)}</>;
+};
 
 export interface FieldValidityState extends Omit<FieldValidityData, 'state'> {
   /**

@@ -1,4 +1,4 @@
-import {computed, defineComponent, toValue, ref} from 'actview';
+import {computed, toRefs, unrefs, ref, toValue} from 'actview';
 import { mergeProps, mergePropsN } from '@/merge-props';
 import type { HTMLProps } from '@/internals/types';
 import { useMenuRootContext } from '../root/MenuRootContext';
@@ -9,16 +9,16 @@ import { useMenuItemCommonProps } from '../item/useMenuItemCommonProps';
 import { REGULAR_ITEM } from '../item/useMenuItem';
 import { useButton } from '@/internals/use-button/useButton';
 import type { Ref } from 'actview';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * A link in the menu that can be used to navigate to a different page or section.
  * Renders an `<a>` element.
  */
-export const MenuLinkItem = defineComponent(function MenuLinkItem(
-  componentProps: MenuLinkItem.Props,
-) {
+export function MenuLinkItem(componentProps: MenuLinkItem.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
   const {id: idProp, label, closeOnClick = false} = componentProps as any;
-  const children = toValue(componentProps.children);
+  const {render, className, style, children, ref: refProp, ...elementProps} = toRefs(componentProps);
 
   const linkRef = ref(null as HTMLAnchorElement | null);
 
@@ -54,52 +54,44 @@ export const MenuLinkItem = defineComponent(function MenuLinkItem(
     return mergeProps(commonProps, externalProps, getButtonProps);
   };
 
-  return () => {
-    const {render, className: cls, style: st, ...elementProps} = componentProps as any;
-
-    const state: MenuLinkItemState = {
+  const {element} = useRenderElement({
+    props: () => {
+      const merged: any = mergePropsN<any>([
+        itemProps.value,
+        unrefs(elementProps),
+        getItemProps as any,
+      ]);
+      if (highlighted.value) {
+        merged['data-highlighted'] = '';
+      }
+      return [merged];
+    },
+    state: (): MenuLinkItemState => ({
       highlighted: highlighted.value,
-    };
-
-    const merged: any = mergePropsN<any>([
-      itemProps.value,
-      elementProps,
-      getItemProps as any,
-    ]);
-
-    if (state.highlighted) {
-      merged['data-highlighted'] = '';
-    }
-
-    const mergedRefs = (el: HTMLAnchorElement | null) => {
-      linkRef.value = el;
-      buttonRef(el);
-      listItem.ref(el);
-      if (typeof componentProps.ref === 'function') {
-        (componentProps.ref as any)(el);
-      } else if (componentProps.ref) {
-        componentProps.ref.value = el;
+    }),
+    className,
+    style,
+    render,
+    refs: () => {
+      const refs: any[] = [
+        (el: HTMLAnchorElement | null) => {
+          linkRef.value = el;
+          buttonRef(el);
+          listItem.ref(el);
+        },
+      ];
+      if (componentProps.ref !== undefined) {
+        refs.push(refProp);
       }
-    };
+      return refs;
+    },
+    children,
+    defaultTag: 'a',
+  });
 
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ...state, ref: mergedRefs} as any);
-      }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof merged.className === 'string' && typeof renderClassName === 'string'
-          ? `${merged.className} ${renderClassName}`.trim()
-          : (merged.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={mergedRefs}>{children}</Tag>;
-    }
-    return <a {...merged} ref={mergedRefs}>{children}</a>;
-  };
-});
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface MenuLinkItemState {
   /**

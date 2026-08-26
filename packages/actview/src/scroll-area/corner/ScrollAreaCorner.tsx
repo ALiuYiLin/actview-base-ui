@@ -1,6 +1,8 @@
-import { defineComponent, toValue, useRootElement } from 'actview';
+import { toRefs, unrefs } from 'actview';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { useScrollAreaRootContext } from '../root/ScrollAreaRootContext';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useRootElementFragment } from '@/internals/useRootElementFragment';
 
 /**
  * The corner of the scroll area, where the two scrollbars meet.
@@ -8,61 +10,49 @@ import { useScrollAreaRootContext } from '../root/ScrollAreaRootContext';
  *
  * Documentation: [Base UI Scroll Area](https://base-ui.com/react/components/scroll-area)
  */
-export const ScrollAreaCorner = defineComponent(function (componentProps: ScrollAreaCorner.Props) {
+export function ScrollAreaCorner(componentProps: ScrollAreaCorner.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
+  // Fragment 根（`<>{element()}</>`）下 actview 内置 useRootElement 的
+  // subTree.el 恒 null——用 Fragment 兼容版本。
   const rootContextRef = useScrollAreaRootContext();
-  const cornerRef = useRootElement();
+  const cornerRef = useRootElementFragment();
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {render, className, style, ...elementProps} = componentProps;
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
 
-    const {cornerSize, hiddenState} = rootContextRef.value;
+  const {element} = useRenderElement({
+    props: () => {
+      const {cornerSize} = rootContextRef.value;
 
-    const merged: any = {
-      ...elementProps,
-      style: {
-        position: 'absolute',
-        bottom: 0,
-        insetInlineEnd: 0,
-        width: cornerSize.width,
-        height: cornerSize.height,
-      },
-      ref: cornerRef,
-    };
-    if (typeof className === 'function') {
-      merged.className = className({});
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof style === 'function') {
-      merged.style = Object.assign({}, merged.style, style({}) as any);
-    } else if (style !== undefined) {
-      merged.style = Object.assign({}, merged.style, style);
-    }
-
-    if (hiddenState.corner) {
-      return null;
-    }
-
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ref: cornerRef} as any);
+      const merged: any = {
+        ...unrefs(elementProps),
+        style: {
+          position: 'absolute',
+          bottom: 0,
+          insetInlineEnd: 0,
+          width: cornerSize.width,
+          height: cornerSize.height,
+        },
+      };
+      const resolvedStyle =
+        typeof style?.value === 'function' ? style.value({}) : style?.value;
+      if (resolvedStyle !== undefined) {
+        merged.style = Object.assign({}, merged.style, resolvedStyle);
       }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof merged.className === 'string' && typeof renderClassName === 'string'
-          ? `${merged.className} ${renderClassName}`.trim()
-          : (merged.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={cornerRef} />;
-    }
-    return <div {...merged}>{componentProps.children}</div>;
-  };
-}) as unknown as (props: ScrollAreaCorner.Props) => JSX.Element;
+      return [merged];
+    },
+    state: () => ({}),
+    className,
+    render,
+    refs: () => [cornerRef as any],
+    children,
+    defaultTag: 'div',
+  });
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  const {hiddenState} = rootContextRef.value;
+  return <>{hiddenState.corner ? null : element()}</>;
+}
 
 export interface ScrollAreaCornerState {}
 

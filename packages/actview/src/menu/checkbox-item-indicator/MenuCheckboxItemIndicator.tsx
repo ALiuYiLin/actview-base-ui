@@ -1,19 +1,19 @@
-import { computed, defineComponent, ref, toValue } from 'actview';
+import { computed, ref, toRefs, unrefs } from 'actview';
 import { useMenuCheckboxItemContext } from '../checkbox-item/MenuCheckboxItemContext';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { itemMapping } from '../utils/stateAttributesMapping';
 import { useTransitionStatus } from '@/internals/useTransitionStatus';
 import { useOpenChangeComplete } from '@/internals/useOpenChangeComplete';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * Indicates whether the checkbox item is checked.
  * Renders a `<span>` element.
  */
-export const MenuCheckboxItemIndicator = defineComponent(function MenuCheckboxItemIndicator(
-  componentProps: MenuCheckboxItemIndicator.Props,
-) {
-  const {keepMounted = false} = componentProps as any;
-  const children = toValue(componentProps.children);
+export function MenuCheckboxItemIndicator(componentProps: MenuCheckboxItemIndicator.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
+  const {keepMounted, render, className, style, children, ref: refProp, ...elementProps} =
+    toRefs(componentProps);
 
   const item = useMenuCheckboxItemContext();
 
@@ -33,58 +33,46 @@ export const MenuCheckboxItemIndicator = defineComponent(function MenuCheckboxIt
     },
   });
 
-  return () => {
-    const {render, className: cls, style: st, ...elementProps} = componentProps as any;
-
-    if (!keepMounted && !mounted.value) {
-      return null;
-    }
-
-    const state: MenuCheckboxItemIndicatorState = {
+  const {element} = useRenderElement({
+    props: () => {
+      const merged: any = {
+        'aria-hidden': true,
+        ...unrefs(elementProps),
+      };
+      if (item.checked) {
+        merged[itemMapping.checkedKey] = '';
+      } else {
+        merged[itemMapping.uncheckedKey] = '';
+      }
+      return [merged];
+    },
+    state: (): MenuCheckboxItemIndicatorState => ({
       checked: item.checked,
       disabled: item.disabled,
       highlighted: item.highlighted,
       transitionStatus: transitionStatus.value,
-    };
-
-    const merged: any = {
-      'aria-hidden': true,
-      ...elementProps,
-    };
-
-    if (state.checked) {
-      merged[itemMapping.checkedKey] = '';
-    } else {
-      merged[itemMapping.uncheckedKey] = '';
-    }
-
-    const mergedRefs = (el: HTMLSpanElement | null) => {
-      indicatorRef.value = el;
-      if (typeof componentProps.ref === 'function') {
-        (componentProps.ref as any)(el);
-      } else if (componentProps.ref) {
-        componentProps.ref.value = el;
+    }),
+    className,
+    style,
+    render,
+    refs: () => {
+      const refs: any[] = [
+        (el: HTMLSpanElement | null) => {
+          indicatorRef.value = el;
+        },
+      ];
+      if (componentProps.ref !== undefined) {
+        refs.push(refProp);
       }
-    };
+      return refs;
+    },
+    children,
+    defaultTag: 'span',
+  });
 
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ...state, ref: mergedRefs} as any);
-      }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof merged.className === 'string' && typeof renderClassName === 'string'
-          ? `${merged.className} ${renderClassName}`.trim()
-          : (merged.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={mergedRefs}>{children}</Tag>;
-    }
-    return <span {...merged} ref={mergedRefs}>{children}</span>;
-  };
-});
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{!keepMounted?.value && !mounted.value ? null : element()}</>;
+}
 
 export interface MenuCheckboxItemIndicatorState {
   /**

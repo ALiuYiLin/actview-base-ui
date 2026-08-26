@@ -1,4 +1,4 @@
-import {computed, defineComponent, rawRef, ref, toValue, watch, shallowRef} from 'actview';
+import {computed, rawRef, ref, toValue, watch, shallowRef, toRefs, unrefs} from 'actview';
 import type { ComputedRef } from 'actview';
 import { ownerDocument } from '@/utils/owner';
 import { useControlled } from '@/utils/useControlled';
@@ -26,8 +26,7 @@ import type { ThumbMetadata } from '../thumb/SliderThumb';
 import { sliderStateAttributesMapping } from './stateAttributesMapping';
 import { SliderRootContext } from './SliderRootContext';
 import { REASONS } from '@/internals/reasons';
-import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
-import type { HTMLProps } from '@/internals/types';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 function areValuesEqual(
   newValue: number | readonly number[],
@@ -45,7 +44,7 @@ function areValuesEqual(
  *
  * Documentation: [Base UI Slider](https://base-ui.com/react/components/slider)
  */
-export const SliderRoot = defineComponent(function <Value extends number | readonly number[]>(
+export function SliderRoot<Value extends number | readonly number[]>(
   componentProps: SliderRoot.Props<Value>,
 ) {
   // ============ setup（只执行一次）：一次性初始化 ============
@@ -275,122 +274,104 @@ export const SliderRoot = defineComponent(function <Value extends number | reado
     {flush: 'post', immediate: true},
   );
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {className, render, style, ...elementProps} = componentProps;
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
 
-    const stateValue: SliderRootState = {
-      ...fieldState.value,
-      activeThumbIndex: active.value,
-      disabled,
-      dragging: dragging.value,
-      orientation,
-      max,
-      min,
-      minStepsBetweenValues,
-      step,
-      values: values.value,
-    };
+  const stateValueFn = (): SliderRootState => ({
+    ...fieldState.value,
+    activeThumbIndex: active.value,
+    disabled,
+    dragging: dragging.value,
+    orientation,
+    max,
+    min,
+    minStepsBetweenValues,
+    step,
+    values: values.value,
+  });
 
-    const contextValue: SliderRootContext = {
-      active: active.value,
-      controlRef,
-      disabled,
-      dragging: dragging.value,
-      validation,
-      format,
-      handleInputChange,
-      indicatorPosition: indicatorPosition.value,
-      inset: thumbAlignment !== 'center',
-      labelId: ariaLabelledby.value,
-      rootLabelId: defaultLabelId,
-      largeStep,
-      lastUsedThumbIndex: lastUsedThumbIndex.value,
-      lastChangeReasonRef,
-      form,
-      locale,
-      max,
-      min,
-      minStepsBetweenValues,
-      name,
-      onValueCommitted,
-      orientation,
-      pressedThumbCenterOffsetRef,
-      pressedThumbIndexRef,
-      pressedValuesRef,
-      registerFieldControlRef,
-      renderBeforeHydration: thumbAlignment === 'edge',
-      setActive,
-      setDragging: (v: boolean) => (dragging.value = v),
-      setIndicatorPosition: (v: (number | undefined)[]) => (indicatorPosition.value = v),
-      setLabelId: (v: string | undefined) => (labelId.value = v),
-      setValue,
-      state: stateValue,
-      step,
-      thumbCollisionBehavior,
-      thumbMap: thumbMap.value,
-      thumbRefs,
-      values: values.value,
-    };
+  const buildContextValue = (stateValue: SliderRootState): SliderRootContext => ({
+    active: active.value,
+    controlRef,
+    disabled,
+    dragging: dragging.value,
+    validation,
+    format,
+    handleInputChange,
+    indicatorPosition: indicatorPosition.value,
+    inset: thumbAlignment !== 'center',
+    labelId: ariaLabelledby.value,
+    rootLabelId: defaultLabelId,
+    largeStep,
+    lastUsedThumbIndex: lastUsedThumbIndex.value,
+    lastChangeReasonRef,
+    form,
+    locale,
+    max,
+    min,
+    minStepsBetweenValues,
+    name,
+    onValueCommitted,
+    orientation,
+    pressedThumbCenterOffsetRef,
+    pressedThumbIndexRef,
+    pressedValuesRef,
+    registerFieldControlRef,
+    renderBeforeHydration: thumbAlignment === 'edge',
+    setActive,
+    setDragging: (v: boolean) => (dragging.value = v),
+    setIndicatorPosition: (v: (number | undefined)[]) => (indicatorPosition.value = v),
+    setLabelId: (v: string | undefined) => (labelId.value = v),
+    setValue,
+    state: stateValue,
+    step,
+    thumbCollisionBehavior,
+    thumbMap: thumbMap.value,
+    thumbRefs,
+    values: values.value,
+  });
 
-    const stateAttributes = getStateAttributesProps(stateValue, sliderStateAttributesMapping);
+  const {element} = useRenderElement({
+    props: () => {
+      const merged: any = {};
+      Object.assign(
+        merged,
+        {
+          'aria-labelledby': ariaLabelledby.value,
+          id,
+          role: 'group',
+        },
+        {...unrefs(elementProps)},
+      );
+      const validationProps = validation.getValidationProps(disabled, merged);
+      Object.assign(merged, validationProps);
+      return [merged];
+    },
+    state: stateValueFn,
+    stateAttributesMapping: sliderStateAttributesMapping as any,
+    className,
+    style,
+    render,
+    children,
+    defaultTag: 'div',
+  });
 
-    const merged: HTMLProps = {};
-    Object.assign(
-      merged,
-      {
-        'aria-labelledby': ariaLabelledby.value,
-        id,
-        role: 'group',
-      },
-      elementProps,
-      stateAttributes,
-    );
-    const validationProps = validation.getValidationProps(disabled, merged);
-    Object.assign(merged, validationProps);
-
-    if (typeof className === 'function') {
-      merged.className = className(stateValue);
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof style === 'function') {
-      merged.style = style(stateValue);
-    } else if (style !== undefined) {
-      merged.style = style;
-    }
-
-    let element: any;
-    if (render) {
-      if (typeof render === 'function') {
-        element = render({...merged, ...stateValue} as any);
-      } else {
-        const renderProps = render.props ?? {};
-        const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-        const Tag = render.type as any;
-        const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-        mergedRenderProps.className =
-          typeof merged.className === 'string' && typeof renderClassName === 'string'
-            ? `${merged.className} ${renderClassName}`.trim()
-            : (merged.className ?? renderClassName);
-        mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-        element = <Tag key={render.key} {...mergedRenderProps} />;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return (
+    <SliderRootContext.Provider
+      value={
+        (() => {
+          const stateValue = stateValueFn();
+          return buildContextValue(stateValue) as any;
+        })()
       }
-    } else {
-      element = <div {...merged}>{componentProps.children}</div>;
-    }
-
-    return (
-      <SliderRootContext.Provider value={contextValue as any}>
-        <CompositeList elementsRef={rawRef(thumbRefs)} onMapChange={(m) => (thumbMap.value = m)}>
-          {element}
-        </CompositeList>
-      </SliderRootContext.Provider>
-    );
-  };
-}) as unknown as <Value extends number | readonly number[]>(
-  props: SliderRoot.Props<Value>,
-) => JSX.Element;
+    >
+      <CompositeList elementsRef={rawRef(thumbRefs)} onMapChange={(m) => (thumbMap.value = m)}>
+        {element()}
+      </CompositeList>
+    </SliderRootContext.Provider>
+  );
+}
 
 export interface SliderRootState extends FieldRootState {
   /**

@@ -1,12 +1,12 @@
-import {computed, defineComponent, rawRef, toValue, useRootElement, watch, shallowRef} from 'actview';
+import {computed, rawRef, toValue, useRootElement, watch, shallowRef, toRefs, unrefs} from 'actview';
 import { useControlled } from '@/utils/useControlled';
 import { EMPTY_ARRAY } from '@/internals/noop';
-import type { BaseUIComponentProps, HTMLProps, Orientation } from '@/internals/types';
+import type { BaseUIComponentProps, Orientation } from '@/internals/types';
 import { CompositeList } from '@/internals/composite/list/CompositeList';
 import { AccordionRootContext } from './AccordionRootContext';
-import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
 import { type BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 const rootStateAttributesMapping = {
   value: () => null,
@@ -18,7 +18,7 @@ const rootStateAttributesMapping = {
  *
  * Documentation: [Base UI Accordion](https://base-ui.com/react/components/accordion)
  */
-export const AccordionRoot = defineComponent(function (componentProps: AccordionRoot.Props<any>) {
+export function AccordionRoot<Value = any>(componentProps: AccordionRoot.Props<Value>) {
   // ============ setup（只执行一次）：一次性初始化 ============
   const rootRef = useRootElement();
 
@@ -100,55 +100,28 @@ export const AccordionRoot = defineComponent(function (componentProps: Accordion
     value: value as any,
   };
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {className, render, style, ...elementProps} = componentProps;
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
 
-    const stateValue = toValue(state);
-    const stateAttributes = getStateAttributesProps(stateValue, rootStateAttributesMapping as any);
+  const {element} = useRenderElement({
+    props: () => [{...unrefs(elementProps)}],
+    state: () => toValue(state),
+    stateAttributesMapping: rootStateAttributesMapping as any,
+    className,
+    style,
+    render,
+    refs: () => [rootRef as any],
+    children,
+    defaultTag: 'div',
+  });
 
-    const merged: HTMLProps = {};
-    Object.assign(merged, elementProps, stateAttributes);
-    if (typeof className === 'function') {
-      merged.className = className(stateValue);
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof style === 'function') {
-      merged.style = style(stateValue);
-    } else if (style !== undefined) {
-      merged.style = style;
-    }
-
-    let element: any;
-    if (render) {
-      if (typeof render === 'function') {
-        element = render({...merged, ...stateValue, ref: rootRef});
-      } else {
-        const renderProps = render.props ?? {};
-        const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-        const Tag = render.type as any;
-        const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-        mergedRenderProps.className =
-          typeof merged.className === 'string' && typeof renderClassName === 'string'
-            ? `${merged.className} ${renderClassName}`.trim()
-            : (merged.className ?? renderClassName);
-        mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-        element = <Tag key={render.key} {...mergedRenderProps} ref={rootRef} />;
-      }
-    } else {
-      element = <div {...merged} ref={rootRef} />;
-    }
-
-    return (
-      <AccordionRootContext.Provider value={contextValue}>
-        <CompositeList elementsRef={rawRef(accordionItemRefs)}>{element}</CompositeList>
-      </AccordionRootContext.Provider>
-    );
-  };
-}) as unknown as {
-  <Value = any>(props: AccordionRoot.Props<Value>): JSX.Element;
-};
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return (
+    <AccordionRootContext.Provider value={contextValue}>
+      <CompositeList elementsRef={rawRef(accordionItemRefs)}>{element()}</CompositeList>
+    </AccordionRootContext.Provider>
+  );
+}
 
 export type AccordionValue<Value = any> = Value[];
 

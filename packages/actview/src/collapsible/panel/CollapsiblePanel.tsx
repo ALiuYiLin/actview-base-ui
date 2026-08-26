@@ -1,6 +1,5 @@
-import {computed, defineComponent, onUnmounted, toValue, watch, ref} from 'actview';
-import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
-import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import {computed, onUnmounted, toValue, watch, ref, toRefs, unrefs} from 'actview';
+import type { BaseUIComponentProps } from '@/internals/types';
 import { mergePropsN } from '@/merge-props';
 import { useCollapsibleRootContext } from '../root/CollapsibleRootContext';
 import type { CollapsibleRootState } from '../root/CollapsibleRoot';
@@ -8,6 +7,7 @@ import { collapsibleStateAttributesMapping } from '../root/stateAttributesMappin
 import { useCollapsiblePanel } from './useCollapsiblePanel';
 import { CollapsiblePanelCssVars } from './CollapsiblePanelCssVars';
 import type { TransitionStatus } from '@/internals/useTransitionStatus';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * A panel with the collapsible contents.
@@ -15,7 +15,7 @@ import type { TransitionStatus } from '@/internals/useTransitionStatus';
  *
  * Documentation: [Base UI Collapsible](https://base-ui.com/react/components/collapsible)
  */
-export const CollapsiblePanel = defineComponent(function (componentProps: CollapsiblePanel.Props) {
+export function CollapsiblePanel(componentProps: CollapsiblePanel.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
   const {
     defaultPanelId,
@@ -87,64 +87,47 @@ export const CollapsiblePanel = defineComponent(function (componentProps: Collap
     transitionStatus: toValue(panel.transitionStatus),
   }));
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    if (!toValue(panel.shouldRender)) {
-      return null;
-    }
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
 
-    const {className, hiddenUntilFound: _hiddenUntilFound, keepMounted: _keepMounted, render, style, ...elementProps} =
-      componentProps;
+  const {element} = useRenderElement({
+    props: () => {
+      const {hiddenUntilFound: _hiddenUntilFound, keepMounted: _keepMounted, ...restElementProps} =
+        unrefs(elementProps);
 
-    const stateValue = toValue(panelState);
+      const stateValue = toValue(panelState);
 
-    const stateAttributes = getStateAttributesProps(stateValue, collapsibleStateAttributesMapping);
+      const resolvedStyle = typeof style?.value === 'function' ? style.value(stateValue) : style?.value;
 
-    const resolvedStyle =
-      typeof style === 'function' ? style(stateValue) : style;
-
-    const merged: HTMLProps = mergePropsN([
-      panel.props(),
-      {
-        style: {
-          [CollapsiblePanelCssVars.collapsiblePanelHeight as string]:
-            toValue(panel.height) === undefined ? 'auto' : `${toValue(panel.height)}px`,
-          [CollapsiblePanelCssVars.collapsiblePanelWidth as string]:
-            toValue(panel.width) === undefined ? 'auto' : `${toValue(panel.width)}px`,
+      return [
+        panel.props(),
+        {
+          style: {
+            [CollapsiblePanelCssVars.collapsiblePanelHeight as string]:
+              toValue(panel.height) === undefined ? 'auto' : `${toValue(panel.height)}px`,
+            [CollapsiblePanelCssVars.collapsiblePanelWidth as string]:
+              toValue(panel.width) === undefined ? 'auto' : `${toValue(panel.width)}px`,
+          },
         },
-      },
-      elementProps,
-      stateAttributes,
-      resolvedStyle ? {style: resolvedStyle} : undefined,
-      // Resolve the public `style` prop so temporary `animationName: 'none'`
-      // can still win after user's inline styles have been merged.
-      toValue(panel.shouldPreventOpenAnimation) ? {style: {animationName: 'none'}} : undefined,
-    ]);
+        restElementProps,
+        resolvedStyle ? {style: resolvedStyle} : undefined,
+        // Resolve the public `style` prop so temporary `animationName: 'none'`
+        // can still win after user's inline styles have been merged.
+        toValue(panel.shouldPreventOpenAnimation) ? {style: {animationName: 'none'}} : undefined,
+      ].filter(Boolean) as Record<string, any>[];
+    },
+    state: () => toValue(panelState) as any,
+    stateAttributesMapping: collapsibleStateAttributesMapping as any,
+    className,
+    render,
+    refs: () => [panel.ref as any],
+    children,
+    defaultTag: 'div',
+  });
 
-    if (typeof className === 'function') {
-      merged.className = className(stateValue);
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ...stateValue, ref: panel.ref as any});
-      }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof merged.className === 'string' && typeof renderClassName === 'string'
-          ? `${merged.className} ${renderClassName}`.trim()
-          : (merged.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={panel.ref} />;
-    }
-    return <div {...merged} ref={panel.ref} />;
-  };
-}) as unknown as (props: CollapsiblePanel.Props) => JSX.Element;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{toValue(panel.shouldRender) ? element() : null}</>;
+}
 
 export interface CollapsiblePanelState extends CollapsibleRootState {
   /**

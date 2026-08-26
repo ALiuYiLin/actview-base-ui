@@ -1,9 +1,10 @@
-import { defineComponent, toValue, useRootElement } from 'actview';
-import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { toRefs, unrefs } from 'actview';
+import type { BaseUIComponentProps } from '@/internals/types';
 import { useProgressRootContext } from '../root/ProgressRootContext';
 import { progressStateAttributesMapping } from '../root/stateAttributesMapping';
-import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
 import type { ProgressRootState } from '../root/ProgressRoot';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useRootElementFragment } from '@/internals/useRootElementFragment';
 
 /**
  * Displays the current value of the progress bar.
@@ -11,69 +12,53 @@ import type { ProgressRootState } from '../root/ProgressRoot';
  *
  * Documentation: [Base UI Progress](https://base-ui.com/react/components/progress)
  */
-export const ProgressValue = defineComponent(function (componentProps: ProgressValue.Props) {
+export function ProgressValue(componentProps: ProgressValue.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  const rootRef = useRootElement();
+  // Fragment 根（`<>{element()}</>`）下 actview 内置 useRootElement 的
+  // subTree.el 恒 null——用 Fragment 兼容版本。
+  const rootRef = useRootElementFragment();
 
   const rootContextRef = useProgressRootContext();
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {className, render, children, style, ...elementProps} = componentProps;
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, children, style, ...elementProps} = toRefs(componentProps);
 
-    const {value, formattedValue, state} = rootContextRef.value;
+  const stateFn = () => rootContextRef.value.state;
 
-    // Follow `status` rather than re-deriving it: a non-finite `value` is also indeterminate, and
-    // has no formatted text to show.
-    const indeterminate = state.status === 'indeterminate';
-    const formattedValueArg = indeterminate ? 'indeterminate' : formattedValue;
-    const formattedValueDisplay = indeterminate ? null : formattedValue;
-
-    const stateValue = state;
-    const stateAttributes = getStateAttributesProps(stateValue, progressStateAttributesMapping);
-
-    const merged: HTMLProps = {};
-    Object.assign(
-      merged,
+  const {element} = useRenderElement({
+    props: () => [
       {
         'aria-hidden': true,
-        children:
-          typeof children === 'function'
-            ? (children as any)(formattedValueArg, value)
-            : formattedValueDisplay,
       },
-      elementProps,
-      stateAttributes,
-    );
-    if (typeof className === 'function') {
-      merged.className = className(stateValue);
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof style === 'function') {
-      merged.style = style(stateValue);
-    } else if (style !== undefined) {
-      merged.style = style;
-    }
+      unrefs(elementProps),
+    ],
+    state: stateFn,
+    stateAttributesMapping: progressStateAttributesMapping as any,
+    className,
+    style,
+    render,
+    refs: () => [rootRef as any],
+    // children：render-prop（(formattedValue, value) => any）渲染期求值
+    children: () => {
+      const {value, formattedValue, state} = rootContextRef.value;
 
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ...stateValue, ref: rootRef} as any);
-      }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof merged.className === 'string' && typeof renderClassName === 'string'
-          ? `${merged.className} ${renderClassName}`.trim()
-          : (merged.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={rootRef} />;
-    }
-    return <span {...merged} ref={rootRef} />;
-  };
-}) as unknown as (props: ProgressValue.Props) => JSX.Element;
+      // Follow `status` rather than re-deriving it: a non-finite `value` is also indeterminate, and
+      // has no formatted text to show.
+      const indeterminate = state.status === 'indeterminate';
+      const formattedValueArg = indeterminate ? 'indeterminate' : formattedValue;
+      const formattedValueDisplay = indeterminate ? null : formattedValue;
+
+      const childrenValue = children?.value;
+      return typeof childrenValue === 'function'
+        ? (childrenValue as any)(formattedValueArg, value)
+        : formattedValueDisplay;
+    },
+    defaultTag: 'span',
+  });
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface ProgressValueState extends ProgressRootState {}
 

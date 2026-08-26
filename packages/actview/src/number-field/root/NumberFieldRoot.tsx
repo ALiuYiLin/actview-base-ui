@@ -1,4 +1,4 @@
-import { defineComponent, onMounted, onUnmounted, ref, toValue, watch, useRootElement } from 'actview';
+import { onMounted, onUnmounted, ref, toValue, watch, useRootElement, toRefs, unrefs } from 'actview';
 import { addEventListener } from '@/utils/addEventListener';
 import { useControlled } from '@/utils/useControlled';
 import { useValueAsRef } from '@/utils/useValueAsRef';
@@ -16,7 +16,6 @@ import type { FieldRootState } from '@/field/root/FieldRoot';
 import { useLabelableId } from '@/internals/labelable-provider/useLabelableId';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { stateAttributesMapping } from '../utils/stateAttributesMapping';
-import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
 import {
   getFormatParts,
   getNumberLocaleDetails,
@@ -37,6 +36,7 @@ import {
   type ReasonToEvent,
 } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * Groups all parts of the number field and manages its state.
@@ -44,7 +44,7 @@ import { REASONS } from '@/internals/reasons';
  *
  * Documentation: [Base UI Number Field](https://base-ui.com/react/components/number-field)
  */
-export const NumberFieldRoot = defineComponent(function (componentProps: NumberFieldRoot.Props) {
+export function NumberFieldRoot(componentProps: NumberFieldRoot.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
   const rootRef = useRootElement();
 
@@ -373,82 +373,47 @@ export const NumberFieldRoot = defineComponent(function (componentProps: NumberF
     wheelCleanup?.();
   });
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {render, className, style, ...elementProps} = componentProps;
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
 
-    const stateValue: NumberFieldRootState = {
-      ...fieldState.value,
-      disabled,
-      readOnly,
-      required,
-      value: value.value as number | null,
-      inputValue: inputValue.value,
-      scrubbing: isScrubbing.value,
-    };
+  const stateValueFn = (): NumberFieldRootState => ({
+    ...fieldState.value,
+    disabled,
+    readOnly,
+    required,
+    value: value.value as number | null,
+    inputValue: inputValue.value,
+    scrubbing: isScrubbing.value,
+  });
 
-    const contextValue: NumberFieldRootContext = {
-      inputRef,
-      minWithDefault,
-      maxWithDefault,
-      id,
-      setValue,
-      incrementValue,
-      getStepAmount,
-      allowInputSyncRef,
-      formatOptionsRef,
-      valueRef,
-      lastChangedValueRef,
-      hasPendingCommitRef,
-      name,
-      nameProp,
-      inputMode: inputMode.value,
-      getAllowedNonNumericKeys,
-      min,
-      max,
-      setInputValue,
-      locale,
-      setIsScrubbing,
-      state: stateValue,
-      onValueCommitted,
-    };
+  const buildContextValue = (stateValue: NumberFieldRootState): NumberFieldRootContext => ({
+    inputRef,
+    minWithDefault,
+    maxWithDefault,
+    id,
+    setValue,
+    incrementValue,
+    getStepAmount,
+    allowInputSyncRef,
+    formatOptionsRef,
+    valueRef,
+    lastChangedValueRef,
+    hasPendingCommitRef,
+    name,
+    nameProp,
+    inputMode: inputMode.value,
+    getAllowedNonNumericKeys,
+    min,
+    max,
+    setInputValue,
+    locale,
+    setIsScrubbing,
+    state: stateValue,
+    onValueCommitted,
+  });
 
-    const stateAttributes = getStateAttributesProps(stateValue, stateAttributesMapping);
-
-    const merged: any = {};
-    Object.assign(merged, elementProps, stateAttributes);
-    if (typeof className === 'function') {
-      merged.className = className(stateValue);
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof style === 'function') {
-      merged.style = style(stateValue);
-    } else if (style !== undefined) {
-      merged.style = style;
-    }
-
-    let element: any;
-    if (render) {
-      if (typeof render === 'function') {
-        element = render({...merged, ...stateValue, ref: rootRef} as any);
-      } else {
-        const renderProps = render.props ?? {};
-        const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-        const Tag = render.type as any;
-        const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-        mergedRenderProps.className =
-          typeof merged.className === 'string' && typeof renderClassName === 'string'
-            ? `${merged.className} ${renderClassName}`.trim()
-            : (merged.className ?? renderClassName);
-        mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-        element = <Tag key={render.key} {...mergedRenderProps} ref={rootRef} />;
-      }
-    } else {
-      element = <div {...merged} ref={rootRef} />;
-    }
-
-    const hiddenInputProps = fieldContextRef.value.validation.getValidationProps(disabled, {
+  const buildHiddenInputProps = () =>
+    fieldContextRef.value.validation.getValidationProps(disabled, {
       onFocus() {
         inputRef.value?.focus();
       },
@@ -471,32 +436,51 @@ export const NumberFieldRoot = defineComponent(function (componentProps: NumberF
       },
     });
 
-    return (
-      <NumberFieldRootContext.Provider value={contextValue as any}>
-        {element}
-        <input
-          {...hiddenInputProps}
-          ref={hiddenInputRef}
-          type="number"
-          form={form}
-          name={name}
-          value={value.value ?? ''}
-          min={min}
-          max={max}
-          // stepMismatch validation is broken unless an explicit `min` is added.
-          // See https://github.com/react/react/issues/12334.
-          step={stepProp}
-          disabled={disabled}
-          readOnly={readOnly}
-          required={required}
-          aria-hidden
-          tabIndex={-1}
-          style={name ? visuallyHiddenInput : visuallyHidden}
-        />
-      </NumberFieldRootContext.Provider>
-    );
-  };
-}) as unknown as (props: NumberFieldRoot.Props) => JSX.Element;
+  const {element} = useRenderElement({
+    props: () => [{...unrefs(elementProps)}],
+    state: stateValueFn,
+    stateAttributesMapping: stateAttributesMapping as any,
+    className,
+    style,
+    render,
+    refs: () => [rootRef as any],
+    children,
+    defaultTag: 'div',
+  });
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return (
+    <NumberFieldRootContext.Provider
+      value={
+        (() => {
+          const stateValue = stateValueFn();
+          return buildContextValue(stateValue) as any;
+        })()
+      }
+    >
+      {element()}
+      <input
+        {...(() => buildHiddenInputProps())()}
+        ref={hiddenInputRef}
+        type="number"
+        form={form}
+        name={name}
+        value={value.value ?? ''}
+        min={min}
+        max={max}
+        // stepMismatch validation is broken unless an explicit `min` is added.
+        // See https://github.com/react/react/issues/12334.
+        step={stepProp}
+        disabled={disabled}
+        readOnly={readOnly}
+        required={required}
+        aria-hidden
+        tabIndex={-1}
+        style={name ? visuallyHiddenInput : visuallyHidden}
+      />
+    </NumberFieldRootContext.Provider>
+  );
+}
 
 export interface NumberFieldRootProps
   extends Omit<BaseUIComponentProps<'div', NumberFieldRootState>, 'onChange'> {

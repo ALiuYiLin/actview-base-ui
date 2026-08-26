@@ -1,60 +1,55 @@
-import { defineComponent, computed } from 'actview';
+import { toRefs, unrefs, computed } from 'actview';
 import { useComboboxRootContext } from '../root/ComboboxRootContext';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /** The input of the combobox. Renders an `<input>` element. */
-export const ComboboxInput = defineComponent(function ComboboxInput(
-  componentProps: ComboboxInput.Props,
-) {
+export function ComboboxInput(componentProps: ComboboxInput.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
   const context = useComboboxRootContext(false);
+  const {render, className, style, ref, ...elementProps} = toRefs(componentProps);
   const inputValue = computed(() => context.inputValueRef.value);
   // useState 必须在 setup 调用（useStore 内部注册 onUnmounted）。
   const open = context.store.useState('open');
 
-  return () => {
-    const {render, className, style, ...elementProps} = componentProps as any;
-    const disabled = context.store.state.disabled;
-
-    const merged: any = {
-      type: 'text',
-      role: 'combobox',
-      'aria-expanded': open.value,
-      'aria-haspopup': 'listbox',
-      ...elementProps,
-      value: inputValue.value,
-      disabled,
-      onChange: (event: any) => {
-        if (!disabled) {
-          context.setInputValue(event.target.value ?? '');
-        }
-      },
-      onFocus: () => {
-        if (!disabled && context.store.state.items) {
-          context.store.open();
-        }
-      },
-    };
-
-    const ref = (el: any) => {
-      context.store.setInputElement(el ?? null);
-      if (componentProps.ref) {
-        if (typeof componentProps.ref === 'function') (componentProps.ref as any)(el);
-        else {
-          (componentProps.ref as any).value = el;
-          
-        }
-      }
-    };
-
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ref} as any);
-      }
-      const Tag = render.type as any;
-      return <Tag {...render.props} {...merged} ref={ref} />;
-    }
-    return <input {...merged} ref={ref} />;
+  const inputRef = (el: any) => {
+    context.store.setInputElement(el ?? null);
   };
-});
+
+  const {element} = useRenderElement({
+    props: () => {
+      const disabled = context.store.state.disabled;
+      return [
+        {
+          type: 'text',
+          role: 'combobox',
+          'aria-expanded': open.value,
+          'aria-haspopup': 'listbox',
+          ...unrefs(elementProps),
+          value: inputValue.value,
+          disabled,
+          onChange: (event: any) => {
+            if (!disabled) {
+              context.setInputValue(event.target.value ?? '');
+            }
+          },
+          onFocus: () => {
+            if (!disabled && context.store.state.items) {
+              context.store.open();
+            }
+          },
+        },
+      ];
+    },
+    className,
+    style,
+    render,
+    refs: () => (componentProps.ref !== undefined ? [inputRef, ref] : [inputRef]),
+    defaultTag: 'input',
+  });
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface ComboboxInputProps {
   [key: string]: any;

@@ -1,4 +1,4 @@
-import { defineComponent, computed, ref, toValue } from 'actview';
+import { computed, ref, toRefs, unrefs } from 'actview';
 import { FloatingFocusManager } from '@/floating-ui-react';
 import { useDialogRootContext } from '@/dialog/root/DialogRootContext';
 import { useDialogPortalContext } from '../portal/DrawerPortalContext';
@@ -9,6 +9,7 @@ import { mergePropsN } from '@/merge-props';
 import type { BaseUIComponentProps } from '@/internals/types';
 import type { TransitionStatus } from '@/internals/useTransitionStatus';
 import type { Ref } from 'actview';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * A container for the Drawer contents.
@@ -16,11 +17,11 @@ import type { Ref } from 'actview';
  *
  * Documentation: [Base UI Drawer](https://base-ui.com/react/components/Drawer)
  */
-export const DrawerPopup = defineComponent(function DrawerPopup(
-  componentProps: DrawerPopup.Props,
-) {
+export function DrawerPopup(componentProps: DrawerPopup.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
   const {finalFocus, initialFocus} = componentProps;
-  const children = toValue(componentProps.children);
+  const {render, className, style, children, ref: refProp, ...elementProps} =
+    toRefs(componentProps);
 
   const store = useDialogRootContext(false);
   useDialogPortalContext();
@@ -56,7 +57,10 @@ export const DrawerPopup = defineComponent(function DrawerPopup(
   const syncedFloatingElement = computed(() =>
     localFloatingElement.value === undefined ? null : localFloatingElement.value,
   );
-  (floatingRootContext.value as any)?.useSyncedValue?.('floatingElement', syncedFloatingElement as any);
+  (floatingRootContext.value as any)?.useSyncedValue?.(
+    'floatingElement',
+    syncedFloatingElement as any,
+  );
 
   const state = (): DrawerPopupState => ({
     open: open.value,
@@ -65,91 +69,85 @@ export const DrawerPopup = defineComponent(function DrawerPopup(
     nestedDrawerOpen: nestedOpenDrawerCount.value > 0,
   });
 
-  return () => {
-    const {render, className, style, ...elementProps} = componentProps as any;
-
-    const stateValue = state();
-    const attributes: Record<string, string> = {};
-    if (stateValue.open) {
-      attributes['data-open'] = '';
-    } else {
-      attributes['data-closed'] = '';
-    }
-    if (stateValue.transitionStatus === 'starting') {
-      attributes['data-starting-style'] = '';
-    } else if (stateValue.transitionStatus === 'ending') {
-      attributes['data-ending-style'] = '';
-    }
-
-    const merged: any = mergePropsN<any>([
-      rootPopupProps.value,
-      {
-        id: floatingId?.value,
-        'aria-labelledby': titleElementId.value,
-        'aria-describedby': descriptionElementId.value,
-        'aria-modal': modal.value !== false ? 'true' : undefined,
-        role: role.value,
-        tabIndex: -1,
-        hidden: !mounted.value,
-        onKeyDown(event: any) {
-          if (COMPOSITE_KEYS.has(event.key)) {
-            event.stopPropagation();
-          }
-        },
-        style: {
-          '--nested-Drawers': nestedOpenDrawerCount.value,
-        },
-      },
-      getDisabledMountTransitionStyles(transitionStatus.value),
-      elementProps,
-    ]);
-    Object.assign(merged, attributes);
-
-    const mergedRefs = (el: HTMLElement | null) => {
-      store.context.popupRef.value = el;
-      setPopupElement(el);
-      localFloatingElement.value = el;
-      (floatingRootContext.value as any)?.update?.({floatingElement: el});
-    };
-
-    const element = (() => {
-      if (render) {
-        if (typeof render === 'function') {
-          return render({...merged, ...stateValue, ref: mergedRefs} as any);
-        }
-        const renderProps = render.props ?? {};
-        const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-        const Tag = render.type as any;
-        const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-        mergedRenderProps.className =
-          typeof merged.className === 'string' && typeof renderClassName === 'string'
-            ? `${merged.className} ${renderClassName}`.trim()
-            : (merged.className ?? renderClassName);
-        mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-        return <Tag key={render.key} {...mergedRenderProps} ref={mergedRefs}>{children}</Tag>;
+  const {element} = useRenderElement({
+    props: () => {
+      const stateValue = state();
+      const attributes: Record<string, string> = {};
+      if (stateValue.open) {
+        attributes['data-open'] = '';
+      } else {
+        attributes['data-closed'] = '';
       }
-      return <div {...merged} ref={mergedRefs}>{children}</div>;
-    })();
+      if (stateValue.transitionStatus === 'starting') {
+        attributes['data-starting-style'] = '';
+      } else if (stateValue.transitionStatus === 'ending') {
+        attributes['data-ending-style'] = '';
+      }
 
-    const FocusManager = FloatingFocusManager as any;
-    return (
-      <FocusManager
-        context={floatingRootContext.value as any}
-        openInteractionType={openMethod.value as any}
-        disabled={!mounted.value}
-        closeOnFocusOut
-        initialFocus={
-          (initialFocus === undefined ? true : initialFocus) as any
-        }
-        returnFocus={finalFocus === undefined ? true : finalFocus}
-        modal={modal.value !== false}
-        restoreFocus="popup"
-      >
-        {element}
-      </FocusManager>
-    );
-  };
-});
+      const merged: any = mergePropsN<any>([
+        rootPopupProps.value,
+        {
+          id: floatingId?.value,
+          'aria-labelledby': titleElementId.value,
+          'aria-describedby': descriptionElementId.value,
+          'aria-modal': modal.value !== false ? 'true' : undefined,
+          role: role.value,
+          tabIndex: -1,
+          hidden: !mounted.value,
+          onKeyDown(event: any) {
+            if (COMPOSITE_KEYS.has(event.key)) {
+              event.stopPropagation();
+            }
+          },
+          style: {
+            '--nested-Drawers': nestedOpenDrawerCount.value,
+          },
+        },
+        getDisabledMountTransitionStyles(transitionStatus.value),
+        unrefs(elementProps),
+      ]);
+      Object.assign(merged, attributes);
+      return [merged];
+    },
+    state,
+    className,
+    style,
+    render,
+    refs: () => {
+      const refs: any[] = [
+        (el: HTMLElement | null) => {
+          store.context.popupRef.value = el;
+          setPopupElement(el);
+          localFloatingElement.value = el;
+          (floatingRootContext.value as any)?.update?.({floatingElement: el});
+        },
+      ];
+      if (componentProps.ref !== undefined) {
+        refs.push(refProp);
+      }
+      return refs;
+    },
+    children,
+    defaultTag: 'div',
+  });
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  const FocusManager = FloatingFocusManager as any;
+  return (
+    <FocusManager
+      context={floatingRootContext.value as any}
+      openInteractionType={openMethod.value as any}
+      disabled={!mounted.value}
+      closeOnFocusOut
+      initialFocus={(initialFocus === undefined ? true : initialFocus) as any}
+      returnFocus={finalFocus === undefined ? true : finalFocus}
+      modal={modal.value !== false}
+      restoreFocus="popup"
+    >
+      {element()}
+    </FocusManager>
+  );
+}
 
 export interface DrawerPopupState {
   /**

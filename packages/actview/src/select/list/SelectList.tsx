@@ -1,35 +1,36 @@
-import { defineComponent, toValue } from 'actview';
+import { toRefs, unrefs } from 'actview';
 import { useSelectRootContext } from '../root/SelectRootContext';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /** A list of select items. Renders a `<div>` element with role listbox. */
-export const SelectList = defineComponent(function SelectList(props: SelectList.Props) {
+export function SelectList(props: SelectList.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
   const store = useSelectRootContext(false);
-  const children = toValue(props.children);
+  const {render, className, style, children, ref: refProp, ...elementProps} = toRefs(props);
 
-  return () => {
-    const {render, className, style, ...elementProps} = props as any;
-    const merged: any = {
-      role: 'listbox',
-      ...elementProps,
-    };
-    const ref = (el: any) => {
-      store.setListElement(el ?? null);
-      if (props.ref) {
-        if (typeof props.ref === 'function') (props.ref as any)(el);
-        else {
-          (props.ref as any).value = el;
-          
-        }
+  const {element} = useRenderElement({
+    props: () => [{'role': 'listbox'}, unrefs(elementProps)],
+    className,
+    style,
+    render,
+    refs: () => {
+      const refs: any[] = [
+        (el: any) => {
+          store.setListElement(el ?? null);
+        },
+      ];
+      if (props.ref !== undefined) {
+        refs.push(refProp);
       }
-    };
-    if (render) {
-      if (typeof render === 'function') return render({...merged, ref} as any);
-      const Tag = render.type as any;
-      return <Tag {...render.props} {...merged} ref={ref}>{children}</Tag>;
-    }
-    return <div {...merged} ref={ref}>{children}</div>;
-  };
-});
+      return refs;
+    },
+    children,
+    defaultTag: 'div',
+  });
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface SelectListProps {
   children?: any;

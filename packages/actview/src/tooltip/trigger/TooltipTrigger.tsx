@@ -1,4 +1,4 @@
-import { defineComponent, ref, toValue } from 'actview';
+import { ref, toRefs, toValue, unrefs } from 'actview';
 import { useTooltipRootContext } from '../root/TooltipRootContext';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { triggerOpenStateMapping } from '@/utils/popupStateMapping';
@@ -8,6 +8,7 @@ import { useBaseUiId } from '@/internals/useBaseUiId';
 import { TooltipHandle } from '../store/TooltipHandle';
 import { useHoverReferenceInteraction, useFocus } from '@/floating-ui-react';
 import { useButton } from '@/internals/use-button/useButton';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * An element to attach the tooltip to.
@@ -15,11 +16,8 @@ import { useButton } from '@/internals/use-button/useButton';
  *
  * Documentation: [Base UI Tooltip](https://base-ui.com/react/components/tooltip)
  */
-export const TooltipTrigger = defineComponent(function TooltipTrigger(
-  componentProps: TooltipTrigger.Props,
-) {
+export function TooltipTrigger(componentProps: TooltipTrigger.Props) {
   const {disabled = false, nativeButton = true, handle} = componentProps as any;
-  const children = toValue(componentProps.children);
 
   const tooltipHandleStore = usePopupHandleStore(handle as any);
   const handleStore = tooltipHandleStore.value;
@@ -66,67 +64,47 @@ export const TooltipTrigger = defineComponent(function TooltipTrigger(
     native: nativeButton,
   });
 
-  const propsList = [
-    hoverProps ?? {},
-    focusProps ?? {},
-    {
-      id: thisTriggerId,
-    },
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, children, ref: refProp, ...elementProps} = toRefs(
     componentProps,
-    getButtonProps,
-  ];
+  );
 
-  return () => {
-    const {render, className, style, ...elementProps} = componentProps as any;
-
-    const merged: any = mergePropsN<any>([...propsList]);
-    const openAttr = triggerOpenStateMapping.open(isOpenedByThisTrigger.value);
-    if (openAttr) {
-      Object.assign(merged, openAttr);
-    }
-    if (disabled) {
-      merged['data-disabled'] = '';
-    } else {
-      delete merged['data-disabled'];
-    }
-
-    const mergedRefs = (el: HTMLElement | null) => {
-      triggerElementRef.value = el;
-      if (typeof buttonRef === 'function') {
-        (buttonRef as any)(el);
-      } else if (buttonRef) {
-        (buttonRef as any).value = el;
+  const {element} = useRenderElement({
+    props: () => {
+      // componentProps 原样参与合并（保持原 propsList 语义——hover/focus
+      // 处理器、id、getButtonProps 依次覆盖）
+      const merged: any = mergePropsN([
+        hoverProps ?? {},
+        focusProps ?? {},
+        {id: thisTriggerId},
+        componentProps as any,
+        getButtonProps,
+      ]);
+      const openAttr = triggerOpenStateMapping.open(isOpenedByThisTrigger.value);
+      if (openAttr) {
+        Object.assign(merged, openAttr);
       }
-      if (typeof componentProps.ref === 'function') {
-        (componentProps.ref as any)(el);
-      } else if (componentProps.ref) {
-        (componentProps.ref as any).value = el;
-        
+      if (disabled) {
+        merged['data-disabled'] = '';
+      } else {
+        delete merged['data-disabled'];
       }
-    };
+      // className/style 由 hook 选项统一处理——从 merged 剔除避免重复
+      delete merged.className;
+      delete merged.style;
+      return [merged];
+    },
+    className,
+    style,
+    render,
+    refs: () => [triggerElementRef as any, buttonRef as any, refProp as any],
+    children,
+    defaultTag: 'button',
+  });
 
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ref: mergedRefs} as any);
-      }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof merged.className === 'string' && typeof renderClassName === 'string'
-          ? `${merged.className} ${renderClassName}`.trim()
-          : (merged.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={mergedRefs}>{children}</Tag>;
-    }
-    return (
-      <button {...merged} className={className} ref={mergedRefs}>
-        {children}
-      </button>
-    );
-  };
-});
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface TooltipTriggerState {
   /**

@@ -1,4 +1,4 @@
-import {defineComponent, rawRef, toValue, watch, ref} from 'actview';
+import {rawRef, toValue, watch, ref} from 'actview';
 import type { ComputedRef } from 'actview';
 import { inertValue } from '@/utils/inertValue';
 import { FloatingNode } from '@/floating-ui-react';
@@ -28,9 +28,8 @@ import { useAnchoredPopupScrollLock } from '@/utils/useAnchoredPopupScrollLock';
  *
  * Documentation: [Base UI Menu](https://base-ui.com/react/components/menu)
  */
-export const MenuPositioner = defineComponent(function MenuPositioner(
-  componentProps: MenuPositioner.Props,
-) {
+export function MenuPositioner(componentProps: MenuPositioner.Props) {
+  // ============ setup（只执行一次） ============
   const {
     anchor: anchorProp,
     positionMethod: positionMethodProp = 'absolute',
@@ -359,43 +358,41 @@ export const MenuPositioner = defineComponent(function MenuPositioner(
     return null;
   })();
 
-  return () => {
-    const showBackdrop = shouldRenderBackdrop();
-    return (
-      <MenuPositionerContext.Provider
-        value={{
-          nodeId: floatingNodeId.value,
-          side: positioner.side,
-          align: positioner.align,
-          arrowRef: positioner.arrowRef,
-          arrowUncentered: positioner.arrowUncentered,
-          arrowStyles: positioner.arrowStyles,
-          context: {nodeId: floatingNodeId.value},
-        }}
-      >
-        {showBackdrop && (
-          <InternalBackdrop
-            ref={
-              parent.value.type === 'context-menu' || parent.value.type === 'nested-context-menu'
-                ? parent.value.context.internalBackdropRef
-                : null
-            }
-            inert={inertValue(!open.value)}
-            cutout={backdropCutout}
-          />
-        )}
-        <FloatingNode id={floatingNodeId.value}>
-          <CompositeList
-            elementsRef={rawRef(store.context.itemDomElements)}
-            labelsRef={rawRef(store.context.itemLabels)}
-          >
-            {element()}
-          </CompositeList>
-        </FloatingNode>
-      </MenuPositionerContext.Provider>
-    );
-  };
-});
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return (
+    <MenuPositionerContext.Provider
+      value={{
+        nodeId: floatingNodeId.value,
+        side: positioner.side,
+        align: positioner.align,
+        arrowRef: positioner.arrowRef,
+        arrowUncentered: positioner.arrowUncentered,
+        arrowStyles: positioner.arrowStyles,
+        context: {nodeId: floatingNodeId.value},
+      }}
+    >
+      {shouldRenderBackdrop() && (
+        <InternalBackdrop
+          ref={
+            parent.value.type === 'context-menu' || parent.value.type === 'nested-context-menu'
+              ? parent.value.context.internalBackdropRef
+              : null
+          }
+          inert={inertValue(!open.value)}
+          cutout={backdropCutout}
+        />
+      )}
+      <FloatingNode id={floatingNodeId.value}>
+        <CompositeList
+          elementsRef={rawRef(store.context.itemDomElements)}
+          labelsRef={rawRef(store.context.itemLabels)}
+        >
+          {element()}
+        </CompositeList>
+      </FloatingNode>
+    </MenuPositionerContext.Provider>
+  );
+}
 
 import { useTimeout } from '@/utils/useTimeout';
 function useTimeoutSafe() {

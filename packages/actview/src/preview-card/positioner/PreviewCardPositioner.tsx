@@ -1,4 +1,4 @@
-import {defineComponent, toValue, watch, ref} from 'actview';
+import {watch, ref} from 'actview';
 import { inertValue } from '@/utils/inertValue';
 import { usePreviewCardRootContext } from '../root/PreviewCardRootContext';
 import { PreviewCardPositionerContext } from './PreviewCardPositionerContext';
@@ -23,9 +23,7 @@ import { useAnchoredPopupScrollLock } from '@/utils/useAnchoredPopupScrollLock';
  *
  * Documentation: [Base UI PreviewCard](https://base-ui.com/react/components/preview-card)
  */
-export const PreviewCardPositioner = defineComponent(function PreviewCardPositioner(
-  componentProps: PreviewCardPositioner.Props,
-) {
+export function PreviewCardPositioner(componentProps: PreviewCardPositioner.Props) {
   const {
     anchor,
     positionMethod,
@@ -135,7 +133,8 @@ export const PreviewCardPositioner = defineComponent(function PreviewCardPositio
     inert: () => !open.value,
   }) as any;
 
-  return () => (
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return (
     <PreviewCardPositionerContext.Provider value={positioner as any}>
       {mounted.value && trueModalNonHover() && (
         <InternalBackdrop inert={inertValue(!open.value)} cutout={triggerElement.value} />
@@ -143,7 +142,7 @@ export const PreviewCardPositioner = defineComponent(function PreviewCardPositio
       {element()}
     </PreviewCardPositionerContext.Provider>
   );
-});
+}
 
 export interface PreviewCardPositionerState {
   /**

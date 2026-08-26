@@ -1,23 +1,26 @@
-import { defineComponent } from 'actview';
+import { toRefs, unrefs } from 'actview';
 import { useToastRootContext } from '../root/ToastRootContext';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /** The description of the toast. Renders a `<div>` element. */
-export const ToastDescription = defineComponent(function ToastDescription(
-  props: ToastDescription.Props,
-) {
+export function ToastDescription(props: ToastDescription.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
   const context = useToastRootContext(false);
+  const {render, className, style, children, ...elementProps} = toRefs(props);
 
-  return () => {
-    const {render, className, style, children, ...elementProps} = props as any;
-    const merged: any = {...elementProps};
-    if (render) {
-      if (typeof render === 'function') return render({...merged, ...context.toast});
-      const Tag = render.type as any;
-      return <Tag {...render.props} {...merged} />;
-    }
-    return <div {...merged}>{children ?? context.toast.description}</div>;
-  };
-});
+  const {element} = useRenderElement({
+    props: () => [{...unrefs(elementProps)}],
+    state: () => context.toast,
+    className,
+    style,
+    render,
+    children: () => children?.value ?? context.toast.description,
+    defaultTag: 'div',
+  });
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface ToastDescriptionProps {
   children?: any;

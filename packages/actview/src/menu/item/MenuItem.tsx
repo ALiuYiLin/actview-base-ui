@@ -1,10 +1,11 @@
-import {defineComponent, toValue, ref} from 'actview';
+import {toRefs, unrefs, toValue} from 'actview';
 import { REGULAR_ITEM, useMenuItem } from './useMenuItem';
 import { useMenuRootContext } from '../root/MenuRootContext';
 import { useBaseUiId } from '@/internals/useBaseUiId';
 import type { BaseUIComponentProps, NonNativeButtonProps } from '@/internals/types';
 import { useCompositeListItem } from '@/internals/composite/list/useCompositeListItem';
 import { useMenuPositionerContext } from '../positioner/MenuPositionerContext';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * An individual interactive item in the menu.
@@ -12,19 +13,17 @@ import { useMenuPositionerContext } from '../positioner/MenuPositionerContext';
  *
  * Documentation: [Base UI Menu](https://base-ui.com/react/components/menu)
  */
-export const MenuItem = defineComponent(function MenuItem(componentProps: MenuItem.Props) {
+export function MenuItem(componentProps: MenuItem.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
   const {
-    render,
-    className,
     id: idProp,
     label,
     nativeButton = false,
     disabled: disabledProp = false,
     closeOnClick = true,
-    style,
   } = componentProps;
 
-  const children = toValue(componentProps.children);
+  const {render, className, style, children, ref, ...elementProps} = toRefs(componentProps);
 
   const listItem = useCompositeListItem({guess: true, label});
   const menuPositionerContext = useMenuPositionerContext(true);
@@ -47,55 +46,50 @@ export const MenuItem = defineComponent(function MenuItem(componentProps: MenuIt
     itemMetadata: REGULAR_ITEM,
   });
 
-  const state: MenuItemState = {
-    disabled,
-    highlighted: false,
-  };
-
-  return () => {
-    const {className: cls, style: st, render: r, ...elementProps} = componentProps;
-
-    const highlighted = activeIndex.value === toValue(listItem.index);
-    state.disabled = disabled;
-    state.highlighted = highlighted;
-
-    const merged: any = {};
-    for (const prop of [itemProps.value, elementProps, getItemProps as any]) {
-      const resolved = typeof (prop as any) === 'function' ? (prop as any)(merged) : prop;
-      Object.assign(merged, resolved);
-    }
-
-    // `data-highlighted` / `data-disabled` state attributes
-    if (highlighted) {
-      merged['data-highlighted'] = '';
-    }
-    if (disabled) {
-      merged['data-disabled'] = '';
-    }
-
-    const mergedRefs = (el: HTMLElement | null) => {
-      itemRef?.(el);
-      listItem.ref(el);
-    };
-
-    if (r) {
-      if (typeof r === 'function') {
-        return r({...merged, ...state, ref: mergedRefs} as any);
+  const {element} = useRenderElement({
+    props: () => {
+      const merged: any = {};
+      for (const prop of [itemProps.value, unrefs(elementProps), getItemProps as any]) {
+        const resolved = typeof (prop as any) === 'function' ? (prop as any)(merged) : prop;
+        Object.assign(merged, resolved);
       }
-      const renderProps = r.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = r.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof merged.className === 'string' && typeof renderClassName === 'string'
-          ? `${merged.className} ${renderClassName}`.trim()
-          : (merged.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={r.key} {...mergedRenderProps} ref={mergedRefs}>{children}</Tag>;
-    }
-    return <div {...merged} ref={mergedRefs}>{children}</div>;
-  };
-});
+
+      // `data-highlighted` / `data-disabled` state attributes
+      const highlighted = activeIndex.value === toValue(listItem.index);
+      if (highlighted) {
+        merged['data-highlighted'] = '';
+      }
+      if (disabled) {
+        merged['data-disabled'] = '';
+      }
+      return [merged];
+    },
+    state: (): MenuItemState => ({
+      disabled,
+      highlighted: activeIndex.value === toValue(listItem.index),
+    }),
+    className,
+    style,
+    render,
+    refs: () => {
+      const refs: any[] = [
+        (el: HTMLElement | null) => {
+          itemRef?.(el);
+          listItem.ref(el);
+        },
+      ];
+      if (componentProps.ref !== undefined) {
+        refs.push(ref);
+      }
+      return refs;
+    },
+    children,
+    defaultTag: 'div',
+  });
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface MenuItemState {
   /**

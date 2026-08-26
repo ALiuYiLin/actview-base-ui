@@ -1,8 +1,9 @@
-import { computed, defineComponent, toValue } from 'actview';
+import { computed, toRefs, unrefs, toValue } from 'actview';
 import { mergePropsN } from '@/merge-props';
 import { useMenuRootContext } from '../root/MenuRootContext';
 import { useMenuPositionerContext } from '../positioner/MenuPositionerContext';
-import { popupViewportStateMapping, usePopupViewport } from '@/utils/usePopupViewport';
+import { usePopupViewport } from '@/utils/usePopupViewport';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * A viewport for displaying content transitions.
@@ -10,9 +11,10 @@ import { popupViewportStateMapping, usePopupViewport } from '@/utils/usePopupVie
  * changes based on the trigger, and switching between them is animated.
  * Renders a `<div>` element.
  */
-export const MenuViewport = defineComponent(function MenuViewport(
-  componentProps: MenuViewport.Props,
-) {
+export function MenuViewport(componentProps: MenuViewport.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
+  const {render, className, style, ref, ...elementProps} = toRefs(componentProps);
+
   const {store} = useMenuRootContext();
   const positionerContext = useMenuPositionerContext(true);
   const side = positionerContext?.value?.side;
@@ -35,42 +37,30 @@ export const MenuViewport = defineComponent(function MenuViewport(
     instant: instantType.value as any,
   });
 
-  return () => {
-    const {render, className: cls, style: st, ...elementProps} = componentProps as any;
-    const stateValue = state();
-
-    const merged: any = mergePropsN<any>([elementProps, {children: childrenToRender.value}]);
-
-    if (stateValue.activationDirection) {
-      merged['data-activation-direction'] = stateValue.activationDirection;
-    }
-
-    const mergedRefs = (el: HTMLDivElement | null) => {
-      if (typeof componentProps.ref === 'function') {
-        (componentProps.ref as any)(el);
-      } else if (componentProps.ref) {
-        componentProps.ref.value = el;
+  const {element} = useRenderElement({
+    props: () => {
+      const stateValue = state();
+      const merged: any = mergePropsN<any>([
+        unrefs(elementProps),
+        {children: childrenToRender.value},
+      ]);
+      if (stateValue.activationDirection) {
+        merged['data-activation-direction'] = stateValue.activationDirection;
       }
-    };
+      return [merged];
+    },
+    state,
+    className,
+    style,
+    render,
+    refs: () => (componentProps.ref !== undefined ? [ref] : []),
+    children: () => childrenToRender.value,
+    defaultTag: 'div',
+  });
 
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ...stateValue, ref: mergedRefs} as any);
-      }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof merged.className === 'string' && typeof renderClassName === 'string'
-          ? `${merged.className} ${renderClassName}`.trim()
-          : (merged.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={mergedRefs}>{childrenToRender.value}</Tag>;
-    }
-    return <div {...merged} ref={mergedRefs}>{childrenToRender.value}</div>;
-  };
-});
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface MenuViewportState {
   /**

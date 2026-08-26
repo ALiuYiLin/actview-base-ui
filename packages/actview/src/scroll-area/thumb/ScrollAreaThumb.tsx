@@ -1,9 +1,10 @@
-import { defineComponent, toValue, useRootElement } from 'actview';
-import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
+import { toValue, toRefs, unrefs } from 'actview';
+import type { BaseUIComponentProps } from '@/internals/types';
 import { useScrollAreaRootContext } from '../root/ScrollAreaRootContext';
 import { useScrollAreaScrollbarContext } from '../scrollbar/ScrollAreaScrollbarContext';
 import { scrollAreaStateAttributesMapping } from '../root/stateAttributes';
-import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useRootElementFragment } from '@/internals/useRootElementFragment';
 
 /**
  * The thumb of the scrollbar, used for dragging.
@@ -11,80 +12,68 @@ import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
  *
  * Documentation: [Base UI Scroll Area](https://base-ui.com/react/components/scroll-area)
  */
-export const ScrollAreaThumb = defineComponent(function (componentProps: ScrollAreaThumb.Props) {
+export function ScrollAreaThumb(componentProps: ScrollAreaThumb.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
+  // Fragment 根（`<>{element()}</>`）下 actview 内置 useRootElement 的
+  // subTree.el 恒 null——用 Fragment 兼容版本。
   const rootContextRef = useScrollAreaRootContext();
-  const thumbRef = useRootElement();
+  const thumbRef = useRootElementFragment();
 
   const scrollbarOrientationRef = useScrollAreaScrollbarContext();
   const vertical = () => scrollbarOrientationRef.value === 'vertical';
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {render, className, style, ...elementProps} = componentProps;
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
 
-    const {
-      handlePointerDown,
-      handlePointerMove,
-      handlePointerUp,
-      scrollingX,
-      scrollingY,
-      hasMeasuredScrollbar,
-    } = rootContextRef.value;
-
-    const isVertical = vertical();
-
-    const stateValue: ScrollAreaThumbState = {
-      scrolling: isVertical ? scrollingY : scrollingX,
+  const stateFn = (): ScrollAreaThumbState => {
+    const {scrollingX, scrollingY} = rootContextRef.value;
+    return {
+      scrolling: vertical() ? scrollingY : scrollingX,
       orientation: scrollbarOrientationRef.value,
     };
-
-    const stateAttributes = getStateAttributesProps(stateValue, scrollAreaStateAttributesMapping);
-
-    const props: HTMLProps = {
-      onPointerDown: handlePointerDown,
-      onPointerMove: handlePointerMove,
-      onPointerUp: handlePointerUp,
-      ...({onPointerCancel: handlePointerUp} as any),
-      style: {
-        visibility: hasMeasuredScrollbar ? undefined : 'hidden',
-        ...(isVertical
-          ? {height: 'var(--scroll-area-thumb-height)'}
-          : {width: 'var(--scroll-area-thumb-width)'}),
-      },
-    };
-
-    const merged: HTMLProps = {};
-    Object.assign(merged, props, elementProps, stateAttributes);
-    if (typeof className === 'function') {
-      merged.className = className(stateValue);
-    } else if (className !== undefined) {
-      merged.className = className;
-    }
-    if (typeof style === 'function') {
-      merged.style = Object.assign({}, props.style, style(stateValue) as any);
-    } else if (style !== undefined) {
-      merged.style = Object.assign({}, props.style, style);
-    }
-
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ...stateValue, ref: thumbRef} as any);
-      }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof merged.className === 'string' && typeof renderClassName === 'string'
-          ? `${merged.className} ${renderClassName}`.trim()
-          : (merged.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={thumbRef} />;
-    }
-    return <div {...merged} ref={thumbRef} />;
   };
-}) as unknown as (props: ScrollAreaThumb.Props) => JSX.Element;
+
+  const {element} = useRenderElement({
+    props: () => {
+      const {handlePointerDown, handlePointerMove, handlePointerUp, hasMeasuredScrollbar} =
+        rootContextRef.value;
+
+      const isVertical = vertical();
+
+      const p: Record<string, any> = {
+        onPointerDown: handlePointerDown,
+        onPointerMove: handlePointerMove,
+        onPointerUp: handlePointerUp,
+        ...({onPointerCancel: handlePointerUp} as any),
+        style: {
+          visibility: hasMeasuredScrollbar ? undefined : 'hidden',
+          ...(isVertical
+            ? {height: 'var(--scroll-area-thumb-height)'}
+            : {width: 'var(--scroll-area-thumb-width)'}),
+        },
+      };
+
+      const merged: any = {};
+      Object.assign(merged, p, {...unrefs(elementProps)});
+      const resolvedStyle =
+        typeof style?.value === 'function' ? style.value(stateFn()) : style?.value;
+      if (resolvedStyle !== undefined) {
+        merged.style = Object.assign({}, p.style, resolvedStyle);
+      }
+      return [merged];
+    },
+    state: stateFn,
+    stateAttributesMapping: scrollAreaStateAttributesMapping as any,
+    className,
+    render,
+    refs: () => [thumbRef as any],
+    children,
+    defaultTag: 'div',
+  });
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface ScrollAreaThumbState {
   /**

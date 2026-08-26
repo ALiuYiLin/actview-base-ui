@@ -1,17 +1,17 @@
-import { defineComponent, toValue, watch } from 'actview';
+import { toRefs, unrefs, watch } from 'actview';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { useBaseUiId } from '@/internals/useBaseUiId';
 import { useMenuGroupRootContext } from '../group/MenuGroupContext';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * An accessible label that is automatically associated with its parent group.
  * Renders a `<div>` element.
  */
-export const MenuGroupLabel = defineComponent(function MenuGroupLabel(
-  componentProps: MenuGroupLabel.Props,
-) {
+export function MenuGroupLabel(componentProps: MenuGroupLabel.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
   const {id: idProp} = componentProps;
-  const children = toValue(componentProps.children);
+  const {render, className, style, children, ref: refProp, ...elementProps} = toRefs(componentProps);
 
   const id = useBaseUiId(idProp);
   const setLabelId = useMenuGroupRootContext();
@@ -29,41 +29,19 @@ export const MenuGroupLabel = defineComponent(function MenuGroupLabel(
     {flush: 'post', immediate: true},
   );
 
-  return () => {
-    const {render, className, style, ...elementProps} = componentProps as any;
+  const {element} = useRenderElement({
+    props: () => [{id, role: 'presentation'}, unrefs(elementProps)],
+    className,
+    style,
+    render,
+    refs: () => (componentProps.ref !== undefined ? [refProp as any] : []),
+    children,
+    defaultTag: 'div',
+  });
 
-    const merged: any = {
-      id,
-      role: 'presentation',
-      ...elementProps,
-    };
-
-    const mergedRefs = (el: HTMLElement | null) => {
-      if (typeof componentProps.ref === 'function') {
-        (componentProps.ref as any)(el);
-      } else if (componentProps.ref) {
-        componentProps.ref.value = el;
-      }
-    };
-
-    if (render) {
-      if (typeof render === 'function') {
-        return render({...merged, ref: mergedRefs} as any);
-      }
-      const renderProps = render.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = render.type as any;
-      const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-      mergedRenderProps.className =
-        typeof merged.className === 'string' && typeof renderClassName === 'string'
-          ? `${merged.className} ${renderClassName}`.trim()
-          : (merged.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-      return <Tag key={render.key} {...mergedRenderProps} ref={mergedRefs}>{children}</Tag>;
-    }
-    return <div {...merged} ref={mergedRefs}>{children}</div>;
-  };
-});
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return <>{element()}</>;
+}
 
 export interface MenuGroupLabelProps extends BaseUIComponentProps<'div', MenuGroupLabelState> {}
 
