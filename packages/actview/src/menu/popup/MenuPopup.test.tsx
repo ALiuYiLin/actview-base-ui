@@ -95,11 +95,11 @@ describe('<Menu.Popup /> finalFocus', () => {
 
 describe('<Menu.Popup /> toolbar', () => {
   it('stops toolbar navigation keys without blocking ordinary key events', async () => {
-    const onParentKeyDown = vi.fn();
+    const onBodyKeyDown = vi.fn();
 
     await render(
       <ToolbarRootContext.Provider value={{disabled: false, orientation: 'horizontal' as any}}>
-        <div onKeyDown={onParentKeyDown}>
+        <div>
           <Menu.Root>
             <Menu.Portal keepMounted>
               <Menu.Positioner>
@@ -112,15 +112,23 @@ describe('<Menu.Popup /> toolbar', () => {
     );
     await settle();
 
-    const popup = screen.getByTestId('popup');
-    fireEvent(
-      popup,
-      new KeyboardEvent('keydown', {bubbles: true, cancelable: true, key: 'ArrowRight'}),
-    );
-    expect(onParentKeyDown).not.toHaveBeenCalled();
+    // popup 经 FloatingPortal（Teleport）挂载在 body 的 portal node——事件沿
+    // DOM 树冒泡到 body，不再经过渲染容器里的祖先 div（React 合成事件沿
+    // React 树冒泡所以原结构可用）。监听 body（portal 内容的公共冒泡祖先）。
+    document.body.addEventListener('keydown', onBodyKeyDown);
+    try {
+      const popup = screen.getByTestId('popup');
+      fireEvent(
+        popup,
+        new KeyboardEvent('keydown', {bubbles: true, cancelable: true, key: 'ArrowRight'}),
+      );
+      expect(onBodyKeyDown).not.toHaveBeenCalled();
 
-    fireEvent(popup, new KeyboardEvent('keydown', {bubbles: true, cancelable: true, key: 'F1'}));
-    expect(onParentKeyDown).toHaveBeenCalled();
-    expect(onParentKeyDown.mock.calls.every(([event]) => event.key === 'F1')).toBe(true);
+      fireEvent(popup, new KeyboardEvent('keydown', {bubbles: true, cancelable: true, key: 'F1'}));
+      expect(onBodyKeyDown).toHaveBeenCalled();
+      expect(onBodyKeyDown.mock.calls.every(([event]) => event.key === 'F1')).toBe(true);
+    } finally {
+      document.body.removeEventListener('keydown', onBodyKeyDown);
+    }
   });
 });

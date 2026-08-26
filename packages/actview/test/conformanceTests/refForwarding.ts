@@ -21,7 +21,15 @@ async function verifyRef(
   const { container } = await render(element);
 
   // actview：根 DOM 是挂载容器内的首个元素（组件 ref 语义的等价物）。
-  onRef(container.firstElementChild, container);
+  // 组件经 FloatingPortal（Teleport）渲染时内容挂载在 body 的 portal node
+  // （React 版 createPortal 语义），容器内为空——fallback 到 portal node。
+  const instance =
+    container.firstElementChild ??
+    [...document.body.querySelectorAll('[data-base-ui-portal]')]
+      .map((node) => node.firstElementChild)
+      .find((el) => el != null) ??
+    null;
+  onRef(instance, container);
 }
 
 export function testRefForwarding(

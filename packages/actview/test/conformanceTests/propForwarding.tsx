@@ -1,7 +1,11 @@
 import { expect } from 'vitest';
 import { createElement } from '@actview/jsx';
 import type { VNode } from '@actview/jsx';
-import { flushMicrotasks, randomStringValue, screen } from '../test-utils';
+import { flushMicrotasks, randomStringValue } from '../test-utils';
+// @actview/testing 的 screen 只查询 render 容器；Teleport 内容挂载在 body 的
+// portal node（React 版 createPortal 语义）——用 @testing-library/dom 的
+// screen（查 document.body）对齐 React 版查询行为。
+import { screen } from '@testing-library/dom';
 import type { BaseUiConformanceTestsOptions } from '../describeConformance';
 import { cloneVNode } from '../test-utils/cloneVNode';
 import { throwMissingPropError } from './utils';

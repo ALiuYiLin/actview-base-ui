@@ -17,6 +17,12 @@ afterEach(() => {
   vi.resetAllMocks();
   cleanup();
   rtlCleanup();
+  // base-ui 的 FloatingPortal 节点属性是 data-base-ui-portal（rtl 层清理的
+  // data-floating-ui-portal 是 floating-ui 版）——Teleport 内容挂载在 body 的
+  // portal node，容器移除时不会带走，跨用例残留会让 getByTestId 命中多个。
+  document.body
+    .querySelectorAll('[data-base-ui-portal]')
+    .forEach((node) => node.remove());
   resetError();
   resetAnimationFrameScheduler();
   globalThis.BASE_UI_ANIMATIONS_DISABLED = true;
