@@ -161,12 +161,14 @@ export function RadioRoot<Value>(componentProps: RadioRoot.Props<Value>) {
 
         const groupContext = groupContextRef.value;
         const disabled = computeDisabled();
-        const readOnly = (groupContext?.readOnly || (toValue(componentProps.readOnly) ?? false)) ?? false;
-        const required = (groupContext?.required || (toValue(componentProps.required) ?? false)) ?? false;
-        const form = groupContext?.form;
+        const readOnly =
+          (toValue(groupContext?.readOnly) || (toValue(componentProps.readOnly) ?? false)) ?? false;
+        const required =
+          (toValue(groupContext?.required) || (toValue(componentProps.required) ?? false)) ?? false;
+        const form = toValue(groupContext?.form);
         const touched = toValue(groupContext?.touched) ?? false;
         const checked = computeChecked(groupContext?.checkedValue?.value);
-        const name = groupContext?.name;
+        const name = toValue(groupContext?.name);
 
         const rootProps: Record<string, any> = {
           role: 'radio',

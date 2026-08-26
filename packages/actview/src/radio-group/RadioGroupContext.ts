@@ -6,10 +6,10 @@ import type { BaseUIEventReasons } from '@/internals/reasons';
 
 export interface RadioGroupContext<Value> {
   disabled: ComputedRef<boolean>;
-  readOnly: boolean | undefined;
-  required: boolean | undefined;
-  form: string | undefined;
-  name: string | undefined;
+  readOnly: ComputedRef<boolean | undefined>;
+  required: ComputedRef<boolean | undefined>;
+  form: ComputedRef<string | undefined>;
+  name: ComputedRef<string | undefined>;
   checkedValue: ComputedRef<Value | undefined>;
   setCheckedValue: (
     value: Value,

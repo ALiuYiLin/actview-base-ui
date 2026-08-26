@@ -59,4 +59,21 @@ describe('<RadioGroup />', () => {
     await setProps({required: true});
     expect(group).toHaveAttribute('aria-required', 'true');
   });
+
+  it('updates readOnly and name dynamically', async () => {
+    const {Radio} = await import('@/radio');
+    const {setProps} = await render(RadioGroup, {
+      'data-testid': 'group',
+      children: <Radio.Root value="a" />,
+    });
+
+    const group = screen.getByTestId('group');
+    const input = document.querySelector('input[type="radio"]') as HTMLInputElement;
+    expect(group).not.toHaveAttribute('aria-readonly');
+    expect(input).not.toHaveAttribute('name');
+
+    await setProps({readOnly: true, name: 'group-name'});
+    expect(group).toHaveAttribute('aria-readonly', 'true');
+    expect(input).toHaveAttribute('name', 'group-name');
+  });
 });

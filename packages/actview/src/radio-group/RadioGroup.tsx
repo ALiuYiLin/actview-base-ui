@@ -46,24 +46,23 @@ export function RadioGroup<Value>(componentProps: RadioGroup.Props<Value>) {
   const {clearErrors, elementRef} = toValue(useFormContext());
   const fieldsetContext = toValue(useFieldsetRootContext(true));
 
-  const readOnlyProp = toValue(componentProps.readOnly);
-  const requiredProp = toValue(componentProps.required);
-  const form = toValue(componentProps.form);
-  const nameProp = toValue(componentProps.name);
-  const idProp = toValue(componentProps.id);
   const defaultValue = toValue(componentProps.defaultValue);
+  const idProp = toValue(componentProps.id);
   const inputRefProp = componentProps.inputRef as
     | Ref<HTMLInputElement | null>
     | ((element: HTMLInputElement | null) => void)
     | undefined;
   const onValueChangeProp = componentProps.onValueChange;
 
-  // disabled 用 computed：Field.Root 或本组件 disabled 动态变化时渲染期
-  // `.value` 与 context 消费方（Radio）都能拿到实时值。
-  // getter 直接读 componentProps（响应式）——setup 快照（disabledProp）会导致
-  // computed 依赖不追踪 props 变化而停留在首渲染。
+  // disabled/readOnly/required/form/name 用 computed：Field.Root 或本组件
+  // props 动态变化时渲染期 `.value` 与 context 消费方（Radio）都能拿到实时值。
+  // getter 直接读 componentProps（响应式）——setup 快照（*Prop）会导致 computed
+  // 依赖不追踪 props 变化而停留在首渲染。
   const disabled = computed(() => fieldDisabled.value || (toValue(componentProps.disabled) ?? false));
-  const name = fieldName.value ?? nameProp;
+  const readOnly = computed(() => toValue(componentProps.readOnly));
+  const required = computed(() => toValue(componentProps.required));
+  const form = computed(() => toValue(componentProps.form));
+  const name = computed(() => fieldName.value ?? toValue(componentProps.name));
   const id = useBaseUiId(idProp);
 
   const [checkedValue, setCheckedValueUnwrapped] = useControlled<Value>({
@@ -176,11 +175,11 @@ export function RadioGroup<Value>(componentProps: RadioGroup.Props<Value>) {
     checkedValue.value ?? null,
     getFormValue,
     !disabled.value,
-    nameProp,
+    name.value,
   );
 
   useValueChanged(() => checkedValue.value, () => {
-    clearErrors(name);
+    clearErrors(name.value);
 
     setDirty(checkedValue.value !== validityData.value.initialValue);
     setFilled(checkedValue.value != null);
@@ -204,9 +203,9 @@ export function RadioGroup<Value>(componentProps: RadioGroup.Props<Value>) {
     form,
     validation,
     name,
-    readOnly: readOnlyProp,
+    readOnly,
     registerInputRef: registerInputRef as any,
-    required: requiredProp,
+    required,
     setCheckedValue,
     setTouched: (v: boolean) => (touched.value = v),
     touched,
@@ -221,15 +220,15 @@ export function RadioGroup<Value>(componentProps: RadioGroup.Props<Value>) {
   return (
     <RadioGroupContext.Provider value={contextValue as any}>
       {(() => {
-        const readOnly = toValue(componentProps.readOnly);
-        const required = toValue(componentProps.required);
+        const readOnlyValue = readOnly.value;
+        const requiredValue = required.value;
 
         const defaultProps = {
           id: idProp,
           role: 'radiogroup',
-          'aria-required': required || undefined,
+          'aria-required': requiredValue || undefined,
           'aria-disabled': disabled.value || undefined,
-          'aria-readonly': readOnly || undefined,
+          'aria-readonly': readOnlyValue || undefined,
           'aria-labelledby': ariaLabelledby,
           onFocus() {
             setFocused(true);
@@ -255,8 +254,8 @@ export function RadioGroup<Value>(componentProps: RadioGroup.Props<Value>) {
         const state: RadioGroupState = {
           ...fieldState.value,
           disabled: disabled.value,
-          required: required ?? false,
-          readOnly: readOnly ?? false,
+          required: requiredValue ?? false,
+          readOnly: readOnlyValue ?? false,
         };
 
         return (
