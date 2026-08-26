@@ -1,4 +1,4 @@
-import {ref, toValue, watch, shallowRef} from 'actview';
+import {ref, computed, toValue, watch, shallowRef} from 'actview';
 import { isElementDisabled } from '@/utils/isElementDisabled';
 import { useMergedRefs } from '@/utils/useMergedRefs';
 import { EMPTY_ARRAY } from '@/internals/noop';
@@ -100,7 +100,9 @@ export function useCompositeRoot(params: UseCompositeRootParameters) {
   const hasSetDefaultIndexRef = ref(false);
   const highlightedElementRef = ref(null as HTMLElement | null);
 
-  const highlightedIndex = externalHighlightedIndex ?? internalHighlightedIndex.value;
+  // computed：internal 变化（键盘导航）时消费方（context/tabIndex）拿到实时值；
+  // setup 求值的值快照会导致 roving tabindex 永不更新（浏览器键盘测试暴露）。
+  const highlightedIndex = computed(() => externalHighlightedIndex ?? internalHighlightedIndex.value);
 
   const onHighlightedIndexChange = (index: number, shouldScrollIntoView = false) => {
     highlightedElementRef.value = elementsRef.value[index] ?? null;
@@ -121,13 +123,13 @@ export function useCompositeRoot(params: UseCompositeRootParameters) {
       const nextIndex = elements.indexOf(highlightedElementRef.value);
 
       if (nextIndex === -1) {
-        const replacement = elements[highlightedIndex];
-        if (!replacement || isListIndexDisabled(elements, highlightedIndex, disabledIndices)) {
+        const replacement = elements[highlightedIndex.value];
+        if (!replacement || isListIndexDisabled(elements, highlightedIndex.value, disabledIndices)) {
           onHighlightedIndexChange(getFallbackIndex(elements, disabledIndices));
         } else {
           highlightedElementRef.value = replacement;
         }
-      } else if (nextIndex !== highlightedIndex) {
+      } else if (nextIndex !== highlightedIndex.value) {
         onHighlightedIndexChange(nextIndex);
       }
       return;
@@ -144,7 +146,7 @@ export function useCompositeRoot(params: UseCompositeRootParameters) {
 
     if (activeIndex !== -1) {
       onHighlightedIndexChange(activeIndex);
-    } else if (isListIndexDisabled(sortedElements, highlightedIndex, disabledIndices)) {
+    } else if (isListIndexDisabled(sortedElements, highlightedIndex.value, disabledIndices)) {
       const firstEnabledIndex = findNonDisabledListIndex(sortedElements, {disabledIndices});
       if (!isIndexOutOfListBounds(sortedElements, firstEnabledIndex)) {
         onHighlightedIndexChange(firstEnabledIndex);
@@ -159,7 +161,7 @@ export function useCompositeRoot(params: UseCompositeRootParameters) {
     () => [
       disabledIndices,
       externalHighlightedIndex,
-      highlightedIndex,
+      highlightedIndex.value,
       hasSetDefaultIndexRef.value,
     ] as const,
     () => {
@@ -171,7 +173,7 @@ export function useCompositeRoot(params: UseCompositeRootParameters) {
         return;
       }
       const elements = elementsRef.value;
-      if (isListIndexDisabled(elements, highlightedIndex, disabledIndices)) {
+      if (isListIndexDisabled(elements, highlightedIndex.value, disabledIndices)) {
         const firstEnabledIndex = findNonDisabledListIndex(elements, {disabledIndices});
         if (!isIndexOutOfListBounds(elements, firstEnabledIndex)) {
           onHighlightedIndexChange(firstEnabledIndex);
@@ -234,7 +236,7 @@ export function useCompositeRoot(params: UseCompositeRootParameters) {
       }
     }
 
-    let nextIndex = highlightedIndex;
+    let nextIndex = highlightedIndex.value;
     const minIndex = getMinListIndex(elementsRef, disabledIndices);
     const maxIndex = getMaxListIndex(elementsRef, disabledIndices);
 
@@ -243,7 +245,7 @@ export function useCompositeRoot(params: UseCompositeRootParameters) {
         disabledIndices,
         elementsRef,
         event,
-        highlightedIndex,
+        highlightedIndex: highlightedIndex.value,
         loopFocus,
         maxIndex,
         minIndex,
@@ -268,16 +270,16 @@ export function useCompositeRoot(params: UseCompositeRootParameters) {
       }
     }
 
-    if (nextIndex === highlightedIndex && (isForwardKey || isBackwardKey)) {
+    if (nextIndex === highlightedIndex.value && (isForwardKey || isBackwardKey)) {
       if (loopFocus && nextIndex === maxIndex && isForwardKey) {
         nextIndex = minIndex;
         if (onLoop) {
-          nextIndex = onLoop(event, highlightedIndex, nextIndex, elementsRef);
+          nextIndex = onLoop(event, highlightedIndex.value, nextIndex, elementsRef);
         }
       } else if (loopFocus && nextIndex === minIndex && isBackwardKey) {
         nextIndex = maxIndex;
         if (onLoop) {
-          nextIndex = onLoop(event, highlightedIndex, nextIndex, elementsRef);
+          nextIndex = onLoop(event, highlightedIndex.value, nextIndex, elementsRef);
         }
       } else {
         nextIndex = findNonDisabledListIndex(elementsRef.value, {
@@ -288,7 +290,7 @@ export function useCompositeRoot(params: UseCompositeRootParameters) {
       }
     }
 
-    if (nextIndex !== highlightedIndex && !isIndexOutOfListBounds(elementsRef.value, nextIndex)) {
+    if (nextIndex !== highlightedIndex.value && !isIndexOutOfListBounds(elementsRef.value, nextIndex)) {
       if (stopEventPropagation) {
         event.stopPropagation();
       }
