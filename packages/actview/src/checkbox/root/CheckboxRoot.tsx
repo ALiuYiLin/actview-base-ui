@@ -1,4 +1,4 @@
-import { onUnmounted, ref, toValue, watch } from 'actview';
+import { computed, onUnmounted, ref, toValue, watch } from 'actview';
 import type { ComputedRef } from 'actview';
 import { EMPTY_OBJECT } from '@/internals/empty';
 import { useControlled } from '@/utils/useControlled';
@@ -97,7 +97,11 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
 
   const rootId = nativeButton ? controlId : id;
 
-  const groupValue = groupContext ? toValue(groupContext.value) : undefined;
+  // computed：group 的 value 变化时重算（setup 快照会导致 checked 的
+  // controlled getter 永远读到初始值——PD-15 渲染期语义）。
+  const groupValue = computed(() =>
+    groupContext ? toValue(groupContext.value) : undefined,
+  );
 
   const controlRef = ref(null as HTMLElement | null);
 
@@ -110,8 +114,8 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
 
   const [checked, setCheckedState] = useControlled<boolean>({
     controlled: () =>
-      value !== undefined && groupValue !== undefined && !parent
-        ? groupValue.includes(value)
+      value !== undefined && groupValue.value !== undefined && !parent
+        ? groupValue.value.includes(value)
         : checkedProp,
     default: defaultChecked,
     name: 'Checkbox',
@@ -220,7 +224,9 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
   return (
     <>
       {(() => {
-        const {className, render, style, ...elementProps} = componentProps as any;
+        // id 由 rootId（暴露元素）与 controlId（hidden input）管理——透传的
+        // 自定义 `id` 会覆盖 rootId（React 版语义：custom id 落到 hidden input）。
+        const {className, render, style, id: _id, ...elementProps} = componentProps as any;
 
         // group props 每次渲染重新获取（对齐 React 版每次 render 调用）
         let groupProps: any = {};

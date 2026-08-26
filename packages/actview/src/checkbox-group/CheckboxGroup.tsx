@@ -54,7 +54,8 @@ export function CheckboxGroup(componentProps: CheckboxGroup.Props) {
   const defaultValue = defaultValueProp ?? EMPTY_ARRAY;
 
   const [value, setValueUnwrapped] = useControlled<string[]>({
-    controlled: (externalValue as string[]) || undefined,
+    // getter：渲染期读 componentProps.value（setup 快照会导致受控更新不生效）
+    controlled: () => (toValue(componentProps.value) as string[]) || undefined,
     default: defaultValue as string[],
     name: 'CheckboxGroup',
     state: 'value',
@@ -137,7 +138,9 @@ export function CheckboxGroup(componentProps: CheckboxGroup.Props) {
     validation.change(currentValue);
   });
 
-  const contextValue = {
+  // computed：value/disabled 变化时重建 contextValue（新对象引用）——
+  // Provider 只响应 value 引用变化，setup 快照对象会导致子组件不重渲染。
+  const contextValue = computed(() => ({
     allValues,
     value,
     setValue,
@@ -145,7 +148,7 @@ export function CheckboxGroup(componentProps: CheckboxGroup.Props) {
     disabled,
     validation,
     registerControlId,
-  };
+  }));
 
   // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
   const {className, render, style, children, ...elementProps} = toRefs(componentProps);
@@ -177,7 +180,7 @@ export function CheckboxGroup(componentProps: CheckboxGroup.Props) {
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
   return (
-    <CheckboxGroupContext.Provider value={contextValue as any}>
+    <CheckboxGroupContext.Provider value={contextValue.value as any}>
       {element()}
     </CheckboxGroupContext.Provider>
   );

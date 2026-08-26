@@ -21,11 +21,6 @@ export function useCheckboxGroupParent(
     registry: new Map<string, readonly string[]>(),
   });
 
-  const checked = value.value.length === allValues.length;
-  const indeterminate = value.value.length !== allValues.length && value.value.length > 0;
-
-  const onValueChange = onValueChangeProp;
-
   const registerChildId = (childValue: string, childId: string) => {
     const childIds = childIdsState.value.registry;
     const ids = childIds.get(childValue);
@@ -53,6 +48,9 @@ export function useCheckboxGroupParent(
   const getParentProps: UseCheckboxGroupParentReturnValue['getParentProps'] = () => {
     const currentValue = value.value;
     const currentStatus = status.value;
+    // 渲染期计算（setup 快照会导致 parent 的 checked/indeterminate 永不更新）
+    const checked = currentValue.length === allValues.length;
+    const indeterminate = currentValue.length !== allValues.length && currentValue.length > 0;
 
     return {
       indeterminate,
@@ -64,7 +62,7 @@ export function useCheckboxGroupParent(
         undefined,
       onCheckedChange(_: boolean, eventDetails: BaseUIChangeEventDetails<any>) {
         const uncontrolledState = uncontrolledStateRef.value;
-        const emitChange = onValueChange!;
+        const emitChange = onValueChangeProp!;
 
         // None except the disabled ones that are checked, which can't be changed.
         const none = allValues.filter(
@@ -121,7 +119,7 @@ export function useCheckboxGroupParent(
           newValue.splice(newValue.indexOf(childValue), 1);
         }
 
-        onValueChange!(newValue, eventDetails);
+        onValueChangeProp!(newValue, eventDetails);
 
         if (!eventDetails.isCanceled) {
           uncontrolledStateRef.value = newValue;
