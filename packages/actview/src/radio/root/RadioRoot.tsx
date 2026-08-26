@@ -128,7 +128,7 @@ export function RadioRoot<Value>(componentProps: RadioRoot.Props<Value>) {
     const group = groupContextRef.value;
     return (
       fieldDisabled.value ||
-      fieldItemContext.disabled ||
+      fieldItemContext.disabled.value ||
       group?.disabled ||
       disabledProp
     );

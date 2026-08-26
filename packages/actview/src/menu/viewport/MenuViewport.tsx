@@ -40,10 +40,7 @@ export function MenuViewport(componentProps: MenuViewport.Props) {
   const {element} = useRenderElement({
     props: () => {
       const stateValue = state();
-      const merged: any = mergePropsN<any>([
-        unrefs(elementProps),
-        {children: childrenToRender.value},
-      ]);
+      const merged: any = mergePropsN<any>([unrefs(elementProps)]);
       if (stateValue.activationDirection) {
         merged['data-activation-direction'] = stateValue.activationDirection;
       }

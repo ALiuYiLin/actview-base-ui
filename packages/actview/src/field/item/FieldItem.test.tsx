@@ -54,5 +54,23 @@ describe('<Field.Item />', () => {
       checkbox2.click();
       expect(onValueChange.mock.calls.length).toBe(1);
     });
+
+    it('updates the wrapped checkbox when Field.Root disabled changes dynamically', async () => {
+      const {Checkbox} = await import('@/checkbox');
+      const {render: renderCR} = createRenderer();
+      const {setProps} = await renderCR(Field.Root, {
+        children: (
+          <Field.Item>
+            <Checkbox.Root value="a" />
+          </Field.Item>
+        ),
+      });
+
+      expect(screen.getByRole('checkbox')).not.toHaveAttribute('aria-disabled');
+
+      await setProps({disabled: true});
+      expect(screen.getByRole('checkbox')).toHaveAttribute('aria-disabled', 'true');
+      expect(screen.getByRole('checkbox')).toHaveAttribute('data-disabled');
+    });
   });
 });

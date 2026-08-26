@@ -28,7 +28,7 @@ export function FieldLabel(componentProps: FieldLabel.Props) {
 
   const state = () => ({
     ...fieldRootContext.state.value,
-    disabled: fieldRootContext.disabled.value || fieldItemContext.disabled,
+    disabled: fieldRootContext.disabled.value || fieldItemContext.disabled.value,
   });
 
   const labelProps = useLabel({

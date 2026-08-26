@@ -26,35 +26,38 @@ export function SliderLabel(componentProps: SliderLabel.Props) {
 
   const rootContextRef = useSliderRootContext();
 
+  // useLabel 必须在 setup 调用（useRegisteredLabelId 含 watch/computed/
+  // onUnmounted——渲染期调用会每次渲染累积副作用）。
+  // setLabelId/controlRef 是 Root 的稳定引用（setup 定义一次），setup 快照安全。
+  const {setLabelId, controlRef, rootLabelId} = rootContextRef.value;
+
+  function focusControl(event: MouseEvent, controlId: string | undefined) {
+    if (controlId) {
+      const controlElement = ownerDocument(event.currentTarget as Element).getElementById(controlId);
+      if (isHTMLElement(controlElement)) {
+        focusElementWithVisible(controlElement as HTMLElement);
+        return;
+      }
+    }
+
+    const fallbackInputs = controlRef.value?.querySelectorAll('input[type="range"]');
+    const fallbackInput = fallbackInputs?.length === 1 ? fallbackInputs[0] : null;
+    if (isHTMLElement(fallbackInput)) {
+      focusElementWithVisible(fallbackInput as HTMLElement);
+    }
+  }
+
+  const labelProps = useLabel({
+    id: rootLabelId,
+    setLabelId: setLabelId as any,
+    focusControl,
+  });
+
   // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
   const {className, render, style, children, ...elementProps} = toRefs(componentProps);
 
   const {element} = useRenderElement({
     props: () => {
-      const {state, setLabelId, controlRef, rootLabelId} = rootContextRef.value;
-
-      function focusControl(event: MouseEvent, controlId: string | undefined) {
-        if (controlId) {
-          const controlElement = ownerDocument(event.currentTarget as Element).getElementById(controlId);
-          if (isHTMLElement(controlElement)) {
-            focusElementWithVisible(controlElement as HTMLElement);
-            return;
-          }
-        }
-
-        const fallbackInputs = controlRef.value?.querySelectorAll('input[type="range"]');
-        const fallbackInput = fallbackInputs?.length === 1 ? fallbackInputs[0] : null;
-        if (isHTMLElement(fallbackInput)) {
-          focusElementWithVisible(fallbackInput as HTMLElement);
-        }
-      }
-
-      const labelProps = useLabel({
-        id: rootLabelId,
-        setLabelId: setLabelId as any,
-        focusControl,
-      });
-
       // Keep label id derived from the root and ignore runtime `id` overrides from untyped consumers.
       const elementPropsWithoutId = {...unrefs(elementProps)} as any;
       delete elementPropsWithoutId.id;

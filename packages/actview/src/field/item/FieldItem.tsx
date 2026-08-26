@@ -1,5 +1,5 @@
 import { useRootElementFragment } from '@/internals/useRootElementFragment';
-import { toValue, toRefs, unrefs } from 'actview';
+import { toValue, toRefs, unrefs, computed } from 'actview';
 import type { FieldRootState } from '../root/FieldRoot';
 import { useFieldRootContext } from '@/internals/field-root-context/FieldRootContext';
 import { fieldValidityMapping } from '@/internals/field-constants/constants';
@@ -21,11 +21,11 @@ export function FieldItem(componentProps: FieldItem.Props) {
   const {state: fieldState, disabled: rootDisabled} = toValue(useFieldRootContext(false));
 
   const disabledProp = toValue(componentProps.disabled) ?? false;
-  const disabled = rootDisabled.value || disabledProp;
 
-  const state = () => ({...fieldState.value, disabled});
+  // disabled 用 computed（Root 的 disabled 或本组件 disabled 动态变化时实时更新）
+  const disabled = computed(() => rootDisabled.value || disabledProp);
 
-  const fieldItemContext = {disabled};
+  const state = () => ({...fieldState.value, disabled: disabled.value});
 
   // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
   const {className, render, style, children, ...elementProps} = toRefs(componentProps);
@@ -45,7 +45,10 @@ export function FieldItem(componentProps: FieldItem.Props) {
   // ============ render（最后 return JSX——插件转换为渲染函数）============
   return (
     <LabelableProvider>
-      <FieldItemContext.Provider value={fieldItemContext}>{element()}</FieldItemContext.Provider>
+      {/* disabled 为 computed ref——消费方读 `.value` 保持实时（同 LabelableProvider 的 refs 模式） */}
+      <FieldItemContext.Provider value={{disabled}}>
+        {element()}
+      </FieldItemContext.Provider>
     </LabelableProvider>
   );
 }

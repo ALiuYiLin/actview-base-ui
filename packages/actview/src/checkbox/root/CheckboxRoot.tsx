@@ -80,8 +80,12 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
   const ariaLabelledByProp = toValue(componentProps['aria-labelledby']);
   const onCheckedChange = componentProps.onCheckedChange;
 
-  const disabled =
-    rootDisabled.value || fieldItemContext.disabled || groupContext?.disabled || disabledProp;
+  // disabled 用 computed：Field.Root / Field.Item / group 的 disabled 动态变化时
+  // 渲染期 `.value` 与 useButton 的 watch 都能拿到实时值（setup 快照会导致
+  // 渲染期读到首渲染的常量）。
+  const disabled = computed(
+    () => rootDisabled.value || fieldItemContext.disabled.value || groupContext?.disabled || disabledProp,
+  );
   const name = fieldName.value ?? nameProp;
   const value = valueProp ?? name;
 
@@ -127,7 +131,7 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
     id,
     checked.value,
     undefined,
-    !groupContext && !disabled,
+    !groupContext && !disabled.value,
     nameProp,
   );
 
@@ -186,7 +190,7 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
       }
 
       const disabledStates = parentContext.disabledStatesRef.value;
-      disabledStates.set(value, disabled);
+      disabledStates.set(value, disabled.value);
 
       return () => {
         disabledStates.delete(value);
@@ -252,7 +256,7 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
         const stateValue: CheckboxRootState = {
           ...fieldState.value,
           checked: computedChecked,
-          disabled,
+          disabled: disabled.value,
           readOnly,
           required,
           indeterminate: computedIndeterminate,
@@ -261,7 +265,7 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
         const inputProps = mergePropsN<any>([
           {
             checked: checked.value,
-            disabled,
+            disabled: disabled.value,
             form,
             // parent checkboxes unset `name` to be excluded from form submission
             name: parent ? undefined : name,
@@ -330,7 +334,7 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
             ? {value: (groupContext ? checked.value && valueProp : valueProp) || ''}
             : EMPTY_OBJECT,
           getDescriptionProps,
-          (props: any) => validation.getValidationProps(disabled, props),
+          (props: any) => validation.getValidationProps(disabled.value, props),
         ]);
 
         const stateAttributesMapping = getCheckboxStateAttributesMapping(stateValue);
@@ -348,7 +352,7 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
             'aria-labelledby': ariaLabelledBy,
             [PARENT_CHECKBOX as string]: parent ? '' : undefined,
             onFocus() {
-              if (!disabled) {
+              if (!disabled.value) {
                 setFocused(true);
               }
             },
@@ -409,7 +413,7 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
               });
             },
             onClick(event: MouseEvent) {
-              if (readOnly || disabled) {
+              if (readOnly || disabled.value) {
                 return;
               }
 
@@ -432,7 +436,7 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
           merged,
           getButtonProps,
           getDescriptionProps,
-          (props: any) => validation.getValidationProps(disabled, props),
+          (props: any) => validation.getValidationProps(disabled.value, props),
         ]);
 
         // 渲染 tip 的 children（子组件内容）
@@ -461,7 +465,7 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
                 form={form}
                 name={name}
                 value={uncheckedValue}
-                disabled={disabled}
+                disabled={disabled.value}
               />
             )}
             <input {...inputProps} />

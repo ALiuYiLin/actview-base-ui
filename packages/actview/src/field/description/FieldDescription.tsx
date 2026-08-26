@@ -28,7 +28,7 @@ export function FieldDescription(componentProps: FieldDescription.Props) {
 
   const state = () => ({
     ...fieldRootContext.state.value,
-    disabled: fieldRootContext.disabled.value || fieldItemContext.disabled,
+    disabled: fieldRootContext.disabled.value || fieldItemContext.disabled.value,
   });
 
   // React 版 useIsoLayoutEffect：id 注册进 messageIds，卸载时移除
