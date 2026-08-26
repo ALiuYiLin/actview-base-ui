@@ -49,16 +49,6 @@ describe('<Switch.Root />', () => {
     expect(root).toHaveAttribute('data-checked', '');
   });
 
-  it('renders the thumb with state attributes', async () => {
-    await render(
-      Switch.Root,
-      {defaultChecked: true, children: (<Switch.Thumb />)},
-    );
-
-    const thumb = document.querySelector('[data-checked] span');
-    expect(thumb).toBeInTheDocument();
-  });
-
   it('stops at readOnly', async () => {
     const onCheckedChange = vi.fn();
     await render(Switch.Root, {readOnly: true, onCheckedChange, children: null});

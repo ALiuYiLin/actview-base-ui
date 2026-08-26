@@ -330,6 +330,24 @@ describe('<CheckboxGroup />', () => {
   });
 
   describe('Field', () => {
+    it('works inside a Field with a label', async () => {
+      await render(Field.Root, {
+        name: 'options',
+        children: (
+          <>
+            <Field.Label>Options</Field.Label>
+            <CheckboxGroup>
+              <Checkbox.Root value="a" children={null} />
+            </CheckboxGroup>
+          </>
+        ),
+      });
+
+      const group = document.querySelector('[role="group"]') as HTMLElement;
+      expect(group).toHaveAttribute('aria-labelledby');
+      expect(group.getAttribute('aria-labelledby')).toBe(screen.getByText('Options').id);
+    });
+
     it('[data-dirty]', async () => {
       await render(Field.Root, {
         name: 'fruits',
