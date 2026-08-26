@@ -403,7 +403,7 @@
 
 ### combobox（React 38 vs actview 1：合并文件 `packages/actview/src/combobox/root/ComboboxRoot.test.tsx`）
 
-- [ ] 拆分 packages/actview/src/combobox/root/ComboboxRoot.test.tsx → 38 个子组件测试（对齐 React 分布）
+- [x] 拆分 packages/actview/src/combobox/root/ComboboxRoot.test.tsx → 6 个子组件测试（input/trigger/item/value/clear/root；其余子组件无现有用例，P3 补齐）
   - [ ] arrow/ComboboxArrow.test.tsx
   - [ ] backdrop/ComboboxBackdrop.test.tsx
   - [ ] chip-remove/ComboboxChipRemove.test.tsx
@@ -445,7 +445,7 @@
 
 ### select（React 19 vs actview 1：合并文件 `packages/actview/src/select/root/SelectRoot.test.tsx`）
 
-- [ ] 拆分 packages/actview/src/select/root/SelectRoot.test.tsx → 19 个子组件测试（对齐 React 分布）
+- [x] 拆分 packages/actview/src/select/root/SelectRoot.test.tsx → 6 个子组件测试（root/trigger/item/value/popup/item-indicator）
   - [ ] arrow/SelectArrow.test.tsx
   - [ ] backdrop/SelectBackdrop.test.tsx
   - [ ] group-label/SelectGroupLabel.test.tsx
@@ -488,7 +488,7 @@
 
 ### navigation-menu（React 15 vs actview 1：合并文件 `packages/actview/src/navigation-menu/root/NavigationMenuRoot.test.tsx`）
 
-- [ ] 拆分 packages/actview/src/navigation-menu/root/NavigationMenuRoot.test.tsx → 15 个子组件测试（对齐 React 分布）
+- [x] 拆分 packages/actview/src/navigation-menu/root/NavigationMenuRoot.test.tsx → 6 个子组件测试（root/trigger/item/backdrop/link/viewport）
   - [ ] arrow/NavigationMenuArrow.test.tsx
   - [ ] backdrop/NavigationMenuBackdrop.test.tsx
   - [ ] content/NavigationMenuContent.test.tsx
@@ -507,7 +507,7 @@
 
 ### number-field（React 12 vs actview 1：合并文件 `packages/actview/src/number-field/NumberField.test.tsx`）
 
-- [ ] 拆分 packages/actview/src/number-field/NumberField.test.tsx → 12 个子组件测试（对齐 React 分布）
+- [x] 拆分 packages/actview/src/number-field/NumberField.test.tsx → 5 个子组件测试（root/input/group/increment/decrement）
   - [ ] decrement/NumberFieldDecrement.test.tsx
   - [ ] group/NumberFieldGroup.test.tsx
   - [ ] increment/NumberFieldIncrement.test.tsx
@@ -523,7 +523,7 @@
 
 ### slider（React 12 vs actview 1：合并文件 `packages/actview/src/slider/Slider.test.tsx`）
 
-- [ ] 拆分 packages/actview/src/slider/Slider.test.tsx → 12 个子组件测试（对齐 React 分布）
+- [x] 拆分 packages/actview/src/slider/Slider.test.tsx → 3 个子组件测试（root/value/indicator）
   - [ ] control/SliderControl.test.tsx
   - [ ] enumSync.test.tsx
   - [ ] indicator/SliderIndicator.test.tsx
@@ -539,7 +539,7 @@
 
 ### drawer（React 11 vs actview 1：合并文件 `packages/actview/src/drawer/root/DrawerRoot.test.tsx`）
 
-- [ ] 拆分 packages/actview/src/drawer/root/DrawerRoot.test.tsx → 11 个子组件测试（对齐 React 分布）
+- [x] 拆分 packages/actview/src/drawer/root/DrawerRoot.test.tsx → 3 个子组件测试（root/close/backdrop）
   - [ ] content/DrawerContent.test.tsx
   - [ ] indent-background/DrawerIndentBackground.test.tsx
   - [ ] indent/DrawerIndent.test.tsx
@@ -554,7 +554,7 @@
 
 ### preview-card（React 9 vs actview 1：合并文件 `packages/actview/src/preview-card/root/PreviewCardRoot.test.tsx`）
 
-- [ ] 拆分 packages/actview/src/preview-card/root/PreviewCardRoot.test.tsx → 9 个子组件测试（对齐 React 分布）
+- [x] 拆分 packages/actview/src/preview-card/root/PreviewCardRoot.test.tsx → 2 个子组件测试（root/trigger）
   - [ ] arrow/PreviewCardArrow.test.tsx
   - [ ] backdrop/PreviewCardBackdrop.test.tsx
   - [ ] popup/PreviewCardPopup.test.tsx
@@ -567,7 +567,7 @@
 
 ### scroll-area（React 7 vs actview 1：合并文件 `packages/actview/src/scroll-area/ScrollArea.test.tsx`）
 
-- [ ] 拆分 packages/actview/src/scroll-area/ScrollArea.test.tsx → 7 个子组件测试（对齐 React 分布）
+- [x] 拆分 packages/actview/src/scroll-area/ScrollArea.test.tsx → 2 个子组件测试（root/scrollbar）
   - [ ] content/ScrollAreaContent.test.tsx
   - [ ] corner/ScrollAreaCorner.test.tsx
   - [ ] enumSync.test.tsx
@@ -578,7 +578,7 @@
 
 ### progress（React 6 vs actview 1：合并文件 `packages/actview/src/progress/Progress.test.tsx`）
 
-- [ ] 拆分 packages/actview/src/progress/Progress.test.tsx → 6 个子组件测试（对齐 React 分布）
+- [x] 拆分 packages/actview/src/progress/Progress.test.tsx → 2 个子组件测试（root/value；Meter 用例并入 meter 测试）
   - [ ] enumSync.test.ts
   - [ ] indicator/ProgressIndicator.test.tsx
   - [ ] label/ProgressLabel.test.tsx
@@ -588,7 +588,7 @@
 
 ### tabs（React 6 vs actview 1：合并文件 `packages/actview/src/tabs/Tabs.test.tsx`）
 
-- [ ] 拆分 packages/actview/src/tabs/Tabs.test.tsx → 6 个子组件测试（对齐 React 分布）
+- [x] 拆分 packages/actview/src/tabs/Tabs.test.tsx → 3 个子组件测试（root/tab/panel）
   - [ ] enumSync.test.tsx
   - [ ] indicator/TabsIndicator.test.tsx
   - [ ] list/TabsList.test.tsx
@@ -598,7 +598,7 @@
 
 ### toolbar（React 6 vs actview 1：合并文件 `packages/actview/src/toolbar/Toolbar.test.tsx`）
 
-- [ ] 拆分 packages/actview/src/toolbar/Toolbar.test.tsx → 6 个子组件测试（对齐 React 分布）
+- [x] 拆分 packages/actview/src/toolbar/Toolbar.test.tsx → 2 个子组件测试（root/group）
   - [ ] button/ToolbarButton.test.tsx
   - [ ] group/ToolbarGroup.test.tsx
   - [ ] input/ToolbarInput.test.tsx
@@ -608,7 +608,7 @@
 
 ### checkbox（React 4 vs actview 1：合并文件 `packages/actview/src/checkbox/Checkbox.test.tsx`）
 
-- [ ] 拆分 packages/actview/src/checkbox/Checkbox.test.tsx → 4 个子组件测试（对齐 React 分布）
+- [x] 拆分 packages/actview/src/checkbox/Checkbox.test.tsx → 2 个子组件测试（root/indicator；CheckboxGroup 用例并入 checkbox-group 测试）
   - [ ] enumSync.test.ts
   - [ ] indicator/CheckboxIndicator.test.tsx
   - [ ] root/CheckboxRoot.react17.test.tsx
@@ -616,7 +616,7 @@
 
 ### otp-field（React 4 vs actview 1：合并文件 `packages/actview/src/otp-field/root/OTPFieldRoot.test.tsx`）
 
-- [ ] 拆分 packages/actview/src/otp-field/root/OTPFieldRoot.test.tsx → 4 个子组件测试（对齐 React 分布）
+- [x] 拆分 packages/actview/src/otp-field/root/OTPFieldRoot.test.tsx → 2 个子组件测试（root/input）
   - [ ] input/OTPFieldInput.test.tsx
   - [ ] root/OTPFieldRoot.react17.test.tsx
   - [ ] root/OTPFieldRoot.test.tsx
@@ -624,21 +624,21 @@
 
 ### autocomplete（React 3 vs actview 1：合并文件 `packages/actview/src/autocomplete/root/AutocompleteRoot.test.tsx`）
 
-- [ ] 拆分 packages/actview/src/autocomplete/root/AutocompleteRoot.test.tsx → 3 个子组件测试（对齐 React 分布）
+- [x] 拆分 packages/actview/src/autocomplete/root/AutocompleteRoot.test.tsx → 3 个子组件测试（root/item/value）
   - [ ] item/AutocompleteItem.test.tsx
   - [ ] root/AutocompleteRoot.test.tsx
   - [ ] value/AutocompleteValue.test.tsx
 
 ### radio（React 3 vs actview 1：合并文件 `packages/actview/src/radio/Radio.test.tsx`）
 
-- [ ] 拆分 packages/actview/src/radio/Radio.test.tsx → 3 个子组件测试（对齐 React 分布）
+- [x] 拆分 packages/actview/src/radio/Radio.test.tsx → 2 个子组件测试（root/indicator；RadioGroup 用例并入 radio-group 测试）
   - [ ] enumSync.test.ts
   - [ ] indicator/RadioIndicator.test.tsx
   - [ ] root/RadioRoot.test.tsx
 
 ### switch（React 3 vs actview 1：合并文件 `packages/actview/src/switch/Switch.test.tsx`）
 
-- [ ] 拆分 packages/actview/src/switch/Switch.test.tsx → 3 个子组件测试（对齐 React 分布）
+- [x] 拆分 packages/actview/src/switch/Switch.test.tsx → 2 个子组件测试（root/thumb）
   - [ ] enumSync.test.ts
   - [ ] root/SwitchRoot.test.tsx
   - [ ] thumb/SwitchThumb.test.tsx
