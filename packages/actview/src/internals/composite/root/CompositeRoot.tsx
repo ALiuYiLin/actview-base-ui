@@ -17,8 +17,6 @@ export function CompositeRoot<Metadata extends {}, State extends Record<string, 
   // ============ setup（只执行一次）：一次性初始化 ============
   const {
     refs = [],
-    state = {} as State,
-    stateAttributesMapping,
     highlightedIndex: highlightedIndexProp,
     onHighlightedIndexChange: onHighlightedIndexChangeProp,
     orientation,
@@ -66,6 +64,8 @@ export function CompositeRoot<Metadata extends {}, State extends Record<string, 
   };
 
   // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
+  // state/stateAttributesMapping 渲染期解构（setup 解构是快照——state 更新
+  // 后 data-* 不会重算）。
   return () => {
     const {
       render,
@@ -74,9 +74,10 @@ export function CompositeRoot<Metadata extends {}, State extends Record<string, 
       props = [],
       tag = 'div',
       children,
-      state: _state,
-      stateAttributesMapping: _sam,
-      refs: _refs,
+      state: stateProp,
+      stateAttributesMapping: stateAttributesMappingProp,
+      refToRender,
+      refs: refsProp,
       highlightedIndex: _hi,
       onHighlightedIndexChange: _ohic,
       orientation: _o,
@@ -94,19 +95,22 @@ export function CompositeRoot<Metadata extends {}, State extends Record<string, 
       ...elementProps
     } = componentProps;
 
-    const stateValue = toValue(state) as State;
+    const stateValue = toValue(stateProp) as State;
 
     const {element} = useRenderElement({
       props: () => [...props, elementProps, defaultProps],
       state: stateValue,
-      stateAttributesMapping: stateAttributesMapping ?? {},
+      stateAttributesMapping: stateAttributesMappingProp ?? {},
       className: () => className,
       style: () => style,
       render: () => render,
+      refs: () => refsProp ?? [],
       children: () => children,
       defaultTag: () => tag,
-      // 原实现 render 函数形式不带 ref（与全库其他组件不同），保持行为。
-      refToRender: false,
+      // 原实现 render 函数形式不带 ref（与全库其他组件不同），保持默认
+      // 行为；个别组件（如 ToggleGroup 对齐 React 契约）传 `refToRender`
+      // 开启 render 函数分支的 ref 传递。
+      refToRender: refToRender === undefined ? false : refToRender,
     });
 
     return (
@@ -155,6 +159,11 @@ export interface CompositeRootProps<Metadata, State extends Record<string, any>>
   disabledIndices?: number[] | undefined;
   modifierKeys?: ModifierKey[] | undefined;
   highlightItemOnHover?: boolean | undefined;
+  /**
+   * 是否向 render 函数形式传递 `ref`（mergedRefs / 单 Ref 对象）。
+   * 默认 `false`（原实现行为）；对齐 React 契约的组件（如 ToggleGroup）传 `true`。
+   */
+  refToRender?: boolean | undefined;
 }
 
 export namespace CompositeRoot {

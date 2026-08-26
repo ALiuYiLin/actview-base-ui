@@ -9,26 +9,32 @@ export function CompositeItem<Metadata, State extends Record<string, any>>(
   componentProps: CompositeItem.Props<Metadata, State>,
 ) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  const {
-    state = {} as State,
-    metadata,
-    stateAttributesMapping,
-    tag = 'div',
-  } = componentProps;
+  // state/stateAttributesMapping 在 render 期从 componentProps 解构（setup
+  // 解构是快照——state 更新后 data-* 不会重算，PD-15）。
+  const {metadata, tag = 'div'} = componentProps;
 
   const {compositeProps, compositeRef} = useCompositeItem({metadata});
 
   // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
   return () => {
-    const {render, className, style, props = [], refs = [], children, ...elementProps} =
-      componentProps;
+    const {
+      render,
+      className,
+      style,
+      props = [],
+      refs = [],
+      children,
+      state: stateProp,
+      stateAttributesMapping: stateAttributesMappingProp,
+      ...elementProps
+    } = componentProps;
 
-    const stateValue = toValue(state) as State;
+    const stateValue = toValue(stateProp) as State;
 
     const {element} = useRenderElement({
       props: () => [compositeProps, ...props, elementProps],
       state: stateValue,
-      stateAttributesMapping: stateAttributesMapping ?? {},
+      stateAttributesMapping: stateAttributesMappingProp ?? {},
       className: () => className,
       style: () => style,
       render: () => render,

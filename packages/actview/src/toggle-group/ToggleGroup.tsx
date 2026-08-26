@@ -1,10 +1,11 @@
-import { computed, toRefs, toValue, unrefs } from 'actview';
+import { computed, toRefs, toValue, unrefs, watch } from 'actview';
 import type { ComputedRef } from 'actview';
 import { useControlled } from '@/utils/useControlled';
 import { EMPTY_ARRAY } from '@/utils/empty';
 import type { BaseUIComponentProps, HTMLProps, Orientation } from '@/internals/types';
 import { CompositeRoot } from '@/internals/composite/root/CompositeRoot';
 import { useRenderElement } from '@/internals/useRenderElement';
+import { useRootElementFragment } from '@/internals/useRootElementFragment';
 import { ToggleGroupContext } from './ToggleGroupContext';
 import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
@@ -23,6 +24,22 @@ import { useToolbarGroupContext } from '@/toolbar/group/ToolbarGroupContext';
  */
 export function ToggleGroup<Value extends string>(props: ToggleGroup.Props<Value>) {
   // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
+  // 根元素引用（render 函数分支透传 + 用户 ref 转发）
+  const rootRef = useRootElementFragment();
+  // 用户 props.ref 转发（rootRef 变化时同步——对齐 React forwardedRef 语义）
+  watch(
+    rootRef,
+    (el) => {
+      const ref = (props as any).ref;
+      if (typeof ref === 'function') {
+        ref(el);
+      } else if (ref) {
+        ref.value = el;
+      }
+    },
+    {flush: 'post', immediate: true},
+  );
+
   const {
     className,
     render,
@@ -103,10 +120,6 @@ export function ToggleGroup<Value extends string>(props: ToggleGroup.Props<Value
     isValueInitialized: isValueInitialized.value,
   }));
 
-  const stateAttributes = computed(() =>
-    getStateAttributesProps(stateValue.value, toggleGroupStateAttributesMapping),
-  );
-
   const defaultProps: HTMLProps = {role: 'group'};
 
   // 合并 + 渲染统一工具（含 className/style 函数形式、render prop 分支）。
@@ -127,18 +140,17 @@ export function ToggleGroup<Value extends string>(props: ToggleGroup.Props<Value
         toolbarElement()
       ) : (
         <CompositeRoot
-          render={undefined}
-          state={stateValue.value}
-          refs={[]}
-          props={[
-            defaultProps,
-            unrefs(elementProps),
-            stateAttributes.value,
-            {className: merged().className, style: merged().style},
-          ]}
+          render={render as any}
+          className={className as any}
+          style={style as any}
+          state={stateValue.value as any}
+          refs={[rootRef as any]}
+          props={[defaultProps, unrefs(elementProps)]}
+          stateAttributesMapping={toggleGroupStateAttributesMapping}
           loopFocus={loopFocus?.value ?? true}
           enableHomeAndEndKeys
           orientation={orientationState.value}
+          refToRender
         >
           {children?.value}
         </CompositeRoot>
@@ -220,10 +232,8 @@ export namespace ToggleGroup {
   export type ChangeEventDetails = ToggleGroupChangeEventDetails;
 }
 
-const nullMapping = () => null;
-
 const toggleGroupStateAttributesMapping: StateAttributesMapping<ToggleGroupState> = {
-  disabled: nullMapping,
-  multiple: nullMapping,
-  orientation: nullMapping,
+  disabled: (v) => (v ? {'data-disabled': ''} : null),
+  multiple: (v) => (v ? {'data-multiple': ''} : null),
+  orientation: (v) => ({'data-orientation': v}),
 };

@@ -10,6 +10,7 @@ import { useRenderElement } from '@/internals/useRenderElement';
 import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
+import type { StateAttributesMapping } from '@/internals/getStateAttributesProps';
 
 /**
  * A two-state button that can be on or off.
@@ -80,6 +81,8 @@ export const Toggle = defineComponent(function <Value extends string>(
     const props = [
       {
         'aria-pressed': pressed,
+        // React 契约：disabled 状态始终暴露 aria-disabled（'true'/'false'）
+        'aria-disabled': disabled ? 'true' : 'false',
         onClick(event: any) {
           const nextPressed = !pressed;
           const details = createChangeEventDetails(REASONS.none, event);
@@ -124,6 +127,7 @@ export const Toggle = defineComponent(function <Value extends string>(
           state={state as any}
           refs={refs as any}
           props={props as any}
+          stateAttributesMapping={toggleStateAttributesMapping}
         />
       );
     }
@@ -131,6 +135,7 @@ export const Toggle = defineComponent(function <Value extends string>(
     const {element} = useRenderElement({
       props: () => props,
       state: () => state,
+      stateAttributesMapping: toggleStateAttributesMapping,
       className: () => className,
       style: () => style,
       render: () => render,
@@ -187,6 +192,12 @@ export interface ToggleProps<Value extends string>
 export type ToggleChangeEventReason = typeof REASONS.none;
 
 export type ToggleChangeEventDetails = BaseUIChangeEventDetails<Toggle.ChangeEventReason>;
+
+// state → data-* 属性（React 契约：pressed → data-pressed、disabled → data-disabled）
+const toggleStateAttributesMapping: StateAttributesMapping<ToggleState> = {
+  pressed: (v) => (v ? {'data-pressed': ''} : null),
+  disabled: (v) => (v ? {'data-disabled': ''} : null),
+};
 
 export namespace Toggle {
   export type State = ToggleState;
