@@ -100,19 +100,26 @@ export function TabsList(componentProps: TabsList.Props) {
     role: 'tablist',
   };
 
-  const tabsListContextValue: TabsListContext = {
-    activateOnFocus,
-    registerIndicatorUpdateListener,
-    registerTabResizeObserverElement,
-    tabsListElement: tabsListElement.value,
-  };
-
   const listElementRef = (el: HTMLElement | null) => {
     tabsListElement.value = el;
+    // 挂载后触发 indicator 重渲染：contextValue 渲染期重建后，indicator 的
+    // 布局计算才能拿到真实的 tabsListElement（setup 快照是首渲染的 null）。
+    for (const listener of indicatorUpdateListenersRef.value) {
+      listener();
+    }
   };
 
   return (
-    <TabsListContext.Provider value={tabsListContextValue as any}>
+    <TabsListContext.Provider
+      value={(() => ({
+        activateOnFocus,
+        registerIndicatorUpdateListener,
+        registerTabResizeObserverElement,
+        // 渲染期重建 context（对齐 React 版每次 render）——setup 快照会让
+        // tabsListElement 停留在首渲染的 null（indicator 定位失败）。
+        tabsListElement: tabsListElement.value,
+      }))() as any}
+    >
       <CompositeRoot
         render={render as any}
         className={className as any}

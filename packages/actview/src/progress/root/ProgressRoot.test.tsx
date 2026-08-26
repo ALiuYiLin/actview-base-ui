@@ -32,4 +32,19 @@ describe('<Progress.Root />', () => {
     const root = document.querySelector('[role="progressbar"]') as HTMLElement;
     expect(root).toHaveAttribute('data-complete', '');
   });
+
+  it('updates derived state when value changes dynamically', async () => {
+    const {setProps} = await render(Progress.Root, {value: 40, children: null});
+
+    const root = document.querySelector('[role="progressbar"]') as HTMLElement;
+    expect(root).toHaveAttribute('aria-valuenow', '40');
+
+    await setProps({value: 70});
+    expect(root).toHaveAttribute('aria-valuenow', '70');
+    expect(root).toHaveAttribute('data-progressing', '');
+
+    await setProps({value: 100});
+    expect(root).toHaveAttribute('aria-valuenow', '100');
+    expect(root).toHaveAttribute('data-complete', '');
+  });
 });

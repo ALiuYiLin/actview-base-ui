@@ -1,14 +1,18 @@
-import {ref, toValue, shallowRef} from 'actview';
-import type { ComputedRef } from 'actview';
+import {ref, toValue, shallowRef, computed} from 'actview';
+import type { ComputedRef, Ref } from 'actview';
+import type { MaybeRefOrGetter } from '@/types';
 import { EMPTY_ARRAY } from '@/internals/noop';
 import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import type { BaseUIEventReasons } from '@/internals/reasons';
-import type { Ref } from 'actview';
 
 export function useCheckboxGroupParent(
   params: UseCheckboxGroupParentParameters,
 ): UseCheckboxGroupParentReturnValue {
-  const {allValues = EMPTY_ARRAY, value, onValueChange: onValueChangeProp} = params;
+  const {value, onValueChange: onValueChangeProp} = params;
+
+  // allValues 用 computed 包装（可传 ref/getter）：渲染期/事件期读当前值——
+  // setup 解构快照会导致 allValues 动态变化时 parent 的 checked 判定停留在首渲染。
+  const allValuesRef = computed(() => (toValue(params.allValues) ?? []) as string[]);
 
   const uncontrolledStateRef = ref(value.value);
   const disabledStatesRef = shallowRef(new Map<string, boolean>());
@@ -48,6 +52,7 @@ export function useCheckboxGroupParent(
   const getParentProps: UseCheckboxGroupParentReturnValue['getParentProps'] = () => {
     const currentValue = value.value;
     const currentStatus = status.value;
+    const allValues = allValuesRef.value;
     // 渲染期计算（setup 快照会导致 parent 的 checked/indeterminate 永不更新）
     const checked = currentValue.length === allValues.length;
     const indeterminate = currentValue.length !== allValues.length && currentValue.length > 0;
@@ -138,7 +143,7 @@ export function useCheckboxGroupParent(
 }
 
 export interface UseCheckboxGroupParentParameters {
-  allValues?: string[] | undefined;
+  allValues?: MaybeRefOrGetter<string[]> | undefined;
   value: ComputedRef<string[]>;
   onValueChange?: ((value: string[], eventDetails: any) => void) | undefined;
 }

@@ -19,67 +19,78 @@ export function ProgressRoot(componentProps: ProgressRoot.Props) {
   // Provider 根（`<ProgressRootContext.Provider>`），无 Fragment 根问题。
   const rootRef = useRootElement();
 
-  const format = toValue(componentProps.format);
-  const getAriaValueText = componentProps.getAriaValueText;
-  const locale = toValue(componentProps.locale);
-  const max = toValue(componentProps.max) ?? 100;
-  const min = toValue(componentProps.min) ?? 0;
-  const value = toValue(componentProps.value) ?? null;
-
   const labelId = ref<string | undefined>(undefined);
   const setLabelId = (v: string | undefined) => (labelId.value = v);
 
-  // `value === null` (or any non-finite value) keeps Progress indeterminate. Otherwise compute a
-  // single clamped value and normalized percentage so completion status, `aria-valuenow`, the
-  // formatted text, the default `aria-valuetext`, and the indicator width all stay in sync for any
-  // `min`/`max` (not just the default 0–100).
-  let status: ProgressStatus = 'indeterminate';
-  let percentageValue: number | null = null;
-  let clampedValue: number | null = null;
-  let formattedValue = '';
-  // Derived alongside `status` so the indeterminate condition is not restated anywhere else.
-  let defaultAriaValueText = 'indeterminate progress';
+  // 派生值每次渲染重算（对齐 React 版每次 render）——setup 快照会导致
+  // value/max/min 动态变化时 status/aria-valuenow 停留在首渲染。
+  function computeDerived() {
+    const format = toValue(componentProps.format);
+    const getAriaValueText = componentProps.getAriaValueText;
+    const locale = toValue(componentProps.locale);
+    const max = toValue(componentProps.max) ?? 100;
+    const min = toValue(componentProps.min) ?? 0;
+    const value = toValue(componentProps.value) ?? null;
 
-  if (value != null && Number.isFinite(value)) {
-    const rawPercentage = valueToPercent(value, min, max);
-    percentageValue = clamp(Number.isNaN(rawPercentage) ? 0 : rawPercentage, 0, 100);
-    clampedValue = clamp(value, min, max);
-    status = clampedValue === max ? 'complete' : 'progressing';
-    // Format the clamped value so visible and accessible text stay in sync with `aria-valuenow` and
-    // the indicator fill. The raw value remains available as the second `getAriaValueText` argument.
-    formattedValue = format
-      ? formatNumber(clampedValue, locale, format)
-      : formatNumber(percentageValue / 100, locale, {style: 'percent'});
-    defaultAriaValueText = formattedValue;
+    // `value === null` (or any non-finite value) keeps Progress indeterminate. Otherwise compute a
+    // single clamped value and normalized percentage so completion status, `aria-valuenow`, the
+    // formatted text, the default `aria-valuetext`, and the indicator width all stay in sync for any
+    // `min`/`max` (not just the default 0–100).
+    let status: ProgressStatus = 'indeterminate';
+    let percentageValue: number | null = null;
+    let clampedValue: number | null = null;
+    let formattedValue = '';
+    // Derived alongside `status` so the indeterminate condition is not restated anywhere else.
+    let defaultAriaValueText = 'indeterminate progress';
+
+    if (value != null && Number.isFinite(value)) {
+      const rawPercentage = valueToPercent(value, min, max);
+      percentageValue = clamp(Number.isNaN(rawPercentage) ? 0 : rawPercentage, 0, 100);
+      clampedValue = clamp(value, min, max);
+      status = clampedValue === max ? 'complete' : 'progressing';
+      // Format the clamped value so visible and accessible text stay in sync with `aria-valuenow` and
+      // the indicator fill. The raw value remains available as the second `getAriaValueText` argument.
+      formattedValue = format
+        ? formatNumber(clampedValue, locale, format)
+        : formatNumber(percentageValue / 100, locale, {style: 'percent'});
+      defaultAriaValueText = formattedValue;
+    }
+
+    return {
+      status,
+      percentageValue,
+      clampedValue,
+      formattedValue,
+      defaultAriaValueText,
+      getAriaValueText,
+      value,
+      max,
+      min,
+    };
   }
-
-  const contextValue: ProgressRootContext = {
-    formattedValue,
-    percentageValue,
-    setLabelId,
-    state: {status},
-    value,
-  };
 
   // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
   const {render, className, children, style, ...elementProps} = toRefs(componentProps);
 
-  const stateFn = (): ProgressRootState => ({status});
+  const stateFn = (): ProgressRootState => ({status: computeDerived().status});
 
   const {element} = useRenderElement({
-    props: () => [
-      {
-        'aria-labelledby': labelId.value,
-        'aria-valuemax': max,
-        'aria-valuemin': min,
-        'aria-valuenow': clampedValue ?? undefined,
-        'aria-valuetext': getAriaValueText
-          ? getAriaValueText(formattedValue, value)
-          : defaultAriaValueText,
-        role: 'progressbar',
-      },
-      unrefs(elementProps),
-    ],
+    props: () => {
+      const d = computeDerived();
+      return [
+        {
+          'aria-labelledby': labelId.value,
+          'aria-valuemax': d.max,
+          'aria-valuemin': d.min,
+          'aria-valuenow': d.clampedValue ?? undefined,
+          'aria-valuetext': d.getAriaValueText
+            ? d.getAriaValueText(d.formattedValue, d.value)
+            : d.defaultAriaValueText,
+          role: 'progressbar',
+        },
+        unrefs(elementProps),
+      ];
+    },
     state: stateFn,
     stateAttributesMapping: progressStateAttributesMapping as any,
     className,
@@ -100,7 +111,20 @@ export function ProgressRoot(componentProps: ProgressRoot.Props) {
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
   return (
-    <ProgressRootContext.Provider value={contextValue as any}>{element()}</ProgressRootContext.Provider>
+    <ProgressRootContext.Provider
+      value={(() => {
+        const d = computeDerived();
+        return {
+          formattedValue: d.formattedValue,
+          percentageValue: d.percentageValue,
+          setLabelId,
+          state: {status: d.status},
+          value: d.value,
+        };
+      })() as any}
+    >
+      {element()}
+    </ProgressRootContext.Provider>
   );
 }
 

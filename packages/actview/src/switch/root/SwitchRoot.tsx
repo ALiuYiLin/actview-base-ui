@@ -33,7 +33,6 @@ import type { Ref } from 'actview';
  */
 export function SwitchRoot(componentProps: SwitchRoot.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  const checkedProp = toValue(componentProps.checked);
   const defaultChecked = toValue(componentProps.defaultChecked);
   const ariaLabelledByProp = toValue(componentProps['aria-labelledby']);
   const form = toValue(componentProps.form);
@@ -42,9 +41,6 @@ export function SwitchRoot(componentProps: SwitchRoot.Props) {
   const nameProp = toValue(componentProps.name);
   const nativeButton = toValue(componentProps.nativeButton) ?? false;
   const onCheckedChange = componentProps.onCheckedChange;
-  const readOnly = toValue(componentProps.readOnly) ?? false;
-  const required = toValue(componentProps.required) ?? false;
-  const disabledProp = toValue(componentProps.disabled) ?? false;
   const uncheckedValue = toValue(componentProps.uncheckedValue);
   const value = toValue(componentProps.value);
 
@@ -63,7 +59,10 @@ export function SwitchRoot(componentProps: SwitchRoot.Props) {
   } = toValue(useFieldRootContext());
   const {labelId} = toValue(useLabelableContext());
 
-  const disabled = fieldDisabled.value || disabledProp;
+  // disabled 用 computed：Field.Root 或本组件 disabled 动态变化时渲染期 `.value`
+  // 与 useButton 的 watch 都能拿到实时值。
+  // getter 直接读 componentProps（响应式）——setup 快照（disabledProp）会停留在首渲染。
+  const disabled = computed(() => fieldDisabled.value || (toValue(componentProps.disabled) ?? false));
   const name = fieldName.value ?? nameProp;
 
   const inputRef = ref(null as HTMLInputElement | null);
@@ -77,13 +76,14 @@ export function SwitchRoot(componentProps: SwitchRoot.Props) {
   const hiddenInputId = nativeButton ? undefined : controlId;
 
   const [checked, setCheckedState] = useControlled({
-    controlled: checkedProp,
+    // 受控值用 getter：外部 `checked` prop 动态变化时实时生效（P1 教训：受控需传 getter）
+    controlled: () => toValue(componentProps.checked),
     default: Boolean(defaultChecked),
     name: 'Switch',
     state: 'checked',
   });
 
-  useRegisterFieldControl(switchRef, id, toValue(checked), undefined, !disabled, nameProp);
+  useRegisterFieldControl(switchRef, id, toValue(checked), undefined, !disabled.value, nameProp);
 
   // React 版 useIsoLayoutEffect：setFilled(inputRef.value.checked)
   watch(
@@ -124,6 +124,10 @@ export function SwitchRoot(componentProps: SwitchRoot.Props) {
         const {className, render, style, ...elementProps} = componentProps;
 
         const checkedValue = Boolean(toValue(checked));
+        // 渲染期读 props（响应式）——setup 快照会导致 readOnly/required 动态
+        // 变化时 state/aria 属性停留在首渲染。
+        const readOnly = toValue(componentProps.readOnly) ?? false;
+        const required = toValue(componentProps.required) ?? false;
 
         const rootProps: Record<string, any> = {
           id: nativeButton ? controlId : id,
@@ -133,13 +137,13 @@ export function SwitchRoot(componentProps: SwitchRoot.Props) {
           'aria-required': required || undefined,
           'aria-labelledby': ariaLabelledBy,
           onFocus() {
-            if (!disabled) {
+            if (!disabled.value) {
               setFocused(true);
             }
           },
           onBlur() {
             const element = inputRef.value;
-            if (!element || disabled) {
+            if (!element || disabled.value) {
               return;
             }
 
@@ -151,7 +155,7 @@ export function SwitchRoot(componentProps: SwitchRoot.Props) {
             }
           },
           onClick(event: any) {
-            if (readOnly || disabled) {
+            if (readOnly || disabled.value) {
               return;
             }
 
@@ -167,9 +171,9 @@ export function SwitchRoot(componentProps: SwitchRoot.Props) {
         };
 
         const inputProps: Record<string, any> = {
-          ...validation.getValidationProps(disabled),
+          ...validation.getValidationProps(disabled.value),
           checked: checkedValue,
-          disabled,
+          disabled: disabled.value,
           form,
           id: hiddenInputId,
           name,
@@ -215,7 +219,7 @@ export function SwitchRoot(componentProps: SwitchRoot.Props) {
         const stateValue: SwitchRootState = {
           ...fieldState.value,
           checked: checkedValue,
-          disabled,
+          disabled: disabled.value,
           readOnly,
           required,
         };
@@ -224,7 +228,7 @@ export function SwitchRoot(componentProps: SwitchRoot.Props) {
           rootProps,
           elementProps,
           getButtonProps,
-          (props: any) => validation.getValidationProps(disabled, props),
+          (props: any) => validation.getValidationProps(disabled.value, props),
           getStateAttributesProps(stateValue, stateAttributesMapping),
         ]);
         if (typeof className === 'function') {
@@ -267,7 +271,7 @@ export function SwitchRoot(componentProps: SwitchRoot.Props) {
           <SwitchRootContext.Provider value={stateValue as any}>
             {element}
             {!checkedValue && name && uncheckedValue !== undefined && (
-              <input type="hidden" form={form} name={name} value={uncheckedValue} disabled={disabled} />
+              <input type="hidden" form={form} name={name} value={uncheckedValue} disabled={disabled.value} />
             )}
             <input {...inputProps} />
           </SwitchRootContext.Provider>

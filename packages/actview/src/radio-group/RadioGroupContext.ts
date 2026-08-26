@@ -5,7 +5,7 @@ import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDeta
 import type { BaseUIEventReasons } from '@/internals/reasons';
 
 export interface RadioGroupContext<Value> {
-  disabled: boolean | undefined;
+  disabled: ComputedRef<boolean>;
   readOnly: boolean | undefined;
   required: boolean | undefined;
   form: string | undefined;
@@ -15,7 +15,7 @@ export interface RadioGroupContext<Value> {
     value: Value,
     eventDetails: BaseUIChangeEventDetails<BaseUIEventReasons['none']>,
   ) => void;
-  touched: boolean;
+  touched: Ref<boolean>;
   setTouched: (value: boolean) => void;
   validation?: UseFieldValidationReturnValue | undefined;
   registerInputRef: (element: HTMLInputElement | null) => void;

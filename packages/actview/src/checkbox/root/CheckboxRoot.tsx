@@ -64,15 +64,10 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
   const parentContext = groupContext?.allValues === undefined ? undefined : groupContext.parent;
   const isGroupedWithParent = parentContext !== undefined;
 
-  const checkedProp = toValue(componentProps.checked);
   const defaultChecked = toValue(componentProps.defaultChecked) ?? false;
-  const disabledProp = toValue(componentProps.disabled) ?? false;
-  const indeterminateProp = toValue(componentProps.indeterminate) ?? false;
   const nameProp = toValue(componentProps.name);
   const valueProp = toValue(componentProps.value);
   const parent = toValue(componentProps.parent) ?? false;
-  const readOnly = toValue(componentProps.readOnly) ?? false;
-  const required = toValue(componentProps.required) ?? false;
   const nativeButton = toValue(componentProps.nativeButton) ?? false;
   const idProp = toValue(componentProps.id);
   const form = toValue(componentProps.form);
@@ -80,11 +75,15 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
   const ariaLabelledByProp = toValue(componentProps['aria-labelledby']);
   const onCheckedChange = componentProps.onCheckedChange;
 
-  // disabled 用 computed：Field.Root / Field.Item / group 的 disabled 动态变化时
-  // 渲染期 `.value` 与 useButton 的 watch 都能拿到实时值（setup 快照会导致
-  // 渲染期读到首渲染的常量）。
+  // disabled 用 computed：Field.Root / Field.Item / group / 本组件 disabled 动态
+  // 变化时渲染期 `.value` 与 useButton 的 watch 都能拿到实时值。
+  // getter 直接读 componentProps（响应式）——setup 快照（disabledProp）会停留在首渲染。
   const disabled = computed(
-    () => rootDisabled.value || fieldItemContext.disabled.value || groupContext?.disabled || disabledProp,
+    () =>
+      rootDisabled.value ||
+      fieldItemContext.disabled.value ||
+      (groupContext?.disabled ?? false) ||
+      (toValue(componentProps.disabled) ?? false),
   );
   const name = fieldName.value ?? nameProp;
   const value = valueProp ?? name;
@@ -120,7 +119,7 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
     controlled: () =>
       value !== undefined && groupValue.value !== undefined && !parent
         ? groupValue.value.includes(value)
-        : checkedProp,
+        : toValue(componentProps.checked),
     default: defaultChecked,
     name: 'Checkbox',
     state: 'checked',
@@ -157,10 +156,10 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
 
   // React 版 useIsoLayoutEffect：input indeterminate 同步 + filled
   watch(
-    () => [checked.value, indeterminateProp] as const,
+    () => [checked.value, toValue(componentProps.indeterminate) ?? false] as const,
     () => {
       if (inputRef.value) {
-        inputRef.value.indeterminate = Boolean(indeterminateProp);
+        inputRef.value.indeterminate = Boolean(toValue(componentProps.indeterminate) ?? false);
         if (checked.value) {
           setFilled(true);
         }
@@ -242,23 +241,30 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
           }
         }
 
-        const groupChecked = groupProps.checked ?? checkedProp ?? false;
-        const groupIndeterminate = groupProps.indeterminate ?? indeterminateProp;
+        // 渲染期读 props（响应式）——setup 快照会导致 checked/indeterminate/
+        // readOnly/required 动态变化时 state 停留在首渲染。
+        const checkedPropValue = toValue(componentProps.checked) ?? false;
+        const indeterminatePropValue = toValue(componentProps.indeterminate) ?? false;
+        const readOnlyValue = toValue(componentProps.readOnly) ?? false;
+        const requiredValue = toValue(componentProps.required) ?? false;
+
+        const groupChecked = groupProps.checked ?? checkedPropValue ?? false;
+        const groupIndeterminate = groupProps.indeterminate ?? indeterminatePropValue;
         const groupOnChange = groupProps.onCheckedChange;
         const {checked: _gc, indeterminate: _gi, onCheckedChange: _gon, ...otherGroupProps} =
           groupProps;
 
         const computedChecked = isGroupedWithParent ? Boolean(groupChecked) : Boolean(checked.value);
         const computedIndeterminate = isGroupedWithParent
-          ? Boolean(groupIndeterminate || indeterminateProp)
-          : Boolean(indeterminateProp);
+          ? Boolean(groupIndeterminate || indeterminatePropValue)
+          : Boolean(indeterminatePropValue);
 
         const stateValue: CheckboxRootState = {
           ...fieldState.value,
           checked: computedChecked,
           disabled: disabled.value,
-          readOnly,
-          required,
+          readOnly: readOnlyValue,
+          required: requiredValue,
           indeterminate: computedIndeterminate,
         };
 
@@ -272,7 +278,7 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
             // Set `id` to stop Chrome warning about an unassociated input.
             // When using a native button, the `id` is applied to the button instead.
             id: nativeButton ? undefined : controlId,
-            required,
+            required: requiredValue,
             ref: mergedInputRef,
             style: name ? visuallyHiddenInput : visuallyHidden,
             tabIndex: -1,
@@ -290,7 +296,7 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
                 return;
               }
 
-              if (readOnly) {
+              if (readOnlyValue) {
                 event.preventDefault();
                 return;
               }
@@ -347,8 +353,8 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
             id: rootId,
             role: 'checkbox',
             'aria-checked': computedIndeterminate ? 'mixed' : computedChecked,
-            'aria-readonly': readOnly || undefined,
-            'aria-required': required || undefined,
+            'aria-readonly': readOnlyValue || undefined,
+            'aria-required': requiredValue || undefined,
             'aria-labelledby': ariaLabelledBy,
             [PARENT_CHECKBOX as string]: parent ? '' : undefined,
             onFocus() {
@@ -413,7 +419,7 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
               });
             },
             onClick(event: MouseEvent) {
-              if (readOnly || disabled.value) {
+              if (readOnlyValue || disabled.value) {
                 return;
               }
 

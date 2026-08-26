@@ -1,5 +1,6 @@
 import { watch } from 'actview';
 import type { HTMLProps } from '@/internals/types';
+import type { MaybeRefOrGetter } from '@/types';
 import { useRegisteredLabelId } from '@/utils/useRegisteredLabelId';
 import { useLabelableContext } from './LabelableContext';
 
@@ -84,7 +85,10 @@ function ownerDocument(node: Element | null | undefined): Document {
 }
 
 export interface UseLabelParameters {
-  id?: string | undefined;
+  /**
+   * Label element id；可为 ref/computed（响应式更新，对齐 React 版每次 render 重算）。
+   */
+  id?: MaybeRefOrGetter<string | undefined> | undefined;
   /**
    * Control id used when no labelable context control id exists.
    */

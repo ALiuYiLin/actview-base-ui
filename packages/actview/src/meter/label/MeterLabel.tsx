@@ -1,4 +1,4 @@
-import { toRefs, unrefs } from 'actview';
+import { toRefs, unrefs, computed } from 'actview';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { useMeterRootContext } from '../root/MeterRootContext';
 import { useLabel } from '@/internals/labelable-provider/useLabel';
@@ -22,11 +22,12 @@ export function MeterLabel(componentProps: MeterLabel.Props) {
 
   // useLabel 必须在 setup 调用（useRegisteredLabelId 含 watch/computed/
   // onUnmounted——渲染期调用会每次渲染累积副作用）。
-  // setLabelId 是 Root 的稳定函数（setup 定义一次），setup 快照安全。
+  // setLabelId 是 Root 的稳定函数（setup 定义一次），setup 快照安全；
+  // id 用 computed 保持响应式（React 版每次 render 重算）。
   const {setLabelId} = rootContextRef.value;
   const labelProps = useLabel({
     setLabelId: setLabelId as any,
-    id: (componentProps as any).id,
+    id: computed(() => (componentProps as any).id),
   });
 
   // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============

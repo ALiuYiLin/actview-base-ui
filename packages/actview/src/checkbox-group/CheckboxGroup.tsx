@@ -45,8 +45,6 @@ export function CheckboxGroup(componentProps: CheckboxGroup.Props) {
 
   const disabledProp = toValue(componentProps.disabled) ?? false;
   const defaultValueProp = toValue(componentProps.defaultValue);
-  const allValues = toValue(componentProps.allValues);
-  const externalValue = toValue(componentProps.value);
   const idProp = toValue(componentProps.id);
   const onValueChange = componentProps.onValueChange;
 
@@ -75,7 +73,8 @@ export function CheckboxGroup(componentProps: CheckboxGroup.Props) {
   };
 
   const parent = useCheckboxGroupParent({
-    allValues,
+    // getter：渲染期读 componentProps.allValues（响应式）——setup 快照会停留在首渲染
+    allValues: (() => toValue(componentProps.allValues) ?? ([] as string[])) as any,
     value: value as ComputedRef<string[]>,
     onValueChange: setValue,
   });
@@ -138,10 +137,10 @@ export function CheckboxGroup(componentProps: CheckboxGroup.Props) {
     validation.change(currentValue);
   });
 
-  // computed：value/disabled 变化时重建 contextValue（新对象引用）——
+  // computed：value/disabled/allValues 变化时重建 contextValue（新对象引用）——
   // Provider 只响应 value 引用变化，setup 快照对象会导致子组件不重渲染。
   const contextValue = computed(() => ({
-    allValues,
+    allValues: toValue(componentProps.allValues),
     value,
     setValue,
     parent,

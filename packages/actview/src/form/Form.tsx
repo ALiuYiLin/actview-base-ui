@@ -178,9 +178,6 @@ export function Form(componentProps: Form.Props) {
   });
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  // errors 是响应值，contextValue 的 errors 需反映最新值
-  contextValue.errors = errorsState.value ?? EMPTY_OBJECT;
-
   return (
     <FormContext.Provider value={contextValue}>
       {element()}

@@ -1,4 +1,4 @@
-import {toValue, watch, ref} from 'actview';
+import {toValue, watch, ref, computed} from 'actview';
 import type { ComputedRef } from 'actview';
 import { useMergedRefs } from '@/utils/useMergedRefs';
 import { visuallyHidden, visuallyHiddenInput } from '@/utils/visuallyHidden';
@@ -50,9 +50,6 @@ export function RadioRoot<Value>(componentProps: RadioRoot.Props<Value>) {
   const fieldItemContext = toValue(useFieldItemContext());
   const {labelId, getDescriptionProps} = toValue(useLabelableContext());
 
-  const disabledProp = toValue(componentProps.disabled) ?? false;
-  const readOnlyProp = toValue(componentProps.readOnly) ?? false;
-  const requiredProp = toValue(componentProps.required) ?? false;
   const ariaLabelledByProp = toValue(componentProps['aria-labelledby']);
   const value = toValue(componentProps.value);
   const inputRefProp = componentProps.inputRef as any;
@@ -129,16 +126,28 @@ export function RadioRoot<Value>(componentProps: RadioRoot.Props<Value>) {
     return (
       fieldDisabled.value ||
       fieldItemContext.disabled.value ||
-      group?.disabled ||
-      disabledProp
+      (toValue(group?.disabled) ?? false) ||
+      // 渲染期读 props（响应式）——setup 快照会导致动态变化不生效
+      (toValue(componentProps.disabled) ?? false)
     );
   }
 
   function computeChecked(groupCheckedValue: any) {
     return groupContextRef.value ? groupCheckedValue === value : value === '';
   }
+  // disabled 用 computed：Field.Root / Field.Item / group 的 disabled 动态变化时
+  // useButton 的 watch 与渲染期 `.value` 都能拿到实时值（setup 快照会停留在首渲染）。
+  const disabled = computed(() => {
+    const group = groupContextRef.value;
+    return (
+      fieldDisabled.value ||
+      fieldItemContext.disabled.value ||
+      (toValue(group?.disabled) ?? false) ||
+      (toValue(componentProps.disabled) ?? false)
+    );
+  });
   const {getButtonProps, buttonRef} = useButton({
-    disabled: computeDisabled(),
+    disabled,
     native: nativeButton,
     composite: false,
   });
@@ -152,10 +161,10 @@ export function RadioRoot<Value>(componentProps: RadioRoot.Props<Value>) {
 
         const groupContext = groupContextRef.value;
         const disabled = computeDisabled();
-        const readOnly = (groupContext?.readOnly || readOnlyProp) ?? false;
-        const required = (groupContext?.required || requiredProp) ?? false;
+        const readOnly = (groupContext?.readOnly || (toValue(componentProps.readOnly) ?? false)) ?? false;
+        const required = (groupContext?.required || (toValue(componentProps.required) ?? false)) ?? false;
         const form = groupContext?.form;
-        const touched = groupContext?.touched ?? false;
+        const touched = toValue(groupContext?.touched) ?? false;
         const checked = computeChecked(groupContext?.checkedValue?.value);
         const name = groupContext?.name;
 

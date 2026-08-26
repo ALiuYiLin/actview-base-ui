@@ -1,5 +1,5 @@
 import { useRootElementFragment } from '@/internals/useRootElementFragment';
-import { toValue, toRefs, unrefs } from 'actview';
+import { toValue, toRefs, unrefs, computed } from 'actview';
 import type { FieldRootState } from '../root/FieldRoot';
 import { useFieldRootContext } from '@/internals/field-root-context/FieldRootContext';
 import { fieldValidityMapping } from '@/internals/field-constants/constants';
@@ -24,15 +24,16 @@ export function FieldLabel(componentProps: FieldLabel.Props) {
   const {labelId} = toValue(useLabelableContext());
 
   const nativeLabel = toValue(componentProps.nativeLabel) ?? true;
-  const idProp = toValue(componentProps.id);
 
   const state = () => ({
     ...fieldRootContext.state.value,
     disabled: fieldRootContext.disabled.value || fieldItemContext.disabled.value,
   });
 
+  // id 用 computed：labelId（labelable 作用域）或组件 id 变化时实时更新
+  // （setup 快照会停留在首渲染值——React 版每次 render 重算）。
   const labelProps = useLabel({
-    id: labelId.value ?? idProp,
+    id: computed(() => labelId.value ?? toValue(componentProps.id)),
     native: nativeLabel,
   });
 

@@ -38,4 +38,25 @@ describe('<RadioGroup />', () => {
     // 不在测试范围（Radio.Root 迁移后覆盖）——此处验证渲染链路稳定。
     expect(document.querySelector('[role="radiogroup"]')).not.toBeNull();
   });
+
+  it('updates disabled state when the prop changes dynamically', async () => {
+    const {setProps} = await render(RadioGroup, {'data-testid': 'group'});
+
+    const group = screen.getByTestId('group');
+    expect(group).not.toHaveAttribute('aria-disabled');
+
+    await setProps({disabled: true});
+    expect(group).toHaveAttribute('aria-disabled', 'true');
+    expect(group).toHaveAttribute('data-disabled');
+  });
+
+  it('updates aria-required when the prop changes dynamically', async () => {
+    const {setProps} = await render(RadioGroup, {'data-testid': 'group'});
+
+    const group = screen.getByTestId('group');
+    expect(group).not.toHaveAttribute('aria-required');
+
+    await setProps({required: true});
+    expect(group).toHaveAttribute('aria-required', 'true');
+  });
 });
