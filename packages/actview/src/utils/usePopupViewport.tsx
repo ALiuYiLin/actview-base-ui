@@ -185,7 +185,11 @@ export function usePopupViewport(
           }}
           key={currentContentKey.value}
         >
-          {childContent}
+          {Array.isArray(childContent)
+            ? childContent
+            : typeof childContent === 'object' && childContent !== null
+              ? {...childContent}
+              : childContent}
         </div>
       );
     }

@@ -38,10 +38,7 @@ export function PreviewCardViewport(componentProps: PreviewCardViewport.Props) {
     props: () => {
       const stateValue = state();
 
-      const merged: any = mergePropsN<any>([
-        {...unrefs(elementProps)},
-        {children: toValue(childrenToRender)},
-      ]);
+      const merged: any = mergePropsN<any>([{...unrefs(elementProps)}]);
 
       if (stateValue.activationDirection) {
         merged['data-activation-direction'] = stateValue.activationDirection;
@@ -53,6 +50,7 @@ export function PreviewCardViewport(componentProps: PreviewCardViewport.Props) {
     style,
     render,
     refs: () => [refProp as any],
+    children: () => toValue(childrenToRender),
     defaultTag: 'div',
   });
 

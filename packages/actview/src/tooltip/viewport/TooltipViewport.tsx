@@ -1,4 +1,4 @@
-import { toRefs, toValue, unrefs } from 'actview';
+import { toRefs, unrefs, toValue } from 'actview';
 import { mergePropsN } from '@/merge-props';
 import { useTooltipRootContext } from '../root/TooltipRootContext';
 import { useTooltipPositionerContext } from '../positioner/TooltipPositionerContext';
@@ -11,16 +11,19 @@ import { useRenderElement } from '@/internals/useRenderElement';
  * Renders a `<div>` element.
  */
 export function TooltipViewport(componentProps: TooltipViewport.Props) {
+  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
   const store = useTooltipRootContext(false);
   const positionerContext = useTooltipPositionerContext();
   const side = positionerContext?.side;
+  const {render, className, style, children, ref: refProp, ...elementProps} =
+    toRefs(componentProps);
 
   const instantType = store.useState('instantType');
 
   const {children: childrenToRender, state: viewportState} = usePopupViewport({
     store: store as any,
     side,
-    children: () => toValue(componentProps.children),
+    children: children as any,
   });
 
   const state = (): TooltipViewportState => ({
@@ -29,20 +32,11 @@ export function TooltipViewport(componentProps: TooltipViewport.Props) {
     instant: instantType.value as any,
   });
 
-  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  const {className, render, style, ref: refProp, ...elementProps} = toRefs(componentProps);
-
   const {element} = useRenderElement({
     props: () => {
-      const stateValue = state();
-
-      const merged: any = mergePropsN<any>([
-        {...unrefs(elementProps)},
-        {children: toValue(childrenToRender)},
-      ]);
-
-      if (stateValue.activationDirection) {
-        merged['data-activation-direction'] = stateValue.activationDirection;
+      const merged: any = mergePropsN<any>([{...unrefs(elementProps)}]);
+      if (state().activationDirection) {
+        merged['data-activation-direction'] = state().activationDirection;
       }
       return [merged];
     },
@@ -50,7 +44,8 @@ export function TooltipViewport(componentProps: TooltipViewport.Props) {
     className,
     style,
     render,
-    refs: () => [refProp as any],
+    refs: () => (componentProps.ref !== undefined ? [refProp as any] : []),
+    children: () => toValue(childrenToRender as any),
     defaultTag: 'div',
   });
 
