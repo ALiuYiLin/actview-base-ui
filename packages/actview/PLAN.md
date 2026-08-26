@@ -647,47 +647,47 @@
 
 ### menu（React 21 vs actview 18：缺 3 个）
 
-- [ ] 补齐 root/MenuRoot.detached-triggers.test.tsx
-- [ ] 补齐 submenu-trigger/MenuSubmenuTrigger.talkBack.test.tsx
-- [ ] 补齐 submenu-trigger/MenuSubmenuTrigger.voiceOver.test.tsx
+- [x] menu detached-triggers：跳过（actview 无 createHandle API）
+- [x] menu talkBack：跳过（平台限定）
+- [x] menu voiceOver：跳过（平台限定）
 
 ### popover（React 13 vs actview 9：缺 5 个）
 
-- [ ] 补齐 arrow/PopoverArrow.test.tsx
-- [ ] 补齐 description/PopoverDescription.test.tsx
-- [ ] 补齐 enumSync.test.tsx
-- [ ] 补齐 portal/PopoverPortal.test.tsx
-- [ ] 补齐 root/PopoverRoot.detached-triggers.test.tsx
+- [x] 补齐 arrow/PopoverArrow.test.tsx
+- [x] 补齐 description/PopoverDescription.test.tsx
+- [x] 补齐 enumSync.test.tsx
+- [x] 补齐 portal/PopoverPortal.test.tsx
+- [x] popover detached-triggers：跳过（actview 无 createHandle API）
 
 ### dialog（React 10 vs actview 6：缺 5 个）
 
-- [ ] 补齐 description/DialogDescription.test.tsx
-- [ ] 补齐 popup/DialogPopup.test.tsx
-- [ ] 补齐 root/DialogRoot.detached-triggers.test.tsx
-- [ ] 补齐 title/DialogTitle.test.tsx
-- [ ] 补齐 viewport/DialogViewport.test.tsx
+- [x] 补齐 description/DialogDescription.test.tsx
+- [x] 补齐 popup/DialogPopup.test.tsx
+- [x] dialog detached-triggers：跳过（actview 无 createHandle API）
+- [x] 补齐 title/DialogTitle.test.tsx
+- [x] 补齐 viewport/DialogViewport.test.tsx
 
 ### tooltip（React 9 vs actview 3：缺 6 个）
 
-- [ ] 补齐 arrow/TooltipArrow.test.tsx
-- [ ] 补齐 portal/TooltipPortal.test.tsx
-- [ ] 补齐 positioner/TooltipPositioner.test.tsx
-- [ ] 补齐 provider/TooltipProvider.test.tsx
-- [ ] 补齐 root/TooltipRoot.detached-triggers.test.tsx
-- [ ] 补齐 viewport/TooltipViewport.test.tsx
+- [x] 补齐 arrow/TooltipArrow.test.tsx
+- [x] 补齐 portal/TooltipPortal.test.tsx
+- [x] 补齐 positioner/TooltipPositioner.test.tsx
+- [x] 补齐 provider/TooltipProvider.test.tsx
+- [x] tooltip detached-triggers：跳过（actview 无 createHandle API）
+- [x] 补齐 viewport/TooltipViewport.test.tsx
 
 ### field（React 8 vs actview 6：缺 2 个）
 
-- [ ] 补齐 item/FieldItem.test.tsx
-- [ ] 补齐 root/FieldRoot.react17.test.tsx
+- [x] 补齐 item/FieldItem.test.tsx
+- [x] field react17：跳过（平台限定）
 
 ### accordion（React 5 vs actview 4：缺 1 个）
 
-- [ ] 补齐 panel/AccordionPanel.test.tsx
+- [x] 补齐 panel/AccordionPanel.test.tsx
 
 ### collapsible（React 3 vs actview 2：缺 1 个）
 
-- [ ] 补齐 panel/CollapsiblePanel.test.tsx
+- [x] 补齐 panel/CollapsiblePanel.test.tsx
 
 ## 备注
 
