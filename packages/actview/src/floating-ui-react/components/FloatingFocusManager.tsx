@@ -216,7 +216,6 @@ export interface FloatingFocusManagerProps {
 /**
  * Provides focus management for the floating element.
  * @see https://floating-ui.com/docs/FloatingFocusManager
- * @internal
  * (actview 版：store 模式；原生 DOM 事件；useIsoLayoutEffect → watch flush post。)
  */
 export const FloatingFocusManager = defineComponent(function FloatingFocusManager(
@@ -1017,5 +1016,6 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
     );
   };
 });
+
 
 

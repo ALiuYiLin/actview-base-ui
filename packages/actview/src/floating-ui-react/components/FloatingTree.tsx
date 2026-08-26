@@ -60,7 +60,6 @@ export interface FloatingNodeProps {
 /**
  * Provides parent node context for nested floating elements.
  * @see https://floating-ui.com/docs/FloatingTree
- * @internal
  */
 export const FloatingNode = defineComponent(function (props: FloatingNodeProps) {
   const parentId = useFloatingParentNodeId();
@@ -84,7 +83,6 @@ export interface FloatingTreeProps {
  * Provides context for nested floating elements when they are not children of
  * each other on the DOM.
  * @see https://floating-ui.com/docs/FloatingTree
- * @internal
  */
 export const FloatingTree = defineComponent(function (props: FloatingTreeProps) {
   const externalTree = toValue(props.externalTree);
@@ -100,3 +98,4 @@ export const FloatingTree = defineComponent(function (props: FloatingTreeProps) 
     );
   };
 });
+

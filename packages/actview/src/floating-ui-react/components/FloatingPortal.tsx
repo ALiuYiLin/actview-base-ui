@@ -57,7 +57,6 @@ const visuallyHiddenStyle = {
  * Portals the floating element into a given container element — by default,
  * outside of the app root and into the body.
  * @see https://floating-ui.com/docs/FloatingPortal
- * @internal
  * (actview 版：Teleport 代替 createPortal；原生 DOM 事件。)
  */
 export const FloatingPortal = defineComponent(function FloatingPortal(
@@ -271,3 +270,4 @@ export namespace FloatingPortal {
     [key: string]: any;
   }
 }
+

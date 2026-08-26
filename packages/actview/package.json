@@ -1,6 +1,6 @@
 {
   "name": "@actview/base-ui",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": "MUI Team",
   "description": "Base UI is a library of headless ('unstyled') ActView components and low-level hooks. You gain complete control over your app's CSS and accessibility features.",
   "license": "MIT",
@@ -26,7 +26,7 @@
     "#test-utils/rtl": "./test/rtl.ts"
   },
   "scripts": {
-    "build": "node -e \"fs.rmSync('build',{recursive:true,force:true});fs.rmSync('tsconfig.build.tsbuildinfo',{force:true})\" && vite build && tsgo -b tsconfig.build.json",
+    "build": "node -e \"fs.rmSync('build',{recursive:true,force:true});fs.rmSync('tsconfig.build.tsbuildinfo',{force:true})\" && vite build && tsgo -b tsconfig.build.json && node scripts/rewrite-dts-aliases.mjs",
     "prepublishOnly": "pnpm build",
     "test": "cross-env VITEST_ENV=jsdom vitest",
     "test:run": "cross-env VITEST_ENV=jsdom vitest run",
@@ -35,6 +35,7 @@
   },
   "dependencies": {
     "@actview/base-ui-utils": "workspace:*",
+    "@actview/floating-ui": "^0.1.0",
     "@floating-ui/dom": "^1.7.4",
     "@floating-ui/utils": "^0.2.12",
     "clsx": "2.1.1"
@@ -45,7 +46,6 @@
     "actview": "^1.1.1"
   },
   "devDependencies": {
-    "@actview/floating-ui": "^0.1.0",
     "@actview/plugin-scoped": "1.0.5",
     "@actview/plugin-vite": "1.1.1",
     "@actview/testing": "0.1.1",
