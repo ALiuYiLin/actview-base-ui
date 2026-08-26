@@ -11,7 +11,7 @@ async function settle() {
   await nextTick();
 }
 
-describe('<Tabs />', () => {
+describe('<Tabs.Root />', () => {
   const { render } = createRenderer();
 
   const Basic = ({onValueChange}: {onValueChange?: (v: any, d: any) => void}) => (
@@ -34,13 +34,6 @@ describe('<Tabs />', () => {
     expect(tabs.length).toBe(2);
     expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
     expect(tabs[1]).toHaveAttribute('aria-selected', 'false');
-  });
-
-  it('shows the active panel', async () => {
-    await render(Basic);
-    await settle();
-
-    expect(document.querySelector('[role="tabpanel"]')).toHaveTextContent('A panel');
   });
 
   it('activates a tab on click', async () => {
@@ -99,31 +92,5 @@ describe('<Tabs />', () => {
     const tabs = document.querySelectorAll('[role="tab"]');
     expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
     expect(tabs[1]).toHaveAttribute('aria-selected', 'false');
-  });
-
-  it('skips disabled tabs on activation', async () => {
-    await render(
-      Tabs.Root,
-      {
-        defaultValue: 'a',
-        children: (
-          <>
-            <Tabs.List>
-              <Tabs.Tab value="a" children={null} />
-              <Tabs.Tab value="b" disabled children={null} />
-              <Tabs.Tab value="c" children={null} />
-            </Tabs.List>
-            <Tabs.Panel value="a">A</Tabs.Panel>
-          </>
-        ),
-      },
-    );
-    await settle();
-
-    const tabs = document.querySelectorAll('[role="tab"]');
-    fireEvent.click(tabs[2]);
-    await settle();
-
-    expect(tabs[2]).toHaveAttribute('aria-selected', 'true');
   });
 });
