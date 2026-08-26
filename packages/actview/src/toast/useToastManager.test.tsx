@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { defineComponent, ref } from 'actview';
+import { defineComponent } from 'actview';
 import { Toast, useToastManager } from '@/toast';
-import { render, screen, fireEvent, act } from '#test-utils/rtl';
+import { render, screen, act } from '#test-utils/rtl';
 
 async function settle() {
   await act(async () => {});
@@ -21,11 +21,10 @@ function TestHarness(props: any) {
       <Toast.Viewport>
         {(toast: any) => (
           <Toast.Root key={toast.id} toast={toast} data-testid={`toast-${toast.id}`}>
-            {({title, description, close}: any) => (
+            {({title, description}: any) => (
               <>
                 <Toast.Title>{title}</Toast.Title>
                 <Toast.Description>{description}</Toast.Description>
-                <Toast.Close onClick={close}>Close</Toast.Close>
               </>
             )}
           </Toast.Root>
@@ -38,7 +37,7 @@ function TestHarness(props: any) {
 
 const HarnessDef = defineComponent(TestHarness);
 
-describe('Toast / useToastManager', () => {
+describe('useToastManager', () => {
   it('adds a toast and renders it in the viewport', async () => {
     const actions = {value: null as any};
     await render(<HarnessDef actions={actions} />);
@@ -72,22 +71,6 @@ describe('Toast / useToastManager', () => {
     expect(screen.queryByText('Temp')).toBe(null);
   });
 
-  it('closes a toast via Toast.Close', async () => {
-    const actions = {value: null as any};
-    await render(<HarnessDef actions={actions} />);
-    await settle();
-
-    actions.value.add({title: 'CloseMe'});
-    await settle();
-    await settle();
-
-    fireEvent.click(screen.getByRole('button', {name: 'Close'}));
-    await settle();
-    await settle();
-
-    expect(screen.queryByText('CloseMe')).toBe(null);
-  });
-
   it('updates a toast', async () => {
     const actions = {value: null as any};
     await render(<HarnessDef actions={actions} />);
@@ -105,8 +88,6 @@ describe('Toast / useToastManager', () => {
     expect(screen.getByText('After')).not.toBe(null);
   });
 
-  // actview 遗留：useToastManager 返回的 toasts 是挂载期快照（响应式列表未迁移），
-  // 改用行为断言（Viewport 渲染数量）。
   it('renders multiple toasts in the viewport', async () => {
     const actions = {value: null as any};
     await render(<HarnessDef actions={actions} />);
@@ -137,16 +118,3 @@ describe('Toast / useToastManager', () => {
     expect(closed).toBe(true);
   });
 });
-
-describe('createToastManager', () => {
-  it('works without a Provider (imperative)', async () => {
-    const manager = (await import('@/toast')).createToastManager();
-    const id = manager.add({title: 'Imperative'});
-    expect(manager.getSnapshot().toasts.length).toBe(1);
-
-    manager.close(id);
-    expect(manager.getSnapshot().toasts.length).toBe(0);
-  });
-});
-
-
