@@ -14,6 +14,7 @@ import {
 export type State<Payload> = PopupStoreState<Payload> & {
   modal: boolean | 'trap-focus';
   disablePointerDismissal: boolean;
+  instantType: 'dismiss' | 'click' | 'focus' | 'trigger-change' | undefined;
   openMethod: InteractionType | null;
   nested: boolean;
   nestedOpenDialogCount: number;
@@ -37,6 +38,7 @@ const selectors = {
   ...popupStoreSelectors,
   modal: (state: State<unknown>) => state.modal,
   disablePointerDismissal: (state: State<unknown>) => state.disablePointerDismissal,
+  instantType: (state: State<unknown>) => state.instantType,
   openMethod: (state: State<unknown>) => state.openMethod,
   nested: (state: State<unknown>) => state.nested,
   nestedOpenDialogCount: (state: State<unknown>) => state.nestedOpenDialogCount,
@@ -100,6 +102,7 @@ function createInitialState<Payload>(
     ...createInitialPopupStoreState<Payload>(triggerElements, floatingId, nested),
     modal: true,
     disablePointerDismissal: false,
+    instantType: undefined,
     openMethod: null,
     nested,
     nestedOpenDialogCount: 0,
