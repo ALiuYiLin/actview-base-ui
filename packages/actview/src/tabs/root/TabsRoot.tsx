@@ -1,4 +1,4 @@
-import {rawRef, ref, toValue, watch, shallowRef, toRefs, unrefs} from 'actview';
+import {computed, rawRef, ref, shallowRef, toRefs, watch} from 'actview';
 import type { Ref } from 'actview';
 import { useControlled } from '@/utils/useControlled';
 import type { BaseUIComponentProps } from '@/internals/types';
@@ -11,7 +11,7 @@ import type { TabsPanel } from '../panel/TabsPanel';
 import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 function findTabElement(
   tabMap: Map<Node, CompositeMetadata<TabsTab.Metadata>>,
@@ -79,26 +79,23 @@ function computeActivationDirection(
  */
 export function TabsRoot(componentProps: TabsRoot.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  const defaultValueProp = toValue(componentProps.defaultValue);
-  const onValueChangeProp = componentProps.onValueChange;
-  const orientation = toValue(componentProps.orientation) ?? 'horizontal';
-  const valueProp = toValue(componentProps.value);
-
   // Track whether the user explicitly provided a defined `defaultValue` prop.
   // Used to determine if we should honor a disabled tab selection.
-  const hasExplicitDefaultValueProp = defaultValueProp !== undefined;
+  const hasExplicitDefaultValueProp = componentProps.defaultValue !== undefined;
 
   const tabPanelRefs = shallowRef([] as (HTMLElement | null)[]);
   const mountedTabPanels = ref(new Map<TabsTab.Value, string>());
 
+  // 受控值 getter 形式传入（setup 快照会停留在首渲染——受控切换后失效）。
   const [value, setValue] = useControlled({
-    controlled: valueProp,
-    default: defaultValueProp ?? 0,
+    controlled: () => componentProps.value,
+    default: () => componentProps.defaultValue ?? 0,
     name: 'Tabs',
     state: 'value',
   });
 
-  const isControlled = valueProp !== undefined;
+  const isControlled = computed(() => componentProps.value !== undefined);
+  const orientation = computed(() => componentProps.orientation ?? 'horizontal');
 
   const tabMap = ref(new Map<Node, CompositeMetadata<TabsTab.Metadata>>());
   const setTabMap = (m: Map<Node, CompositeMetadata<TabsTab.Metadata>>) => {
@@ -117,35 +114,45 @@ export function TabsRoot(componentProps: TabsRoot.Props) {
   const committedTabActivationDirection = () => activationDirectionState.value.tabActivationDirection;
   const previousValue = () => activationDirectionState.value.previousValue;
 
-  // Compute activation direction during render when value changes so children see
-  // the correct direction on their very first render after the selection update.
-  // (actview：render 期重算——响应 value/tabMap 变化；方向状态机近似 React 版)
-  let tabActivationDirection = committedTabActivationDirection();
-  let directionComputationIncomplete = false;
+  // 方向状态机（React render 期 if 分支）→ computed：value/tabMap/orientation
+  // 变化时重算。context getter 直读该 computed，children 在 value 变化的首次
+  // 渲染即拿到正确方向；baseline（previousValue）提交交给下方 post watch。
+  const directionComputation = computed(() => {
+    const prev = previousValue();
+    const current = value.value;
+    let tabActivationDirection = committedTabActivationDirection();
+    let directionComputationIncomplete = false;
 
-  if (previousValue() !== value.value) {
-    tabActivationDirection = computeActivationDirection(
-      previousValue(),
-      value.value,
-      orientation,
-      tabMap.value,
-    );
+    if (prev !== current) {
+      tabActivationDirection = computeActivationDirection(prev, current, orientation.value, tabMap.value);
 
-    directionComputationIncomplete =
-      previousValue() != null &&
-      value.value != null &&
-      getTabElementBySelectedValue(value.value) == null;
-  }
+      // When a new tab is added and selected in the same controlled update,
+      // the tab element may not yet be registered in tabMap, so direction was
+      // computed from a value-based fallback. Keep the previous value snapshot
+      // stale so we re-compute from DOM positions once tabMap is up to date.
+      directionComputationIncomplete =
+        prev != null && current != null && getTabElementBySelectedValue(current) == null;
+    }
 
-  const nextPreviousValue = directionComputationIncomplete ? previousValue() : value.value;
-  const shouldSyncActivationDirectionState =
-    previousValue() !== nextPreviousValue ||
-    committedTabActivationDirection() !== tabActivationDirection;
+    const nextPreviousValue = directionComputationIncomplete ? prev : current;
+    const shouldSyncActivationDirectionState =
+      previousValue() !== nextPreviousValue ||
+      committedTabActivationDirection() !== tabActivationDirection;
+
+    return {tabActivationDirection, nextPreviousValue, shouldSyncActivationDirectionState};
+  });
 
   // React 版 useIsoLayoutEffect：方向状态提交
   watch(
-    () => [nextPreviousValue, shouldSyncActivationDirectionState, tabActivationDirection] as const,
     () => {
+      const computation = directionComputation.value;
+      return [
+        computation.nextPreviousValue,
+        computation.shouldSyncActivationDirectionState,
+        computation.tabActivationDirection,
+      ] as const;
+    },
+    ([nextPreviousValue, shouldSyncActivationDirectionState, tabActivationDirection]) => {
       if (!shouldSyncActivationDirectionState) {
         return;
       }
@@ -158,20 +165,18 @@ export function TabsRoot(componentProps: TabsRoot.Props) {
     {flush: 'post', immediate: true},
   );
 
-  const onValueChange = (
-    newValue: TabsTab.Value,
-    eventDetails: TabsRoot.ChangeEventDetails,
-  ) => {
+  // 事件 handler：setup 闭包事件期直读（callback prop 不快照）。
+  const onValueChange = (newValue: TabsTab.Value, eventDetails: TabsRoot.ChangeEventDetails) => {
     const activationDirection = computeActivationDirection(
       value.value,
       newValue,
-      orientation,
+      orientation.value,
       tabMap.value,
     );
 
     eventDetails.activationDirection = activationDirection;
 
-    onValueChangeProp?.(newValue, eventDetails);
+    componentProps.onValueChange?.(newValue, eventDetails);
 
     if (eventDetails.isCanceled) {
       return;
@@ -184,7 +189,7 @@ export function TabsRoot(componentProps: TabsRoot.Props) {
     nextValue: TabsTab.Value,
     reason: TabsRoot.ChangeEventReason,
   ) => {
-    onValueChangeProp?.(
+    componentProps.onValueChange?.(
       nextValue,
       createChangeEventDetails(reason, undefined, undefined, {
         activationDirection: 'none',
@@ -248,17 +253,17 @@ export function TabsRoot(componentProps: TabsRoot.Props) {
   const shouldNotifyInitialValueChangeRef = ref(!hasExplicitDefaultValueProp);
   // useControlled warns if defaultValue changes after mount, but the
   // disabled-default honor policy below still needs a stable initial value.
-  const initialDefaultValueRef = ref(defaultValueProp);
+  const initialDefaultValueRef = ref(componentProps.defaultValue);
   // An explicit defaultValue can intentionally point at a disabled tab on mount.
   // Once that selection becomes valid, later disabled states should fall back.
   const shouldHonorDisabledDefaultValueRef = ref(hasExplicitDefaultValueProp);
   const didRegisterTabsRef = ref(false);
 
-  // React 版 useIsoLayoutEffect：非受控自动回退
+  // React 版 useIsoLayoutEffect：非受控自动回退（事件期直读 refs/props）
   watch(
-    () => [tabMap.value.size, value.value, firstEnabledTabValue(), isControlled] as const,
+    () => [tabMap.value.size, value.value, firstEnabledTabValue(), isControlled.value] as const,
     () => {
-      if (isControlled) {
+      if (isControlled.value) {
         return;
       }
 
@@ -346,44 +351,63 @@ export function TabsRoot(componentProps: TabsRoot.Props) {
     {flush: 'post', immediate: true},
   );
 
-  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
+  // store-as-is 载体：身份稳定的 getter 对象（provide 只在 Provider setup 执行
+  // 一次，渲染期新对象会冻结快照）——value/orientation/direction 渲染期求值。
+  const contextValue: TabsRootContext = {
+    get value() {
+      return value.value;
+    },
+    get orientation() {
+      return orientation.value;
+    },
+    get tabActivationDirection() {
+      return directionComputation.value.tabActivationDirection;
+    },
+    onValueChange,
+    getTabElementBySelectedValue,
+    getTabIdByPanelValue,
+    getTabPanelIdByValue,
+    registerMountedTabPanel,
+    setTabMap,
+  };
 
-  const stateFn = (): TabsRootState => ({
-    orientation,
-    tabActivationDirection,
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
+
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
   });
 
-  const {element} = useRenderElement({
-    props: () => [{...unrefs(elementProps)}],
-    state: stateFn,
-    stateAttributesMapping: tabsStateAttributesMapping as any,
-    className,
-    style,
-    render,
-    children,
-    defaultTag: 'div',
-  });
+  const state = computed<TabsRootState>(() => ({
+    orientation: orientation.value,
+    tabActivationDirection: directionComputation.value.tabActivationDirection,
+  }));
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  // Provider 根（`<TabsRootContext.Provider>`）——contextValue 渲染期构建（PD-15）。
   return (
-    <TabsRootContext.Provider
-      value={
-        {
-          getTabElementBySelectedValue,
-          getTabIdByPanelValue,
-          getTabPanelIdByValue,
-          onValueChange,
-          orientation,
-          registerMountedTabPanel,
-          setTabMap,
-          tabActivationDirection,
-          value: value.value,
-        } as any
-      }
-    >
-      <CompositeList elementsRef={rawRef(tabPanelRefs)}>{element()}</CompositeList>
+    <TabsRootContext.Provider value={contextValue}>
+      <CompositeList elementsRef={rawRef(tabPanelRefs)}>
+        {useRenderElement(
+          'div',
+          {
+            className: className?.value,
+            render: render?.value,
+            style: style?.value,
+          },
+          {
+            state: state.value,
+            stateAttributesMapping: tabsStateAttributesMapping,
+            ref: componentProps.ref as any,
+            props: elementProps.value,
+          },
+        )}
+      </CompositeList>
     </TabsRootContext.Provider>
   );
 }

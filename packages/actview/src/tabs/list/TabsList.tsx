@@ -1,4 +1,5 @@
-import {onUnmounted, ref, toValue, shallowRef, toRefs, unrefs} from 'actview';
+import {computed, onUnmounted, ref, shallowRef, toRefs, watch} from 'actview';
+import type { Ref } from 'actview';
 import type { BaseUIComponentProps } from '@/internals/types';
 import type { TabsRootState } from '../root/TabsRoot';
 import { CompositeRoot } from '@/internals/composite/root/CompositeRoot';
@@ -15,20 +16,19 @@ import { EMPTY_ARRAY } from '@/utils/empty';
  */
 export function TabsList(componentProps: TabsList.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  const activateOnFocus = toValue(componentProps.activateOnFocus) ?? false;
-  const loopFocus = toValue(componentProps.loopFocus) ?? true;
+  // context 载体直取（store-as-is）：字段渲染期属性访问即追踪。
+  const rootContext = useTabsRootContext();
 
-  const rootContextRef = useTabsRootContext();
+  // 渲染期/事件期消费的 props：computed 直读（setup 快照会停留在首渲染）。
+  const activateOnFocus = computed(() => componentProps.activateOnFocus ?? false);
+  const loopFocus = computed(() => componentProps.loopFocus ?? true);
 
-  const highlightedTabIndex = ref(0);
-  const setHighlightedTabIndex = (v: number) => (highlightedTabIndex.value = v);
   const tabsListElement = ref<HTMLElement | null>(null);
 
   const indicatorUpdateListenersRef = shallowRef(new Set<() => void>());
   const tabResizeObserverElementsRef = shallowRef(new Set<HTMLElement>());
   const resizeObserverRef = ref(null as ResizeObserver | null);
 
-  // React 版 useIsoLayoutEffect：ResizeObserver 建立
   let resizeObserverCleanup: (() => void) | undefined;
   const setupObserver = () => {
     resizeObserverCleanup?.();
@@ -63,9 +63,10 @@ export function TabsList(componentProps: TabsList.Props) {
     resizeObserverCleanup?.();
     resizeObserverCleanup = undefined;
   };
-  const runObserverSetup = () => setupObserver();
-  // 挂载后建立（tabsListElement ref 已填充）
-  queueMicrotask(runObserverSetup);
+
+  // React 版 useIsoLayoutEffect：tabsListElement ref 回调填充后建立 observer
+  // （元素随 render prop 交换时重建，对齐「observer 跟随宿主元素」语义）。
+  watch(tabsListElement, () => setupObserver(), {flush: 'post'});
   onUnmounted(stopObserver);
 
   const registerIndicatorUpdateListener = (listener: () => void) => {
@@ -84,60 +85,70 @@ export function TabsList(componentProps: TabsList.Props) {
     };
   };
 
-  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
-
-  // ============ render（最后 return JSX——插件转换为渲染函数）============
-  const {orientation, setTabMap, tabActivationDirection} = rootContextRef.value;
-
-  const stateValue: TabsListState = {
-    orientation,
-    tabActivationDirection,
-  };
-
-  const defaultProps: Record<string, any> = {
-    'aria-orientation': orientation === 'vertical' ? 'vertical' : undefined,
-    role: 'tablist',
-  };
-
+  // 挂载后触发 indicator 重渲染：indicator 的布局计算依赖真实的
+  // tabsListElement（provide 时还是首渲染的 null）。
   const listElementRef = (el: HTMLElement | null) => {
     tabsListElement.value = el;
-    // 挂载后触发 indicator 重渲染：contextValue 渲染期重建后，indicator 的
-    // 布局计算才能拿到真实的 tabsListElement（setup 快照是首渲染的 null）。
     for (const listener of indicatorUpdateListenersRef.value) {
       listener();
     }
   };
 
+  // store-as-is 载体：身份稳定的 getter 对象（provide 只在 Provider setup 执行
+  // 一次，渲染期新对象会冻结快照）——activateOnFocus/tabsListElement 渲染期求值。
+  const contextValue: TabsListContext = {
+    get activateOnFocus() {
+      return activateOnFocus.value;
+    },
+    registerIndicatorUpdateListener,
+    registerTabResizeObserverElement,
+    get tabsListElement() {
+      return tabsListElement.value;
+    },
+  };
+
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
+
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
+  });
+
+  const state = computed<TabsListState>(() => ({
+    orientation: rootContext.orientation,
+    tabActivationDirection: rootContext.tabActivationDirection,
+  }));
+
+  const listProps = computed<Record<string, any>>(() => ({
+    'aria-orientation': rootContext.orientation === 'vertical' ? 'vertical' : undefined,
+    role: 'tablist',
+  }));
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  // 高亮索引由 useCompositeRoot 内部持有（setup 一次性执行，受控回传会停留在
+  // 首渲染快照）；TabsTab 经 compositeRootContext 直读实时值并回写。
   return (
-    <TabsListContext.Provider
-      value={(() => ({
-        activateOnFocus,
-        registerIndicatorUpdateListener,
-        registerTabResizeObserverElement,
-        // 渲染期重建 context（对齐 React 版每次 render）——setup 快照会让
-        // tabsListElement 停留在首渲染的 null（indicator 定位失败）。
-        tabsListElement: tabsListElement.value,
-      }))() as any}
-    >
+    <TabsListContext.Provider value={contextValue}>
       <CompositeRoot
         render={render as any}
         className={className as any}
         style={style as any}
-        state={stateValue as any}
+        state={state.value as any}
         refs={[listElementRef]}
-        props={[defaultProps, unrefs(elementProps)]}
+        props={[listProps.value, elementProps.value]}
         stateAttributesMapping={tabsStateAttributesMapping}
-        highlightedIndex={highlightedTabIndex.value}
         enableHomeAndEndKeys
-        loopFocus={loopFocus}
-        orientation={orientation}
-        onHighlightedIndexChange={setHighlightedTabIndex}
-        onMapChange={setTabMap}
+        loopFocus={loopFocus.value}
+        orientation={rootContext.orientation}
+        onMapChange={rootContext.setTabMap}
         disabledIndices={EMPTY_ARRAY}
-      >
-        {children?.value}
-      </CompositeRoot>
+      />
     </TabsListContext.Provider>
   );
 }
