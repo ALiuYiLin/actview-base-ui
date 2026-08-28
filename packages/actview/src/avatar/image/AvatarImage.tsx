@@ -1,4 +1,4 @@
-import { computed, onUnmounted, ref, toValue, toRefs, unrefs, watch } from 'actview';
+import { computed, onUnmounted, ref, toRefs, unrefs, watch } from 'actview';
 import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
 import type { StateAttributesMapping } from '@/internals/getStateAttributesProps';
 import { useAvatarRootContext } from '../root/AvatarRootContext';
@@ -25,11 +25,11 @@ export function AvatarImage(componentProps: AvatarImage.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
   // context 载体直取（store-as-is）：读字段即追踪，无 .value 链。
   const { setImageLoadingStatus } = useAvatarRootContext();
-  const imageLoadingStatus = useImageLoadingStatus(() => toValue(componentProps.src), {
-    referrerPolicy: () => toValue(componentProps.referrerPolicy),
-    crossOrigin: () => toValue(componentProps.crossOrigin),
-    sizes: () => toValue(componentProps.sizes),
-    srcSet: () => toValue(componentProps.srcSet),
+  const imageLoadingStatus = useImageLoadingStatus(() => componentProps.src, {
+    referrerPolicy: () => componentProps.referrerPolicy,
+    crossOrigin: () => componentProps.crossOrigin,
+    sizes: () => componentProps.sizes,
+    srcSet: () => componentProps.srcSet,
   });
 
   const isVisible = computed(() => imageLoadingStatus.value === 'loaded');

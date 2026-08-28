@@ -60,22 +60,22 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
   const {labelId, registerControlId, getDescriptionProps} = useLabelableContext();
 
   const groupContext = useCheckboxGroupContext();
-  const parentContext = groupContext?.allValues === undefined ? undefined : groupContext.parent;
-  const isGroupedWithParent = parentContext !== undefined;
+  const parentContext = computed(() =>
+    groupContext?.allValues !== undefined ? groupContext.parent : undefined,
+  );
+  const isGroupedWithParent = computed(() => parentContext.value !== undefined);
 
+  // 初始化型快照（仅 setup 一次性消费——对齐 React 初始化器语义）。
   const defaultChecked = componentProps.defaultChecked ?? false;
-  const nameProp = componentProps.name;
-  const valueProp = componentProps.value;
-  const parent = componentProps.parent ?? false;
-  const nativeButton = componentProps.nativeButton ?? false;
   const idProp = componentProps.id;
-  const form = componentProps.form;
-  const uncheckedValue = componentProps.uncheckedValue;
   const ariaLabelledByProp = componentProps['aria-labelledby'];
-  const onCheckedChange = componentProps.onCheckedChange;
 
-  // disabled 用 computed：Field.Root / Field.Item / group / 本组件 disabled 动态
-  // 变化时渲染期 `.value` 与 useButton 的 watch 都能拿到实时值。
+  // 渲染期/事件期消费的 props：一律 computed 直读（setup 快照会停留在首渲染）。
+  const name = computed(() => fieldName.value ?? componentProps.name);
+  const value = computed(() => componentProps.value ?? name.value);
+  const parent = computed(() => componentProps.parent ?? false);
+  const nativeButton = computed(() => componentProps.nativeButton ?? false);
+
   const disabled = computed(
     () =>
       rootDisabled.value ||
@@ -83,8 +83,6 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
       (groupContext?.disabled ?? false) ||
       (componentProps.disabled ?? false),
   );
-  const name = fieldName.value ?? nameProp;
-  const value = valueProp ?? name;
 
   const id = useBaseUiId();
 
@@ -96,7 +94,7 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
   // `|| undefined` rather than `??`: an empty `id` falls back to the scope's control id.
   const controlId = useLabelableId({id: (idProp as string) || undefined, enabled: ownsControlId});
 
-  const rootId = nativeButton ? controlId : id;
+  const rootId = computed(() => (nativeButton.value ? controlId : id));
 
   // computed：group 的 value 变化时重算（setup 快照会导致 checked 的
   // controlled getter 永远读到初始值——渲染期语义）。
@@ -106,15 +104,15 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
 
   const {getButtonProps, buttonRef} = useButton({
     disabled,
-    native: nativeButton,
+    native: nativeButton.value,
   });
 
   const validation = groupContext?.validation ?? localValidation;
 
   const [checked, setCheckedState] = useControlled<boolean>({
     controlled: () =>
-      value !== undefined && groupValue.value !== undefined && !parent
-        ? groupValue.value.includes(value)
+      value.value !== undefined && groupValue.value !== undefined && !parent.value
+        ? groupValue.value.includes(value.value)
         : componentProps.checked,
     default: defaultChecked,
     name: 'Checkbox',
@@ -127,27 +125,29 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
     checked.value,
     undefined,
     !groupContext && !disabled.value,
-    nameProp,
+    componentProps.name,
   );
 
-  const registerChildId = parentContext?.registerChildId;
+  const registerChildId = parentContext.value?.registerChildId;
 
   const inputRef = ref(null as HTMLInputElement | null);
   const registerFieldInput = validation.registerInput;
-  const registeredInputValue = groupContext ? value : undefined;
   const registerInput = (element: HTMLInputElement) =>
-    registerFieldInput(element, {controlRef, value: registeredInputValue});
+    registerFieldInput(element, {
+      controlRef,
+      value: groupContext ? value.value : undefined,
+    });
   // ref 形 props 直读本體（inputRef 的值本身就是 ref 对象——勿经 toRefs/toValue 解包）
   const mergedInputRef = useMergedRefs(
     componentProps.inputRef as any,
     inputRef as any,
-    parent ? undefined : (registerInput as any),
+    parent.value ? undefined : (registerInput as any),
   );
   const ariaLabelledBy = useAriaLabelledBy(
     ariaLabelledByProp as string | undefined,
     labelId.value,
     inputRef,
-    !nativeButton,
+    !nativeButton.value,
     controlId,
   );
 
@@ -170,7 +170,7 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
       return;
     }
 
-    clearErrors(name);
+    clearErrors(name.value);
     setFilled(Boolean(checked.value));
     setDirty(Boolean(checked.value) !== validityData.value.initialValue);
 
@@ -179,43 +179,47 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
 
   // parentContext disabled 状态注册
   watch(
-    () => [parentContext, disabled.value, value] as const,
-    () => {
-      if (!parentContext || value === undefined) {
+    () => [parentContext.value, disabled.value, value.value] as const,
+    ([currentParent, currentDisabled, currentValue]) => {
+      if (!currentParent || currentValue === undefined) {
         return;
       }
 
-      const disabledStates = parentContext.disabledStatesRef.value;
-      disabledStates.set(value, disabled.value);
+      const disabledStates = currentParent.disabledStatesRef.value;
+      disabledStates.set(currentValue, currentDisabled);
 
       return () => {
-        disabledStates.delete(value);
+        disabledStates.delete(currentValue);
       };
     },
     {immediate: true},
   );
   onUnmounted(() => {
-    if (parentContext && value !== undefined) {
-      parentContext.disabledStatesRef.value.delete(value);
+    if (parentContext.value && value.value !== undefined) {
+      parentContext.value.disabledStatesRef.value.delete(value.value);
     }
   });
 
   // React 版 useIsoLayoutEffect：子 checkbox 注册 id
   watch(
-    () => [parentContext, parent, value, rootId] as const,
-    () => {
-      if (!registerChildId || parent || value === undefined || rootId === undefined) {
+    () => [parentContext.value, parent.value, value.value, rootId.value] as const,
+    ([currentParent, currentParentFlag, currentValue, currentRootId]) => {
+      const childRegister = currentParent?.registerChildId;
+      if (!childRegister || currentParentFlag || currentValue === undefined || currentRootId === undefined) {
         return;
       }
 
-      const unregister = registerChildId(value, rootId);
+      const unregister = childRegister(currentValue, currentRootId);
       return unregister;
     },
     {flush: 'post', immediate: true},
   );
   onUnmounted(() => {
-    if (registerChildId && !parent && value !== undefined && rootId !== undefined) {
-      registerChildId(value, rootId)();
+    const currentValue = value.value;
+    const currentRootId = rootId.value;
+    const childRegister = registerChildId;
+    if (childRegister && !parent.value && currentValue !== undefined && currentRootId !== undefined) {
+      childRegister(currentValue, currentRootId)();
     }
   });
 
@@ -224,14 +228,14 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
 
   // group props：parent/group 上下文方法每次求值（对齐 React 版每次 render 调用）
   const groupProps = computed<any>(() => {
-    if (!isGroupedWithParent) {
+    if (!isGroupedWithParent.value) {
       return {};
     }
-    if (parent) {
-      return parentContext!.getParentProps() as any;
+    if (parent.value) {
+      return parentContext.value!.getParentProps() as any;
     }
-    if (value !== undefined) {
-      return parentContext!.getChildProps(value) as any;
+    if (value.value !== undefined) {
+      return parentContext.value!.getChildProps(value.value) as any;
     }
     return {};
   });
@@ -246,8 +250,8 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
     const groupChecked = currentGroupProps.checked ?? checkedPropValue ?? false;
     const groupIndeterminate = currentGroupProps.indeterminate ?? indeterminatePropValue;
 
-    const computedChecked = isGroupedWithParent ? Boolean(groupChecked) : Boolean(checked.value);
-    const computedIndeterminate = isGroupedWithParent
+    const computedChecked = isGroupedWithParent.value ? Boolean(groupChecked) : Boolean(checked.value);
+    const computedIndeterminate = isGroupedWithParent.value
       ? Boolean(groupIndeterminate || indeterminatePropValue)
       : Boolean(indeterminatePropValue);
 
@@ -329,7 +333,8 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
     return getStateAttributes(stateValue.value, mapping);
   });
 
-  // 事件 handler：setup 闭包读 computed/refs——事件触发时拿到实时值。
+  // 事件 handler：setup 闭包读 computed/refs——事件触发时拿到实时值；
+  // 回调类 props（onCheckedChange）事件期直读 componentProps（父换新引用也能拿到）。
   const handleInputClick = (event: any) => {
     // The click dispatched from the root's `onClick` is an implementation detail
     // and must not reach ancestors, which already receive the original click.
@@ -350,7 +355,7 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
     const nextChecked = event.currentTarget.checked;
     const details = createChangeEventDetails(REASONS.none, event);
 
-    onCheckedChange?.(nextChecked, details);
+    componentProps.onCheckedChange?.(nextChecked, details);
 
     if (details.isCanceled) {
       return;
@@ -365,15 +370,15 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
     setCheckedState(nextChecked);
 
     if (
-      value !== undefined &&
+      value.value !== undefined &&
       groupContext !== undefined &&
-      !parent &&
-      !isGroupedWithParent
+      !parent.value &&
+      !isGroupedWithParent.value
     ) {
       const currentGroupValue = groupContext.value ?? [];
       const nextGroupValue = nextChecked
-        ? [...currentGroupValue, value]
-        : currentGroupValue.filter((item) => item !== value);
+        ? [...currentGroupValue, value.value]
+        : currentGroupValue.filter((item) => item !== value.value);
 
       groupContext.setValue(nextGroupValue, details);
     }
@@ -468,23 +473,23 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
       {
         checked: checked.value,
         disabled: disabled.value,
-        form,
+        form: componentProps.form,
         // parent checkboxes unset `name` to be excluded from form submission
-        name: parent ? undefined : name,
+        name: parent.value ? undefined : name.value,
         // Set `id` to stop Chrome warning about an unassociated input.
         // When using a native button, the `id` is applied to the button instead.
-        id: nativeButton ? undefined : controlId,
+        id: nativeButton.value ? undefined : controlId,
         required: stateValue.value.required,
         ref: mergedInputRef,
-        style: name ? visuallyHiddenInput : visuallyHidden,
+        style: name.value ? visuallyHiddenInput : visuallyHidden,
         tabIndex: -1,
         type: 'checkbox',
         'aria-hidden': true,
         onClick: handleInputClick,
         onFocus: handleInputFocus,
       },
-      valueProp !== undefined
-        ? {value: (groupContext ? checked.value && valueProp : valueProp) || ''}
+      componentProps.value !== undefined
+        ? {value: (groupContext ? checked.value && componentProps.value : componentProps.value) || ''}
         : EMPTY_OBJECT,
       getDescriptionProps,
       (props: any) => validation.getValidationProps(disabled.value, props),
@@ -496,13 +501,13 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
   const rootProps = computed(() =>
     mergePropsN<any>([
       {
-        id: rootId,
+        id: rootId.value,
         role: 'checkbox',
         'aria-checked': stateValue.value.indeterminate ? 'mixed' : stateValue.value.checked,
         'aria-readonly': stateValue.value.readOnly || undefined,
         'aria-required': stateValue.value.required || undefined,
         'aria-labelledby': ariaLabelledBy,
-        [PARENT_CHECKBOX as string]: parent ? '' : undefined,
+        [PARENT_CHECKBOX as string]: parent.value ? '' : undefined,
         onFocus: handleRootFocus,
         onBlur: handleRootBlur,
         onKeyDown: handleRootKeyDown,
@@ -533,12 +538,12 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
           props: rootProps.value,
         },
       )}
-      {!checked.value && !groupContext && name && !parent && uncheckedValue !== undefined && (
+      {!checked.value && !groupContext && name.value && !parent.value && componentProps.uncheckedValue !== undefined && (
         <input
           type="hidden"
-          form={form}
-          name={name}
-          value={uncheckedValue}
+          form={componentProps.form}
+          name={name.value}
+          value={componentProps.uncheckedValue}
           disabled={disabled.value}
         />
       )}

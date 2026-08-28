@@ -1,8 +1,8 @@
-import { onUnmounted, ref, toValue, toRefs, unrefs, watch } from 'actview';
-import type { BaseUIComponentProps } from '@/internals/types';
+import { computed, ref, toRefs, watch } from 'actview';
 import { useAvatarRootContext } from '../root/AvatarRootContext';
 import type { AvatarRootState } from '../root/AvatarRoot';
 import { avatarStateAttributesMapping } from '../root/stateAttributesMapping';
+import type { Ref } from 'actview';
 import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
@@ -16,7 +16,9 @@ export function AvatarFallback(componentProps: AvatarFallback.Props) {
   // context 载体直取（store-as-is）：读 imageLoadingStatus 字段即追踪。
   const context = useAvatarRootContext();
 
-  const delayPassed = ref(toValue(componentProps.delay) === 0);
+  // delay：computed 渲染期实时（props 直读，无 toValue）。
+  const delay = computed(() => componentProps.delay ?? 0);
+  const delayPassed = ref(delay.value === 0);
 
   // React 版 useTimeout(delay)：delay > 0 时延时显示，否则立即显示。
   // 初始逻辑放 setup 直接执行（actview watch 的 immediate 首次回调在
@@ -30,7 +32,7 @@ export function AvatarFallback(componentProps: AvatarFallback.Props) {
     }
   };
 
-  const initialDelay = toValue(componentProps.delay) ?? 0;
+  const initialDelay = delay.value;
   if (initialDelay > 0) {
     timeoutId = setTimeout(() => {
       delayPassed.value = true;
@@ -41,47 +43,57 @@ export function AvatarFallback(componentProps: AvatarFallback.Props) {
     delayPassed.value = true;
   }
 
-  watch(
-    () => toValue(componentProps.delay),
-    (delay) => {
-      clearDelayTimeout();
-      if (delay > 0) {
-        timeoutId = setTimeout(() => {
-          delayPassed.value = true;
-        }, delay);
-      } else {
+  watch(delay, (d) => {
+    clearDelayTimeout();
+    if (d > 0) {
+      timeoutId = setTimeout(() => {
         delayPassed.value = true;
-      }
-    },
-  );
+      }, d);
+    } else {
+      delayPassed.value = true;
+    }
+  });
   onUnmounted(clearDelayTimeout);
 
-  // ============ setup：值形 props toRefs 活引用；ref 形 props 直读本體 ============
-  const { className, render, style, ...elementProps } = toRefs(componentProps);
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
+
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
+  });
+  const state = computed<AvatarFallbackState>(() => ({
+    imageLoadingStatus: context.imageLoadingStatus,
+  }));
+  const hidden = computed(
+    () => state.value.imageLoadingStatus === 'loaded' || !(delay.value === 0 || delayPassed.value),
+  );
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  // 条件（delay/imageLoadingStatus）在渲染期求值——读 reactive 字段即追踪。
+  // 条件在渲染期求值（表达式内 .value 直读，无 IIFE）。
   return (
     <>
-      {(() => {
-        const delay = toValue(componentProps.delay) ?? 0;
-        const imageLoadingStatus = context.imageLoadingStatus;
-        return imageLoadingStatus === 'loaded' || !(delay === 0 || delayPassed.value)
-          ? null
-          : useRenderElement(
-              'span',
-              {
-                className: className?.value,
-                render: render?.value,
-                style: style?.value,
-              },
-              {
-                state: { imageLoadingStatus },
-                ref: componentProps.ref,
-                props: [unrefs(elementProps)],
-              },
-            );
-      })()}
+      {hidden.value
+        ? null
+        : useRenderElement(
+            'span',
+            {
+              className: className?.value,
+              render: render?.value,
+              style: style?.value,
+            },
+            {
+              state: state.value,
+              ref: componentProps.ref,
+              props: elementProps.value,
+              stateAttributesMapping: avatarStateAttributesMapping,
+            },
+          )}
     </>
   );
 }

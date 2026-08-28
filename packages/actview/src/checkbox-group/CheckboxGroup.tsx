@@ -43,15 +43,13 @@ export function CheckboxGroup(componentProps: CheckboxGroup.Props) {
   const {labelId, registerControlId, getDescriptionProps} = useLabelableContext();
   const {clearErrors, elementRef} = useFormContext();
 
+  // 初始化型快照（仅喂 useControlled 初值——对齐 React「初始化器只读一次」）。
+  // ⚠️ id / onValueChange 等渲染期、事件期消费的 props 一律调用时直读
+  // componentProps.x（setup 快照会在父更新后读到旧值/旧回调）。
   const defaultValueProp = componentProps.defaultValue;
-  const idProp = componentProps.id;
-  const onValueChange = componentProps.onValueChange;
-
-  // setup 快照（用于 useRegisterFieldControl 等 setup 期注册）；渲染期的
-  // context 载体 getter/state 会重新计算 disabled（Field.Root 或本组件
-  // disabled 动态变化时实时生效——见下方注释）。
-  const disabled = fieldDisabled.value || (componentProps.disabled ?? false);
   const defaultValue = defaultValueProp ?? EMPTY_ARRAY;
+
+  const disabled = computed(() => fieldDisabled.value || (componentProps.disabled ?? false));
 
   const [value, setValueUnwrapped] = useControlled<string[]>({
     // getter：渲染期读 componentProps.value（setup 快照会导致受控更新不生效）
@@ -65,7 +63,8 @@ export function CheckboxGroup(componentProps: CheckboxGroup.Props) {
     v: string[],
     eventDetails: CheckboxGroup.ChangeEventDetails,
   ) => {
-    onValueChange?.(v, eventDetails);
+    // 事件期直读 props——父组件换新回调引用也能拿到最新。
+    componentProps.onValueChange?.(v, eventDetails);
 
     if (eventDetails.isCanceled) {
       return;
@@ -85,7 +84,7 @@ export function CheckboxGroup(componentProps: CheckboxGroup.Props) {
   // must not point `htmlFor` at one arbitrary checkbox inside the group.
   useLabelableId({id: null});
 
-  const id = useBaseUiId(idProp);
+  const id = useBaseUiId(componentProps.id);
   const getInputControl = validation.getInputControl;
 
   const controlRef = {
@@ -119,7 +118,7 @@ export function CheckboxGroup(componentProps: CheckboxGroup.Props) {
     id,
     value.value as string[],
     getFormValue,
-    !!fieldName.value && !disabled,
+    !!fieldName.value && !disabled.value,
     fieldName.value,
   );
 
@@ -186,7 +185,7 @@ export function CheckboxGroup(componentProps: CheckboxGroup.Props) {
 
   const rootProps = computed(() =>
     getDescriptionProps({
-      id: idProp,
+      id: componentProps.id,
       role: 'group',
       'aria-labelledby': labelId.value,
       ...elementProps.value,

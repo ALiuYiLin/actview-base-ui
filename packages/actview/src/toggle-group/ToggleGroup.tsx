@@ -1,7 +1,7 @@
 import { computed, ref, toRefs, unrefs, watch } from 'actview';
 import { useControlled } from '@/utils/useControlled';
 import { EMPTY_ARRAY } from '@/utils/empty';
-import type { BaseUIComponentProps, Orientation } from '@/internals/types';
+import type { BaseUIComponentProps, HTMLProps, Orientation } from '@/internals/types';
 import { CompositeRoot } from '@/internals/composite/root/CompositeRoot';
 import { useRenderElement } from '@/internals/useRenderElement';
 import { useMergedRefs } from '@/internals/useMergedRefs';

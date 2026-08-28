@@ -23,11 +23,10 @@ export function Toggle<Value extends string>(componentProps: Toggle.Props<Value>
   // ============ setup（只执行一次）：一次性初始化 ============
   // 自持 ref：经 params.ref 合并链透传（不用 useRootElement）。
   const buttonRef = ref<HTMLElement | null>(null);
-  const onPressedChange = componentProps.onPressedChange;
   const valueProp = componentProps.value;
 
   // `|| undefined` handles cases, where value is falsy (i.e. "")
-  const value = useBaseUiId(valueProp || undefined);
+  const value = useBaseUiId(valueProp || undefined) as Value;
   const groupContext = useToggleGroupContext<Value>();
 
   const [pressedState, setPressedState] = useControlled<boolean>({
@@ -95,7 +94,8 @@ export function Toggle<Value extends string>(componentProps: Toggle.Props<Value>
 
               // `onPressedChange` runs before the group commits so that canceling here
               // can also veto the group value change, which shares this `details` object.
-              onPressedChange?.(nextPressed, details);
+              // 回调类 props 事件期直读 componentProps（父换新引用也能拿到最新）。
+              componentProps.onPressedChange?.(nextPressed, details);
 
               if (details.isCanceled) {
                 return;
