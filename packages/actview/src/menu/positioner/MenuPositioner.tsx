@@ -1,4 +1,4 @@
-import {rawRef, toValue, watch, ref} from 'actview';
+import {rawRef, computed, watch, ref} from 'actview';
 import type { ComputedRef } from 'actview';
 import { inertValue } from '@/utils/inertValue';
 import { FloatingNode } from '@/floating-ui-react';
@@ -19,6 +19,7 @@ import { useContextMenuRootContext } from '@/context-menu/root/ContextMenuRootCo
 import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
 import { useAnimationsFinished } from '@/internals/useAnimationsFinished';
+import { useTimeout } from '@/utils/useTimeout';
 import { usePositioner } from '@/utils/usePositioner';
 import { useAnchoredPopupScrollLock } from '@/utils/useAnchoredPopupScrollLock';
 
@@ -206,7 +207,7 @@ export function MenuPositioner(componentProps: MenuPositioner.Props) {
     {flush: 'post', immediate: true},
   );
 
-  const closeTimeout = useTimeoutSafe();
+  const closeTimeout = useTimeout();
 
   // Clear pending close timeout when the menu closes.
   watch(
@@ -304,26 +305,27 @@ export function MenuPositioner(componentProps: MenuPositioner.Props) {
     {flush: 'post', immediate: true},
   );
 
-  const state = (): MenuPositionerState => ({
+  const state = computed<MenuPositionerState>(() => ({
     open: open.value,
-    side: positioner.side,
-    align: positioner.align,
-    anchorHidden: positioner.anchorHidden,
+    side: positioner.side.value,
+    align: positioner.align.value,
+    anchorHidden: positioner.anchorHidden.value,
     nested: parent.value.type === 'menu',
     instant: instantType.value as any,
-  });
+  }));
 
-  const menubarModal = parent.value.type === 'menubar' && parent.value.context.modal;
-  const popupModal = modal.value && lastOpenChangeReason.value !== REASONS.triggerHover;
+  const menubarModal = () => parent.value.type === 'menubar' && parent.value.context.modal;
+  const popupModal = () => modal.value && lastOpenChangeReason.value !== REASONS.triggerHover;
 
+  // reactive inputs（一次性 setup 下快照布尔会让锁失效）
   useAnchoredPopupScrollLock(
-    open.value && (menubarModal || popupModal),
-    openMethod.value === 'touch',
-    positionerElement.value,
-    triggerElement.value as HTMLElement | null,
+    computed(() => open.value && (menubarModal() || popupModal())),
+    computed(() => openMethod.value === 'touch'),
+    positionerElement,
+    triggerElement as any,
   );
 
-  const element = usePositioner(componentProps as any, state() as any, {
+  const element = usePositioner(componentProps as any, state as any, {
     styles: positioner.positionerStyles,
     transitionStatus,
     props: {} as any,
@@ -349,28 +351,43 @@ export function MenuPositioner(componentProps: MenuPositioner.Props) {
       (parent.value.type === 'menubar' && parent.value.context.modal));
 
   // cuts a hole in the backdrop to allow pointer interaction with the menubar or dropdown menu trigger element
-  const backdropCutout = (() => {
+  const backdropCutout = computed(() => {
     if (parent.value.type === 'menubar') {
       return parent.value.context.contentElement;
     } else if (parent.value.type === undefined) {
       return triggerElement.value as HTMLElement | null;
     }
     return null;
-  })();
+  });
+
+  // store-as-is 载体：身份稳定的 getter 对象——side/align/anchorHidden/
+  // arrowUncentered/arrowStyles 渲染期求值（useAnchorPositioning 返回
+  // computed）；arrowRef 为稳定 ref。
+  const contextValue = {
+    get nodeId() {
+      return floatingNodeId.value;
+    },
+    get side() {
+      return positioner.side.value;
+    },
+    get align() {
+      return positioner.align.value;
+    },
+    arrowRef: positioner.arrowRef,
+    get arrowUncentered() {
+      return positioner.arrowUncentered.value;
+    },
+    get arrowStyles() {
+      return positioner.arrowStyles.value;
+    },
+    get context() {
+      return {nodeId: floatingNodeId.value};
+    },
+  };
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
   return (
-    <MenuPositionerContext.Provider
-      value={{
-        nodeId: floatingNodeId.value,
-        side: positioner.side,
-        align: positioner.align,
-        arrowRef: positioner.arrowRef,
-        arrowUncentered: positioner.arrowUncentered,
-        arrowStyles: positioner.arrowStyles,
-        context: {nodeId: floatingNodeId.value},
-      }}
-    >
+    <MenuPositionerContext.Provider value={contextValue as any}>
       {shouldRenderBackdrop() && (
         <InternalBackdrop
           ref={
@@ -379,7 +396,7 @@ export function MenuPositioner(componentProps: MenuPositioner.Props) {
               : null
           }
           inert={inertValue(!open.value)}
-          cutout={backdropCutout}
+          cutout={backdropCutout.value}
         />
       )}
       <FloatingNode id={floatingNodeId.value}>
@@ -392,11 +409,6 @@ export function MenuPositioner(componentProps: MenuPositioner.Props) {
       </FloatingNode>
     </MenuPositionerContext.Provider>
   );
-}
-
-import { useTimeout } from '@/utils/useTimeout';
-function useTimeoutSafe() {
-  return useTimeout();
 }
 
 export interface MenuPositionerState {

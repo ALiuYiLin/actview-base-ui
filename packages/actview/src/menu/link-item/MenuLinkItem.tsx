@@ -24,7 +24,7 @@ export function MenuLinkItem(componentProps: MenuLinkItem.Props) {
 
   const listItem = useCompositeListItem({guess: true, label});
   const menuPositionerContext = useMenuPositionerContext(true);
-  const nodeId = menuPositionerContext?.value?.nodeId;
+  const nodeId = menuPositionerContext?.nodeId;
 
   const id = useBaseUiId(idProp);
 

@@ -16,7 +16,7 @@ export function MenuArrow(componentProps: MenuArrow.Props) {
 
   const {store} = useMenuRootContext();
   const positionerContext = useMenuPositionerContext();
-  const {arrowRef, side, align, arrowUncentered, arrowStyles} = positionerContext.value ?? {
+  const {arrowRef, side, align, arrowUncentered, arrowStyles} = positionerContext ?? {
     arrowRef: {value: null as Element | null},
     side: 'bottom' as Side,
     align: 'center' as Align,

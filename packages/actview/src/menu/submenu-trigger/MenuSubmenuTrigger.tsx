@@ -111,7 +111,7 @@ export function MenuSubmenuTrigger(componentProps: MenuSubmenuTrigger.Props) {
     typingRef: parentMenuStore.context.typingRef as unknown as Ref<boolean>,
     nativeButton,
     itemMetadata: itemMetadata as any,
-    nodeId: menuPositionerContext?.value?.nodeId,
+    nodeId: menuPositionerContext?.nodeId,
   });
 
   const hoverEnabled = store.useState('hoverEnabled');

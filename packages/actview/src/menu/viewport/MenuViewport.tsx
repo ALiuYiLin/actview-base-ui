@@ -17,7 +17,7 @@ export function MenuViewport(componentProps: MenuViewport.Props) {
 
   const {store} = useMenuRootContext();
   const positionerContext = useMenuPositionerContext(true);
-  const side = positionerContext?.value?.side;
+  const side = positionerContext?.side;
 
   const instantType = store.useState('instantType');
 

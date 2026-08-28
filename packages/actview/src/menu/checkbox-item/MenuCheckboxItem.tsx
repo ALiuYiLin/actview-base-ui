@@ -56,7 +56,7 @@ export function MenuCheckboxItem(componentProps: MenuCheckboxItem.Props) {
     id,
     store,
     nativeButton,
-    nodeId: menuPositionerContext?.value?.nodeId,
+    nodeId: menuPositionerContext?.nodeId,
     itemMetadata: REGULAR_ITEM,
   });
 
