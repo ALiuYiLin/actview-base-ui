@@ -62,9 +62,10 @@
 
 ### 批次 2：中型族
 - [x] progress（12）✅、meter（13）✅、switch（8）✅、radio（8）+ radio-group（4）✅——store-as-is 适配 + 新 hook + 无 toValue/useRootElement
-- [ ] collapsible（14）、accordion（18）
-- [ ] tabs（13）、toolbar（12）
-- [ ] fieldset（7）、otp-field（8）、scroll-area（16）、field（19）
+- [ ] collapsible（14）、accordion（18）——**context hooks 已适配（9 个 store-as-is 修正已提交），消费端 `.value` 链 + toValue/useRootElementFragment 待迁移**（类型 +24 为消费端暴露）
+- [ ] tabs（13）、toolbar（12）——TabsList/RootContext hooks 已适配，同上
+- [ ] scroll-area（16）——3 个 context hooks 已适配，消费端待迁移；otp-field（8）——context hook 已适配
+- [ ] fieldset（7）、field（19）——fieldset context 已适配
 
 ### 批次 3：弹层族
 - [ ] tooltip（24）、popover（31）、preview-card（17）
