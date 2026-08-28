@@ -26,16 +26,16 @@ const MAX_LAYOUT_ROUNDING_ERROR = 2;
  */
 export function TabsIndicator(componentProps: TabsIndicator.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  const renderBeforeHydration = toValue(componentProps.renderBeforeHydration) ?? false;
+  const renderBeforeHydration = componentProps.renderBeforeHydration ?? false;
 
-  const rootContextRef = useTabsRootContext();
-  const listContextRef = useTabsListContext();
+  const rootContext = useTabsRootContext();
+  const listContext = useTabsListContext();
 
   // 强制重渲染计数器（ResizeObserver 更新指示器位置）
   const rerenderCount = ref(0);
 
   // React 版 useEffect：注册指示器更新监听
-  const unregisterListener = listContextRef.value.registerIndicatorUpdateListener(() => {
+  const unregisterListener = listContext.registerIndicatorUpdateListener(() => {
     rerenderCount.value += 1;
   });
   onUnmounted(unregisterListener);
@@ -49,8 +49,8 @@ export function TabsIndicator(componentProps: TabsIndicator.Props) {
         const {className, render, style: styleProp, ...elementProps} = componentProps as any;
 
         const {getTabElementBySelectedValue, orientation, tabActivationDirection, value} =
-          rootContextRef.value;
-        const {tabsListElement} = listContextRef.value;
+          rootContext;
+        const {tabsListElement} = listContext.value;
 
         let left = 0;
         let right = 0;
