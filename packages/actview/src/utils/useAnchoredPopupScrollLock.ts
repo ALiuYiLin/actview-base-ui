@@ -1,4 +1,5 @@
-import { ref, watch } from 'actview';
+import { computed, ref, toValue, watch } from 'actview';
+import type { MaybeRefOrGetter } from '@/internals/types';
 import { ownerDocument } from '@/internals/owner';
 import { useScrollLock } from '@/utils/useScrollLock';
 
@@ -10,26 +11,40 @@ const VIEWPORT_WIDTH_TOLERANCE_PX = 20;
  * Manages scroll lock for anchored popups. For non-touch opens, scroll lock is applied when
  * enabled. For touch opens, scroll lock is applied only when the positioner width is effectively
  * viewport-sized.
- * (actview 版：React useState → ref。)
+ * (actview 版：React useState → ref。参数支持 ref/computed——一次性 setup 下
+ * 快照布尔会让锁随 open 变化失效。)
  */
 export function useAnchoredPopupScrollLock(
-  enabled: boolean,
-  touchOpen: boolean,
-  positionerElement: HTMLElement | null,
-  referenceElement: Element | null,
+  enabled: MaybeRefOrGetter<boolean>,
+  touchOpen: MaybeRefOrGetter<boolean>,
+  positionerElement: HTMLElement | null | {value: HTMLElement | null},
+  referenceElement: Element | null | {value: Element | null},
 ) {
   const touchOpenShouldLockScroll = ref(false);
 
+  const enabledValue = computed(() => toValue(enabled));
+  const touchOpenValue = computed(() => toValue(touchOpen));
+  const positionerElementValue = computed(() =>
+    positionerElement != null && typeof positionerElement === 'object'
+      ? positionerElement.value
+      : positionerElement,
+  );
+  const referenceElementValue = computed(() =>
+    referenceElement != null && typeof referenceElement === 'object'
+      ? referenceElement.value
+      : referenceElement,
+  );
+
   watch(
-    () => [enabled, touchOpen, positionerElement] as const,
+    () => [enabledValue.value, touchOpenValue.value, positionerElementValue.value] as const,
     () => {
-      if (!enabled || !touchOpen || positionerElement == null) {
+      if (!enabledValue.value || !touchOpenValue.value || positionerElementValue.value == null) {
         touchOpenShouldLockScroll.value = false;
         return;
       }
 
-      const viewportWidth = ownerDocument(positionerElement).documentElement.clientWidth;
-      const popupWidth = positionerElement.offsetWidth;
+      const viewportWidth = ownerDocument(positionerElementValue.value).documentElement.clientWidth;
+      const popupWidth = positionerElementValue.value.offsetWidth;
 
       touchOpenShouldLockScroll.value =
         viewportWidth > 0 &&
@@ -39,5 +54,9 @@ export function useAnchoredPopupScrollLock(
     {flush: 'post', immediate: true},
   );
 
-  useScrollLock(enabled && (!touchOpen || touchOpenShouldLockScroll.value), referenceElement);
+  const shouldLock = computed(
+    () => enabledValue.value && (!touchOpenValue.value || touchOpenShouldLockScroll.value),
+  );
+  // useScrollLock 以 watch 源数组项追踪 ref/computed 项。
+  useScrollLock(shouldLock as any, referenceElementValue as any);
 }

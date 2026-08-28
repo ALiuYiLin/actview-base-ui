@@ -16,11 +16,12 @@ export interface PopoverPositionerContext {
 }
 
 export function usePopoverPositionerContext() {
+  // store-as-is：use() 原样返回注入的 getter 载体（无 Provider 时 undefined）。
   const context = PopoverPositionerContext.use();
-  if (context.value === undefined) {
+  if (context === undefined) {
     throw new Error(
       'Base UI: PopoverPositionerContext is missing. Popover parts must be placed within <Popover.Positioner>.',
     );
   }
-  return context.value;
+  return context;
 }

@@ -1,4 +1,5 @@
-import { toRefs, unrefs, toValue } from 'actview';
+import { computed, toRefs } from 'actview';
+import type { Ref } from 'actview';
 import type { InteractionType } from '@/utils/useEnhancedClickHandler';
 import { FloatingFocusManager, useHoverFloatingInteraction } from '@/floating-ui-react';
 import { usePopoverRootContext } from '../root/PopoverRootContext';
@@ -10,8 +11,8 @@ import { useOpenChangeComplete } from '@/internals/useOpenChangeComplete';
 import { REASONS } from '@/internals/reasons';
 import { getDisabledMountTransitionStyles } from '@/internals/getDisabledMountTransitionStyles';
 import { mergePropsN } from '@/merge-props';
-import type { Ref } from 'actview';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useMergedRefs } from '@/internals/useMergedRefs';
 
 /**
  * A container for the popover contents.
@@ -20,12 +21,10 @@ import { useRenderElement } from '@/internals/useRenderElementLegacy';
  * Documentation: [Base UI Popover](https://base-ui.com/react/components/popover)
  */
 export function PopoverPopup(componentProps: PopoverPopup.Props) {
-  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
-  const {finalFocus, initialFocus} = componentProps;
-  const {render, className, style, children, ref: refProp, ...elementProps} =
-    toRefs(componentProps);
-
-  const store = usePopoverRootContext(false);
+  // ============ setup（只执行一次）：一次性初始化 ============
+  // context 载体直取（store-as-is）：store 的 useState 字段渲染期 `.value` 求值；
+  // positioner 载体 getter 字段渲染期属性访问。
+  const store = usePopoverRootContext(false)!;
   const positioner = usePopoverPositionerContext();
 
   const open = store.useState('open');
@@ -44,6 +43,12 @@ export function PopoverPopup(componentProps: PopoverPopup.Props) {
   const disabled = store.useState('disabled');
   const openOnHover = store.useState('openOnHover');
   const closeDelay = store.useState('closeDelay');
+
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
 
   useOpenChangeComplete({
     open,
@@ -66,63 +71,51 @@ export function PopoverPopup(componentProps: PopoverPopup.Props) {
 
   const setPopupElement = store.useStateSetter('popupElement');
 
-  const state = (): PopoverPopupState => ({
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
+  });
+
+  const state = computed<PopoverPopupState>(() => ({
     open: open.value,
     side: positioner?.side ?? ('bottom' as Side),
     align: positioner?.align ?? ('start' as Align),
     instant: instantType.value as any,
     transitionStatus: transitionStatus.value,
-  });
+  }));
 
-  const {element} = useRenderElement({
-    props: () => {
-      const stateValue = state();
-      const attributes: Record<string, string> = {};
-      if (stateValue.open) {
-        attributes['data-open'] = '';
-      } else {
-        attributes['data-closed'] = '';
-      }
-      if (stateValue.transitionStatus === 'starting') {
-        attributes['data-starting-style'] = '';
-      } else if (stateValue.transitionStatus === 'ending') {
-        attributes['data-ending-style'] = '';
-      }
+  // 根元素 props：store popupProps → id/role/aria → 挂载过渡样式 → 透传 →
+  // open/transition data-*。
+  const rootProps = computed<Record<string, any>>(() => {
+    const stateValue = state.value;
+    const attributes: Record<string, string> = {};
+    if (stateValue.open) {
+      attributes['data-open'] = '';
+    } else {
+      attributes['data-closed'] = '';
+    }
+    if (stateValue.transitionStatus === 'starting') {
+      attributes['data-starting-style'] = '';
+    } else if (stateValue.transitionStatus === 'ending') {
+      attributes['data-ending-style'] = '';
+    }
 
-      const merged: any = mergePropsN<any>([
-        popupProps.value,
-        {
-          id: floatingId?.value,
-          role: 'dialog',
-          tabIndex: -1,
-          'aria-labelledby': titleId.value,
-          'aria-describedby': descriptionId.value,
-        },
-        getDisabledMountTransitionStyles(transitionStatus.value),
-        unrefs(elementProps),
-      ]);
-      Object.assign(merged, attributes);
-      return [merged];
-    },
-    state,
-    className,
-    style,
-    render,
-    refs: () => {
-      const refs: any[] = [
-        (el: HTMLElement | null) => {
-          store.context.popupRef.value = el;
-          setPopupElement(el);
-          (floatingContext.value as any)?.update?.({floatingElement: el});
-        },
-      ];
-      if (componentProps.ref !== undefined) {
-        refs.push(refProp);
-      }
-      return refs;
-    },
-    children: () => toValue(children),
-    defaultTag: 'div',
+    const merged: any = mergePropsN<any>([
+      popupProps.value,
+      {
+        id: floatingId?.value,
+        role: 'dialog',
+        tabIndex: -1,
+        'aria-labelledby': titleId.value,
+        'aria-describedby': descriptionId.value,
+      },
+      getDisabledMountTransitionStyles(transitionStatus.value),
+      elementProps.value,
+    ]);
+    Object.assign(merged, attributes);
+    return merged;
   });
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
@@ -133,14 +126,33 @@ export function PopoverPopup(componentProps: PopoverPopup.Props) {
       openInteractionType={openMethod.value as any}
       modal={focusManagerModal}
       disabled={!mounted.value || openReason.value === REASONS.triggerHover}
-      initialFocus={(initialFocus === undefined ? true : initialFocus) as any}
-      returnFocus={finalFocus === undefined ? true : finalFocus}
+      initialFocus={(componentProps.initialFocus === undefined ? true : componentProps.initialFocus) as any}
+      returnFocus={componentProps.finalFocus === undefined ? true : componentProps.finalFocus}
       restoreFocus="popup"
       previousFocusableElement={activeTriggerElement.value as HTMLElement | null}
       nextFocusableElement={store.context.triggerFocusTargetRef}
       beforeContentFocusGuardRef={store.context.beforeContentFocusGuardRef}
     >
-      {element()}
+      {useRenderElement(
+        'div',
+        {
+          className: className?.value,
+          render: render?.value,
+          style: style?.value,
+        },
+        {
+          state: state.value,
+          ref: useMergedRefs(
+            (el: HTMLElement | null) => {
+              store.context.popupRef.value = el;
+              setPopupElement(el);
+              (floatingContext.value as any)?.update?.({floatingElement: el});
+            },
+            componentProps.ref as any,
+          ),
+          props: rootProps.value,
+        },
+      )}
     </FocusManager>
   );
 }

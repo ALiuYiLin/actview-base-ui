@@ -10,11 +10,12 @@ export type PopoverRootContext<Payload> = PopoverStore<Payload>;
 export function usePopoverRootContext<Payload>(optional: false): PopoverStore<Payload>;
 export function usePopoverRootContext<Payload>(optional?: true): PopoverStore<Payload> | undefined;
 export function usePopoverRootContext<Payload>(optional = true) {
+  // store-as-is：use() 原样返回注入的 store 载体（无 Provider 时 undefined）。
   const context = PopoverRootContext.use();
-  if (context.value === undefined && !optional) {
+  if (context === undefined && !optional) {
     throw new Error(
       'Base UI: PopoverRootContext is missing. Popover parts must be placed within <Popover.Root>.',
     );
   }
-  return context.value as PopoverStore<Payload> | undefined;
+  return context as PopoverStore<Payload> | undefined;
 }

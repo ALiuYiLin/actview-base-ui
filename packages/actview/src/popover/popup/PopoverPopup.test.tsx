@@ -59,7 +59,7 @@ describe('<Popover.Popup />', () => {
     it('should focus the element provided to `initialFocus` as a ref when open', async () => {
       function Test() {
         const input2Ref = {value: null as HTMLInputElement | null};
-        return () => (
+        return (
           <div>
             <input />
             <Popover.Root>
@@ -153,7 +153,7 @@ describe('<Popover.Popup />', () => {
     it('should focus the element provided to the prop when closed', async () => {
       function Test() {
         const finalFocusRef = {value: null as HTMLInputElement | null};
-        return () => (
+        return (
           <div>
             <Popover.Root>
               <Popover.Trigger>Open</Popover.Trigger>

@@ -114,7 +114,7 @@ describe('<Popover.Root />', () => {
   it('supports controlled open prop', async () => {
     function Test() {
       const openRef = {value: false};
-      return () => (
+      return (
         <Popover.Root open={openRef.value}>
           <Popover.Trigger>Open</Popover.Trigger>
           <Popover.Portal>

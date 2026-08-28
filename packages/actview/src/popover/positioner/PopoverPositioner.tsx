@@ -1,4 +1,4 @@
-import {watch, ref} from 'actview';
+import {computed, ref, watch} from 'actview';
 import { inertValue } from '@/utils/inertValue';
 import { usePopoverRootContext } from '../root/PopoverRootContext';
 import { PopoverPositionerContext } from './PopoverPositionerContext';
@@ -24,7 +24,9 @@ import { useAnchoredPopupScrollLock } from '@/utils/useAnchoredPopupScrollLock';
  * Documentation: [Base UI Popover](https://base-ui.com/react/components/popover)
  */
 export function PopoverPositioner(componentProps: PopoverPositioner.Props) {
-  // ============ setup（只执行一次） ============
+  // ============ setup（只执行一次）：一次性初始化 ============
+  // 定位参数为初始化型快照（useAnchorPositioning 在 setup 构建中间件链——
+  // 动态 side/align 需整体重建，记录为已知限制）。
   const {
     anchor,
     positionMethod,
@@ -38,9 +40,9 @@ export function PopoverPositioner(componentProps: PopoverPositioner.Props) {
     sticky,
     disableAnchorTracking = false,
     collisionAvoidance = POPUP_COLLISION_AVOIDANCE,
-    ...elementProps
   } = componentProps as any;
 
+  // context 载体直取（store-as-is）：store 的 useState 字段渲染期 `.value` 求值。
   const store = usePopoverRootContext(false);
   const keepMounted = usePopoverPortalContext();
 
@@ -58,7 +60,7 @@ export function PopoverPositioner(componentProps: PopoverPositioner.Props) {
   const domReference = (floatingRootContext.value as any)?.useState('domReferenceElement');
 
   const previousTriggerRef = ref(null as Element | null);
-  const runOnceAnimationsFinish = useAnimationsFinished(positionerElement);
+  const runOnceAnimationsFinish = useAnimationsFinished(positionerElement as any);
 
   const positioner = useAnchorPositioning({
     anchor,
@@ -109,34 +111,56 @@ export function PopoverPositioner(componentProps: PopoverPositioner.Props) {
 
   const trueModalNonHover = () => modal.value === true && openReason.value !== REASONS.triggerHover;
 
+  // reactive inputs（一次性 setup 下快照布尔会让锁失效）
   useAnchoredPopupScrollLock(
-    open.value && trueModalNonHover(),
-    openMethod.value === 'touch',
-    positionerElement.value,
-    triggerElement.value as HTMLElement | null,
+    computed(() => open.value && trueModalNonHover()),
+    computed(() => openMethod.value === 'touch'),
+    positionerElement,
+    triggerElement as any,
   );
 
-  const state = (): PopoverPositionerState => ({
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const state = computed<PopoverPositionerState>(() => ({
     open: open.value,
-    side: positioner.side,
-    align: positioner.align,
-    anchorHidden: positioner.anchorHidden,
+    side: positioner.side.value,
+    align: positioner.align.value,
+    anchorHidden: positioner.anchorHidden.value,
     instant: instantType.value as any,
     transitionStatus: transitionStatus.value as any,
-  });
+  }));
 
   const element = usePositioner(componentProps as any, state as any, {
     styles: positioner.positionerStyles,
     transitionStatus,
-    props: elementProps,
     refs: [store.useStateSetter('positionerElement')],
     hidden: () => !mounted.value,
     inert: () => !open.value,
   }) as any;
 
+  // store-as-is 载体：身份稳定的 getter 对象——side/align/anchorHidden/
+  // arrowUncentered/arrowStyles 渲染期求值；arrowRef 为稳定 ref。
+  const contextValue = {
+    get side() {
+      return positioner.side.value;
+    },
+    get align() {
+      return positioner.align.value;
+    },
+    get anchorHidden() {
+      return positioner.anchorHidden.value;
+    },
+    arrowRef: positioner.arrowRef,
+    get arrowUncentered() {
+      return positioner.arrowUncentered.value;
+    },
+    get arrowStyles() {
+      return positioner.arrowStyles.value;
+    },
+  };
+
   // ============ render（最后 return JSX——插件转换为渲染函数）============
   return (
-    <PopoverPositionerContext.Provider value={positioner as any}>
+    <PopoverPositionerContext.Provider value={contextValue as any}>
       {mounted.value && trueModalNonHover() && (
         <InternalBackdrop inert={inertValue(!open.value)} cutout={triggerElement.value} />
       )}

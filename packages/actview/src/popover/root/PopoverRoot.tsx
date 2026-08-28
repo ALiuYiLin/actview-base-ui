@@ -1,4 +1,4 @@
-import { onUnmounted, ref, toValue, watch } from 'actview';
+import { computed, onUnmounted, watch } from 'actview';
 import type { Ref } from 'actview';
 import { useId } from '@/utils/useId';
 import { useStableCallback } from '@/utils/useStableCallback';
@@ -7,7 +7,7 @@ import {
   useFloatingParentNodeId,
   useSyncedFloatingRootContext,
 } from '@/floating-ui-react';
-import { PopoverRootContext, usePopoverRootContext } from './PopoverRootContext';
+import { PopoverRootContext } from './PopoverRootContext';
 import { PopoverStore, type State as PopoverStoreState } from '../store/PopoverStore';
 import { PopoverHandle } from '../store/PopoverHandle';
 import {
@@ -35,35 +35,28 @@ import {
  * Documentation: [Base UI Popover](https://base-ui.com/react/components/popover)
  */
 export function PopoverRoot<Payload = unknown>(props: PopoverRoot.Props<Payload>) {
-  // ============ setup（只执行一次） ============
-  const {
-    open: openProp,
-    defaultOpen = false,
-    onOpenChange,
-    onOpenChangeComplete,
-    modal = false,
-    handle,
-    triggerId: triggerIdProp,
-    defaultTriggerId: defaultTriggerIdProp = null,
-  } = props as any;
+  // ============ setup（只执行一次）：一次性初始化 ============
+  // 渲染期/事件期消费的 props：computed 直读（setup 快照会停留在首渲染）；
+  // 回调类 props（onOpenChange 等）事件期直读 props。
+  const modal = computed(() => props.modal ?? false);
 
-  const store = usePopoverRootStore<Payload>(handle, {
-    modal,
-    open: defaultOpen,
-    openProp,
-    activeTriggerId: defaultTriggerIdProp,
-    triggerIdProp,
+  const store = usePopoverRootStore<Payload>(props.handle, {
+    modal: modal.value as any,
+    open: props.defaultOpen ?? false,
+    openProp: props.open,
+    activeTriggerId: props.defaultTriggerId ?? null,
+    triggerIdProp: props.triggerId,
   });
 
-  store.useControlledProp('openProp', openProp);
-  store.useControlledProp('triggerIdProp', triggerIdProp);
+  store.useControlledProp('openProp', () => props.open);
+  store.useControlledProp('triggerIdProp', () => props.triggerId);
 
   const open = store.useState('open');
   const mounted = store.useState('mounted');
   const payload = store.useState('payload') as Ref<Payload | undefined>;
 
-  store.useContextCallback('onOpenChange', onOpenChange);
-  store.useContextCallback('onOpenChangeComplete', onOpenChangeComplete);
+  store.useContextCallback('onOpenChange', (...args: any[]) => props.onOpenChange?.(...(args as [boolean, PopoverRoot.ChangeEventDetails])));
+  store.useContextCallback('onOpenChangeComplete', (...args: any[]) => props.onOpenChangeComplete?.(...(args as [boolean])));
 
   usePopupRootSync(store, open as any);
   useImplicitActiveTrigger(store);
@@ -71,7 +64,7 @@ export function PopoverRoot<Payload = unknown>(props: PopoverRoot.Props<Payload>
     store.update({stickIfOpen: true, openChangeReason: null});
   });
 
-  store.useSyncedValues({modal});
+  store.useSyncedValues({modal} as any);
 
   watch(
     () => open.value,
@@ -83,15 +76,25 @@ export function PopoverRoot<Payload = unknown>(props: PopoverRoot.Props<Payload>
     {flush: 'post', immediate: true},
   );
 
-  if ((props as any).actionsRef) {
-    (props as any).actionsRef.value = {
-      unmount: forceUnmount,
-      close: () => store.setOpen(false, createChangeEventDetails(REASONS.imperativeAction)),
-    };
-    onUnmounted(() => {
-      (props as any).actionsRef.value = null;
-    });
-  }
+  // actionsRef：ref 对象事件期直读（prop 变化时写入最新对象）。
+  watch(
+    () => props.actionsRef,
+    (actionsRefObj) => {
+      if (actionsRefObj) {
+        actionsRefObj.value = {
+          unmount: forceUnmount,
+          close: () => store.setOpen(false, createChangeEventDetails(REASONS.imperativeAction)),
+        };
+      }
+    },
+    {immediate: true},
+  );
+  onUnmounted(() => {
+    const actionsRefObj = props.actionsRef;
+    if (actionsRefObj) {
+      actionsRefObj.value = null;
+    }
+  });
 
   const floatingId = useId();
   const floatingParentNodeIdFromContext = useFloatingParentNodeId();
@@ -130,7 +133,7 @@ export function PopoverRoot<Payload = unknown>(props: PopoverRoot.Props<Payload>
         eventDetails.trigger = activeTriggerElement.value ?? undefined;
       }
 
-      onOpenChange?.(nextOpen, eventDetails as PopoverRoot.ChangeEventDetails);
+      props.onOpenChange?.(nextOpen, eventDetails as PopoverRoot.ChangeEventDetails);
 
       if ((eventDetails as any).isCanceled) {
         return;
@@ -212,18 +215,14 @@ export function PopoverRoot<Payload = unknown>(props: PopoverRoot.Props<Payload>
   const shouldRenderInteractions = () => open.value || mounted.value;
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
+  // children（render-prop 或 vnode）渲染期从 props 直读（表达式内，无 IIFE）。
   return (
     <PopoverRootContext.Provider value={store as unknown as PopoverRootContext<unknown>}>
-      {handle && <PopupHandleAttachment handle={handle} store={store} />}
-      {shouldRenderInteractions() && <PopoverInteractions store={store} modal={modal} />}
-      {(() => {
-        // PD-15：render prop children 是函数（{payload}) => ...），不能经 toValue
-        // （会把函数当 getter 无参调用，payload 解构 undefined 报错）；render 期
-        // 从 props 读以追踪更新。
-        const rawChildren = (props as any).children;
-        const child = typeof rawChildren === 'function' ? rawChildren : toValue(rawChildren);
-        return typeof child === 'function' ? child({payload: payload.value}) : child;
-      })()}
+      {props.handle && <PopupHandleAttachment handle={props.handle} store={store} />}
+      {shouldRenderInteractions() && <PopoverInteractions store={store} modal={modal.value} />}
+      {typeof props.children === 'function'
+        ? (props.children as PayloadChildRenderFunction<Payload>)({payload: payload.value})
+        : props.children}
     </PopoverRootContext.Provider>
   );
 }
