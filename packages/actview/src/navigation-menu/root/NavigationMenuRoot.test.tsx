@@ -16,7 +16,7 @@ const Item = NavigationMenu.Item;
 
 function BasicNavMenu(props: any = {}) {
   const {rootProps = {}, triggerValue = 'products'} = props;
-  return () => (
+  return (
     <Root {...rootProps}>
       <Trigger value={triggerValue}>Products</Trigger>
       <Positioner>

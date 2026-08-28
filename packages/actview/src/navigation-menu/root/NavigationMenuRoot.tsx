@@ -1,8 +1,10 @@
-import { ref, toValue, watch, computed, toRefs, unrefs } from 'actview';
+import {computed, ref, toRefs} from 'actview';
+import type { Ref } from 'actview';
 import { useControlled } from '@/utils/useControlled';
 import { NavigationMenuRootContext } from './NavigationMenuRootContext';
 import type { BaseUIComponentProps } from '@/internals/types';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useMergedRefs } from '@/internals/useMergedRefs';
 
 /**
  * Groups all parts of the navigation menu.
@@ -12,32 +14,27 @@ import { useRenderElement } from '@/internals/useRenderElementLegacy';
  * 无 viewport 布局动画、无点击外关闭（useDismiss 遗留）。
  */
 export function NavigationMenuRoot(componentProps: NavigationMenuRoot.Props) {
-  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
-  const {
-    value: valueProp,
-    defaultValue = null,
-    onValueChange,
-    orientation = 'horizontal',
-    modal = true,
-    disabled = false,
-  } = componentProps as any;
+  // ============ setup（只执行一次）：一次性初始化 ============
+  // 渲染期/事件期消费的 props：computed 直读（setup 快照会停留在首渲染）；
+  // 回调类 props（onValueChange）事件期直读 componentProps。
+  const orientation = computed(() => componentProps.orientation ?? 'horizontal');
+  const modal = computed(() => componentProps.modal ?? true);
+  const disabled = computed(() => componentProps.disabled ?? false);
 
-  const {render, className, style, children, ref: refProp, ...elementProps} =
-    toRefs(componentProps);
+  // 值形 props toRefs 活引用；children 单独排除（render prop 需函数调用后
+  // 作为 children 覆盖注入）。
+  const { className, render, style, children: childrenRef, ...elementRefs } = toRefs(
+    componentProps,
+  ) as Record<string, Ref<any>>;
 
   const [valueState, setValueState] = useControlled<any>({
-    controlled: valueProp,
-    default: defaultValue,
+    controlled: () => componentProps.value,
+    default: () => componentProps.defaultValue ?? null,
     name: 'NavigationMenuRoot',
     state: 'value',
   });
 
-  const value = ref(valueState.value);
-  watch(
-    () => valueState.value,
-    (v) => (value.value = v),
-    {immediate: true},
-  );
+  const value = computed(() => valueState.value);
 
   const positionerElement = ref<HTMLElement | null>(null);
   const popupElement = ref<HTMLElement | null>(null);
@@ -47,80 +44,101 @@ export function NavigationMenuRoot(componentProps: NavigationMenuRoot.Props) {
 
   const open = computed(() => value.value != null);
 
+  // 事件 handler：setup 闭包读 props——事件触发时拿到实时值。
   const setValue = (nextValue: any) => {
-    value.value = nextValue;
     setValueState(nextValue);
     if (nextValue !== null) {
-      onValueChange?.(nextValue, {value: nextValue});
+      componentProps.onValueChange?.(nextValue, {value: nextValue});
     }
   };
 
-  const state = (): NavigationMenuRootState => ({
-    open: open.value,
-    value: value.value,
-    orientation,
-    modal,
-    disabled,
-    activationDirection: activationDirection.value,
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
   });
 
-  const {element} = useRenderElement({
-    props: () => {
-      const merged: any = {...unrefs(elementProps)};
-      if (modal) {
-        merged['data-modal'] = '';
-      }
-      return [merged];
-    },
-    state,
-    className,
-    style,
-    render,
-    refs: () => {
-      const refs: any[] = [
-        (el: HTMLElement | null) => {
-          rootRef.value = el;
-        },
-      ];
-      if (componentProps.ref !== undefined) {
-        refs.push(refProp);
-      }
-      return refs;
-    },
-    children: () => {
-      const child = children?.value;
-      return typeof child === 'function' ? child(state()) : child;
-    },
-    defaultTag: 'div',
+  const state = computed<NavigationMenuRootState>(() => ({
+    open: open.value,
+    value: value.value,
+    orientation: orientation.value,
+    modal: modal.value,
+    disabled: disabled.value,
+    activationDirection: activationDirection.value,
+  }));
+
+  const rootProps = computed<Record<string, any>>(() => {
+    const merged: any = {...elementProps.value, children: childrenOverride.value};
+    if (modal.value) {
+      merged['data-modal'] = '';
+    }
+    return merged;
   });
+
+  // children 兼容 render prop（渲染期求值，表达式内直读）。
+  const childrenOverride = computed(() => {
+    const child = childrenRef?.value;
+    return typeof child === 'function' ? child(state.value) : child;
+  });
+
+  // store-as-is 载体：身份稳定的 getter 对象——open/value/elements/direction
+  // 渲染期求值；setValue/setter/refs 为稳定引用。
+  const contextValue = {
+    get open() {
+      return open.value;
+    },
+    openRef: open,
+    get value() {
+      return value.value;
+    },
+    valueRef: value,
+    setValue,
+    get positionerElement() {
+      return positionerElement.value;
+    },
+    setPositionerElement: (el: HTMLElement | null) => (positionerElement.value = el),
+    get popupElement() {
+      return popupElement.value;
+    },
+    setPopupElement: (el: HTMLElement | null) => (popupElement.value = el),
+    get viewportElement() {
+      return viewportElement.value;
+    },
+    setViewportElement: (el: HTMLElement | null) => (viewportElement.value = el),
+    rootRef,
+    get disabled() {
+      return disabled.value;
+    },
+    get modal() {
+      return modal.value;
+    },
+    get orientation() {
+      return orientation.value;
+    },
+    get activationDirection() {
+      return activationDirection.value;
+    },
+    setActivationDirection: (direction: 'left' | 'right' | 'up' | 'down' | null) =>
+      (activationDirection.value = direction),
+  };
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
   return (
-    <NavigationMenuRootContext.Provider
-      value={
+    <NavigationMenuRootContext.Provider value={contextValue}>
+      {useRenderElement(
+        'div',
         {
-          open: open.value,
-          openRef: open,
-          value: value.value,
-          valueRef: value,
-          setValue,
-          positionerElement: positionerElement.value,
-          setPositionerElement: (el: HTMLElement | null) => (positionerElement.value = el),
-          popupElement: popupElement.value,
-          setPopupElement: (el: HTMLElement | null) => (popupElement.value = el),
-          viewportElement: viewportElement.value,
-          setViewportElement: (el: HTMLElement | null) => (viewportElement.value = el),
-          rootRef,
-          disabled,
-          modal,
-          orientation,
-          activationDirection: activationDirection.value,
-          setActivationDirection: (direction: 'left' | 'right' | 'up' | 'down' | null) =>
-            (activationDirection.value = direction),
-        } as any
-      }
-    >
-      {element()}
+          className: className?.value,
+          render: render?.value,
+          style: style?.value,
+        },
+        {
+          state: state.value,
+          ref: useMergedRefs(rootRef, componentProps.ref as any),
+          props: rootProps.value,
+        },
+      )}
     </NavigationMenuRootContext.Provider>
   );
 }

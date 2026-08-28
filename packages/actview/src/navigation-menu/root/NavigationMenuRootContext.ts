@@ -3,7 +3,7 @@ import { createContext } from 'actview';
 export interface NavigationMenuRootContextValue {
   open: boolean;
   /**
-   * actview 版：响应式 ref（context 对象本身非响应式，子组件读 ref 触发更新）。
+   * actview 版：响应式 computed（Provider 注入载体，消费端读 .value）。
    */
   openRef: {value: boolean};
   value: any;
@@ -28,9 +28,10 @@ export const NavigationMenuRootContext = createContext<
 >(undefined);
 
 export function useNavigationMenuRootContext(optional = true): any {
+  // store-as-is：use() 原样返回注入的 getter 载体（无 Provider 时 undefined）。
   const context = NavigationMenuRootContext.use();
-  if (context.value === undefined && !optional) {
+  if (context === undefined && !optional) {
     throw new Error('Base UI: <NavigationMenu.Root> is missing.');
   }
-  return context.value;
+  return context;
 }
