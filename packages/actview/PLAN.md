@@ -69,7 +69,9 @@
 - [x] otp-field（8）✅——Root context 改 getter 载体（autoComplete 补齐）；Root/Input 全迁；setup 风格测试改裸函数组件
 
 ### 批次 3：弹层族
-- [ ] tooltip（24）、popover（31）、preview-card（17）
+- [x] floating-ui-react 适配层（4 文件）✅——FloatingTree/Node/Portal/FocusManager 裸函数化 + store-as-is；**依赖仓库 E:\code3\floating-ui 的 FloatingTree context hooks 已适配（独立 commit）**——发布 dist 旧契约是弹层族全体崩溃根因
+- [x] tooltip（16）✅——Root/Trigger/Popup/Portal/Positioner/Arrow/Viewport/Provider 全迁；**45/45 测试绿（原 0/45）**；useAnchorPositioning 返回字段 computed 化（flip/shift 后 side/align 实时）；ReactStore.useSyncedValues 支持 ref；usePositioner 补 className 合并
+- [ ] popover（31）、preview-card（17）——useAnchorPositioning ComputedRef 消费端待迁（已知 4 个类型错）
 - [ ] dialog（26）、alert-dialog（6）、drawer（18）
 - [ ] menu（54）、context-menu（8）、menubar（5）、navigation-menu（22）
 
