@@ -47,28 +47,28 @@ const NAVIGATE_KEYS = new Set([
  */
 export function NumberFieldInput(componentProps: NumberFieldInput.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  const rootContextRef = useNumberFieldRootContext();
+  const rootContext = useNumberFieldRootContext();
   // Fragment 根（`<>{element()}</>`）下 actview 内置 useRootElement 的
   // subTree.el 恒 null——用 Fragment 兼容版本。
   const inputRef = useRootElementFragment();
 
-  const formContextRef = useFormContext();
-  const fieldContextRef = useFieldRootContext();
+  const formContext = useFormContext();
+  const fieldContext = useFieldRootContext();
   const labelableContextRef = useLabelableContext();
 
   const hasTouchedInputRef = ref(false);
   const blockRevalidationRef = ref(false);
   const pendingCaretRef = ref(null as number | null);
 
-  const valueRef = rootContextRef.value.valueRef;
+  const valueRef = rootContext.valueRef;
 
   useRegisterFieldControl(
     inputRef as any,
-    rootContextRef.value.id,
+    rootContext.id,
     valueRef as any,
     undefined,
-    !rootContextRef.value.state.disabled,
-    rootContextRef.value.nameProp,
+    !rootContext.state.disabled,
+    rootContext.nameProp,
   );
 
   // After a paste splices text into the controlled value, the browser would otherwise drop the
@@ -85,15 +85,15 @@ export function NumberFieldInput(componentProps: NumberFieldInput.Props) {
     {flush: 'post'},
   );
 
-  useValueChanged(() => rootContextRef.value.state.value, () => {
-    formContextRef.value.clearErrors(rootContextRef.value.name);
+  useValueChanged(() => rootContext.state.value, () => {
+    formContext.clearErrors(rootContext.name);
 
-    if (blockRevalidationRef.value && !fieldContextRef.value.shouldValidateOnChange()) {
+    if (blockRevalidationRef.value && !fieldContext.shouldValidateOnChange()) {
       blockRevalidationRef.value = false;
       return;
     }
 
-    fieldContextRef.value.validation.change(rootContextRef.value.state.value);
+    fieldContext.validation.change(rootContext.state.value);
   });
 
   // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
@@ -101,7 +101,7 @@ export function NumberFieldInput(componentProps: NumberFieldInput.Props) {
 
   const {element} = useRenderElement({
     props: () => {
-      const rootContext = rootContextRef.value;
+      const rootContextData = rootContext;
       const {
         allowInputSyncRef,
         formatOptionsRef,
@@ -124,7 +124,7 @@ export function NumberFieldInput(componentProps: NumberFieldInput.Props) {
 
       const {disabled, readOnly, required, value, inputValue} = state;
 
-      const {validationMode, setTouched, setFocused, invalid, validation} = fieldContextRef;
+      const {validationMode, setTouched, setFocused, invalid, validation} = fieldContext;
       const {labelId} = labelableContextRef;
 
       const inputProps: any = {
@@ -147,7 +147,7 @@ export function NumberFieldInput(componentProps: NumberFieldInput.Props) {
             return;
           }
 
-          fieldContextRef.value.setFocused(true);
+          fieldContext.setFocused(true);
 
           if (hasTouchedInputRef.value) {
             return;
@@ -472,7 +472,7 @@ export function NumberFieldInput(componentProps: NumberFieldInput.Props) {
       Object.assign(merged, inputProps, {...unrefs(elementProps)}, validationProps);
       return [merged];
     },
-    state: () => rootContextRef.value.state,
+    state: () => rootContext.state,
     stateAttributesMapping: stateAttributesMapping as any,
     className,
     style,

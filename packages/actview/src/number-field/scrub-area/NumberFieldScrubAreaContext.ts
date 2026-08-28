@@ -1,8 +1,10 @@
 import { createContext } from 'actview';
 
 export interface NumberFieldScrubAreaContext {
-  isPointerLockRef: {value: boolean};
   isScrubbing: boolean;
+  isTouchInput: boolean;
+  isPointerLockDenied: boolean;
+  scrubAreaCursorRef: {value: HTMLSpanElement | null};
 }
 
 export const NumberFieldScrubAreaContext = createContext<NumberFieldScrubAreaContext | undefined>(

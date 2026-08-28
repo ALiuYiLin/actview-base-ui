@@ -14,7 +14,7 @@ import { useRootElementFragment } from '@/internals/useRootElementFragment';
  */
 export function NumberFieldGroup(componentProps: NumberFieldGroup.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  const rootContextRef = useNumberFieldRootContext();
+  const rootContext = useNumberFieldRootContext();
   // Fragment 根（`<>{element()}</>`）下 actview 内置 useRootElement 的
   // subTree.el 恒 null——用 Fragment 兼容版本。
   const rootRef = useRootElementFragment();
@@ -24,7 +24,7 @@ export function NumberFieldGroup(componentProps: NumberFieldGroup.Props) {
 
   const {element} = useRenderElement({
     props: () => [{role: 'group'}, {...unrefs(elementProps)}],
-    state: () => rootContextRef.value.state,
+    state: () => rootContext.state,
     stateAttributesMapping: stateAttributesMapping as any,
     className,
     style,

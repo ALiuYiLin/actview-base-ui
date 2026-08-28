@@ -26,8 +26,8 @@ const CURSOR_STYLE: any = {
  */
 export function NumberFieldScrubAreaCursor(componentProps: NumberFieldScrubAreaCursor.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  const rootContextRef = useNumberFieldRootContext();
-  const scrubAreaContextRef = useNumberFieldScrubAreaContext();
+  const rootContext = useNumberFieldRootContext();
+  const scrubAreaContext = useNumberFieldScrubAreaContext();
   // Fragment 根（`<>{element()}</>`）下 actview 内置 useRootElement 的
   // subTree.el 恒 null——用 Fragment 兼容版本。
   const cursorRef = useRootElementFragment();
@@ -37,7 +37,7 @@ export function NumberFieldScrubAreaCursor(componentProps: NumberFieldScrubAreaC
 
   const {element} = useRenderElement({
     props: () => {
-      const stateValue = rootContextRef.value.state;
+      const stateValue = rootContext.state;
       const resolvedStyle =
         typeof style?.value === 'function' ? style.value(stateValue) : style?.value;
       const merged: any = {
@@ -47,11 +47,11 @@ export function NumberFieldScrubAreaCursor(componentProps: NumberFieldScrubAreaC
       };
       return [merged];
     },
-    state: () => rootContextRef.value.state,
+    state: () => rootContext.state,
     stateAttributesMapping: stateAttributesMapping as any,
     className,
     render,
-    refs: () => [cursorRef as any, scrubAreaContextRef.value.scrubAreaCursorRef as any],
+    refs: () => [cursorRef as any, scrubAreaContext?.scrubAreaCursorRef as any],
     defaultTag: 'span',
   });
 
@@ -60,7 +60,7 @@ export function NumberFieldScrubAreaCursor(componentProps: NumberFieldScrubAreaC
   return (
     <>
       {(() => {
-        const {isScrubbing, isTouchInput, isPointerLockDenied} = scrubAreaContextRef.value;
+        const {isScrubbing, isTouchInput, isPointerLockDenied} = scrubAreaContext ?? {};
         if (!isScrubbing || platform.engine.webkit || isTouchInput || isPointerLockDenied) {
           return null;
         }

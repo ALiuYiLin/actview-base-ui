@@ -12,6 +12,7 @@ import { activeElement } from '@/utils/shadowDom';
 import { NumberFieldRootContext, type InputMode } from './NumberFieldRootContext';
 import { useFieldRootContext } from '@/internals/field-root-context/FieldRootContext';
 import { useFormContext } from '@/internals/form-context/FormContext';
+import type { Ref } from 'actview';
 import type { FieldRootState } from '@/field/root/FieldRoot';
 import { useLabelableId } from '@/internals/labelable-provider/useLabelableId';
 import type { BaseUIComponentProps } from '@/internals/types';
@@ -37,7 +38,6 @@ import {
 } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
 import { useRenderElement } from '@/internals/useRenderElement';
-import { useMergedRefs } from '@/internals/useMergedRefs';
 
 /**
  * Groups all parts of the number field and manages its state.

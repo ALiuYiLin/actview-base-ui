@@ -34,7 +34,7 @@ export function useNumberFieldStepperButton(
     nativeButton = true,
   } = componentProps as any;
 
-  const rootContextRef = useNumberFieldRootContext();
+  const rootContext = useNumberFieldRootContext();
 
   const {
     allowInputSyncRef,
@@ -51,7 +51,7 @@ export function useNumberFieldStepperButton(
     locale,
     lastChangedValueRef,
     onValueCommitted,
-  } = rootContextRef.value;
+  } = rootContext;
   const {disabled: contextDisabled, readOnly, value, inputValue} = state;
 
   const isAtBoundary = () =>

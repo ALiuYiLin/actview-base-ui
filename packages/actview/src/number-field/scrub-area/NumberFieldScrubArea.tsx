@@ -32,7 +32,7 @@ export function NumberFieldScrubArea(componentProps: NumberFieldScrubArea.Props)
   const pixelSensitivity = toValue(componentProps.pixelSensitivity) ?? 2;
   const teleportDistance = toValue(componentProps.teleportDistance);
 
-  const rootContextRef = useNumberFieldRootContext();
+  const rootContext = useNumberFieldRootContext();
   const scrubAreaRef = useRootElement();
 
   const isScrubbingRef = ref(false);
@@ -102,7 +102,7 @@ export function NumberFieldScrubArea(componentProps: NumberFieldScrubArea.Props)
     {clientX, clientY}: PointerEvent,
   ) => {
     isScrubbing.value = scrubbingValue;
-    rootContextRef.value.setIsScrubbing(scrubbingValue);
+    rootContext.setIsScrubbing(scrubbingValue);
 
     const virtualCursor = scrubAreaCursorRef.value;
     if (!virtualCursor || !scrubbingValue) {
@@ -128,7 +128,7 @@ export function NumberFieldScrubArea(componentProps: NumberFieldScrubArea.Props)
     onValueCommitted,
     lastChangedValueRef,
     valueRef,
-  } = rootContextRef.value;
+  } = rootContext;
   const {disabled, readOnly} = state;
 
   // React 版 useEffect：scrubbing 期间全局监听
@@ -248,7 +248,7 @@ export function NumberFieldScrubArea(componentProps: NumberFieldScrubArea.Props)
   onUnmounted(() => {
     if (isScrubbingRef.value) {
       isScrubbingRef.value = false;
-      rootContextRef.value.setIsScrubbing(false);
+      rootContext.setIsScrubbing(false);
       try {
         ownerDocument(scrubAreaRef.value).exitPointerLock();
       } catch {
@@ -280,7 +280,7 @@ export function NumberFieldScrubArea(componentProps: NumberFieldScrubArea.Props)
   // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
   const {className, render, style, children, ...elementProps} = toRefs(componentProps);
 
-  const stateFn = () => rootContextRef.value.state;
+  const stateFn = () => rootContext.state;
 
   const {element} = useRenderElement({
     props: () => {
