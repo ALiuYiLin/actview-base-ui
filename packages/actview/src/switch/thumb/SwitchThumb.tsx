@@ -1,11 +1,10 @@
-import { toRefs, unrefs } from 'actview';
+import { computed, toRefs } from 'actview';
+import type { Ref } from 'actview';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { useSwitchRootContext } from '../root/SwitchRootContext';
 import { stateAttributesMapping } from '../stateAttributesMapping';
 import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
-import { useRootElementFragment } from '@/internals/useRootElementFragment';
-import type { SwitchRootState } from '../root/SwitchRoot';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * Visualizes the "on" or "off" state of the switch.
@@ -15,32 +14,44 @@ import type { SwitchRootState } from '../root/SwitchRoot';
  */
 export function SwitchThumb(componentProps: SwitchThumb.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  // Fragment 根（`<>{element()}</>`）下 actview 内置 useRootElement 的
-  // subTree.el 恒 null——用 Fragment 兼容版本。
-  const rootRef = useRootElementFragment();
+  // context 载体直取（store-as-is）：读字段即追踪。
+  const rootContext = useSwitchRootContext();
 
-  const rootContextRef = useSwitchRootContext();
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { render, className, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
 
-  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  const {render, className, style, children, ...elementProps} = toRefs(componentProps);
-
-  const {element} = useRenderElement({
-    props: () => {
-      const stateValue = rootContextRef.value;
-      const stateAttributes = getStateAttributesProps(stateValue, stateAttributesMapping);
-      return [{...unrefs(elementProps), ...stateAttributes}];
-    },
-    state: () => rootContextRef.value,
-    className,
-    style,
-    render,
-    refs: () => [rootRef as any],
-    children,
-    defaultTag: 'span',
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
   });
+  const stateAttributes = computed(() =>
+    getStateAttributesProps(rootContext, stateAttributesMapping),
+  );
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  return <>{element()}</>;
+  return (
+    <>
+      {useRenderElement(
+        'span',
+        {
+          className: className?.value,
+          render: render?.value,
+          style: style?.value,
+        },
+        {
+          state: rootContext,
+          stateAttributesMapping,
+          ref: componentProps.ref,
+          props: {...elementProps.value, ...stateAttributes.value},
+        },
+      )}
+    </>
+  );
 }
 
 export interface SwitchThumbProps extends BaseUIComponentProps<'span', SwitchThumbState> {}

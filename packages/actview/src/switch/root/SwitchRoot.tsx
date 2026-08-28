@@ -1,7 +1,6 @@
-import { computed, ref, toValue, watch } from 'actview';
+import { computed, ref, toRefs, watch } from 'actview';
 import type { ComputedRef } from 'actview';
 import { useControlled } from '@/utils/useControlled';
-import { useMergedRefs } from '@/utils/useMergedRefs';
 import { visuallyHidden, visuallyHiddenInput } from '@/utils/visuallyHidden';
 import { EMPTY_OBJECT } from '@/utils/empty';
 import type { BaseUIComponentProps, NonNativeButtonProps, HTMLProps } from '@/internals/types';
@@ -23,7 +22,8 @@ import { REASONS } from '@/internals/reasons';
 import { useValueChanged } from '@/internals/useValueChanged';
 import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
 import { mergePropsN } from '@/merge-props';
-import type { Ref } from 'actview';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useMergedRefs } from '@/internals/useMergedRefs';
 
 /**
  * Represents the switch itself.
@@ -33,18 +33,25 @@ import type { Ref } from 'actview';
  */
 export function SwitchRoot(componentProps: SwitchRoot.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  const defaultChecked = toValue(componentProps.defaultChecked);
-  const ariaLabelledByProp = toValue(componentProps['aria-labelledby']);
-  const form = toValue(componentProps.form);
-  const idProp = toValue(componentProps.id);
-  const externalInputRef = componentProps.inputRef as any;
-  const nameProp = toValue(componentProps.name);
-  const nativeButton = toValue(componentProps.nativeButton) ?? false;
-  const onCheckedChange = componentProps.onCheckedChange;
-  const uncheckedValue = toValue(componentProps.uncheckedValue);
-  const value = toValue(componentProps.value);
+  // 自持 refs：switchRef/rootRef 经 params.ref 合并链透传（不用 useRootElement）。
+  const switchRef = ref(null as HTMLElement | null);
+  const rootRef = ref(null as HTMLElement | null);
 
-  const {clearErrors} = toValue(useFormContext());
+  // 初始化型快照（仅 setup 一次性消费——对齐 React 初始化器语义）。
+  const defaultChecked = componentProps.defaultChecked;
+  const ariaLabelledByProp = componentProps['aria-labelledby'];
+  const idProp = componentProps.id;
+  const externalInputRef = componentProps.inputRef as any;
+  const nameProp = componentProps.name;
+
+  // 渲染期/事件期消费的 props：computed 直读（setup 快照会停留在首渲染）。
+  const nativeButton = computed(() => componentProps.nativeButton ?? false);
+  const form = computed(() => componentProps.form);
+  const uncheckedValue = computed(() => componentProps.uncheckedValue);
+  const value = computed(() => componentProps.value);
+
+  // context 载体直取（store-as-is）。
+  const {clearErrors} = useFormContext();
   const {
     state: fieldState,
     setTouched,
@@ -56,34 +63,31 @@ export function SwitchRoot(componentProps: SwitchRoot.Props) {
     disabled: fieldDisabled,
     name: fieldName,
     validation,
-  } = toValue(useFieldRootContext());
-  const {labelId} = toValue(useLabelableContext());
+  } = useFieldRootContext();
+  const {labelId} = useLabelableContext();
 
   // disabled 用 computed：Field.Root 或本组件 disabled 动态变化时渲染期 `.value`
   // 与 useButton 的 watch 都能拿到实时值。
-  // getter 直接读 componentProps（响应式）——setup 快照（disabledProp）会停留在首渲染。
-  const disabled = computed(() => fieldDisabled.value || (toValue(componentProps.disabled) ?? false));
-  const name = fieldName.value ?? nameProp;
+  const disabled = computed(() => fieldDisabled.value || (componentProps.disabled ?? false));
+  const name = computed(() => fieldName.value ?? componentProps.name);
 
   const inputRef = ref(null as HTMLInputElement | null);
   const handleInputRef = useMergedRefs(inputRef, externalInputRef, validation.inputRef);
 
-  const switchRef = ref(null as HTMLElement | null);
-
   const id = useBaseUiId();
 
   const controlId = useLabelableId({id: idProp});
-  const hiddenInputId = nativeButton ? undefined : controlId;
+  const hiddenInputId = computed(() => (nativeButton.value ? undefined : controlId));
 
   const [checked, setCheckedState] = useControlled({
-    // 受控值用 getter：外部 `checked` prop 动态变化时实时生效（P1 教训：受控需传 getter）
-    controlled: () => toValue(componentProps.checked),
+    // 受控值用 getter：外部 `checked` prop 动态变化时实时生效
+    controlled: () => componentProps.checked,
     default: Boolean(defaultChecked),
     name: 'Switch',
     state: 'checked',
   });
 
-  useRegisterFieldControl(switchRef, id, toValue(checked), undefined, !disabled.value, nameProp);
+  useRegisterFieldControl(switchRef, id, checked.value, undefined, !disabled.value, componentProps.name);
 
   // React 版 useIsoLayoutEffect：setFilled(inputRef.value.checked)
   watch(
@@ -97,187 +101,185 @@ export function SwitchRoot(componentProps: SwitchRoot.Props) {
   );
 
   useValueChanged(checked, () => {
-    clearErrors(name);
-    setDirty(Boolean(toValue(checked)) !== Boolean(validityData.value.initialValue));
-    setFilled(Boolean(toValue(checked)));
+    clearErrors(name.value);
+    setDirty(Boolean(checked.value) !== Boolean(validityData.value.initialValue));
+    setFilled(Boolean(checked.value));
 
-    validation.change(Boolean(toValue(checked)));
+    validation.change(Boolean(checked.value));
   });
 
   const {getButtonProps, buttonRef} = useButton({
     disabled,
-    native: nativeButton,
+    native: nativeButton.value,
   });
   const ariaLabelledBy = useAriaLabelledBy(
     ariaLabelledByProp as string | undefined,
     labelId.value,
     inputRef,
-    !nativeButton,
-    hiddenInputId,
+    !nativeButton.value,
+    hiddenInputId.value,
   );
 
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
+
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
+  });
+
+  const checkedValue = computed(() => Boolean(checked.value));
+  const readOnly = computed(() => componentProps.readOnly ?? false);
+  const required = computed(() => componentProps.required ?? false);
+
+  const stateValue = computed<SwitchRootState>(() => ({
+    ...fieldState.value,
+    checked: checkedValue.value,
+    disabled: disabled.value,
+    readOnly: readOnly.value,
+    required: required.value,
+  }));
+
+  // 事件 handler：setup 闭包读 computed/refs——事件触发时拿到实时值；
+  // 回调类 props（onCheckedChange）事件期直读 componentProps。
+  const handleRootFocus = () => {
+    if (!disabled.value) {
+      setFocused(true);
+    }
+  };
+
+  const handleRootBlur = () => {
+    const element = inputRef.value;
+    if (!element || disabled.value) {
+      return;
+    }
+
+    setTouched(true);
+    setFocused(false);
+
+    if (validationMode.value === 'onBlur') {
+      validation.commit(element.checked);
+    }
+  };
+
+  const handleRootClick = (event: any) => {
+    if (readOnly.value || disabled.value) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const input = inputRef.value;
+    if (!input) {
+      return;
+    }
+
+    dispatchClickWithModifiers(input, event);
+  };
+
+  const handleInputClick = (event: any) => {
+    // The click dispatched from the root's `onClick` is an implementation detail
+    // and must not reach ancestors, which already receive the original click.
+    event.stopPropagation();
+
+    const input = event.currentTarget as HTMLInputElement;
+
+    if (readOnly.value) {
+      event.preventDefault();
+      return;
+    }
+
+    const nextChecked = input.checked;
+    const eventDetails = createChangeEventDetails(REASONS.none, event);
+
+    componentProps.onCheckedChange?.(nextChecked, eventDetails);
+
+    if (eventDetails.isCanceled) {
+      return;
+    }
+
+    setCheckedState(nextChecked);
+  };
+
+  const handleInputFocus = () => {
+    switchRef.value?.focus();
+  };
+
+  // 根元素 props：role/aria/handlers → 透传 → getButtonProps 链 → validation →
+  // state data-*（hook 内 className/style 后置合并）。
+  const rootProps = computed(() =>
+    mergePropsN<any>([
+      {
+        id: nativeButton.value ? controlId : id,
+        role: 'switch',
+        'aria-checked': checkedValue.value,
+        'aria-readonly': readOnly.value || undefined,
+        'aria-required': required.value || undefined,
+        'aria-labelledby': ariaLabelledBy,
+        onFocus: handleRootFocus,
+        onBlur: handleRootBlur,
+        onClick: handleRootClick,
+      },
+      elementProps.value,
+      (prev: any) => getButtonProps(prev),
+      (prev: any) => validation.getValidationProps(disabled.value, prev),
+      getStateAttributesProps(stateValue.value, stateAttributesMapping),
+    ]),
+  );
+
+  // hidden input props：validation → checked/disabled → 事件（点击即切换，
+  // React 版 onChange 等价——switch 激活由原生 click 表达）。
+  const inputProps = computed(() => ({
+    ...validation.getValidationProps(disabled.value),
+    checked: checkedValue.value,
+    disabled: disabled.value,
+    form: form.value,
+    id: hiddenInputId.value,
+    name: name.value,
+    required: required.value,
+    style: name.value ? visuallyHiddenInput : visuallyHidden,
+    tabIndex: -1,
+    type: 'checkbox',
+    'aria-hidden': true,
+    ref: handleInputRef,
+    onClick: handleInputClick,
+    onFocus: handleInputFocus,
+    // React <19 sets an empty value if `undefined` is passed explicitly
+    // To avoid this, we only set the value if it's defined
+    ...(value.value !== undefined ? {value: value.value} : EMPTY_OBJECT),
+  }));
+
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  // 渲染期逻辑（rootProps/inputProps/stateValue/merged）在 IIFE 中执行（PD-15）
   return (
-    <>
-      {(() => {
-        const {className, render, style, ...elementProps} = componentProps;
-
-        const checkedValue = Boolean(toValue(checked));
-        // 渲染期读 props（响应式）——setup 快照会导致 readOnly/required 动态
-        // 变化时 state/aria 属性停留在首渲染。
-        const readOnly = toValue(componentProps.readOnly) ?? false;
-        const required = toValue(componentProps.required) ?? false;
-
-        const rootProps: Record<string, any> = {
-          id: nativeButton ? controlId : id,
-          role: 'switch',
-          'aria-checked': checkedValue,
-          'aria-readonly': readOnly || undefined,
-          'aria-required': required || undefined,
-          'aria-labelledby': ariaLabelledBy,
-          onFocus() {
-            if (!disabled.value) {
-              setFocused(true);
-            }
-          },
-          onBlur() {
-            const element = inputRef.value;
-            if (!element || disabled.value) {
-              return;
-            }
-
-            setTouched(true);
-            setFocused(false);
-
-            if (validationMode.value === 'onBlur') {
-              validation.commit(element.checked);
-            }
-          },
-          onClick(event: any) {
-            if (readOnly || disabled.value) {
-              return;
-            }
-
-            event.preventDefault();
-
-            const input = inputRef.value;
-            if (!input) {
-              return;
-            }
-
-            dispatchClickWithModifiers(input, event);
-          },
-        };
-
-        const inputProps: Record<string, any> = {
-          ...validation.getValidationProps(disabled.value),
-          checked: checkedValue,
-          disabled: disabled.value,
-          form,
-          id: hiddenInputId,
-          name,
-          required,
-          style: name ? visuallyHiddenInput : visuallyHidden,
-          tabIndex: -1,
-          type: 'checkbox',
-          'aria-hidden': true,
-          ref: handleInputRef,
-          // actview onChange 对 INPUT 监听 'input' 事件（文本语义）——switch 激活由原生 click 表达，
-          // 因此 checked 逻辑放 input 的 onClick（React 版 onChange 等价）。
-          onClick(event: any) {
-            // The click dispatched from the root's `onClick` is an implementation detail
-            // and must not reach ancestors, which already receive the original click.
-            event.stopPropagation();
-
-            const input = event.currentTarget as HTMLInputElement;
-
-            if (readOnly) {
-              event.preventDefault();
-              return;
-            }
-
-            const nextChecked = input.checked;
-            const eventDetails = createChangeEventDetails(REASONS.none, event);
-
-            onCheckedChange?.(nextChecked, eventDetails);
-
-            if (eventDetails.isCanceled) {
-              return;
-            }
-
-            setCheckedState(nextChecked);
-          },
-          onFocus() {
-            switchRef.value?.focus();
-          },
-          // React <19 sets an empty value if `undefined` is passed explicitly
-          // To avoid this, we only set the value if it's defined
-          ...(value !== undefined ? {value} : EMPTY_OBJECT),
-        };
-
-        const stateValue: SwitchRootState = {
-          ...fieldState.value,
-          checked: checkedValue,
-          disabled: disabled.value,
-          readOnly,
-          required,
-        };
-
-        const merged: HTMLProps = mergePropsN<any>([
-          rootProps,
-          elementProps,
-          getButtonProps,
-          (props: any) => validation.getValidationProps(disabled.value, props),
-          getStateAttributesProps(stateValue, stateAttributesMapping),
-        ]);
-        if (typeof className === 'function') {
-          merged.className = className(stateValue);
-        } else if (className !== undefined) {
-          merged.className = className;
-        }
-        if (typeof style === 'function') {
-          merged.style = style(stateValue);
-        } else if (style !== undefined) {
-          merged.style = style;
-        }
-
-        const mergedRefs = (el: HTMLElement | null) => {
-          switchRef.value = el;
-          buttonRef(el);
-        };
-
-        let element: any;
-        if (render) {
-          if (typeof render === 'function') {
-            element = render({...merged, ...stateValue, ref: mergedRefs} as any);
-          } else {
-            const renderProps = render.props ?? {};
-            const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-            const Tag = render.type as any;
-            const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-            mergedRenderProps.className =
-              typeof merged.className === 'string' && typeof renderClassName === 'string'
-                ? `${merged.className} ${renderClassName}`.trim()
-                : (merged.className ?? renderClassName);
-            mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-            element = <Tag key={render.key} {...mergedRenderProps} ref={mergedRefs} />;
-          }
-        } else {
-          element = <span {...merged} ref={mergedRefs} />;
-        }
-
-        return (
-          <SwitchRootContext.Provider value={stateValue as any}>
-            {element}
-            {!checkedValue && name && uncheckedValue !== undefined && (
-              <input type="hidden" form={form} name={name} value={uncheckedValue} disabled={disabled.value} />
-            )}
-            <input {...inputProps} />
-          </SwitchRootContext.Provider>
-        );
-      })()}
-    </>
+    <SwitchRootContext.Provider value={stateValue.value}>
+      {useRenderElement(
+        'span',
+        {
+          className: className?.value,
+          render: render?.value,
+          style: style?.value,
+        },
+        {
+          state: stateValue.value,
+          ref: useMergedRefs(switchRef, buttonRef, rootRef, componentProps.ref),
+          props: rootProps.value,
+        },
+      )}
+      {!checkedValue.value && name.value && uncheckedValue.value !== undefined && (
+        <input
+          type="hidden"
+          form={form.value}
+          name={name.value}
+          value={uncheckedValue.value}
+          disabled={disabled.value}
+        />
+      )}
+      <input {...inputProps.value} />
+    </SwitchRootContext.Provider>
   );
 }
 
