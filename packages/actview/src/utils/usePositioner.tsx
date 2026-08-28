@@ -23,8 +23,12 @@ export function usePositioner<State extends Record<string, any>>(
   {styles, transitionStatus, props, refs, hidden, inert = false}: UsePositionerOptions,
 ) {
   return () => {
-    const {render, className, style: styleProp, ...elementProps} = componentProps;
+    const {render, className: classNameProp, style: styleProp, ...elementProps} = componentProps;
     const stateValue = toState(state);
+
+    // className 支持 (state)=>string 函数形态（对齐 React 版 positioner）
+    const classNameValue =
+      typeof classNameProp === 'function' ? (classNameProp as any)(stateValue) : classNameProp;
 
     const style: any = {...(toValue(styles) ?? {})};
 
@@ -46,6 +50,7 @@ export function usePositioner<State extends Record<string, any>>(
     const merged: any = {
       role: 'presentation',
       hidden: toValue(hidden),
+      ...(classNameValue !== undefined ? {className: classNameValue} : {}),
       style: {...style, ...(styleProp ?? {})},
       ...elementProps,
       ...attributes,

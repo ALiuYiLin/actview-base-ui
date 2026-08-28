@@ -1,4 +1,4 @@
-import { onUnmounted, ref, toValue, watch } from 'actview';
+import { computed, onUnmounted, ref, watch } from 'actview';
 import type { Ref } from 'actview';
 import { useId } from '@/utils/useId';
 import { useStableCallback } from '@/utils/useStableCallback';
@@ -30,24 +30,17 @@ import {
  * Documentation: [Base UI Tooltip](https://base-ui.com/react/components/tooltip)
  */
 export function TooltipRoot<Payload>(props: TooltipRoot.Props<Payload>) {
-  const {
-    disabled = false,
-    defaultOpen = false,
-    open: openProp,
-    disableHoverablePopup = false,
-    actionsRef,
-    onOpenChange,
-    onOpenChangeComplete,
-    handle,
-    triggerId: triggerIdProp,
-    defaultTriggerId: defaultTriggerIdProp = null,
-  } = props as any;
+  // ============ setup（只执行一次）：一次性初始化 ============
+  // 渲染期/事件期消费的 props：computed 直读（setup 快照会停留在首渲染）；
+  // 回调类 props（onOpenChange 等）事件期直读 componentProps。
+  const disabled = computed(() => props.disabled ?? false);
+  const disableHoverablePopup = computed(() => props.disableHoverablePopup ?? false);
 
-  const store = useTooltipRootStore<Payload>(handle, {
-    open: defaultOpen,
-    openProp,
-    activeTriggerId: defaultTriggerIdProp,
-    triggerIdProp,
+  const store = useTooltipRootStore<Payload>(props.handle, {
+    open: props.defaultOpen ?? false,
+    openProp: props.open,
+    activeTriggerId: props.defaultTriggerId ?? null,
+    triggerIdProp: props.triggerId,
   });
 
   // 受控 prop 传 getter：setup 解构的 openProp 是快照，受控值运行时变化
@@ -57,12 +50,12 @@ export function TooltipRoot<Payload>(props: TooltipRoot.Props<Payload>) {
   store.useControlledProp('triggerIdProp', () => props.triggerId);
 
   const openState = store.useState('open');
-  const open = ref(!disabled && openState.value);
+  const open = ref(!disabled.value && openState.value);
 
   watch(
-    () => [openState.value, disabled],
+    () => [openState.value, disabled.value],
     () => {
-      open.value = !disabled && openState.value;
+      open.value = !disabled.value && openState.value;
     },
     {flush: 'post', immediate: true},
   );
@@ -70,8 +63,10 @@ export function TooltipRoot<Payload>(props: TooltipRoot.Props<Payload>) {
   const mounted = store.useState('mounted');
   const payload = store.useState('payload') as Ref<Payload | undefined>;
 
-  store.useContextCallback('onOpenChange', onOpenChange);
-  store.useContextCallback('onOpenChangeComplete', onOpenChangeComplete);
+  store.useContextCallback('onOpenChange', (...args: any[]) =>
+    (props.onOpenChange as any)?.(...args));
+  store.useContextCallback('onOpenChangeComplete', (...args: any[]) =>
+    (props.onOpenChangeComplete as any)?.(...args));
 
   store.useSyncedValues({
     disabled,
@@ -84,25 +79,33 @@ export function TooltipRoot<Payload>(props: TooltipRoot.Props<Payload>) {
 
   // disabled 时关闭已打开的 tooltip
   watch(
-    () => [openState.value, disabled],
+    () => [openState.value, disabled.value],
     () => {
-      if (openState.value && disabled) {
+      if (openState.value && disabled.value) {
         store.setOpen(false, createChangeEventDetails(REASONS.disabled));
       }
     },
     {flush: 'post', immediate: true},
   );
 
-  if (actionsRef) {
-    actionsRef.value = {
-      unmount: forceUnmount,
-      close: () => store.setOpen(false, createChangeEventDetails(REASONS.imperativeAction)),
-    };
-  }
+  // actionsRef：ref 对象事件期直读（prop 变化时写入最新对象）。
+  watch(
+    () => props.actionsRef,
+    (actionsRefObj) => {
+      if (actionsRefObj) {
+        actionsRefObj.value = {
+          unmount: forceUnmount,
+          close: () => store.setOpen(false, createChangeEventDetails(REASONS.imperativeAction)),
+        };
+      }
+    },
+    {immediate: true},
+  );
 
   onUnmounted(() => {
-    if (actionsRef) {
-      actionsRef.value = null;
+    const actionsRefObj = props.actionsRef;
+    if (actionsRefObj) {
+      actionsRefObj.value = null;
     }
   });
 
@@ -139,7 +142,7 @@ export function TooltipRoot<Payload>(props: TooltipRoot.Props<Payload>) {
         eventDetails.trigger = activeTriggerElement.value ?? undefined;
       }
 
-      onOpenChange?.(nextOpen, eventDetails as TooltipRoot.ChangeEventDetails);
+      props.onOpenChange?.(nextOpen, eventDetails as TooltipRoot.ChangeEventDetails);
 
       if ((eventDetails as any).isCanceled) {
         return;
@@ -208,21 +211,16 @@ export function TooltipRoot<Payload>(props: TooltipRoot.Props<Payload>) {
   const shouldRenderInteractions = () => open.value || mounted.value;
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  // children（render-prop 或 vnode）渲染期从 props 读取（PD-15）
+  // children（render-prop 或 vnode）渲染期从 props 直读（表达式内，无 IIFE）。
   return (
     <TooltipRootContext.Provider value={store as unknown as TooltipRootContext<unknown>}>
-      {handle && <PopupHandleAttachment handle={handle} store={store} />}
+      {props.handle && <PopupHandleAttachment handle={props.handle} store={store} />}
       {shouldRenderInteractions() && (
-        <TooltipInteractions store={store} disabled={disabled} />
+        <TooltipInteractions store={store} disabled={disabled.value} />
       )}
-      {(() => {
-        const rawChildren = (props as any).children;
-        const child =
-          typeof rawChildren === 'function' ? rawChildren : toValue(rawChildren);
-        return typeof child === 'function'
-          ? (child as PayloadChildRenderFunction<Payload>)({payload: payload.value})
-          : child;
-      })()}
+      {typeof props.children === 'function'
+        ? (props.children as PayloadChildRenderFunction<Payload>)({payload: payload.value})
+        : props.children}
     </TooltipRootContext.Provider>
   );
 }

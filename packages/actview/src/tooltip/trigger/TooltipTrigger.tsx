@@ -1,4 +1,5 @@
-import { ref, toRefs, toValue, unrefs } from 'actview';
+import { computed, ref, toRefs } from 'actview';
+import type { Ref } from 'actview';
 import { useTooltipRootContext } from '../root/TooltipRootContext';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { triggerOpenStateMapping } from '@/utils/popupStateMapping';
@@ -8,7 +9,8 @@ import { useBaseUiId } from '@/internals/useBaseUiId';
 import { TooltipHandle } from '../store/TooltipHandle';
 import { useHoverReferenceInteraction, useFocus } from '@/floating-ui-react';
 import { useButton } from '@/internals/use-button/useButton';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useMergedRefs } from '@/internals/useMergedRefs';
 
 /**
  * An element to attach the tooltip to.
@@ -17,9 +19,12 @@ import { useRenderElement } from '@/internals/useRenderElementLegacy';
  * Documentation: [Base UI Tooltip](https://base-ui.com/react/components/tooltip)
  */
 export function TooltipTrigger(componentProps: TooltipTrigger.Props) {
-  const {disabled = false, nativeButton = true, handle} = componentProps as any;
+  // ============ setup（只执行一次）：一次性初始化 ============
+  // 渲染期/事件期消费的 props：computed 直读（setup 快照会停留在首渲染）。
+  const disabled = computed(() => componentProps.disabled ?? false);
+  const nativeButton = computed(() => componentProps.nativeButton ?? true);
 
-  const tooltipHandleStore = usePopupHandleStore(handle as any);
+  const tooltipHandleStore = usePopupHandleStore(componentProps.handle as any);
   const handleStore = tooltipHandleStore.value;
   const rootStore = useTooltipRootContext(true);
 
@@ -31,7 +36,7 @@ export function TooltipTrigger(componentProps: TooltipTrigger.Props) {
     );
   }
 
-  const thisTriggerId = useBaseUiId((componentProps as any).id);
+  const thisTriggerId = useBaseUiId(componentProps.id);
   const triggerElementRef = ref<HTMLElement | null>(null);
 
   const {registerTrigger, isMountedByThisTrigger} = useTriggerDataForwarding(
@@ -39,9 +44,9 @@ export function TooltipTrigger(componentProps: TooltipTrigger.Props) {
     triggerElementRef as any,
     store,
     {
-      payload: (componentProps as any).payload,
+      payload: componentProps.payload,
       disabled,
-      closeDelay: (componentProps as any).closeDelay,
+      closeDelay: componentProps.closeDelay,
     } as any,
   );
 
@@ -49,7 +54,7 @@ export function TooltipTrigger(componentProps: TooltipTrigger.Props) {
   const isOpenedByThisTrigger = store.useState('isOpenedByTrigger', thisTriggerId as any);
 
   const hoverProps = useHoverReferenceInteraction(floatingContext.value, {
-    enabled: !disabled,
+    enabled: !disabled.value,
     mouseOnly: true,
     move: false,
     triggerElementRef: triggerElementRef as any,
@@ -57,53 +62,67 @@ export function TooltipTrigger(componentProps: TooltipTrigger.Props) {
     isClosing: () => store.select('transitionStatus') === 'ending',
   });
 
-  const focusProps = useFocus(floatingContext.value, {enabled: !disabled}).reference;
+  const focusProps = useFocus(floatingContext.value, {
+    enabled: !disabled.value,
+  }).reference;
 
   const {getButtonProps, buttonRef} = useButton({
     disabled,
-    native: nativeButton,
+    native: nativeButton.value,
   });
 
-  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  const {className, render, style, children, ref: refProp, ...elementProps} = toRefs(
-    componentProps,
-  );
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
 
-  const {element} = useRenderElement({
-    props: () => {
-      // componentProps 原样参与合并（保持原 propsList 语义——hover/focus
-      // 处理器、id、getButtonProps 依次覆盖）
-      const merged: any = mergePropsN([
-        hoverProps ?? {},
-        focusProps ?? {},
-        {id: thisTriggerId},
-        componentProps as any,
-        getButtonProps,
-      ]);
-      const openAttr = triggerOpenStateMapping.open(isOpenedByThisTrigger.value);
-      if (openAttr) {
-        Object.assign(merged, openAttr);
-      }
-      if (disabled) {
-        merged['data-disabled'] = '';
-      } else {
-        delete merged['data-disabled'];
-      }
-      // className/style 由 hook 选项统一处理——从 merged 剔除避免重复
-      delete merged.className;
-      delete merged.style;
-      return [merged];
-    },
-    className,
-    style,
-    render,
-    refs: () => [triggerElementRef as any, buttonRef as any, refProp as any],
-    children,
-    defaultTag: 'button',
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
+  });
+
+  // 根元素 props：hover/focus 处理器 → id → 透传 → getButtonProps → open
+  // state data-*（保持原 propsList 语义）。
+  const rootProps = computed<Record<string, any>>(() => {
+    const merged: any = mergePropsN([
+      hoverProps ?? {},
+      focusProps ?? {},
+      {id: thisTriggerId},
+      elementProps.value,
+      getButtonProps,
+    ]);
+    const openAttr = triggerOpenStateMapping.open(isOpenedByThisTrigger.value);
+    if (openAttr) {
+      Object.assign(merged, openAttr);
+    }
+    if (disabled.value) {
+      merged['data-disabled'] = '';
+    } else {
+      delete merged['data-disabled'];
+    }
+    return merged;
   });
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  return <>{element()}</>;
+  return (
+    <>
+      {useRenderElement(
+        'button',
+        {
+          className: className?.value,
+          render: render?.value,
+          style: style?.value,
+        },
+        {
+          ref: useMergedRefs(triggerElementRef, buttonRef, componentProps.ref as any),
+          props: rootProps.value,
+        },
+      )}
+    </>
+  );
 }
 
 export interface TooltipTriggerState {

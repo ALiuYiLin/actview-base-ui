@@ -1,7 +1,8 @@
+import { computed } from 'actview';
+import type { Ref } from 'actview';
 import { FloatingPortal } from '@/floating-ui-react';
 import { useTooltipRootContext } from '../root/TooltipRootContext';
 import { TooltipPortalContext } from './TooltipPortalContext';
-import type { Ref } from 'actview';
 
 /**
  * A portal element that moves the tooltip to a different part of the DOM.
@@ -11,26 +12,24 @@ import type { Ref } from 'actview';
  * Documentation: [Base UI Tooltip](https://base-ui.com/react/components/tooltip)
  */
 export function TooltipPortal(props: TooltipPortal.Props) {
+  // ============ setup（只执行一次）：一次性初始化 ============
+  // context 载体直取（store-as-is）：store 的 useState 字段渲染期 `.value` 求值。
   const store = useTooltipRootContext(false);
   const mounted = store.useState('mounted');
 
+  // 渲染期消费的 props：computed 直读（setup 快照会停留在首渲染）。
+  const keepMounted = computed(() => props.keepMounted ?? false);
+
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  // props（keepMounted/portalProps）渲染期读取（PD-15）
+  // 条件在渲染期求值（表达式内 .value 直读，无 IIFE）；其余 portalProps
+  // 透传 FloatingPortal。
   return (
     <>
-      {(() => {
-        const {keepMounted = false, ...portalProps} = props as any;
-        const shouldRender = mounted.value || keepMounted;
-        if (!shouldRender) {
-          return null;
-        }
-
-        return (
-          <TooltipPortalContext.Provider value={keepMounted}>
-            <FloatingPortal {...portalProps} />
-          </TooltipPortalContext.Provider>
-        );
-      })()}
+      {mounted.value || keepMounted.value ? (
+        <TooltipPortalContext.Provider value={keepMounted.value}>
+          <FloatingPortal {...props} keepMounted={keepMounted.value} />
+        </TooltipPortalContext.Provider>
+      ) : null}
     </>
   );
 }

@@ -1,3 +1,4 @@
+import { computed } from 'actview';
 import { TooltipProviderContext } from './TooltipProviderContext';
 
 /**
@@ -9,14 +10,15 @@ import { TooltipProviderContext } from './TooltipProviderContext';
  * Documentation: [Base UI Tooltip](https://base-ui.com/react/components/tooltip)
  */
 export function TooltipProvider(props: TooltipProvider.Props) {
+  // ============ setup（只执行一次）：一次性初始化 ============
+  // 渲染期消费的 props：computed 直读（setup 快照会停留在首渲染）。
+  const delay = computed(() => (props as any).delay ?? (props as any).closeDelay);
+
   // ============ render（最后 return JSX——插件转换为渲染函数）============
+  // children 兼容 render prop（渲染期求值，表达式内直读）。
   return (
-    <TooltipProviderContext.Provider value={(props as any).delay ?? (props as any).closeDelay}>
-      {(() => {
-        // children 渲染期读取（PD-15）
-        const child = (props as any).children;
-        return typeof child === 'function' ? (child as any)() : child;
-      })()}
+    <TooltipProviderContext.Provider value={delay}>
+      {typeof props.children === 'function' ? (props.children as any)() : props.children}
     </TooltipProviderContext.Provider>
   );
 }

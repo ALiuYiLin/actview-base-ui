@@ -486,18 +486,21 @@ export function useAnchorPositioning(
     {flush: 'post', immediate: true},
   );
 
-  const renderedSide = getSide(renderedPlacement.value);
-  const logicalRenderedSide = getLogicalSide(sideParam, renderedSide, isRtl);
-  const renderedAlign = getAlignment(renderedPlacement.value) || 'center';
-  const anchorHidden = Boolean(middlewareData.value.hide?.referenceHidden);
+  // 渲染期求值：computed（setup 期 `.value` 快照会停留在首渲染——flip/shift
+  // 之后 side/align/anchorHidden 永不更新）。
+  const renderedSide = computed(() => getSide(renderedPlacement.value));
+  const logicalRenderedSide = computed(() => getLogicalSide(sideParam, renderedSide.value, isRtl));
+  const renderedAlign = computed(() => getAlignment(renderedPlacement.value) || 'center');
+  const anchorHidden = computed(() => Boolean(middlewareData.value.hide?.referenceHidden));
+  const isPositionedComputed = computed(() => isPositioned.value);
 
   // Locks the flip (makes it "sticky") so it doesn't prefer a given placement
   // and flips back lazily, not eagerly.
   watch(
-    () => [lazyFlip, mountedValue, isPositioned.value, renderedSide, side] as const,
+    () => [lazyFlip, mountedValue, isPositioned.value, renderedSide.value, side] as const,
     () => {
-      if (lazyFlip && mountedValue && isPositioned.value && renderedSide !== side) {
-        mountSide.value = renderedSide;
+      if (lazyFlip && mountedValue && isPositioned.value && renderedSide.value !== side) {
+        mountSide.value = renderedSide.value;
       }
     },
     {flush: 'post', immediate: true},
@@ -509,7 +512,7 @@ export function useAnchorPositioning(
     left: middlewareData.value.arrow?.x,
   }));
 
-  const arrowUncentered = middlewareData.value.arrow?.centerOffset !== 0;
+  const arrowUncentered = computed(() => middlewareData.value.arrow?.centerOffset !== 0);
 
   return {
     positionerStyles: floatingStyles,
@@ -522,7 +525,7 @@ export function useAnchorPositioning(
     anchorHidden,
     refs,
     context,
-    isPositioned: isPositioned.value,
+    isPositioned: isPositionedComputed,
     update,
   } as unknown as UseAnchorPositioningReturnValue;
 }
@@ -625,13 +628,14 @@ export interface UseAnchorPositioningReturnValue {
   positionerStyles: any;
   arrowStyles: any;
   arrowRef: Ref<Element | null>;
-  arrowUncentered: boolean;
-  side: Side;
-  align: Align;
-  physicalSide: PhysicalSide;
-  anchorHidden: boolean;
+  /** 以下字段为 computed（flip/shift 后实时更新）——消费端读 `.value`。 */
+  arrowUncentered: ComputedRef<boolean>;
+  side: ComputedRef<Side>;
+  align: ComputedRef<Align>;
+  physicalSide: ComputedRef<PhysicalSide>;
+  anchorHidden: ComputedRef<boolean>;
   refs: any;
   context: any;
-  isPositioned: boolean;
+  isPositioned: ComputedRef<boolean>;
   update: () => void;
 }

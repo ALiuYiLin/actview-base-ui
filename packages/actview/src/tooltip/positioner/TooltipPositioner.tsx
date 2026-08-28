@@ -1,4 +1,4 @@
-import {watch, ref} from 'actview';
+import { computed, watch, ref } from 'actview';
 import { useTooltipRootContext } from '../root/TooltipRootContext';
 import { TooltipPositionerContext } from './TooltipPositionerContext';
 import {
@@ -20,6 +20,10 @@ import { usePositioner } from '@/utils/usePositioner';
  * Documentation: [Base UI Tooltip](https://base-ui.com/react/components/tooltip)
  */
 export function TooltipPositioner(componentProps: TooltipPositioner.Props) {
+  // ============ setup（只执行一次）：一次性初始化 ============
+  // 定位参数为初始化型快照（useAnchorPositioning 在 setup 构建中间件链——
+  // side/align 动态变化需整体重建，React 版每次 render 重跑；actview 简化为
+  // 挂载期固定，动态 side/align 记录为已知限制）。
   const {
     anchor,
     positionMethod,
@@ -33,24 +37,23 @@ export function TooltipPositioner(componentProps: TooltipPositioner.Props) {
     sticky,
     disableAnchorTracking = false,
     collisionAvoidance = POPUP_COLLISION_AVOIDANCE,
-    ...elementProps
   } = componentProps as any;
 
+  // context 载体直取（store-as-is）：store 的 useState 字段渲染期 `.value` 求值。
   const store = useTooltipRootContext(false);
   const keepMounted = useTooltipPortalContext();
 
   const floatingRootContext = store.useState('floatingRootContext');
   const mounted = store.useState('mounted');
   const open = store.useState('open');
-  const triggerElement = store.useState('activeTriggerElement');
-  const positionerElement = store.useState('positionerElement');
   const instantType = store.useState('instantType');
   const transitionStatus = store.useState('transitionStatus');
   const adaptiveOrigin = store.useState('adaptiveOrigin');
   const domReference = (floatingRootContext.value as any)?.useState('domReferenceElement');
 
   const previousTriggerRef = ref(null as Element | null);
-  const runOnceAnimationsFinish = useAnimationsFinished(positionerElement);
+  const positionerElement = store.useState('positionerElement');
+  const runOnceAnimationsFinish = useAnimationsFinished(positionerElement as any);
 
   const positioner = useAnchorPositioning({
     anchor,
@@ -99,27 +102,51 @@ export function TooltipPositioner(componentProps: TooltipPositioner.Props) {
     {flush: 'post', immediate: true},
   );
 
-  const state: TooltipPositionerState = {
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  // useAnchorPositioning 返回 computed 字段（side/align/anchorHidden 等随
+  // flip/shift 更新）——state 与 context 载体逐字段求值。
+  const state = computed<TooltipPositionerState>(() => ({
     open: open.value,
-    side: positioner.side,
-    align: positioner.align,
-    anchorHidden: positioner.anchorHidden,
+    side: positioner.side.value,
+    align: positioner.align.value,
+    anchorHidden: positioner.anchorHidden.value,
     instant: instantType.value as any,
     transitionStatus: transitionStatus.value as any,
-  };
+  }));
 
   const element = usePositioner(componentProps as any, state as any, {
     styles: positioner.positionerStyles,
     transitionStatus,
-    props: elementProps,
     refs: [store.useStateSetter('positionerElement')],
     hidden: () => !mounted.value,
     inert: () => !open.value,
   }) as any;
 
+
+  // store-as-is 载体：身份稳定的 getter 对象——side/align/anchorHidden/
+  // arrowUncentered/arrowStyles 渲染期求值；arrowRef 为稳定 ref。
+  const contextValue = {
+    get side() {
+      return positioner.side.value;
+    },
+    get align() {
+      return positioner.align.value;
+    },
+    get anchorHidden() {
+      return positioner.anchorHidden.value;
+    },
+    arrowRef: positioner.arrowRef,
+    get arrowUncentered() {
+      return positioner.arrowUncentered.value;
+    },
+    get arrowStyles() {
+      return positioner.arrowStyles.value;
+    },
+  };
+
   // ============ render（最后 return JSX——插件转换为渲染函数）============
   return (
-    <TooltipPositionerContext.Provider value={positioner as any}>
+    <TooltipPositionerContext.Provider value={contextValue as any}>
       {element()}
     </TooltipPositionerContext.Provider>
   );
