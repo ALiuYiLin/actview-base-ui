@@ -1,4 +1,4 @@
-import { onUnmounted, ref, toValue, toRefs, unrefs, watch } from 'actview';
+import { computed, onUnmounted, ref, toRefs, watch } from 'actview';
 import type { Ref } from 'actview';
 import { useTimeout } from '@/utils/useTimeout';
 import { ownerDocument } from '@/internals/owner';
@@ -31,7 +31,8 @@ import type { MenuParent } from '../root/MenuRoot';
 import { PATIENT_CLICK_THRESHOLD } from '@/internals/constants';
 import { FocusGuard } from '@/utils/FocusGuard';
 import { mergeProps, mergePropsN } from '@/merge-props';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useMergedRefs } from '@/internals/useMergedRefs';
 
 /**
  * A button that opens the menu.
@@ -40,22 +41,21 @@ import { useRenderElement } from '@/internals/useRenderElementLegacy';
  * Documentation: [Base UI Menu](https://base-ui.com/react/components/menu)
  */
 export function MenuTrigger(componentProps: MenuTrigger.Props) {
-  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
-  const {
-    disabled: disabledProp = false,
-    nativeButton = true,
-    id: idProp,
-    openOnHover: openOnHoverProp,
-    delay = 100,
-    closeDelay = 0,
-    handle,
-    payload,
-  } = componentProps;
+  // ============ setup（只执行一次）：一次性初始化 ============
+  // 渲染期/事件期消费的 props：computed 直读（setup 快照会停留在首渲染）。
+  const disabledComputed = computed(() => componentProps.disabled ?? false);
+  const nativeButton = computed(() => componentProps.nativeButton ?? true);
+  const delay = componentProps.delay ?? 100;
+  const closeDelay = componentProps.closeDelay ?? 0;
 
-  const {render, className, style, children, ref: refProp, ...elementProps} = toRefs(componentProps);
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
 
   const rootContext = useMenuRootContext(true);
-  const handleStore = usePopupHandleStore(handle);
+  const handleStore = usePopupHandleStore(componentProps.handle);
   const store = handleStore?.value ?? rootContext?.store;
   if (!store) {
     throw new Error(
@@ -63,7 +63,7 @@ export function MenuTrigger(componentProps: MenuTrigger.Props) {
     );
   }
 
-  const thisTriggerId = useBaseUiId(idProp);
+  const thisTriggerId = useBaseUiId(componentProps.id);
   const isTriggerActive = store.useState('isTriggerActive', thisTriggerId);
   const floatingRootContext = store.useState('floatingRootContext');
   const isOpenedByThisTrigger = store.useState('isOpenedByTrigger', thisTriggerId);
@@ -141,13 +141,13 @@ export function MenuTrigger(componentProps: MenuTrigger.Props) {
   );
 
   const parentMenubarHasSubmenuOpen = isInMenubar && parent.context.hasSubmenuOpen;
-  const openOnHover = openOnHoverProp ?? parentMenubarHasSubmenuOpen;
+  const openOnHover = componentProps.openOnHover ?? parentMenubarHasSubmenuOpen;
   const isMountedByThisTrigger = store.useState('isMountedByTrigger', thisTriggerId);
 
   const hoverProps = useHoverReferenceInteraction(floatingRootContext.value, {
     enabled:
       openOnHover &&
-      !disabledProp &&
+      !disabledComputed.value &&
       (!isInMenubar || (parentMenubarHasSubmenuOpen && !isMountedByThisTrigger.value)),
     handleClose: safePolygon({blockPointerEvents: !isInMenubar}) as any,
     mouseOnly: true,
@@ -166,7 +166,7 @@ export function MenuTrigger(componentProps: MenuTrigger.Props) {
   );
 
   const click = useClick(floatingRootContext.value, {
-    enabled: !disabledProp,
+    enabled: !disabledComputed.value,
     event: isOpenedByThisTrigger.value && isInMenubar ? 'click' : 'mousedown',
     toggle: true,
     ignoreMouse: false,
@@ -174,7 +174,7 @@ export function MenuTrigger(componentProps: MenuTrigger.Props) {
   });
 
   const focus = useFocus(floatingRootContext.value, {
-    enabled: !disabledProp && parentMenubarHasSubmenuOpen,
+    enabled: !disabledComputed.value && parentMenubarHasSubmenuOpen,
   });
 
   const mixedToggleHandlers = useMixedToggleClickHandler({
@@ -191,7 +191,7 @@ export function MenuTrigger(componentProps: MenuTrigger.Props) {
     useTriggerFocusGuards(store, triggerElementRef);
 
   const button = useButton({
-    disabled: disabledProp,
+    disabled: disabledComputed.value,
     native: nativeButton,
   });
   const buttonRef = button.buttonRef;
@@ -201,7 +201,7 @@ export function MenuTrigger(componentProps: MenuTrigger.Props) {
     thisTriggerId,
     triggerElementRef as any,
     store,
-    {payload: payload as any},
+    {payload: componentProps.payload as any},
   );
 
   const refs = [
@@ -212,7 +212,21 @@ export function MenuTrigger(componentProps: MenuTrigger.Props) {
     registerTrigger,
   ] as any[];
 
-  const propsList = [
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
+  });
+
+  const state = computed<MenuTriggerState>(() => ({
+    disabled: disabledComputed.value,
+    open: isOpenedByThisTrigger.value,
+  }));
+
+  // 根元素 props：click/hover/focus 处理器 → store triggerProps → aria/id →
+  // menubar role → mixed toggle → 透传 → getButtonProps。
+  const propsList = computed<any[]>(() => [
     localInteractionProps,
     hoverProps ?? EMPTY_OBJECT,
     rootTriggerProps.value,
@@ -237,70 +251,67 @@ export function MenuTrigger(componentProps: MenuTrigger.Props) {
     isInMenubar ? {role: 'menuitem'} : {},
     mixedToggleHandlers,
     getButtonProps,
-  ];
+  ]);
 
-  const state = (): MenuTriggerState => ({
-    disabled: disabledProp,
-    open: isOpenedByThisTrigger.value,
-  });
-
-  const {element} = useRenderElement({
-    props: () => {
-      const merged = mergePropsN<any>([...propsList, unrefs(elementProps)]);
-      const stateAttributes = {};
-      if ((globalThis as any).__DSH_TRIGGER_DEBUG) {
-        // eslint-disable-next-line no-console
-        console.log('[MenuTrigger] render isOpened=' + String(isOpenedByThisTrigger.value));
-      }
-      Object.assign(
-        stateAttributes,
-        pressableTriggerOpenStateMapping.open(isOpenedByThisTrigger.value),
-      );
-      Object.assign(merged, stateAttributes);
-      return [merged];
-    },
-    state,
-    className,
-    style,
-    render,
-    refs: () => refs,
-    children,
-    defaultTag: 'button',
+  const rootProps = computed<Record<string, any>>(() => {
+    const merged = mergePropsN<any>([...propsList.value, elementProps.value]);
+    Object.assign(
+      merged,
+      pressableTriggerOpenStateMapping.open(isOpenedByThisTrigger.value),
+    );
+    return merged;
   });
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  if (isInMenubar) {
-    return (
-      <CompositeItem
-        tag="button"
-        render={render}
-        className={className}
-        style={style}
-        state={state}
-        refs={refs}
-        props={propsList}
-        stateAttributesMapping={pressableTriggerOpenStateMapping}
-      >
-        {toValue(children)}
-      </CompositeItem>
-    );
-  }
-
   // actview 渲染无法原地 patch div↔button 结构切换（open 时包裹 guards、
   // 关闭时不包裹会导致 button 元素重建，domReference 变 disconnected），
   // 因此始终使用稳定的 div 包裹结构。
+  if (!isInMenubar) {
+    return (
+      <div key={`${thisTriggerId}-guards`}>
+        <FocusGuard
+          ref={(el: any) => (preFocusGuardRef.value = el)}
+          onFocus={handlePreFocusGuardFocus}
+        />
+        {useRenderElement(
+          'button',
+          {
+            className: className?.value,
+            render: render?.value,
+            style: style?.value,
+          },
+          {
+            state: state.value,
+            ref: useMergedRefs(
+              (el: HTMLElement | null) => {
+                triggerElementRef.value = el;
+              },
+              buttonRef as any,
+              registerTrigger as any,
+              componentProps.ref as any,
+            ),
+            props: rootProps.value,
+          },
+        )}
+        <FocusGuard
+          ref={(el: any) => (store.context.triggerFocusTargetRef.value = el)}
+          onFocus={handleFocusTargetFocus}
+        />
+      </div>
+    );
+  }
+
   return (
-    <div key={`${thisTriggerId}-guards`}>
-      <FocusGuard
-        ref={(el: any) => (preFocusGuardRef.value = el)}
-        onFocus={handlePreFocusGuardFocus}
-      />
-      {element()}
-      <FocusGuard
-        ref={(el: any) => (store.context.triggerFocusTargetRef.value = el)}
-        onFocus={handleFocusTargetFocus}
-      />
-    </div>
+    <CompositeItem
+      tag="button"
+      render={render as any}
+      className={className as any}
+      style={style as any}
+      state={state.value as any}
+      refs={refs}
+      props={propsList.value}
+      stateAttributesMapping={pressableTriggerOpenStateMapping}
+    />
   );
 }
 
