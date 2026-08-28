@@ -18,12 +18,12 @@ export interface AccordionItemContext {
 
 export const AccordionItemContext = createContext<AccordionItemContext | undefined>(undefined);
 
-export function useAccordionItemContext(): Ref<AccordionItemContext> {
+export function useAccordionItemContext(): AccordionItemContext {
   const context = AccordionItemContext.use();
-  if (context.value === undefined) {
+  if (context === undefined) {
     throw new Error(
       'Base UI: AccordionItemContext is missing. Accordion parts must be placed within <Accordion.Item>.',
     );
   }
-  return context as Ref<AccordionItemContext>;
+  return context;
 }

@@ -29,8 +29,8 @@ export const OTPFieldRootContext = createContext<OTPFieldRootContextValue | unde
 
 export function useOTPFieldRootContext(optional = true): any {
   const context = OTPFieldRootContext.use();
-  if (context.value === undefined && !optional) {
+  if (context === undefined && !optional) {
     throw new Error('Base UI: <OTPField.Root> is missing.');
   }
-  return context.value;
+  return context;
 }

@@ -9,12 +9,12 @@ export const ScrollAreaViewportContext = createContext<ScrollAreaViewportContext
   undefined,
 );
 
-export function useScrollAreaViewportContext(): Ref<ScrollAreaViewportContext> {
+export function useScrollAreaViewportContext(): ScrollAreaViewportContext {
   const context = ScrollAreaViewportContext.use();
-  if (context.value === undefined) {
+  if (context === undefined) {
     throw new Error(
       'Base UI: ScrollAreaViewportContext missing. ScrollAreaViewport parts must be placed within <ScrollArea.Viewport>.',
     );
   }
-  return context as unknown as Ref<ScrollAreaViewportContext>;
+  return context;
 }

@@ -17,12 +17,12 @@ export interface AccordionRootContext<Value = any> {
 
 export const AccordionRootContext = createContext<AccordionRootContext<any> | undefined>(undefined);
 
-export function useAccordionRootContext<Value = any>(): Ref<AccordionRootContext<Value>> {
-  const context = AccordionRootContext.use() as Ref<AccordionRootContext<Value> | undefined>;
-  if (context.value === undefined) {
+export function useAccordionRootContext<Value = any>(): AccordionRootContext<Value> {
+  const context = AccordionRootContext.use();
+  if (context === undefined) {
     throw new Error(
       'Base UI: AccordionRootContext is missing. Accordion parts must be placed within <Accordion.Root>.',
     );
   }
-  return context as Ref<AccordionRootContext<Value>>;
+  return context;
 }

@@ -10,13 +10,13 @@ export interface CollapsibleRootContext extends UseCollapsibleRootReturnValue {
 
 export const CollapsibleRootContext = createContext<CollapsibleRootContext | undefined>(undefined);
 
-export function useCollapsibleRootContext(): Ref<CollapsibleRootContext> {
+export function useCollapsibleRootContext(): CollapsibleRootContext {
   const context = CollapsibleRootContext.use();
-  if (context.value === undefined) {
+  if (context === undefined) {
     throw new Error(
       'Base UI: CollapsibleRootContext is missing. Collapsible parts must be placed within <Collapsible.Root>.',
     );
   }
 
-  return context as Ref<CollapsibleRootContext>;
+  return context;
 }

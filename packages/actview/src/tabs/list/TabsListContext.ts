@@ -13,13 +13,13 @@ export interface TabsListContext {
  */
 export const TabsListContext = createContext<TabsListContext | undefined>(undefined);
 
-export function useTabsListContext(): Ref<TabsListContext> {
+export function useTabsListContext(): TabsListContext {
   const context = TabsListContext.use();
-  if (context.value === undefined) {
+  if (context === undefined) {
     throw new Error(
       'Base UI: TabsListContext is missing. Tabs parts must be placed within <Tabs.List>.',
     );
   }
 
-  return context as unknown as Ref<TabsListContext>;
+  return context;
 }

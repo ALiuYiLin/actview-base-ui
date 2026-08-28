@@ -1,5 +1,5 @@
 import { createContext } from 'actview';
-import type { ComputedRef } from 'actview';
+import type { ComputedRef, Ref } from 'actview';
 import type { UseFieldValidationReturnValue } from '@/field/root/useFieldValidation';
 import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import type { BaseUIEventReasons } from '@/internals/reasons';

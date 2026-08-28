@@ -42,13 +42,13 @@ export interface TabsRootContext {
  */
 export const TabsRootContext = createContext<TabsRootContext | undefined>(undefined);
 
-export function useTabsRootContext(): Ref<TabsRootContext> {
+export function useTabsRootContext(): TabsRootContext {
   const context = TabsRootContext.use();
-  if (context.value === undefined) {
+  if (context === undefined) {
     throw new Error(
       'Base UI: TabsRootContext is missing. Tabs parts must be placed within <Tabs.Root>.',
     );
   }
 
-  return context as unknown as Ref<TabsRootContext>;
+  return context;
 }

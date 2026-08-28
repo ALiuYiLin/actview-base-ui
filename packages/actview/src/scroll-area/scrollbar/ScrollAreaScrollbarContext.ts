@@ -7,12 +7,12 @@ export const ScrollAreaScrollbarContext = createContext<
   ScrollAreaScrollbarOrientation | undefined
 >(undefined);
 
-export function useScrollAreaScrollbarContext(): Ref<ScrollAreaScrollbarOrientation> {
+export function useScrollAreaScrollbarContext(): ScrollAreaScrollbarOrientation {
   const context = ScrollAreaScrollbarContext.use();
-  if (context.value === undefined) {
+  if (context === undefined) {
     throw new Error(
       'Base UI: ScrollAreaScrollbarContext missing. ScrollAreaThumb must be placed within <ScrollArea.Scrollbar>.',
     );
   }
-  return context as unknown as Ref<ScrollAreaScrollbarOrientation>;
+  return context;
 }

@@ -47,12 +47,12 @@ export interface ScrollAreaRootContext {
 
 export const ScrollAreaRootContext = createContext<ScrollAreaRootContext | undefined>(undefined);
 
-export function useScrollAreaRootContext(): Ref<ScrollAreaRootContext> {
+export function useScrollAreaRootContext(): ScrollAreaRootContext {
   const context = ScrollAreaRootContext.use();
-  if (context.value === undefined) {
+  if (context === undefined) {
     throw new Error(
       'Base UI: ScrollAreaRootContext is missing. ScrollArea parts must be placed within <ScrollArea.Root>.',
     );
   }
-  return context as unknown as Ref<ScrollAreaRootContext>;
+  return context;
 }
