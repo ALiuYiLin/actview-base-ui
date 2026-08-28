@@ -1,4 +1,4 @@
-import { ref, toValue, toRefs, unrefs, computed } from 'actview';
+import { ref, toRefs, unrefs, computed } from 'actview';
 import type { ComputedRef } from 'actview';
 import { useControlled } from '@/utils/useControlled';
 import { useBaseUiId } from '@/internals/useBaseUiId';
@@ -41,13 +41,13 @@ export function RadioGroup<Value>(componentProps: RadioGroup.Props<Value>) {
     setDirty,
     setFilled,
     validityData,
-  } = toValue(useFieldRootContext());
-  const {labelId} = toValue(useLabelableContext());
-  const {clearErrors, elementRef} = toValue(useFormContext());
+  } = useFieldRootContext();
+  const {labelId} = useLabelableContext();
+  const {clearErrors, elementRef} = useFormContext();
   const fieldsetContext = useFieldsetRootContext(true);
 
-  const defaultValue = toValue(componentProps.defaultValue);
-  const idProp = toValue(componentProps.id);
+  const defaultValue = componentProps.defaultValue;
+  const idProp = componentProps.id;
   const inputRefProp = componentProps.inputRef as
     | Ref<HTMLInputElement | null>
     | ((element: HTMLInputElement | null) => void)
@@ -58,16 +58,16 @@ export function RadioGroup<Value>(componentProps: RadioGroup.Props<Value>) {
   // props 动态变化时渲染期 `.value` 与 context 消费方（Radio）都能拿到实时值。
   // getter 直接读 componentProps（响应式）——setup 快照（*Prop）会导致 computed
   // 依赖不追踪 props 变化而停留在首渲染。
-  const disabled = computed(() => fieldDisabled.value || (toValue(componentProps.disabled) ?? false));
-  const readOnly = computed(() => toValue(componentProps.readOnly));
-  const required = computed(() => toValue(componentProps.required));
-  const form = computed(() => toValue(componentProps.form));
-  const name = computed(() => fieldName.value ?? toValue(componentProps.name));
+  const disabled = computed(() => fieldDisabled.value || (componentProps.disabled ?? false));
+  const readOnly = computed(() => componentProps.readOnly);
+  const required = computed(() => componentProps.required);
+  const form = computed(() => componentProps.form);
+  const name = computed(() => fieldName.value ?? componentProps.name);
   const id = useBaseUiId(idProp);
 
   const [checkedValue, setCheckedValueUnwrapped] = useControlled<Value>({
     // 受控值用 getter：外部 `value` prop 动态变化时实时生效（P1 教训：受控需传 getter）
-    controlled: () => toValue(componentProps.value),
+    controlled: () => componentProps.value,
     default: defaultValue,
     name: 'RadioGroup',
     state: 'value',

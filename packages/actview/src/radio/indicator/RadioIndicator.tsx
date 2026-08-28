@@ -1,4 +1,5 @@
-import { computed, toValue, toRefs, unrefs } from 'actview';
+import { computed, ref, toRefs } from 'actview';
+import type { Ref } from 'actview';
 import type { BaseUIComponentProps } from '@/internals/types';
 import type { RadioRootState } from '../root/RadioRoot';
 import { useRadioRootContext } from '../root/RadioRootContext';
@@ -6,8 +7,7 @@ import { stateAttributesMapping } from '../utils/stateAttributesMapping';
 import { useOpenChangeComplete } from '@/internals/useOpenChangeComplete';
 import { type TransitionStatus, useTransitionStatus } from '@/internals/useTransitionStatus';
 import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
-import { useRootElementFragment } from '@/internals/useRootElementFragment';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * Indicates whether the radio button is selected.
@@ -17,22 +17,17 @@ import { useRootElementFragment } from '@/internals/useRootElementFragment';
  */
 export function RadioIndicator(componentProps: RadioIndicator.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  // Fragment 根（`<>{element()}</>` + 条件）下 actview 内置 useRootElement 的
-  // subTree.el 恒 null——用 Fragment 兼容版本。
-  const rootRef = useRootElementFragment();
-
+  // context 载体直取（store-as-is）：读字段即追踪。
   const rootState = useRadioRootContext();
 
-  const keepMounted = toValue(componentProps.keepMounted) ?? false;
+  const keepMounted = computed(() => componentProps.keepMounted ?? false);
 
-  const rendered = computed(() => rootState.value!.checked);
+  const rendered = computed(() => rootState.checked);
 
   const {mounted, transitionStatus, setMounted} = useTransitionStatus(rendered);
 
-  const state = (): RadioIndicatorState => ({
-    ...(rootState.value as RadioRootState),
-    transitionStatus: transitionStatus.value,
-  });
+  // 自持 ref：useOpenChangeComplete 需要元素 ref；经 params.ref 合并链透传。
+  const rootRef = ref<HTMLElement | null>(null);
 
   useOpenChangeComplete({
     open: rendered,
@@ -44,26 +39,48 @@ export function RadioIndicator(componentProps: RadioIndicator.Props) {
     },
   });
 
-  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
 
-  const {element} = useRenderElement({
-    props: () => {
-      const stateValue = state();
-      const stateAttributes = getStateAttributesProps(stateValue, stateAttributesMapping);
-      return [{...unrefs(elementProps), ...stateAttributes}];
-    },
-    state,
-    className,
-    style,
-    render,
-    refs: () => [rootRef as any],
-    children,
-    defaultTag: 'span',
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
   });
+  const state = computed<RadioIndicatorState>(() => ({
+    ...rootState,
+    transitionStatus: transitionStatus.value,
+  }));
+  const stateAttributes = computed(() =>
+    getStateAttributesProps(state.value, stateAttributesMapping),
+  );
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  return <>{keepMounted || mounted.value ? element() : null}</>;
+  // 条件在渲染期求值（表达式内 .value 直读，无 IIFE）。
+  return (
+    <>
+      {keepMounted.value || mounted.value
+        ? useRenderElement(
+            'span',
+            {
+              className: className?.value,
+              render: render?.value,
+              style: style?.value,
+            },
+            {
+              state: state.value,
+              stateAttributesMapping,
+              ref: rootRef,
+              props: {...elementProps.value, ...stateAttributes.value},
+            },
+          )
+        : null}
+    </>
+  );
 }
 
 export interface RadioIndicatorProps extends BaseUIComponentProps<'span', RadioIndicatorState> {

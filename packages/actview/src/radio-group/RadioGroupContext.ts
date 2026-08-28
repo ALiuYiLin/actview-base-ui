@@ -1,5 +1,5 @@
 import { createContext } from 'actview';
-import type { ComputedRef, Ref } from 'actview';
+import type { ComputedRef } from 'actview';
 import type { UseFieldValidationReturnValue } from '@/field/root/useFieldValidation';
 import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import type { BaseUIEventReasons } from '@/internals/reasons';
@@ -23,6 +23,6 @@ export interface RadioGroupContext<Value> {
 
 export const RadioGroupContext = createContext<RadioGroupContext<any> | undefined>(undefined);
 
-export function useRadioGroupContext(): Ref<RadioGroupContext<any> | undefined> {
+export function useRadioGroupContext(): RadioGroupContext<any> | undefined {
   return RadioGroupContext.use();
 }
