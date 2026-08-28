@@ -1,4 +1,4 @@
-import { onUnmounted, ref, toValue, watch, toRefs } from 'actview';
+import { computed, onUnmounted, watch } from 'actview';
 import type { Ref } from 'actview';
 import { useId } from '@/utils/useId';
 import { useStableCallback } from '@/utils/useStableCallback';
@@ -30,38 +30,28 @@ import {
  * Documentation: [Base UI Drawer](https://base-ui.com/react/components/Drawer)
  */
 export function DrawerRoot<Payload>(props: DrawerRoot.Props<Payload>) {
-  // ============ setup（只执行一次） ============
-  const {
-    open: openProp,
-    defaultOpen = false,
-    modal = true,
-    disablePointerDismissal = false,
-    onOpenChange,
-    onOpenChangeComplete,
-    actionsRef,
-    handle,
-    triggerId: triggerIdProp,
-    defaultTriggerId: defaultTriggerIdProp = null,
-  } = props as any;
+  // ============ setup（只执行一次）：一次性初始化 ============
+  // 渲染期/事件期消费的 props：computed 直读（setup 快照会停留在首渲染）；
+  // 回调类 props（onOpenChange 等）事件期直读 props。
+  const modal = computed(() => props.modal ?? true);
+  const disablePointerDismissal = computed(() => props.disablePointerDismissal ?? false);
 
-  const {children} = toRefs(props);
-
-  const store = useDrawerRootStore<Payload>(handle, {
-    open: defaultOpen,
-    openProp,
-    activeTriggerId: defaultTriggerIdProp,
-    triggerIdProp,
+  const store = useDrawerRootStore<Payload>(props.handle, {
+    open: props.defaultOpen ?? false,
+    openProp: props.open,
+    activeTriggerId: props.defaultTriggerId ?? null,
+    triggerIdProp: props.triggerId,
   });
 
-  store.useControlledProp('openProp', openProp);
-  store.useControlledProp('triggerIdProp', triggerIdProp);
+  store.useControlledProp('openProp', () => props.open);
+  store.useControlledProp('triggerIdProp', () => props.triggerId);
 
   const open = store.useState('open');
   const mounted = store.useState('mounted');
   const payload = store.useState('payload') as Ref<Payload | undefined>;
 
-  store.useContextCallback('onOpenChange', onOpenChange);
-  store.useContextCallback('onOpenChangeComplete', onOpenChangeComplete);
+  store.useContextCallback('onOpenChange', (...args: any[]) => props.onOpenChange?.(...(args as [boolean, DrawerRoot.ChangeEventDetails])));
+  store.useContextCallback('onOpenChangeComplete', (...args: any[]) => props.onOpenChangeComplete?.(...(args as [boolean])));
 
   store.useSyncedValues({modal, disablePointerDismissal} as any);
 
@@ -69,16 +59,23 @@ export function DrawerRoot<Payload>(props: DrawerRoot.Props<Payload>) {
   useImplicitActiveTrigger(store as any);
   const {forceUnmount} = useOpenStateTransitions(open as any, store as any);
 
-  if (actionsRef) {
-    actionsRef.value = {
-      unmount: forceUnmount,
-      close: () => store.setOpen(false, createChangeEventDetails(REASONS.imperativeAction)),
-    };
-  }
-
+  // actionsRef：ref 对象事件期直读（prop 变化时写入最新对象）。
+  watch(
+    () => props.actionsRef,
+    (actionsRefObj) => {
+      if (actionsRefObj) {
+        actionsRefObj.value = {
+          unmount: forceUnmount,
+          close: () => store.setOpen(false, createChangeEventDetails(REASONS.imperativeAction)),
+        };
+      }
+    },
+    {immediate: true},
+  );
   onUnmounted(() => {
-    if (actionsRef) {
-      actionsRef.value = null;
+    const actionsRefObj = props.actionsRef;
+    if (actionsRefObj) {
+      actionsRefObj.value = null;
     }
   });
 
@@ -115,7 +112,7 @@ export function DrawerRoot<Payload>(props: DrawerRoot.Props<Payload>) {
         eventDetails.trigger = activeTriggerElement.value ?? undefined;
       }
 
-      onOpenChange?.(nextOpen, eventDetails as DrawerRoot.ChangeEventDetails);
+      props.onOpenChange?.(nextOpen, eventDetails as DrawerRoot.ChangeEventDetails);
 
       if ((eventDetails as any).isCanceled) {
         return;
@@ -188,12 +185,11 @@ export function DrawerRoot<Payload>(props: DrawerRoot.Props<Payload>) {
   // ============ render（最后 return JSX——插件转换为渲染函数）============
   return (
     <DialogRootContext.Provider value={store as unknown as any}>
-      {handle && <PopupHandleAttachment handle={handle} store={store} />}
-      {shouldRenderInteractions() && <DrawerInteractions store={store} modal={modal} />}
-      {(() => {
-        const child = toValue(children);
-        return typeof child === 'function' ? (child as any)({payload: payload.value}) : child;
-      })()}
+      {props.handle && <PopupHandleAttachment handle={props.handle} store={store} />}
+      {shouldRenderInteractions() && <DrawerInteractions store={store} modal={modal.value} />}
+      {typeof props.children === 'function'
+        ? (props.children as PayloadChildRenderFunction<Payload>)({payload: payload.value})
+        : props.children}
     </DialogRootContext.Provider>
   );
 }

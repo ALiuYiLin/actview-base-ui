@@ -1,22 +1,37 @@
-import { toRefs, unrefs } from 'actview';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
+import { computed, toRefs } from 'actview';
+import type { Ref } from 'actview';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /** The content of the drawer. Renders a `<div>` element. */
 export function DrawerContent(props: DrawerContent.Props) {
-  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
-  const {render, className, style, children, ...elementProps} = toRefs(props);
+  // ============ setup（只执行一次）：一次性初始化 ============
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { className, render, style, ...elementRefs } = toRefs(props) as Record<string, Ref<any>>;
 
-  const {element} = useRenderElement({
-    props: () => [{...unrefs(elementProps)}],
-    className,
-    style,
-    render,
-    children,
-    defaultTag: 'div',
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
   });
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  return <>{element()}</>;
+  return (
+    <>
+      {useRenderElement(
+        'div',
+        {
+          className: className?.value,
+          render: render?.value,
+          style: style?.value,
+        },
+        {
+          ref: props.ref as any,
+          props: elementProps.value,
+        },
+      )}
+    </>
+  );
 }
 
 export interface DrawerContentProps {

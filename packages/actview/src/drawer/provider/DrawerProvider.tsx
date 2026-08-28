@@ -1,4 +1,4 @@
-import { toValue } from 'actview';
+import { computed } from 'actview';
 import { DrawerRootContext } from '../root/DrawerRootContext';
 import type { DrawerSwipeDirection } from '../root/DrawerRootContext';
 
@@ -10,12 +10,15 @@ import type { DrawerSwipeDirection } from '../root/DrawerRootContext';
  * Documentation: [Base UI Drawer](https://base-ui.com/react/components/drawer)
  */
 export function DrawerProvider(props: DrawerProvider.Props) {
-  // ============ setup（只执行一次） ============
-  const {openDirection = 'left'} = props as any;
+  // ============ setup（只执行一次）：一次性初始化 ============
+  // 渲染期消费的 props：computed 直读（setup 快照会停留在首渲染）。
+  const openDirection = computed(() => props.openDirection ?? 'left');
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
   return (
-    <DrawerRootContext.Provider value={{swipeDirection: openDirection as DrawerSwipeDirection}}>
+    <DrawerRootContext.Provider
+      value={{get swipeDirection() { return openDirection.value as DrawerSwipeDirection; }}}
+    >
       {props.children}
     </DrawerRootContext.Provider>
   );
