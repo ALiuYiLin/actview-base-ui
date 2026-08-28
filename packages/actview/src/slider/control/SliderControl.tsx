@@ -1,4 +1,5 @@
-import {onUnmounted, toValue, ref, toRefs, unrefs} from 'actview';
+import {computed, onUnmounted, ref, toRefs} from 'actview';
+import type { Ref } from 'actview';
 import { ownerDocument, ownerWindow } from '@/utils/owner';
 import { clamp } from '@/utils/clamp';
 import { roundValueToStep } from '../utils/roundValueToStep';
@@ -9,15 +10,13 @@ import { getTarget, contains, activeElement } from '@/utils/shadowDom';
 import { useDirection } from '@/internals/direction-context/DirectionContext';
 import { createChangeEventDetails, createGenericEventDetails } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
-import { useValueAsRef } from '@/utils/useValueAsRef';
 import { useAnimationFrame } from '@/utils/useAnimationFrame';
 import { useSliderRootContext } from '../root/SliderRootContext';
 import { sliderStateAttributesMapping } from '../root/stateAttributesMapping';
 import type { BaseUIComponentProps } from '@/internals/types';
 import type { SliderRootState } from '../root/SliderRoot';
-import type { Ref } from 'actview';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
-import { useRootElementFragment } from '@/internals/useRootElementFragment';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useMergedRefs } from '@/internals/useMergedRefs';
 
 const INTENTIONAL_DRAG_COUNT_THRESHOLD = 3;
 
@@ -90,39 +89,16 @@ function getFingerCoords(
  */
 export function SliderControl(componentProps: SliderControl.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  // Fragment 根（`<>{element()}</>`）下 actview 内置 useRootElement 的
-  // subTree.el 恒 null——用 Fragment 兼容版本。
-  const rootRef = useRootElementFragment();
+  // 自持 ref：经 params.ref 合并链透传（不用 useRootElementFragment）。
+  const rootRef = ref(null as HTMLElement | null);
 
-  const rootContextRef = useSliderRootContext();
-  const {
-    disabled,
-    dragging,
-    inset,
-    lastChangeReasonRef,
-    max,
-    min,
-    minStepsBetweenValues,
-    onValueCommitted,
-    orientation,
-    pressedThumbCenterOffsetRef,
-    pressedThumbIndexRef,
-    pressedValuesRef,
-    registerFieldControlRef,
-    renderBeforeHydration,
-    setActive,
-    setDragging,
-    setValue,
-    state,
-    step,
-    thumbCollisionBehavior,
-    thumbRefs,
-    values,
-  } = rootContextRef.value;
+  // context 载体直取（store-as-is）：⚠️ 不解构载体（解构捕获快照）——
+  // 事件期 handler 内一律 rootContext.X 属性访问拿实时值。
+  const rootContext = useSliderRootContext();
 
   const direction = useDirection().value;
-  const range = values.length > 1;
-  const vertical = orientation === 'vertical';
+  const range = computed(() => rootContext.values.length > 1);
+  const vertical = rootContext.orientation === 'vertical';
 
   const controlRef = ref(null as HTMLElement | null);
   const stylesRef = ref(null as CSSStyleDeclaration | null);
@@ -140,22 +116,23 @@ export function SliderControl(componentProps: SliderControl.Props) {
   // This value should be equal to the radius or half the width/height of the thumb.
   const insetThumbOffsetRef = ref(0);
   const currentInteractionValueRef = ref(null as number | number[] | null);
-  const latestValuesRef = useValueAsRef(values);
+  // 手动维护的「最新值」缓存（setPointer 应用后更新）——语义对齐原 useValueAsRef。
+  const latestValuesRef = ref(rootContext.values as readonly number[]);
 
   function getThumbInput(el: Element | null | undefined) {
     return el?.querySelector<HTMLInputElement>('input[type="range"]');
   }
 
   function updatePressedThumb(nextIndex: number) {
-    pressedThumbIndexRef.value = nextIndex;
-    if (!thumbRefs.value[nextIndex]) {
-      pressedThumbCenterOffsetRef.value = null;
+    rootContext.pressedThumbIndexRef.value = nextIndex;
+    if (!rootContext.thumbRefs.value[nextIndex]) {
+      rootContext.pressedThumbCenterOffsetRef.value = null;
     }
   }
 
   function resetPressedThumb() {
-    pressedThumbIndexRef.value = -1;
-    pressedThumbCenterOffsetRef.value = null;
+    rootContext.pressedThumbIndexRef.value = -1;
+    rootContext.pressedThumbCenterOffsetRef.value = null;
   }
 
   function isTargetDisabledThumb(target: EventTarget | null) {
@@ -163,7 +140,7 @@ export function SliderControl(componentProps: SliderControl.Props) {
       return false;
     }
 
-    return thumbRefs.value.some((thumbEl) => {
+    return rootContext.thumbRefs.value.some((thumbEl) => {
       if (!isElement(thumbEl) || !contains(thumbEl, target)) {
         return false;
       }
@@ -174,7 +151,8 @@ export function SliderControl(componentProps: SliderControl.Props) {
 
   function getFingerState(fingerCoords: Coords): FingerState | null {
     const control = controlRef.value;
-    const thumbIndex = pressedThumbIndexRef.value;
+    const thumbIndex = rootContext.pressedThumbIndexRef.value;
+    const values = rootContext.values;
 
     if (!control || thumbIndex < 0 || thumbIndex >= values.length) {
       if (thumbIndex >= values.length) {
@@ -189,7 +167,7 @@ export function SliderControl(componentProps: SliderControl.Props) {
     const insetThumbOffset = insetThumbOffsetRef.value;
     const controlSize =
       (vertical ? height : width) - controlOffset.start - controlOffset.end - insetThumbOffset * 2;
-    const thumbCenterOffset = pressedThumbCenterOffsetRef.value ?? 0;
+    const thumbCenterOffset = rootContext.pressedThumbCenterOffsetRef.value ?? 0;
     const fingerX = fingerCoords.x - thumbCenterOffset;
     const fingerY = fingerCoords.y - thumbCenterOffset;
 
@@ -199,11 +177,11 @@ export function SliderControl(componentProps: SliderControl.Props) {
     // the value at the finger origin scaled down to fit the range [0, 1]
     const valueRescaled = clamp((valueSize - insetThumbOffset) / controlSize, 0, 1);
 
-    let newValue = (max - min) * valueRescaled + min;
-    newValue = roundValueToStep(newValue, step, min);
-    newValue = clamp(newValue, min, max);
+    let newValue = (rootContext.max - rootContext.min) * valueRescaled + rootContext.min;
+    newValue = roundValueToStep(newValue, rootContext.step, rootContext.min);
+    newValue = clamp(newValue, rootContext.min, rootContext.max);
 
-    if (!range) {
+    if (!range.value) {
       return {
         value: newValue,
         thumbIndex,
@@ -212,32 +190,34 @@ export function SliderControl(componentProps: SliderControl.Props) {
     }
 
     return resolveThumbCollision(
-      thumbCollisionBehavior,
+      rootContext.thumbCollisionBehavior,
       values,
       latestValuesRef.value as readonly number[],
-      pressedValuesRef.value as readonly number[] | null,
+      rootContext.pressedValuesRef.value as readonly number[] | null,
       thumbIndex,
       newValue,
-      min,
-      max,
-      step,
-      minStepsBetweenValues,
+      rootContext.min,
+      rootContext.max,
+      rootContext.step,
+      rootContext.minStepsBetweenValues,
     );
   }
 
   function startPressing(fingerCoords: Coords) {
-    pressedValuesRef.value = range ? values.slice() : null;
+    const values = rootContext.values;
+    pressedValuesRefReset();
+    rootContext.pressedValuesRef.value = range.value ? values.slice() : null;
     currentInteractionValueRef.value = null;
     latestValuesRef.value = values;
 
-    const pressedThumbIndex = pressedThumbIndexRef.value;
+    const pressedThumbIndex = rootContext.pressedThumbIndexRef.value;
     let closestThumbIndex = pressedThumbIndex;
 
     if (pressedThumbIndex > -1 && pressedThumbIndex < values.length) {
-      if (values[pressedThumbIndex] === max) {
+      if (values[pressedThumbIndex] === rootContext.max) {
         let candidateIndex = pressedThumbIndex;
 
-        while (candidateIndex > 0 && values[candidateIndex - 1] === max) {
+        while (candidateIndex > 0 && values[candidateIndex - 1] === rootContext.max) {
           candidateIndex -= 1;
         }
 
@@ -250,8 +230,8 @@ export function SliderControl(componentProps: SliderControl.Props) {
 
       closestThumbIndex = -1;
 
-      for (let i = 0; i < thumbRefs.value.length; i += 1) {
-        const thumbEl = thumbRefs.value[i];
+      for (let i = 0; i < rootContext.thumbRefs.value.length; i += 1) {
+        const thumbEl = rootContext.thumbRefs.value[i];
         if (isElement(thumbEl) && !getThumbInput(thumbEl)?.disabled) {
           const midpoint = getMidpoint(thumbEl, vertical);
           const distance = Math.abs(fingerCoords[axis] - midpoint);
@@ -268,8 +248,8 @@ export function SliderControl(componentProps: SliderControl.Props) {
       updatePressedThumb(closestThumbIndex);
     }
 
-    if (inset) {
-      const thumbEl = thumbRefs.value[closestThumbIndex];
+    if (rootContext.inset) {
+      const thumbEl = rootContext.thumbRefs.value[closestThumbIndex];
       if (isElement(thumbEl)) {
         const thumbRect = thumbEl.getBoundingClientRect();
         const side = !vertical ? 'width' : 'height';
@@ -278,8 +258,12 @@ export function SliderControl(componentProps: SliderControl.Props) {
     }
   }
 
+  function pressedValuesRefReset() {
+    // 占位：startPressing 前的清理在下方赋值中已覆盖。
+  }
+
   function focusThumb(thumbIndex: number) {
-    const input = getThumbInput(thumbRefs.value?.[thumbIndex]);
+    const input = getThumbInput(rootContext.thumbRefs.value?.[thumbIndex]);
     if (!input) {
       return;
     }
@@ -292,7 +276,7 @@ export function SliderControl(componentProps: SliderControl.Props) {
     reason: typeof REASONS.trackPress | typeof REASONS.drag,
     nativeEvent: any,
   ) {
-    const applied = setValue(
+    const applied = rootContext.setValue(
       finger.value,
       createChangeEventDetails(reason, nativeEvent, undefined, {
         activeThumbIndex: finger.thumbIndex,
@@ -335,9 +319,9 @@ export function SliderControl(componentProps: SliderControl.Props) {
       return;
     }
 
-    if (validateMinimumDistance(finger.value, step, minStepsBetweenValues)) {
-      if (!dragging && moveCountRef.value > INTENTIONAL_DRAG_COUNT_THRESHOLD) {
-        setDragging(true);
+    if (validateMinimumDistance(finger.value, rootContext.step, rootContext.minStepsBetweenValues)) {
+      if (!rootContext.dragging && moveCountRef.value > INTENTIONAL_DRAG_COUNT_THRESHOLD) {
+        rootContext.setDragging(true);
       }
 
       setValueFromPointer(finger, REASONS.drag, nativeEvent);
@@ -345,22 +329,22 @@ export function SliderControl(componentProps: SliderControl.Props) {
   };
 
   const handleTouchEnd = (nativeEvent: any) => {
-    setActive(-1);
-    setDragging(false);
+    rootContext.setActive(-1);
+    rootContext.setDragging(false);
 
-    pressedThumbCenterOffsetRef.value = null;
+    rootContext.pressedThumbCenterOffsetRef.value = null;
 
     // If the value array shrank or grew mid-drag, the cached interaction value no longer
     // matches the current thumbs (the pressed index can still be in range), so dropping it
     // keeps a stale or malformed array from being committed on release.
     const interactionValue = currentInteractionValueRef.value;
-    if (Array.isArray(interactionValue) && interactionValue.length !== values.length) {
+    if (Array.isArray(interactionValue) && interactionValue.length !== rootContext.values.length) {
       currentInteractionValueRef.value = null;
     }
 
     if (currentInteractionValueRef.value != null) {
-      const commitReason = lastChangeReasonRef.value;
-      onValueCommitted(
+      const commitReason = rootContext.lastChangeReasonRef.value;
+      rootContext.onValueCommitted?.(
         currentInteractionValueRef.value,
         createGenericEventDetails(commitReason, nativeEvent),
       );
@@ -370,13 +354,13 @@ export function SliderControl(componentProps: SliderControl.Props) {
       controlRef.value?.releasePointerCapture(nativeEvent.pointerId);
     }
 
-    pressedThumbIndexRef.value = -1;
+    rootContext.pressedThumbIndexRef.value = -1;
     touchIdRef.value = null;
     stopListening();
   };
 
   const handleTouchStart = (nativeEvent: TouchEvent) => {
-    if (disabled) {
+    if (rootContext.disabled) {
       return;
     }
 
@@ -416,7 +400,7 @@ export function SliderControl(componentProps: SliderControl.Props) {
     doc.removeEventListener('pointerup', handleTouchEnd as any);
     doc.removeEventListener('touchmove', handleTouchMove as any);
     doc.removeEventListener('touchend', handleTouchEnd as any);
-    pressedValuesRef.value = null;
+    rootContext.pressedValuesRef.value = null;
     currentInteractionValueRef.value = null;
   };
 
@@ -426,7 +410,6 @@ export function SliderControl(componentProps: SliderControl.Props) {
   const handleNativeTouchStart = (e: TouchEvent) => {
     handleTouchStart(e);
   };
-  const controlElement = () => controlRef.value;
   const attachTouch = () => {
     const control = controlRef.value;
     if (!control) {
@@ -452,97 +435,109 @@ export function SliderControl(componentProps: SliderControl.Props) {
     cleanupRef.value?.();
   });
 
-  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  const {className, render: renderProp, style, children, ...elementProps} = toRefs(componentProps);
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
 
-  const {element} = useRenderElement({
-    props: () => {
-      const stateValue = toValue(state);
-
-      const merged: any = {};
-      Object.assign(
-        merged,
-        {
-          ['data-base-ui-slider-control' as string]: renderBeforeHydration ? '' : undefined,
-          onPointerDown(event: any) {
-            const control = controlRef.value;
-            const target = getTarget(event);
-
-            if (
-              !control ||
-              disabled ||
-              event.defaultPrevented ||
-              !isElement(target) ||
-              // Only handle left clicks
-              event.button !== 0
-            ) {
-              return;
-            }
-
-            if (isTargetDisabledThumb(target)) {
-              resetPressedThumb();
-              return;
-            }
-
-            const fingerCoords = {x: event.clientX, y: event.clientY};
-            startPressing(fingerCoords);
-
-            const finger = getFingerState(fingerCoords);
-
-            if (finger == null) {
-              return;
-            }
-
-            const pressedOnFocusedThumb = contains(
-              thumbRefs.value[finger.thumbIndex],
-              activeElement(ownerDocument(control)),
-            );
-
-            if (pressedOnFocusedThumb) {
-              event.preventDefault();
-            } else {
-              focusFrame.request(() => {
-                focusThumb(finger.thumbIndex);
-              });
-            }
-
-            setDragging(true);
-
-            const pressedOnAnyThumb = pressedThumbCenterOffsetRef.value != null;
-            if (!pressedOnAnyThumb) {
-              setValueFromPointer(finger, REASONS.trackPress, event);
-            }
-
-            if (event.pointerId) {
-              control.setPointerCapture(event.pointerId);
-            }
-
-            moveCountRef.value = 0;
-            const doc = ownerDocument(control);
-            doc.addEventListener('pointermove', handleTouchMove as any, {passive: true});
-            doc.addEventListener('pointerup', handleTouchEnd as any, {once: true});
-          },
-        },
-        {...unrefs(elementProps)},
-      );
-      return [merged];
-    },
-    state: () => toValue(state),
-    stateAttributesMapping: sliderStateAttributesMapping as any,
-    className,
-    style,
-    render: renderProp,
-    refs: () => [
-      rootRef as any,
-      registerFieldControlRef as any,
-      setStylesRef as any,
-    ],
-    children,
-    defaultTag: 'div',
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
   });
 
+  const state = computed<SliderControlState>(() => rootContext.state);
+
+  // 根元素 props：control 标记 → pointerdown 拖拽入口 → 透传。
+  const rootProps = computed<Record<string, any>>(() => ({
+    ['data-base-ui-slider-control' as string]: rootContext.renderBeforeHydration ? '' : undefined,
+    onPointerDown(event: any) {
+      const control = controlRef.value;
+      const target = getTarget(event);
+
+      if (
+        !control ||
+        rootContext.disabled ||
+        event.defaultPrevented ||
+        !isElement(target) ||
+        // Only handle left clicks
+        event.button !== 0
+      ) {
+        return;
+      }
+
+      if (isTargetDisabledThumb(target)) {
+        resetPressedThumb();
+        return;
+      }
+
+      const fingerCoords = {x: event.clientX, y: event.clientY};
+      startPressing(fingerCoords);
+
+      const finger = getFingerState(fingerCoords);
+
+      if (finger == null) {
+        return;
+      }
+
+      const pressedOnFocusedThumb = contains(
+        rootContext.thumbRefs.value[finger.thumbIndex],
+        activeElement(ownerDocument(control)),
+      );
+
+      if (pressedOnFocusedThumb) {
+        event.preventDefault();
+      } else {
+        focusFrame.request(() => {
+          focusThumb(finger.thumbIndex);
+        });
+      }
+
+      rootContext.setDragging(true);
+
+      const pressedOnAnyThumb = rootContext.pressedThumbCenterOffsetRef.value != null;
+      if (!pressedOnAnyThumb) {
+        setValueFromPointer(finger, REASONS.trackPress, event);
+      }
+
+      if (event.pointerId) {
+        control.setPointerCapture(event.pointerId);
+      }
+
+      moveCountRef.value = 0;
+      const doc = ownerDocument(control);
+      doc.addEventListener('pointermove', handleTouchMove as any, {passive: true});
+      doc.addEventListener('pointerup', handleTouchEnd as any, {once: true});
+    },
+    ...elementProps.value,
+  }));
+
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  return <>{element()}</>;
+  return (
+    <>
+      {useRenderElement(
+        'div',
+        {
+          className: className?.value,
+          render: render?.value,
+          style: style?.value,
+        },
+        {
+          state: state.value,
+          stateAttributesMapping: sliderStateAttributesMapping,
+          ref: useMergedRefs(
+            rootRef,
+            rootContext.registerFieldControlRef,
+            setStylesRef,
+            componentProps.ref as any,
+          ),
+          props: rootProps.value,
+        },
+      )}
+    </>
+  );
 }
 
 export interface SliderControlState extends SliderRootState {}
