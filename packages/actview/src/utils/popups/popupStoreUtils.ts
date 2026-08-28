@@ -7,7 +7,9 @@ import { useRefWithInit } from '@/utils/useRefWithInit';
 import { EMPTY_OBJECT } from '@/utils/empty';
 import type { InteractionType } from '@/utils/useEnhancedClickHandler';
 import { FOCUSABLE_ATTRIBUTE } from '@/floating-ui-react/utils/constants';
-import { useFloatingParentNodeId } from '@actview/floating-ui';
+// 本地 floating-ui-react 层的 store-as-is 版本（发布包 @actview/floating-ui 的
+// dist 仍是旧 use() 契约——`.value` 链在 core 1.3 下崩溃）。
+import { useFloatingParentNodeId } from '@/floating-ui-react';
 import {
   useSyncedFloatingRootContext,
   type SyncedFloatingRootContextStore,
