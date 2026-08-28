@@ -50,7 +50,7 @@ export function TabsIndicator(componentProps: TabsIndicator.Props) {
 
         const {getTabElementBySelectedValue, orientation, tabActivationDirection, value} =
           rootContext;
-        const {tabsListElement} = listContext.value;
+        const {tabsListElement} = listContext;
 
         let left = 0;
         let right = 0;
