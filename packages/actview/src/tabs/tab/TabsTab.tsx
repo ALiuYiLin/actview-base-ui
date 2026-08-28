@@ -1,4 +1,5 @@
-import { onUnmounted, ref, toValue, toRefs, unrefs, watch } from 'actview';
+import { computed, onUnmounted, ref, toRefs, watch } from 'actview';
+import type { Ref } from 'actview';
 import { ownerDocument } from '@/utils/owner';
 import { useBaseUiId } from '@/internals/useBaseUiId';
 import type { BaseUIComponentProps, NativeButtonProps } from '@/internals/types';
@@ -13,8 +14,7 @@ import { useTabsListContext } from '../list/TabsListContext';
 import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
 import { activeElement, contains } from '@/utils/shadowDom';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
-import { useRootElementFragment } from '@/internals/useRootElementFragment';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * An individual interactive tab button that toggles the corresponding panel.
@@ -24,25 +24,29 @@ import { useRootElementFragment } from '@/internals/useRootElementFragment';
  */
 export function TabsTab(componentProps: TabsTab.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  // Fragment 根（`<>{element()}</>`）下 actview 内置 useRootElement 的
-  // subTree.el 恒 null——用 Fragment 兼容版本（mergedRefs 内无独立 rootRef——
-  // 直接走 hook refs）。
-  const disabled = toValue(componentProps.disabled) ?? false;
-  const value = toValue(componentProps.value);
-  const idProp = toValue(componentProps.id);
-  const nativeButton = toValue(componentProps.nativeButton) ?? true;
-
-  const rootContextRef = useTabsRootContext();
-  const listContextRef = useTabsListContext();
-
+  // context 载体直取（store-as-is）：字段渲染期属性访问即追踪。
+  const rootContext = useTabsRootContext();
+  const listContext = useTabsListContext();
   const compositeRootContext = CompositeRootContext.use();
+
+  // 初始化型快照（仅 setup 一次性消费）。
+  const idProp = componentProps.id;
+
+  // 渲染期/事件期消费的 props：computed 直读。
+  const disabled = computed(() => componentProps.disabled ?? false);
+  const value = computed(() => componentProps.value);
+  const nativeButton = computed(() => componentProps.nativeButton ?? true);
 
   const id = useBaseUiId(idProp);
 
-  const tabMetadata = {disabled, id, value};
+  const tabMetadata = computed(() => ({
+    disabled: disabled.value,
+    id: id,
+    value: value.value,
+  }));
 
   const {compositeProps, compositeRef, index} = useCompositeItem<TabsTab.Metadata>({
-    metadata: tabMetadata,
+    metadata: tabMetadata.value,
   });
 
   const isNavigatingRef = ref(false);
@@ -53,7 +57,7 @@ export function TabsTab(componentProps: TabsTab.Props) {
   const observeTabElement = (element: HTMLElement | null) => {
     unobserveTabElementRef.value?.();
     unobserveTabElementRef.value = element
-      ? listContextRef.value.registerTabResizeObserverElement(element)
+      ? listContext.registerTabResizeObserverElement(element)
       : null;
   };
   onUnmounted(() => {
@@ -62,18 +66,17 @@ export function TabsTab(componentProps: TabsTab.Props) {
 
   // Keep the highlighted item in sync with the currently active tab
   // when the value prop changes externally (controlled mode)
-  // React 版 useIsoLayoutEffect：active 变化 → onHighlightedIndexChange
   watch(
     () => {
-      const {value: activeTabValue} = rootContextRef.value;
-      const active = value === activeTabValue;
-      const highlightedIndex = compositeRootContext.value?.highlightedIndex;
+      const activeTabValue = rootContext.value;
+      const active = value.value === activeTabValue;
+      const highlightedIndex = compositeRootContext?.highlightedIndex;
       return {
         active,
         highlightedIndex,
         tabIndex: index.value,
-        onHighlightedIndexChange: compositeRootContext.value?.onHighlightedIndexChange,
-        listElement: listContextRef.value.tabsListElement,
+        onHighlightedIndexChange: compositeRootContext?.onHighlightedIndexChange,
+        listElement: listContext.tabsListElement,
       };
     },
     ({active, highlightedIndex, tabIndex, onHighlightedIndexChange, listElement}) => {
@@ -86,9 +89,6 @@ export function TabsTab(componentProps: TabsTab.Props) {
         return;
       }
 
-      // If focus is currently within the tabs list, don't override the roving
-      // focus highlight. This keeps keyboard navigation relative to the focused
-      // item after an external/asynchronous selection change.
       if (listElement != null) {
         const activeEl = activeElement(ownerDocument(listElement));
         if (activeEl && contains(listElement, activeEl)) {
@@ -96,9 +96,7 @@ export function TabsTab(componentProps: TabsTab.Props) {
         }
       }
 
-      // Don't highlight disabled tabs to prevent them from interfering with keyboard navigation.
-      // Keyboard focus (tabIndex) should remain on an enabled tab even when a disabled tab is selected.
-      if (!disabled) {
+      if (!disabled.value) {
         onHighlightedIndexChange?.(tabIndex);
       }
     },
@@ -107,130 +105,137 @@ export function TabsTab(componentProps: TabsTab.Props) {
 
   const {getButtonProps, buttonRef} = useButton({
     disabled,
-    native: nativeButton,
+    native: nativeButton.value,
     focusableWhenDisabled: true,
   });
 
   const isPressingRef = ref(false);
   const isMainButtonRef = ref(false);
 
-  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
 
-  const stateFn = (): TabsTabState => {
-    const {value: activeTabValue, orientation, tabActivationDirection} = rootContextRef.value;
-    return {
-      disabled,
-      active: value === activeTabValue,
-      orientation,
-      tabActivationDirection,
-    };
-  };
-
-  const {element} = useRenderElement({
-    props: () => {
-      const {
-        value: activeTabValue,
-        getTabPanelIdByValue,
-        onValueChange,
-        tabActivationDirection,
-      } = rootContextRef.value;
-
-      const active = value === activeTabValue;
-      const tabPanelId = getTabPanelIdByValue(value);
-
-      // Both callers guard on `!active`, so the current value is never re-committed.
-      function activate(event: any) {
-        onValueChange(
-          value,
-          createChangeEventDetails(REASONS.none, event, undefined, {
-            activationDirection: 'none',
-          }),
-        );
-      }
-
-      function onClick(event: any) {
-        if (active || disabled) {
-          return;
-        }
-
-        activate(event);
-      }
-
-      function onFocus(event: any) {
-        if (active || disabled) {
-          return;
-        }
-
-        if (
-          listContextRef.value.activateOnFocus &&
-          (!isPressingRef.value || // keyboard or touch focus
-            isMainButtonRef.value) // main mouse button focus
-        ) {
-          activate(event);
-        }
-      }
-
-      function onPointerDown(event: any) {
-        if (active || disabled) {
-          return;
-        }
-
-        isPressingRef.value = true;
-        // Secondary presses (context menu, middle click) may focus the tab, but
-        // must not activate it with `activateOnFocus`.
-        isMainButtonRef.value = event.button === 0;
-
-        // Registered for every button so a secondary press doesn't leave the tab
-        // stuck in the pressing state, which would suppress later focus activation.
-        const doc = ownerDocument(event.currentTarget);
-
-        function handlePointerEnd() {
-          isPressingRef.value = false;
-          isMainButtonRef.value = false;
-          doc.removeEventListener('pointerup', handlePointerEnd);
-          doc.removeEventListener('pointercancel', handlePointerEnd);
-        }
-
-        doc.addEventListener('pointerup', handlePointerEnd);
-        doc.addEventListener('pointercancel', handlePointerEnd);
-      }
-
-      return [
-        compositeProps,
-        {
-          role: 'tab',
-          'aria-controls': tabPanelId,
-          'aria-selected': active,
-          id,
-          onClick,
-          onFocus,
-          onPointerDown,
-          [ACTIVE_COMPOSITE_ITEM as string]: active ? '' : undefined,
-          onKeyDownCapture() {
-            isNavigatingRef.value = true;
-          },
-        },
-        unrefs(elementProps),
-        getButtonProps,
-      ];
-    },
-    state: stateFn,
-    stateAttributesMapping: tabsStateAttributesMapping as any,
-    className,
-    style,
-    render,
-    refs: () => [
-      buttonRef as any,
-      compositeRef as any,
-      observeTabElement as any,
-    ],
-    children,
-    defaultTag: 'button',
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
   });
 
+  const state = computed<TabsTabState>(() => ({
+    disabled: disabled.value,
+    active: value.value === rootContext.value,
+    orientation: rootContext.orientation,
+    tabActivationDirection: rootContext.tabActivationDirection,
+  }));
+
+  // 事件 handler：setup 闭包读 computed/refs——事件触发时拿到实时值。
+  const handleTabClick = (event: any) => {
+    if (state.value.active || disabled.value) {
+      return;
+    }
+
+    rootContext.onValueChange(
+      value.value,
+      createChangeEventDetails(REASONS.none, event, undefined, {
+        activationDirection: 'none',
+      }),
+    );
+  };
+
+  const handleTabFocus = (event: any) => {
+    if (state.value.active || disabled.value) {
+      return;
+    }
+
+    if (
+      listContext.activateOnFocus &&
+      (!isPressingRef.value || isMainButtonRef.value)
+    ) {
+      rootContext.onValueChange(
+        value.value,
+        createChangeEventDetails(REASONS.none, event, undefined, {
+          activationDirection: 'none',
+        }),
+      );
+    }
+  };
+
+  const handleTabPointerDown = (event: any) => {
+    if (state.value.active || disabled.value) {
+      return;
+    }
+
+    isPressingRef.value = true;
+    isMainButtonRef.value = event.button === 0;
+
+    const doc = ownerDocument(event.currentTarget);
+
+    function handlePointerEnd() {
+      isPressingRef.value = false;
+      isMainButtonRef.value = false;
+      doc.removeEventListener('pointerup', handlePointerEnd);
+      doc.removeEventListener('pointercancel', handlePointerEnd);
+    }
+
+    doc.addEventListener('pointerup', handlePointerEnd);
+    doc.addEventListener('pointercancel', handlePointerEnd);
+  };
+
+  // 根元素 props：composite → role/aria/handlers → 透传 → getButtonProps。
+  const rootProps = computed(() =>
+    mergeFn([
+      compositeProps,
+      {
+        role: 'tab',
+        'aria-controls': rootContext.getTabPanelIdByValue(value.value),
+        'aria-selected': state.value.active,
+        id: id,
+        onClick: handleTabClick,
+        onFocus: handleTabFocus,
+        onPointerDown: handleTabPointerDown,
+        [ACTIVE_COMPOSITE_ITEM as string]: state.value.active ? '' : undefined,
+        onKeyDownCapture() {
+          isNavigatingRef.value = true;
+        },
+      },
+      elementProps.value,
+      getButtonProps,
+    ]),
+  );
+
+  // mergePropsN 局部调用（5 项——数组内 getter 消费 prev 语义一致）。
+  function mergeFn(inputs: any[]): Record<string, any> {
+    const merged: Record<string, any> = {};
+    for (const prop of inputs) {
+      const resolved = typeof prop === 'function' ? prop(merged) : prop;
+      Object.assign(merged, resolved);
+    }
+    return merged;
+  }
+
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  return <>{element()}</>;
+  return (
+    <>
+      {useRenderElement(
+        'button',
+        {
+          className: className?.value,
+          render: render?.value,
+          style: style?.value,
+        },
+        {
+          state: state.value,
+          stateAttributesMapping: tabsStateAttributesMapping,
+          ref: useMergedRefs(buttonRef, compositeRef, observeTabElement, componentProps.ref as any),
+          props: rootProps.value,
+        },
+      )}
+    </>
+  );
 }
 
 export type TabsTabValue = any | null;
