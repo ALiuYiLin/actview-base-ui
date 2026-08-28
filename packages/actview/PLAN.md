@@ -82,7 +82,7 @@
 - [ ] combobox（37）、autocomplete（12）、select（31）
 - [x] toast（18）✅——全部 9 组件 + 2 context hooks 已迁移；**7/7 测试绿**（Viewport rootProps 漏 children 注入是根因——新 hook 迁移时 children 经 render-prop 的组件务必核对 children 注入）
 - [x] slider（18）✅——**7/7 组件全迁，5/5 测试绿**（SliderControl 555 行/SliderThumb 590 行整文件重写：事件期载体访问 + inputBase/rootProps computed 化；useCompositeListItem metadata computed 化）
-- [ ] number-field（22）——FieldRootContext 载体消费端，与 slider 同轮处理
+- [ ] number-field（22）——6 测试失败根因已定位：`fieldContextRef.value` 旧 wrapper 剥离时**须逐行保留 ComputedRef 字段的 `.value`**（state/disabled/name/validityData 是 ComputedRef，validation/setFilled/setDirty 是直取）。Root 612 行 + Input 435 行整文件重写时一并对齐：NumberFieldRoot 自身 buildContextValue 也是 per-render 新对象 → getter 载体化。建议：Root/Input 先行，Group/Stepper/ScrubArea×2/Cursor 跟进
 
 **豁免类**（不强制 useRenderElement，对齐权威 CheckboxGroup 先例）：纯 Provider（CSP/Direction）、薄委托（Input → FieldControl）、Portal/Value 等无状态包装——但范式细节（裸函数、渲染期解构、ref 形直读）仍须统一。
 
