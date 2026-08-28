@@ -1,6 +1,7 @@
 import { computed, toRefs } from 'actview';
 import type { Ref } from 'actview';
 import type { BaseUIComponentProps } from '@/internals/types';
+import type { SwitchRootState } from '../root/SwitchRoot';
 import { useSwitchRootContext } from '../root/SwitchRootContext';
 import { stateAttributesMapping } from '../stateAttributesMapping';
 import { getStateAttributesProps } from '@/internals/getStateAttributesProps';

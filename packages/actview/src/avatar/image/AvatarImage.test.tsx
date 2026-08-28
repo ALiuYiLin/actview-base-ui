@@ -1,5 +1,5 @@
 import { expect, vi } from 'vitest';
-import { defineComponent, ref } from '@actview/core';
+import { reactive, ref } from '@actview/core';
 import { Avatar } from '@/avatar';
 import { AvatarRootContext } from '@/avatar/root/AvatarRootContext';
 import { act, screen, waitFor } from '#test-utils/rtl';
@@ -94,13 +94,15 @@ describe('<Avatar.Image />', () => {
     // conformance 检查容器首元素（actview 语义）——直接注入 context 而非包
     // Avatar.Root（Root 的根是 span，会顶掉 img 的首元素位置）
     render: (node) => {
-      const Wrapper = defineComponent(function () {
-        const ctx = {
-          imageLoadingStatus: ref<'idle' | 'loading' | 'loaded' | 'error'>('idle'),
-          setImageLoadingStatus: () => {},
-        };
-        return () => <AvatarRootContext.Provider value={ctx}>{node}</AvatarRootContext.Provider>;
+      // store-as-is：reactive 载体（裸函数组件形式注入，不包 Avatar.Root——
+      // Root 的根是 span，会顶掉 img 的首元素位置）
+      const ctx = reactive<AvatarRootContext>({
+        imageLoadingStatus: 'idle',
+        setImageLoadingStatus() {},
       });
+      function Wrapper() {
+        return <AvatarRootContext.Provider value={ctx}>{node}</AvatarRootContext.Provider>;
+      }
       return render(Wrapper);
     },
     refInstanceof: window.HTMLImageElement,
@@ -250,9 +252,9 @@ describe('<Avatar.Image />', () => {
         }
       `;
 
-      const Test = defineComponent(function () {
+      function Test() {
         const showImage = ref(false);
-        return () => (
+        return (
           <div>
             {/* eslint-disable-next-line react/no-danger */}
             <style dangerouslySetInnerHTML={{ __html: style }} />
@@ -267,7 +269,7 @@ describe('<Avatar.Image />', () => {
             </Avatar.Root>
           </div>
         );
-      });
+      }
 
       const user = await import('@testing-library/user-event').then((m) => m.default.setup());
       await render(Test);
@@ -297,9 +299,9 @@ describe('<Avatar.Image />', () => {
         }
       `;
 
-      const Test = defineComponent(function () {
+      function Test() {
         const showImage = ref(true);
-        return () => (
+        return (
           <div>
             {/* eslint-disable-next-line react/no-danger */}
             <style dangerouslySetInnerHTML={{ __html: style }} />
@@ -313,7 +315,7 @@ describe('<Avatar.Image />', () => {
             </Avatar.Root>
           </div>
         );
-      });
+      }
 
       const user = await import('@testing-library/user-event').then((m) => m.default.setup());
       await render(Test);

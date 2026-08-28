@@ -345,10 +345,8 @@ export function RadioRoot<Value>(componentProps: RadioRoot.Props<Value>) {
                   elementProps.value,
                   getButtonProps,
                   getDescriptionProps,
-                  groupContext?.validation
-                    ? (validationProps: HTMLProps) =>
-                        groupContext.validation!.getValidationProps(disabled.value, validationProps)
-                    : EMPTY_OBJECT,
+                  // 非 group 模式（groupContext === undefined）无 validation 注入。
+                  EMPTY_OBJECT,
                   stateAttributes.value,
                 ],
               },

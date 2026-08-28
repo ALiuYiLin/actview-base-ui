@@ -1,5 +1,5 @@
 import { computed, ref, toRefs, watch } from 'actview';
-import type { ComputedRef } from 'actview';
+import type { ComputedRef, Ref } from 'actview';
 import { useControlled } from '@/utils/useControlled';
 import { visuallyHidden, visuallyHiddenInput } from '@/utils/visuallyHidden';
 import { EMPTY_OBJECT } from '@/utils/empty';
@@ -233,7 +233,7 @@ export function SwitchRoot(componentProps: SwitchRoot.Props) {
 
   // hidden input props：validation → checked/disabled → 事件（点击即切换，
   // React 版 onChange 等价——switch 激活由原生 click 表达）。
-  const inputProps = computed(() => ({
+  const inputProps = computed<Record<string, any>>(() => ({
     ...validation.getValidationProps(disabled.value),
     checked: checkedValue.value,
     disabled: disabled.value,

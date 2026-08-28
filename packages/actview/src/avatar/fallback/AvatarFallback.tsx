@@ -1,6 +1,7 @@
 import { computed, onUnmounted, ref, toRefs, watch } from 'actview';
 import { useAvatarRootContext } from '../root/AvatarRootContext';
 import type { AvatarRootState } from '../root/AvatarRoot';
+import type { BaseUIComponentProps } from '@/internals/types';
 import { avatarStateAttributesMapping } from '../root/stateAttributesMapping';
 import type { Ref } from 'actview';
 import { useRenderElement } from '@/internals/useRenderElement';

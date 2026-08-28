@@ -1,6 +1,7 @@
 import { computed, toRefs } from 'actview';
 import type { Ref } from 'actview';
 import type { BaseUIComponentProps } from '@/internals/types';
+import type { MeterRootState } from '../root/MeterRoot';
 import { useMeterRootContext } from '../root/MeterRootContext';
 import { useLabel } from '@/internals/labelable-provider/useLabel';
 import { useRenderElement } from '@/internals/useRenderElement';

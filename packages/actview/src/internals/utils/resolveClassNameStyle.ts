@@ -9,6 +9,7 @@ export function resolveClassName<State>(
 
 export function resolveStyle<State>(
   style:
+    | string
     | Record<string, any>
     | ((state: State) => Record<string, any> | undefined)
     | undefined,

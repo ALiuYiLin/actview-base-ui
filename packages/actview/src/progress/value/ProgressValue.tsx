@@ -1,6 +1,7 @@
 import { computed, toRefs } from 'actview';
 import type { Ref } from 'actview';
 import type { BaseUIComponentProps } from '@/internals/types';
+import type { ProgressRootState } from '../root/ProgressRoot';
 import { useProgressRootContext } from '../root/ProgressRootContext';
 import { progressStateAttributesMapping } from '../root/stateAttributesMapping';
 import { useRenderElement } from '@/internals/useRenderElement';

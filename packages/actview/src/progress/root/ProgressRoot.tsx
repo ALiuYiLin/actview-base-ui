@@ -1,4 +1,5 @@
 import { computed, ref, toRefs } from 'actview';
+import type { Ref } from 'actview';
 import { visuallyHidden } from '@/utils/visuallyHidden';
 import { formatNumber } from '@/utils/formatNumber';
 import { clamp } from '@/utils/clamp';
