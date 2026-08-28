@@ -81,7 +81,8 @@
 ### 批次 4：大族（最后，调用点最多）
 - [ ] combobox（37）、autocomplete（12）、select（31）
 - [~] toast（18）——全部 9 组件 + 2 context hooks 已迁移（getter 载体）；**测试 5/7 失败待查**（useToastManager 深链路：ManagedUI harness 转裸函数后 add 链路未渲染，疑似 manager 订阅时机）
-- [ ] number-field（22）、slider（21）
+- [~] slider（18）调研完成——7 组件（SliderRoot 536 行 + SliderThumb 525 行为主，内含 slider store/getRect 逻辑）；基线 5/5 失败（FieldRootContext ComputedRef 载体消费 + legacy hook）；待下轮迁移
+- [ ] number-field（22）——FieldRootContext 载体消费端，与 slider 同轮处理
 
 **豁免类**（不强制 useRenderElement，对齐权威 CheckboxGroup 先例）：纯 Provider（CSP/Direction）、薄委托（Input → FieldControl）、Portal/Value 等无状态包装——但范式细节（裸函数、渲染期解构、ref 形直读）仍须统一。
 
