@@ -28,7 +28,7 @@ export function ToastViewport(componentProps: ToastViewport.Props) {
     return out;
   });
 
-  const rootProps = computed<Record<string, any>>(() => ({...elementProps.value}));
+  const rootProps = computed<Record<string, any>>(() => ({...elementProps.value, children: content.value}));
 
   // children 兼容 render prop（渲染期逐 toast 调用）。
   const content = computed(() => {
