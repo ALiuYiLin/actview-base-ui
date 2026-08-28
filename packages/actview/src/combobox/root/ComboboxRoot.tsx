@@ -55,29 +55,39 @@ export function ComboboxRoot(props: ComboboxRoot.Props) {
     }
   });
 
-  const state = (): ComboboxRootState => ({
+  // ---- 渲染期求值：computed（store 非响应式字段经订阅 tick 同步）----
+  const state = computed<ComboboxRootState>(() => ({
     value: store.state.selectedValue,
     open: store.state.open,
     inputValue: inputValue.value,
     items: filteredItems.value,
     multiple: store.state.multiple,
     disabled: store.state.disabled,
-  });
+  }));
+
+  // children 兼容 render prop（渲染期求值）。
+  const content = computed(() =>
+    typeof children === 'function' ? children(state.value) : children,
+  );
+
+  // store-as-is 载体：身份稳定的 getter 对象——selectedValue 渲染期求值。
+  const contextValue = {
+    store,
+    get inputValue() {
+      return inputValue.value;
+    },
+    inputValueRef,
+    setInputValue,
+    itemsRef: filteredItems,
+    get selectedValue() {
+      return store.state.selectedValue;
+    },
+  };
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
   return (
-    <ComboboxRootContext.Provider
-      value={
-        {
-          store,
-          inputValue: inputValue.value,
-          inputValueRef,
-          setInputValue,
-          itemsRef: filteredItems,
-        } as any
-      }
-    >
-      {typeof children === 'function' ? children(state()) : toValue(children)}
+    <ComboboxRootContext.Provider value={contextValue as any}>
+      {content.value}
     </ComboboxRootContext.Provider>
   );
 }

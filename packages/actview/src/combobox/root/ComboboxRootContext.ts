@@ -16,9 +16,10 @@ export interface ComboboxRootContextValue {
 export const ComboboxRootContext = createContext<ComboboxRootContextValue | undefined>(undefined);
 
 export function useComboboxRootContext(optional = true): any {
+  // store-as-is：use() 原样返回注入的 getter 载体（无 Provider 时 undefined）。
   const context = ComboboxRootContext.use();
-  if (context.value === undefined && !optional) {
+  if (context === undefined && !optional) {
     throw new Error('Base UI: <Combobox.Root> is missing.');
   }
-  return context.value;
+  return context;
 }

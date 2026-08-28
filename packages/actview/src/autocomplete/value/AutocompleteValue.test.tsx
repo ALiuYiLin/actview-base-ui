@@ -16,7 +16,7 @@ const Positioner = Autocomplete.Positioner;
 const COLORS = {red: 'Red', green: 'Green', blue: 'Blue', yellow: 'Yellow'};
 
 function AutocompleteFixture() {
-  return () => (
+  return (
     <Root items={COLORS} defaultValue="blue">
       <Value data-testid="value" />
       <Positioner>

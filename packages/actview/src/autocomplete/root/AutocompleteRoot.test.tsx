@@ -18,7 +18,7 @@ const COLORS = {red: 'Red', green: 'Green', blue: 'Blue', yellow: 'Yellow'};
 
 function BasicAutocomplete(props: any = {}) {
   const {rootProps = {}, withTrigger = false} = props;
-  return () => (
+  return (
     <Root items={COLORS} {...rootProps}>
       {withTrigger ? <Trigger>Open</Trigger> : <Input data-testid="input" />}
       <Positioner>

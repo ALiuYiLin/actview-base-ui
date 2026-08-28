@@ -17,7 +17,7 @@ const COLORS = {red: 'Red', green: 'Green', blue: 'Blue', yellow: 'Yellow'};
 
 function AutocompleteFixture(props: {rootProps?: any} = {}) {
   const {rootProps = {}} = props;
-  return () => (
+  return (
     <Root items={COLORS} {...rootProps}>
       <Input data-testid="input" />
       <Positioner>
