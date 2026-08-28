@@ -72,8 +72,9 @@
 - [x] floating-ui-react 适配层（4 文件）✅——FloatingTree/Node/Portal/FocusManager 裸函数化 + store-as-is；**依赖仓库 E:\code3\floating-ui 的 FloatingTree context hooks 已适配（独立 commit）**——发布 dist 旧契约是弹层族全体崩溃根因
 - [x] tooltip（16）✅——Root/Trigger/Popup/Portal/Positioner/Arrow/Viewport/Provider 全迁；**45/45 测试绿（原 0/45）**；useAnchorPositioning 返回字段 computed 化（flip/shift 后 side/align 实时）；ReactStore.useSyncedValues 支持 ref；usePositioner 补 className 合并
 - [x] popover（18）✅——Root/Trigger/Popup/Portal/Positioner/Arrow/Backdrop/Close/Title/Description/Viewport 全迁；**73/73 测试绿（原 0/50）**；useAnchoredPopupScrollLock 参数 ref 化；setup 风格测试改裸函数
-- [ ] preview-card（17）——结构同 popover（popup store 模式），机械迁移
-- [ ] dialog（26）、alert-dialog（6）、drawer（18）
+- [x] preview-card（15）✅——Root/Trigger/Popup/Positioner/Arrow/Backdrop/Viewport/Portal + 3 context 全迁；7/7 测试绿
+- [x] dialog（16）✅——Root/Trigger/Popup/Portal/Backdrop/Close/Title/Description/Viewport + 2 context 全迁；**69/69 测试绿（原 0/63）**
+- [ ] alert-dialog、drawer——复用 dialog 模式（Popup/Portal/FocusManager 链）
 - [ ] menu（54）、context-menu（8）、menubar（5）、navigation-menu（22）
 
 ### 批次 4：大族（最后，调用点最多）
