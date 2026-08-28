@@ -160,6 +160,7 @@
     - 解构在 setup：`toRefs(props)` 活引用（渲染期读 `.value` 即实时）；ref 形 props（ref/inputRef）不入 toRefs、直读本體；框架消费键/状态键解构排除，children 不排除（随 elementRefs 流入渲染元素）；
     - 数据构造在 setup 级 `computed`（`.value` 在 JSX 内读 → 归渲染 effect 追踪；依赖未变引用稳定缓存）；
     - handler = setup 闭包读 computed/refs（事件触发时拿实时值）；
+    - **props 读取规则（快照 vs 实时）**：setup 普通读取 = 一次性快照且无追踪（无活动渲染 effect）。分类：① **初始化型**（defaultChecked/defaultValue 喂 useControlled 初值、useBaseUiId 初始输入、useAriaLabelledBy 入参等）→ 快照正确，对齐 React 初始化器语义；② **渲染期/computed/事件期消费**（id 进 rootProps、onXxx 回调、checked/disabled/name/value/parent 等）→ 一律 computed 直读 `componentProps.x` 或事件期直读——setup 快照会在父更新后读到旧值/旧回调。
     - Provider payload = 身份稳定 getter 载体（provide 只在 Provider setup 执行一次，新对象冻结快照）；
     - 动态原生标签用 `<component is={Tag}>`；`toValue` / `createElement` / `cloneVNode` / `useRootElement`(-Fragment) 全禁；
     - 违例形态（均已清零）：IIFE、渲染闭包 `return () => JSX`（plugin-babel 2.0 编译期拒绝）、手动 defineComponent 包装。
