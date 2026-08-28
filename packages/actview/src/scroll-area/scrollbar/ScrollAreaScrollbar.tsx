@@ -1,4 +1,5 @@
-import { onMounted, onUnmounted, ref, toValue, toRefs, unrefs, useRootElement } from 'actview';
+import {computed, onMounted, onUnmounted, ref, toRefs} from 'actview';
+import type { Ref } from 'actview';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { useScrollAreaRootContext } from '../root/ScrollAreaRootContext';
 import { useDirection } from '@/internals/direction-context/DirectionContext';
@@ -7,7 +8,8 @@ import { contains, getTarget } from '@/utils/shadowDom';
 import { scrollAreaStateAttributesMapping } from '../root/stateAttributes';
 import type { ScrollAreaRootState } from '../root/ScrollAreaRoot';
 import { ScrollAreaScrollbarContext } from './ScrollAreaScrollbarContext';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useMergedRefs } from '@/internals/useMergedRefs';
 
 /**
  * A vertical or horizontal scrollbar for the scroll area.
@@ -17,20 +19,26 @@ import { useRenderElement } from '@/internals/useRenderElementLegacy';
  */
 export function ScrollAreaScrollbar(componentProps: ScrollAreaScrollbar.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  // Provider 根（`<ScrollAreaScrollbarContext.Provider>`），无 Fragment 根问题。
-  const orientation = toValue(componentProps.orientation) ?? 'vertical';
-  const keepMounted = toValue(componentProps.keepMounted) ?? false;
+  // 自持 ref：经 params.ref 合并链透传（不用 useRootElement）。
+  const scrollbarRef = ref(null as HTMLElement | null);
 
-  const rootContextRef = useScrollAreaRootContext();
-  const scrollbarRef = useRootElement();
+  // context 载体直取（store-as-is）：getter 字段渲染期属性访问即追踪。
+  const rootContext = useScrollAreaRootContext();
 
-  const vertical = orientation === 'vertical';
+  // 渲染期消费的 props：computed 直读（setup 快照会停留在首渲染）。
+  const orientation = computed(() => componentProps.orientation ?? 'vertical');
+  const keepMounted = computed(() => componentProps.keepMounted ?? false);
+  const vertical = computed(() => orientation.value === 'vertical');
 
   const direction = useDirection();
-  const hideTrackUntilMeasured = () =>
-    !rootContextRef.value.hasMeasuredScrollbar && !keepMounted;
-  const isHidden = () => (vertical ? rootContextRef.value.hiddenState.y : rootContextRef.value.hiddenState.x);
-  const shouldRender = () => keepMounted || !isHidden();
+
+  const hideTrackUntilMeasured = computed(
+    () => !rootContext.hasMeasuredScrollbar && !keepMounted.value,
+  );
+  const isHidden = computed(() =>
+    vertical.value ? rootContext.hiddenState.y : rootContext.hiddenState.x,
+  );
+  const shouldRender = computed(() => keepMounted.value || !isHidden.value);
 
   // React 版 useEffect：wheel 事件（捕获到 scrollbar 元素上）
   let wheelCleanup: (() => void) | undefined;
@@ -38,11 +46,11 @@ export function ScrollAreaScrollbar(componentProps: ScrollAreaScrollbar.Props) {
     wheelCleanup?.();
     wheelCleanup = undefined;
 
-    if (!shouldRender()) {
+    if (!shouldRender.value) {
       return;
     }
 
-    const viewportEl = rootContextRef.value.viewportRef.value;
+    const viewportEl = rootContext.viewportRef.value;
     const scrollbarEl = scrollbarRef.value;
 
     if (!scrollbarEl) {
@@ -54,7 +62,7 @@ export function ScrollAreaScrollbar(componentProps: ScrollAreaScrollbar.Props) {
         return;
       }
 
-      const horizontal = !vertical;
+      const horizontal = !vertical.value;
       const scrollProperty = horizontal ? 'scrollLeft' : 'scrollTop';
       const delta = horizontal ? event.deltaX : event.deltaY;
       if (delta === 0) {
@@ -83,7 +91,7 @@ export function ScrollAreaScrollbar(componentProps: ScrollAreaScrollbar.Props) {
         Math.max(minScroll, scrollValue + delta),
       );
 
-      rootContextRef.value.handleScroll({x: viewportEl.scrollLeft, y: viewportEl.scrollTop});
+      rootContext.handleScroll({x: viewportEl.scrollLeft, y: viewportEl.scrollTop});
     }
 
     scrollbarEl.addEventListener('wheel', handleWheel, {passive: false});
@@ -100,165 +108,155 @@ export function ScrollAreaScrollbar(componentProps: ScrollAreaScrollbar.Props) {
     wheelCleanup?.();
   });
 
-  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
+  // 事件 handler：setup 闭包读 computed/refs——事件触发时拿到实时值。
+  const handleTrackPointerDown = (event: any) => {
+    if (event.button !== 0) {
+      return;
+    }
 
-  const {element} = useRenderElement({
-    props: () => {
-      const {
-        hovering,
-        scrollingX,
-        scrollingY,
-        hiddenState,
-        viewportRef,
-        thumbYRef,
-        thumbXRef,
-        handlePointerDown,
-        handlePointerUp,
-        handleScroll,
-        disableViewportSnap,
-        rootId,
-        thumbSize,
-        viewportState,
-      } = rootContextRef.value;
+    const target = getTarget(event.nativeEvent ?? event) as Element | null;
+    const thumbEl = vertical.value ? rootContext.thumbYRef.value : rootContext.thumbXRef.value;
 
-      const directionValue = direction.value;
+    // Ignore clicks on thumb, including cases where React retargets the
+    // synthetic event to the track host across a shadow boundary.
+    if (thumbEl && contains(thumbEl, target)) {
+      return;
+    }
 
-      const stateValue: ScrollAreaScrollbarState = {
-        ...viewportState,
-        hovering,
-        scrolling: vertical ? scrollingY : scrollingX,
-        orientation,
-      };
+    const viewportEl = rootContext.viewportRef.value;
+    if (!viewportEl) {
+      return;
+    }
 
-      const trackIsHidden = hideTrackUntilMeasured();
+    const scrollbarEl = scrollbarRef.value;
 
-      const p: Record<string, any> = {
-        ...(rootId && {'data-id': `${rootId}-scrollbar`}),
-        onPointerDown(event: any) {
-          if (event.button !== 0) {
-            return;
-          }
+    if (!thumbEl || !scrollbarEl) {
+      return;
+    }
 
-          const target = getTarget(event.nativeEvent ?? event) as Element | null;
-          const thumbEl = vertical ? thumbYRef.value : thumbXRef.value;
+    const isVertical = vertical.value;
+    const axis = isVertical ? 'y' : 'x';
+    const thumbOffset = getOffset(thumbEl, 'margin', axis);
+    const scrollbarOffset = getOffset(scrollbarEl, 'padding', axis);
+    const thumbSizePx = isVertical ? thumbEl.offsetHeight : thumbEl.offsetWidth;
+    const trackRect = scrollbarEl.getBoundingClientRect();
+    const clickPosition = isVertical
+      ? event.clientY - trackRect.top - thumbSizePx / 2 - scrollbarOffset + thumbOffset / 2
+      : event.clientX - trackRect.left - thumbSizePx / 2 - scrollbarOffset + thumbOffset / 2;
 
-          // Ignore clicks on thumb, including cases where React retargets the
-          // synthetic event to the track host across a shadow boundary.
-          if (thumbEl && contains(thumbEl, target)) {
-            return;
-          }
+    const scrollableSize = isVertical ? viewportEl.scrollHeight : viewportEl.scrollWidth;
+    const viewportSize = isVertical ? viewportEl.clientHeight : viewportEl.clientWidth;
+    const trackSize = isVertical ? scrollbarEl.offsetHeight : scrollbarEl.offsetWidth;
 
-          const viewportEl = viewportRef.value;
-          if (!viewportEl) {
-            return;
-          }
+    const maxThumbOffset = trackSize - thumbSizePx - scrollbarOffset - thumbOffset;
+    // A short or heavily padded track can drive `maxThumbOffset` to zero or
+    // negative once the thumb hits its `MIN_THUMB_SIZE` floor.
+    if (maxThumbOffset <= 0) {
+      return;
+    }
 
-          const scrollbarEl = scrollbarRef.value;
+    const scrollRatio = clickPosition / maxThumbOffset;
+    const maxScrollDistance = scrollableSize - viewportSize;
 
-          if (!thumbEl || !scrollbarEl) {
-            return;
-          }
+    // Disable snapping before the jump-to-click assignment.
+    rootContext.disableViewportSnap();
 
-          const axis = vertical ? 'y' : 'x';
-          const thumbOffset = getOffset(thumbEl, 'margin', axis);
-          const scrollbarOffset = getOffset(scrollbarEl, 'padding', axis);
-          const thumbSizePx = vertical ? thumbEl.offsetHeight : thumbEl.offsetWidth;
-          const trackRect = scrollbarEl.getBoundingClientRect();
-          const clickPosition = vertical
-            ? event.clientY - trackRect.top - thumbSizePx / 2 - scrollbarOffset + thumbOffset / 2
-            : event.clientX - trackRect.left - thumbSizePx / 2 - scrollbarOffset + thumbOffset / 2;
+    if (isVertical) {
+      viewportEl.scrollTop = scrollRatio * maxScrollDistance;
+    } else if (direction.value === 'rtl') {
+      viewportEl.scrollLeft = -(1 - scrollRatio) * maxScrollDistance;
+    } else {
+      viewportEl.scrollLeft = scrollRatio * maxScrollDistance;
+    }
 
-          const scrollableSize = vertical ? viewportEl.scrollHeight : viewportEl.scrollWidth;
-          const viewportSize = vertical ? viewportEl.clientHeight : viewportEl.clientWidth;
-          const trackSize = vertical ? scrollbarEl.offsetHeight : scrollbarEl.offsetWidth;
+    rootContext.handleScroll({x: viewportEl.scrollLeft, y: viewportEl.scrollTop});
 
-          const maxThumbOffset = trackSize - thumbSizePx - scrollbarOffset - thumbOffset;
-          // A short or heavily padded track can drive `maxThumbOffset` to zero or
-          // negative once the thumb hits its `MIN_THUMB_SIZE` floor.
-          if (maxThumbOffset <= 0) {
-            return;
-          }
+    rootContext.handlePointerDown(event);
+  };
 
-          const scrollRatio = clickPosition / maxThumbOffset;
-          const maxScrollDistance = scrollableSize - viewportSize;
+  const handleMouseDown = (event: any) => {
+    // Native scrollbars don't move focus when pressed, whichever button is used.
+    // Handled here rather than on the thumb so the bubbled press covers both.
+    event.preventDefault();
+  };
 
-          // Disable snapping before the jump-to-click assignment.
-          disableViewportSnap();
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
 
-          if (vertical) {
-            viewportEl.scrollTop = scrollRatio * maxScrollDistance;
-          } else if (directionValue === 'rtl') {
-            viewportEl.scrollLeft = -(1 - scrollRatio) * maxScrollDistance;
-          } else {
-            viewportEl.scrollLeft = scrollRatio * maxScrollDistance;
-          }
-
-          handleScroll({x: viewportEl.scrollLeft, y: viewportEl.scrollTop});
-
-          handlePointerDown(event);
-        },
-        // Native scrollbars don't move focus when pressed, whichever button is used.
-        // Handled here rather than on the thumb so the bubbled press covers both.
-        onMouseDown(event: any) {
-          event.preventDefault();
-        },
-        onPointerUp: handlePointerUp,
-        // Mirror `onPointerUp` so a browser-cancelled gesture on the track still
-        // clears the drag state.
-        ...({onPointerCancel: handlePointerUp} as any),
-        style: {
-          position: 'absolute',
-          touchAction: 'none',
-          WebkitUserSelect: 'none',
-          userSelect: 'none',
-          visibility: trackIsHidden ? 'hidden' : undefined,
-          ...(vertical
-            ? {
-                top: 0,
-                bottom: 'var(--scroll-area-corner-height)',
-                insetInlineEnd: 0,
-                ['--scroll-area-thumb-height' as string]: `${thumbSize.height}px`,
-              }
-            : {
-                insetInlineStart: 0,
-                insetInlineEnd: 'var(--scroll-area-corner-width)',
-                bottom: 0,
-                ['--scroll-area-thumb-width' as string]: `${thumbSize.width}px`,
-              }),
-        },
-      };
-
-      const merged: any = {};
-      Object.assign(merged, p, {...unrefs(elementProps)});
-      const resolvedStyle =
-        typeof style?.value === 'function' ? style.value(stateValue) : style?.value;
-      if (resolvedStyle !== undefined) {
-        merged.style = Object.assign({}, p.style, resolvedStyle);
-      }
-      return [merged];
-    },
-    state: () => {
-      const {hovering, scrollingX, scrollingY, viewportState} = rootContextRef.value;
-      return {
-        ...viewportState,
-        hovering,
-        scrolling: vertical ? scrollingY : scrollingX,
-        orientation,
-      } as ScrollAreaScrollbarState;
-    },
-    stateAttributesMapping: scrollAreaStateAttributesMapping as any,
-    className,
-    render,
-    refs: () => [scrollbarRef as any],
-    children,
-    defaultTag: 'div',
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
   });
 
+  const state = computed<ScrollAreaScrollbarState>(() => ({
+    ...rootContext.viewportState,
+    hovering: rootContext.hovering,
+    scrolling: vertical.value ? rootContext.scrollingY : rootContext.scrollingX,
+    orientation: orientation.value,
+  }));
+
+  const rootProps = computed<Record<string, any>>(() => ({
+    ...(rootContext.rootId && {'data-id': `${rootContext.rootId}-scrollbar`}),
+    onPointerDown: handleTrackPointerDown,
+    onMouseDown: handleMouseDown,
+    onPointerUp: rootContext.handlePointerUp,
+    // Mirror `onPointerUp` so a browser-cancelled gesture on the track still
+    // clears the drag state.
+    onPointerCancel: rootContext.handlePointerUp,
+    style: {
+      position: 'absolute',
+      touchAction: 'none',
+      WebkitUserSelect: 'none',
+      userSelect: 'none',
+      visibility: hideTrackUntilMeasured.value ? 'hidden' : undefined,
+      ...(vertical.value
+        ? {
+            top: 0,
+            bottom: 'var(--scroll-area-corner-height)',
+            insetInlineEnd: 0,
+            ['--scroll-area-thumb-height' as string]: `${rootContext.thumbSize.height}px`,
+          }
+        : {
+            insetInlineStart: 0,
+            insetInlineEnd: 'var(--scroll-area-corner-width)',
+            bottom: 0,
+            ['--scroll-area-thumb-width' as string]: `${rootContext.thumbSize.width}px`,
+          }),
+    },
+  }));
+
+  // store-as-is 载体：orientation 经 getter 渲染期求值。
+  const scrollbarContextValue = {
+    get orientation() {
+      return orientation.value;
+    },
+  };
+
   // ============ render（最后 return JSX——插件转换为渲染函数）============
+  // 条件在渲染期求值（表达式内 .value 直读，无 IIFE）。
   return (
-    <ScrollAreaScrollbarContext.Provider value={orientation as any}>
-      {shouldRender() ? element() : null}
+    <ScrollAreaScrollbarContext.Provider value={scrollbarContextValue}>
+      {shouldRender.value
+        ? useRenderElement(
+            'div',
+            {
+              className: className?.value,
+              render: render?.value,
+              style: style?.value,
+            },
+            {
+              state: state.value,
+              stateAttributesMapping: scrollAreaStateAttributesMapping,
+              ref: useMergedRefs(scrollbarRef, componentProps.ref as any),
+              props: [rootProps.value, elementProps.value],
+            },
+          )
+        : null}
     </ScrollAreaScrollbarContext.Provider>
   );
 }

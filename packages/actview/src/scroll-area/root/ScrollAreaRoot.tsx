@@ -1,4 +1,5 @@
-import { ref, toValue, toRefs, unrefs, useRootElement } from 'actview';
+import {computed, ref, toRefs} from 'actview';
+import type { Ref } from 'actview';
 import { useTimeout } from '@/utils/useTimeout';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { ScrollAreaRootContext } from './ScrollAreaRootContext';
@@ -9,7 +10,8 @@ import { useBaseUiId } from '@/internals/useBaseUiId';
 import { scrollAreaStateAttributesMapping } from './stateAttributes';
 import { contains } from '@/utils/shadowDom';
 import { useCSPContext } from '@/internals/csp-context/CSPContext';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useMergedRefs } from '@/internals/useMergedRefs';
 
 const DEFAULT_COORDS = {x: 0, y: 0};
 const DEFAULT_SIZE = {width: 0, height: 0};
@@ -29,18 +31,21 @@ export type Coords = typeof DEFAULT_COORDS;
  */
 export function ScrollAreaRoot(componentProps: ScrollAreaRoot.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  // Provider 根（`<ScrollAreaRootContext.Provider>`），无 Fragment 根问题。
-  const rootRef = useRootElement();
+  // 自持 ref：经 params.ref 合并链透传（不用 useRootElement）。
+  const rootRef = ref(null as HTMLElement | null);
 
-  const overflowEdgeThresholdProp = toValue(componentProps.overflowEdgeThreshold);
-  const {xStart, xEnd, yStart, yEnd} = normalizeOverflowEdgeThreshold(overflowEdgeThresholdProp);
+  // 渲染期消费的 props：computed 直读（setup 快照会停留在首渲染）。
+  const overflowEdgeThreshold = computed(() =>
+    normalizeOverflowEdgeThreshold(componentProps.overflowEdgeThreshold),
+  );
 
   const rootId = useBaseUiId();
 
   const scrollYTimeout = useTimeout();
   const scrollXTimeout = useTimeout();
 
-  const {nonce, disableStyleElements} = toValue(useCSPContext());
+  // CSP context 载体直取（store-as-is）：nonce/disableStyleElements 渲染期求值。
+  const cspContext = useCSPContext();
 
   const hovering = ref(false);
   const scrollingX = ref(false);
@@ -68,6 +73,7 @@ export function ScrollAreaRoot(componentProps: ScrollAreaRoot.Props) {
   const scrollPositionRef = ref(DEFAULT_COORDS);
   const savedSnapTypeRef = ref(null as string | null);
 
+  // 事件 handler：setup 闭包读 refs——事件触发时拿到实时值。
   function startScrolling(vertical: boolean) {
     const setScrolling = vertical ? scrollingY : scrollingX;
     const timeout = vertical ? scrollYTimeout : scrollXTimeout;
@@ -218,10 +224,20 @@ export function ScrollAreaRoot(componentProps: ScrollAreaRoot.Props) {
     }
   }
 
-  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
 
-  const stateValueFn = (): ScrollAreaRootState => ({
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
+  });
+
+  const state = computed<ScrollAreaRootState>(() => ({
     scrolling: scrollingX.value || scrollingY.value,
     hasOverflowX: !hiddenState.value.x,
     hasOverflowY: !hiddenState.value.y,
@@ -230,9 +246,9 @@ export function ScrollAreaRoot(componentProps: ScrollAreaRoot.Props) {
     overflowYStart: overflowEdges.value.yStart,
     overflowYEnd: overflowEdges.value.yEnd,
     cornerHidden: hiddenState.value.corner,
-  });
+  }));
 
-  const defaultProps = (): Record<string, any> => ({
+  const rootProps = computed<Record<string, any>>(() => ({
     role: 'presentation',
     onPointerEnter: handlePointerEnterOrMove,
     onPointerMove: handlePointerEnterOrMove,
@@ -245,67 +261,84 @@ export function ScrollAreaRoot(componentProps: ScrollAreaRoot.Props) {
       ['--scroll-area-corner-height' as string]: `${cornerSize.value.height}px`,
       ['--scroll-area-corner-width' as string]: `${cornerSize.value.width}px`,
     },
-  });
+  }));
 
-  const buildContextValue = (stateValue: ScrollAreaRootState): ScrollAreaRootContext => ({
-    handlePointerDown,
-    handlePointerMove,
-    handlePointerUp,
-    handleScroll,
-    disableViewportSnap,
-    cornerSize: cornerSize.value,
+  // store-as-is 载体：身份稳定的 getter 对象（provide 只在 Provider setup 执行
+  // 一次，渲染期新对象会冻结快照）——值字段经 getter 渲染期求值，消费端读字段
+  // 即追踪；refs/handlers 为稳定引用。
+  const contextValue: ScrollAreaRootContext = {
+    get cornerSize() {
+      return cornerSize.value;
+    },
     setCornerSize: (v: Size) => (cornerSize.value = v),
-    thumbSize: thumbSize.value,
+    get thumbSize() {
+      return thumbSize.value;
+    },
     setThumbSize: (v: Size) => (thumbSize.value = v),
-    hasMeasuredScrollbar: hasMeasuredScrollbar.value,
+    get hasMeasuredScrollbar() {
+      return hasMeasuredScrollbar.value;
+    },
     setHasMeasuredScrollbar: (v: boolean) => (hasMeasuredScrollbar.value = v),
-    touchModality: touchModality.value,
-    cornerRef,
-    scrollingX: scrollingX.value,
-    scrollingY: scrollingY.value,
-    hovering: hovering.value,
+    get touchModality() {
+      return touchModality.value;
+    },
+    get hovering() {
+      return hovering.value;
+    },
     setHovering: (v: boolean) => (hovering.value = v),
+    get scrollingX() {
+      return scrollingX.value;
+    },
+    get scrollingY() {
+      return scrollingY.value;
+    },
     viewportRef,
     scrollbarYRef,
     scrollbarXRef,
     thumbYRef,
     thumbXRef,
+    cornerRef,
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
+    handleScroll,
+    disableViewportSnap,
     rootId,
-    hiddenState: hiddenState.value,
-    setHiddenState: (v: HiddenState) => (hiddenState.value = v),
-    overflowEdges: overflowEdges.value,
-    setOverflowEdges: (v: OverflowEdges) => (overflowEdges.value = v),
-    viewportState: stateValue,
-    overflowEdgeThreshold: {xStart, xEnd, yStart, yEnd},
-  });
-
-  const {element} = useRenderElement({
-    props: () => {
-      const stateValue = stateValueFn();
-      const p = defaultProps();
-      const merged: any = {};
-      Object.assign(merged, p, {...unrefs(elementProps)});
-      const resolvedStyle =
-        typeof style?.value === 'function' ? style.value(stateValue) : style?.value;
-      if (resolvedStyle !== undefined) {
-        merged.style = Object.assign({}, p.style, resolvedStyle);
-      }
-      return [merged];
+    get hiddenState() {
+      return hiddenState.value;
     },
-    state: stateValueFn,
-    stateAttributesMapping: scrollAreaStateAttributesMapping as any,
-    className,
-    render,
-    refs: () => [rootRef as any],
-    children,
-    defaultTag: 'div',
-  });
+    setHiddenState: (v: HiddenState) => (hiddenState.value = v),
+    get overflowEdges() {
+      return overflowEdges.value;
+    },
+    setOverflowEdges: (v: OverflowEdges) => (overflowEdges.value = v),
+    get viewportState() {
+      return state.value;
+    },
+    get overflowEdgeThreshold() {
+      return overflowEdgeThreshold.value;
+    },
+  };
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
   return (
-    <ScrollAreaRootContext.Provider value={buildContextValue(stateValueFn()) as any}>
-      {!disableStyleElements && styleDisableScrollbar.getElement(nonce)}
-      {element()}
+    <ScrollAreaRootContext.Provider value={contextValue}>
+      {!cspContext.value.disableStyleElements &&
+        styleDisableScrollbar.getElement(cspContext.value.nonce)}
+      {useRenderElement(
+        'div',
+        {
+          className: className?.value,
+          render: render?.value,
+          style: style?.value,
+        },
+        {
+          state: state.value,
+          stateAttributesMapping: scrollAreaStateAttributesMapping,
+          ref: useMergedRefs(rootRef, componentProps.ref as any),
+          props: [rootProps.value, elementProps.value],
+        },
+      )}
     </ScrollAreaRootContext.Provider>
   );
 }

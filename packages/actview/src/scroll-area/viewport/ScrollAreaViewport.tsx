@@ -1,4 +1,5 @@
-import {onMounted, onUnmounted, ref, toValue, toRefs, unrefs, useRootElement, shallowRef} from 'actview';
+import {computed, onMounted, onUnmounted, ref, toRefs, shallowRef} from 'actview';
+import type { Ref } from 'actview';
 import { platform } from '@/utils/platform';
 import { useTimeout } from '@/utils/useTimeout';
 import { clamp } from '@/utils/clamp';
@@ -12,7 +13,8 @@ import { styleDisableScrollbar } from '@/utils/styles';
 import { scrollAreaStateAttributesMapping } from '../root/stateAttributes';
 import type { HiddenState, ScrollAreaRootState } from '../root/ScrollAreaRoot';
 import { normalizeScrollOffset } from '@/utils/scrollEdges';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useMergedRefs } from '@/internals/useMergedRefs';
 
 // CSS variable names inlined so `ScrollAreaViewportCssVars` tree-shakes out.
 const OVERFLOW_EDGE_VARS = [
@@ -66,9 +68,10 @@ function removeCSSVariableInheritance() {
  */
 export function ScrollAreaViewport(componentProps: ScrollAreaViewport.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  // Provider 根（`<ScrollAreaViewportContext.Provider>`），无 Fragment 根问题。
-  const rootContextRef = useScrollAreaRootContext();
-  const viewportRef = useRootElement();
+  // context 载体直取（store-as-is）：getter 字段渲染期属性访问即追踪。
+  const rootContext = useScrollAreaRootContext();
+  // 自持 ref：经 params.ref 合并链透传（不用 useRootElement）。
+  const viewportRef = ref(null as HTMLDivElement | null);
 
   const direction = useDirection();
 
@@ -78,13 +81,14 @@ export function ScrollAreaViewport(componentProps: ScrollAreaViewport.Props) {
   const scrollEndTimeout = useTimeout();
   const waitForAnimationsTimeout = useTimeout();
 
+  // 测量闭包：事件/观察器回调期直读 context 载体（getter 字段实时）。
   const computeThumbPosition = () => {
     const viewportEl = viewportRef.value;
-    const scrollbarYEl = rootContextRef.value.scrollbarYRef.value;
-    const scrollbarXEl = rootContextRef.value.scrollbarXRef.value;
-    const thumbYEl = rootContextRef.value.thumbYRef.value;
-    const thumbXEl = rootContextRef.value.thumbXRef.value;
-    const cornerEl = rootContextRef.value.cornerRef.value;
+    const scrollbarYEl = rootContext.scrollbarYRef.value;
+    const scrollbarXEl = rootContext.scrollbarXRef.value;
+    const thumbYEl = rootContext.thumbYRef.value;
+    const thumbXEl = rootContext.thumbXRef.value;
+    const cornerEl = rootContext.cornerRef.value;
 
     if (!viewportEl) {
       return;
@@ -105,7 +109,7 @@ export function ScrollAreaViewport(componentProps: ScrollAreaViewport.Props) {
     lastMeasuredViewportMetrics[3] = scrollableContentWidth;
 
     if (isFirstMeasurement) {
-      rootContextRef.value.setHasMeasuredScrollbar(true);
+      rootContext.setHasMeasuredScrollbar(true);
     }
 
     if (scrollableContentHeight === 0 || scrollableContentWidth === 0) {
@@ -113,7 +117,7 @@ export function ScrollAreaViewport(componentProps: ScrollAreaViewport.Props) {
     }
 
     const directionValue = direction.value;
-    const overflowEdgeThreshold = rootContextRef.value.overflowEdgeThreshold;
+    const overflowEdgeThreshold = rootContext.overflowEdgeThreshold;
 
     const nextHiddenState = getHiddenState(viewportEl);
     const scrollbarYHidden = nextHiddenState.y;
@@ -146,7 +150,7 @@ export function ScrollAreaViewport(componentProps: ScrollAreaViewport.Props) {
     }
 
     // Only subtract corner size from scrollbar dimensions if the corner hasn't been sized yet.
-    const cornerSize = rootContextRef.value.cornerSize;
+    const cornerSize = rootContext.cornerSize;
     const cornerNotYetSized = cornerSize.width === 0 && cornerSize.height === 0;
     const cornerWidthOffset = cornerNotYetSized ? nextCornerWidth : 0;
     const cornerHeightOffset = cornerNotYetSized ? nextCornerHeight : 0;
@@ -169,8 +173,8 @@ export function ScrollAreaViewport(componentProps: ScrollAreaViewport.Props) {
     const clampedNextWidth = Math.max(MIN_THUMB_SIZE, maxNextWidth * ratioX);
     const clampedNextHeight = Math.max(MIN_THUMB_SIZE, maxNextHeight * ratioY);
 
-    rootContextRef.value.setThumbSize(
-      pickState(rootContextRef.value.thumbSize, {width: clampedNextWidth, height: clampedNextHeight}),
+    rootContext.setThumbSize(
+      pickState(rootContext.thumbSize, {width: clampedNextWidth, height: clampedNextHeight}),
     );
 
     // Handle Y (vertical) scroll
@@ -215,12 +219,12 @@ export function ScrollAreaViewport(componentProps: ScrollAreaViewport.Props) {
     });
 
     if (cornerEl) {
-      rootContextRef.value.setCornerSize(
-        pickState(rootContextRef.value.cornerSize, {width: nextCornerWidth, height: nextCornerHeight}),
+      rootContext.setCornerSize(
+        pickState(rootContext.cornerSize, {width: nextCornerWidth, height: nextCornerHeight}),
       );
     }
 
-    rootContextRef.value.setHiddenState(pickState(rootContextRef.value.hiddenState, nextHiddenState));
+    rootContext.setHiddenState(pickState(rootContext.hiddenState, nextHiddenState));
 
     const nextOverflowEdges = {
       xStart: !scrollbarXHidden && scrollLeftFromStart > overflowEdgeThreshold.xStart,
@@ -229,7 +233,7 @@ export function ScrollAreaViewport(componentProps: ScrollAreaViewport.Props) {
       yEnd: !scrollbarYHidden && scrollTopFromEnd > overflowEdgeThreshold.yEnd,
     };
 
-    rootContextRef.value.setOverflowEdges(pickState(rootContextRef.value.overflowEdges, nextOverflowEdges));
+    rootContext.setOverflowEdges(pickState(rootContext.overflowEdges, nextOverflowEdges));
   };
 
   // useIsoLayoutEffect：注册 CSS 属性 + 挂载后测量
@@ -242,7 +246,7 @@ export function ScrollAreaViewport(componentProps: ScrollAreaViewport.Props) {
     // `onMouseEnter` doesn't fire upon load, so we need to check if the viewport is already
     // being hovered.
     if (viewportRef.value?.matches(':hover')) {
-      rootContextRef.value.setHovering(true);
+      rootContext.setHovering(true);
     }
 
     queueMicrotask(computeThumbPosition);
@@ -291,78 +295,86 @@ export function ScrollAreaViewport(componentProps: ScrollAreaViewport.Props) {
     waitForAnimationsTimeout.clear();
   });
 
-  function handleUserInteraction() {
+  // 事件 handler：setup 闭包。
+  const handleUserInteraction = () => {
     programmaticScrollRef.value = false;
-  }
+  };
 
-  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
+  const handleScrollEvent = () => {
+    if (!viewportRef.value) {
+      return;
+    }
 
-  const {element} = useRenderElement({
-    props: () => {
-      const {rootId, hiddenState, handleScroll, touchModality, viewportState} =
-        rootContextRef.value;
+    computeThumbPosition();
 
-      const p: Record<string, any> = {
-        role: 'presentation',
-        ...(rootId && {'data-id': `${rootId}-viewport`}),
-        // Keep non-scrollable viewports out of tab order.
-        tabIndex: hiddenState.x && hiddenState.y ? -1 : 0,
-        className: styleDisableScrollbar.className,
-        style: {
-          overflow: 'scroll',
-        },
-        onScroll() {
-          if (!viewportRef.value) {
-            return;
-          }
+    // WebKit consumes a touch that catches an in-flight momentum scroll or
+    // rubber-band bounce without dispatching any DOM events for the whole
+    // gesture, so scrolls cannot be attributed to the user through events.
+    if (rootContext.touchModality || !programmaticScrollRef.value) {
+      rootContext.handleScroll({
+        x: viewportRef.value.scrollLeft,
+        y: viewportRef.value.scrollTop,
+      });
+    }
 
-          computeThumbPosition();
+    // Debounce the restoration of the programmatic flag so that it only
+    // flips back to `true` once scrolling has come to a rest.
+    scrollEndTimeout.start(100, () => {
+      programmaticScrollRef.value = true;
+    });
+  };
 
-          // WebKit consumes a touch that catches an in-flight momentum scroll or
-          // rubber-band bounce without dispatching any DOM events for the whole
-          // gesture, so scrolls cannot be attributed to the user through events.
-          if (touchModality || !programmaticScrollRef.value) {
-            handleScroll({
-              x: viewportRef.value.scrollLeft,
-              y: viewportRef.value.scrollTop,
-            });
-          }
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
 
-          // Debounce the restoration of the programmatic flag so that it only
-          // flips back to `true` once scrolling has come to a rest.
-          scrollEndTimeout.start(100, () => {
-            programmaticScrollRef.value = true;
-          });
-        },
-        onWheel: handleUserInteraction,
-        onPointerMove: handleUserInteraction,
-        onPointerEnter: handleUserInteraction,
-        onKeyDown: handleUserInteraction,
-      };
-
-      const merged: any = {};
-      Object.assign(merged, p, {...unrefs(elementProps)});
-      const resolvedStyle =
-        typeof style?.value === 'function' ? style.value(viewportState) : style?.value;
-      if (resolvedStyle !== undefined) {
-        merged.style = Object.assign({}, p.style, resolvedStyle);
-      }
-      return [merged];
-    },
-    state: () => rootContextRef.value.viewportState,
-    stateAttributesMapping: scrollAreaStateAttributesMapping as any,
-    className,
-    render,
-    refs: () => [viewportRef as any],
-    children,
-    defaultTag: 'div',
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
   });
+
+  const viewportState = computed<ScrollAreaViewportState>(() => rootContext.viewportState);
+
+  const rootProps = computed<Record<string, any>>(() => ({
+    role: 'presentation',
+    ...(rootContext.rootId && {'data-id': `${rootContext.rootId}-viewport`}),
+    // Keep non-scrollable viewports out of tab order.
+    tabIndex: rootContext.hiddenState.x && rootContext.hiddenState.y ? -1 : 0,
+    className: styleDisableScrollbar.className,
+    style: {
+      overflow: 'scroll',
+    },
+    onScroll: handleScrollEvent,
+    onWheel: handleUserInteraction,
+    onPointerMove: handleUserInteraction,
+    onPointerEnter: handleUserInteraction,
+    onKeyDown: handleUserInteraction,
+  }));
+
+  // store-as-is 载体：身份稳定（setup 构建一次）。
+  const viewportContextValue = {computeThumbPosition};
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
   return (
-    <ScrollAreaViewportContext.Provider value={{computeThumbPosition} as any}>
-      {element()}
+    <ScrollAreaViewportContext.Provider value={viewportContextValue}>
+      {useRenderElement(
+        'div',
+        {
+          className: className?.value,
+          render: render?.value,
+          style: style?.value,
+        },
+        {
+          state: viewportState.value,
+          stateAttributesMapping: scrollAreaStateAttributesMapping,
+          ref: useMergedRefs(viewportRef, componentProps.ref as any),
+          props: [rootProps.value, elementProps.value],
+        },
+      )}
     </ScrollAreaViewportContext.Provider>
   );
 }
@@ -388,8 +400,8 @@ function getHiddenState(viewport: HTMLElement): HiddenState {
 }
 
 /**
- * Returns `prev` when `next` is shallow-equal to it so setState bails out and
- * scroll-frame updates don't rebuild the root context.
+ * Returns `prev` when `next` is shallow-equal to it so state writes bail out and
+ * scroll-frame updates don't trigger downstream re-renders.
  */
 function pickState<T extends object>(prev: T, next: T): T {
   for (const key in next) {

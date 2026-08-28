@@ -1,8 +1,9 @@
-import { toRefs, unrefs } from 'actview';
+import {computed, ref, toRefs} from 'actview';
+import type { Ref } from 'actview';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { useScrollAreaRootContext } from '../root/ScrollAreaRootContext';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
-import { useRootElementFragment } from '@/internals/useRootElementFragment';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useMergedRefs } from '@/internals/useMergedRefs';
 
 /**
  * The corner of the scroll area, where the two scrollbars meet.
@@ -12,46 +13,57 @@ import { useRootElementFragment } from '@/internals/useRootElementFragment';
  */
 export function ScrollAreaCorner(componentProps: ScrollAreaCorner.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  // Fragment 根（`<>{element()}</>`）下 actview 内置 useRootElement 的
-  // subTree.el 恒 null——用 Fragment 兼容版本。
-  const rootContextRef = useScrollAreaRootContext();
-  const cornerRef = useRootElementFragment();
+  // 自持 ref：经 params.ref 合并链透传（不用 useRootElementFragment）。
+  const cornerRef = ref(null as HTMLElement | null);
 
-  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
+  // context 载体直取（store-as-is）：getter 字段渲染期属性访问即追踪。
+  const rootContext = useScrollAreaRootContext();
 
-  const {element} = useRenderElement({
-    props: () => {
-      const {cornerSize} = rootContextRef.value;
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
 
-      const merged: any = {
-        ...unrefs(elementProps),
-        style: {
-          position: 'absolute',
-          bottom: 0,
-          insetInlineEnd: 0,
-          width: cornerSize.width,
-          height: cornerSize.height,
-        },
-      };
-      const resolvedStyle =
-        typeof style?.value === 'function' ? style.value({}) : style?.value;
-      if (resolvedStyle !== undefined) {
-        merged.style = Object.assign({}, merged.style, resolvedStyle);
-      }
-      return [merged];
-    },
-    state: () => ({}),
-    className,
-    render,
-    refs: () => [cornerRef as any],
-    children,
-    defaultTag: 'div',
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
   });
 
+  const rootProps = computed<Record<string, any>>(() => ({
+    ...elementProps.value,
+    style: {
+      position: 'absolute',
+      bottom: 0,
+      insetInlineEnd: 0,
+      width: rootContext.cornerSize.width,
+      height: rootContext.cornerSize.height,
+    },
+  }));
+
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  const {hiddenState} = rootContextRef.value;
-  return <>{hiddenState.corner ? null : element()}</>;
+  // 条件在渲染期求值（表达式内 .value 直读，无 IIFE）。
+  return (
+    <>
+      {rootContext.hiddenState.corner
+        ? null
+        : useRenderElement(
+            'div',
+            {
+              className: className?.value,
+              render: render?.value,
+              style: style?.value,
+            },
+            {
+              state: {},
+              ref: useMergedRefs(cornerRef, componentProps.ref as any),
+              props: rootProps.value,
+            },
+          )}
+    </>
+  );
 }
 
 export interface ScrollAreaCornerState {}
