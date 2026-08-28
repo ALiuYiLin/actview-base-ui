@@ -79,7 +79,7 @@
 - [x] menu 系（menu 17 + context-menu 5 + menubar 3）✅——全部组件/context hooks store-as-is + 新 hook；**57/58 测试绿**（唯一失败：viewport remount 深链路用例，预存行为待专项排查）；navigation-menu（13）✅——12/12 绿（关闭态不渲染内容语义补齐）；类型 92→52，批次 3 收官
 
 ### 批次 4：大族（最后，调用点最多）
-- [~] combobox/autocomplete 进行中——AutocompleteRootContext/ComboboxRootContext hook 已 store-as-is 化；ComboboxRoot Provider 载体化 + selectedValue computed；**autocomplete 9/9 绿**。余：combobox 其余组件（Context 4 错已清）+ select（31）
+- [~] combobox/autocomplete/select 进行中——autocomplete 9/9 绿（context 契约修复即转绿，无需动组件）；select：2 context hooks 已修 + 5 测试 wrapper 转裸函数；**余：Positioner→Popup 链报「Select.Root is missing」——Positioner 结构特殊（portal 内嵌）需排查 provide 流转**；combobox 剩余组件消费端核对
 - [x] toast（18）✅——全部 9 组件 + 2 context hooks 已迁移；**7/7 测试绿**（Viewport rootProps 漏 children 注入是根因——新 hook 迁移时 children 经 render-prop 的组件务必核对 children 注入）
 - [x] slider（18）✅——**7/7 组件全迁，5/5 测试绿**（SliderControl 555 行/SliderThumb 590 行整文件重写：事件期载体访问 + inputBase/rootProps computed 化；useCompositeListItem metadata computed 化）
 - [x] number-field（17）✅——Root/Group/Input/Stepper/ScrubArea×2/Cursor 全迁 + 2 context hooks；6/6 测试绿（原 0/6）### 3.3 测试范式更新（转写 React 用例时统一执行）
