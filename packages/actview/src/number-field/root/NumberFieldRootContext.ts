@@ -33,13 +33,14 @@ export interface NumberFieldRootContext {
 
 export const NumberFieldRootContext = createContext<NumberFieldRootContext | undefined>(undefined);
 
-export function useNumberFieldRootContext(): Ref<NumberFieldRootContext> {
+export function useNumberFieldRootContext(): NumberFieldRootContext {
+  // store-as-is：use() 原样返回注入的 getter 载体。
   const context = NumberFieldRootContext.use();
-  if (context.value === undefined) {
+  if (context === undefined) {
     throw new Error(
       'Base UI: NumberFieldRootContext is missing. NumberField parts must be placed within <NumberField.Root>.',
     );
   }
 
-  return context as unknown as Ref<NumberFieldRootContext>;
+  return context;
 }

@@ -1,9 +1,9 @@
-import { onMounted, onUnmounted, ref, toValue, watch, useRootElement, toRefs, unrefs } from 'actview';
+import { computed, onMounted, onUnmounted, ref, watch, toRefs } from 'actview';
 import { addEventListener } from '@/utils/addEventListener';
 import { useControlled } from '@/utils/useControlled';
 import { useValueAsRef } from '@/utils/useValueAsRef';
 import { useForcedRerendering } from '@/utils/useForcedRerendering';
-import { useMergedRefs } from '@/utils/useMergedRefs';
+import { useMergedRefs } from '@/internals/useMergedRefs';
 import { visuallyHidden, visuallyHiddenInput } from '@/utils/visuallyHidden';
 import { ownerDocument } from '@/utils/owner';
 import { platform } from '@/utils/platform';
@@ -36,7 +36,8 @@ import {
   type ReasonToEvent,
 } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useMergedRefs } from '@/internals/useMergedRefs';
 
 /**
  * Groups all parts of the number field and manages its state.
@@ -46,7 +47,8 @@ import { useRenderElement } from '@/internals/useRenderElementLegacy';
  */
 export function NumberFieldRoot(componentProps: NumberFieldRoot.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  const rootRef = useRootElement();
+  // 自持 ref：经 params.ref 合并链透传（不用 useRootElement）。
+  const rootRef = ref(null as HTMLElement | null);
 
   const {
     id: idProp,
@@ -72,15 +74,17 @@ export function NumberFieldRoot(componentProps: NumberFieldRoot.Props) {
     inputRef: inputRefProp,
   } = componentProps;
 
-  const fieldContextRef = useFieldRootContext();
-  const formContextRef = useFormContext();
+  // context 载体直取（store-as-is）：state/disabled/name/validityData 为
+  // ComputedRef 字段（读 .value）；validation/setFilled 等为直取函数。
+  const fieldContext = useFieldRootContext();
+  const formContext = useFormContext();
 
-  const fieldState = fieldContextRef.value.state;
-  const fieldDisabled = fieldContextRef.value.disabled.value;
-  const fieldName = fieldContextRef.value.name.value;
+  const fieldState = computed(() => fieldContext.state.value);
+  const fieldDisabled = computed(() => fieldContext.disabled.value);
+  const fieldName = computed(() => fieldContext.name.value);
 
-  const disabled = fieldDisabled || disabledProp;
-  const name = fieldName ?? nameProp;
+  const disabled = computed(() => fieldDisabled.value || disabledProp);
+  const name = computed(() => fieldName.value ?? nameProp);
   const step = stepProp === 'any' ? 1 : stepProp;
 
   const isScrubbing = ref(false);
@@ -92,7 +96,7 @@ export function NumberFieldRoot(componentProps: NumberFieldRoot.Props) {
   const formatStyle = format?.style;
 
   const inputRef = ref(null as HTMLInputElement | null);
-  const hiddenInputRef = useMergedRefs(inputRefProp as any, fieldContextRef.value.validation.inputRef as any);
+  const hiddenInputRef = useMergedRefs(inputRefProp as any, fieldContext.validation.inputRef as any);
 
   const id = useLabelableId({id: idProp});
 
@@ -109,7 +113,7 @@ export function NumberFieldRoot(componentProps: NumberFieldRoot.Props) {
   watch(
     () => value.value,
     (v) => {
-      fieldContextRef.value.setFilled(v !== null);
+      fieldContext.setFilled(v !== null);
     },
     {flush: 'post', immediate: true},
   );
@@ -243,7 +247,7 @@ export function NumberFieldRoot(componentProps: NumberFieldRoot.Props) {
       }
 
       setValueUnwrapped(validatedValue);
-      fieldContextRef.value.setDirty(validatedValue !== fieldContextRef.value.validityData.value.initialValue);
+      fieldContext.setDirty(validatedValue !== fieldContext.validityData.value.initialValue);
       hasPendingCommitRef.value = true;
     }
 
@@ -374,19 +378,32 @@ export function NumberFieldRoot(componentProps: NumberFieldRoot.Props) {
   });
 
   // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
 
-  const stateValueFn = (): NumberFieldRootState => ({
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
+  });
+
+  const state = computed<NumberFieldRootState>(() => ({
     ...fieldState.value,
-    disabled,
+    disabled: disabled.value,
     readOnly,
     required,
     value: value.value as number | null,
     inputValue: inputValue.value,
     scrubbing: isScrubbing.value,
-  });
+  }));
 
-  const buildContextValue = (stateValue: NumberFieldRootState): NumberFieldRootContext => ({
+  // store-as-is 载体：身份稳定的 getter 对象（provide 只在 Provider setup 执行
+  // 一次，渲染期新对象会冻结快照）——state/inputMode/name 渲染期求值。
+  const contextValue: NumberFieldRootContext = {
     inputRef,
     minWithDefault,
     maxWithDefault,
@@ -399,21 +416,27 @@ export function NumberFieldRoot(componentProps: NumberFieldRoot.Props) {
     valueRef,
     lastChangedValueRef,
     hasPendingCommitRef,
-    name,
+    get name() {
+      return name.value;
+    },
     nameProp,
-    inputMode: inputMode.value,
+    get inputMode() {
+      return inputMode.value;
+    },
     getAllowedNonNumericKeys,
     min,
     max,
     setInputValue,
     locale,
     setIsScrubbing,
-    state: stateValue,
+    get state() {
+      return state.value;
+    },
     onValueCommitted,
-  });
+  };
 
   const buildHiddenInputProps = () =>
-    fieldContextRef.value.validation.getValidationProps(disabled, {
+    fieldContext.validation.getValidationProps(disabled.value ?? false, {
       onFocus() {
         inputRef.value?.focus();
       },
@@ -431,52 +454,50 @@ export function NumberFieldRoot(componentProps: NumberFieldRoot.Props) {
         // `setValue` updates the dirty flag from the stored (clamped) value, so validate with
         // that same value rather than the raw autofilled one.
         setValue(parsedValue, details);
-        formContextRef.value.clearErrors(name);
-        fieldContextRef.value.validation.change(lastChangedValueRef.value ?? parsedValue);
+        formContext.clearErrors(name.value);
+        fieldContext.validation.change(lastChangedValueRef.value ?? parsedValue);
       },
     });
 
-  const {element} = useRenderElement({
-    props: () => [{...unrefs(elementProps)}],
-    state: stateValueFn,
-    stateAttributesMapping: stateAttributesMapping as any,
-    className,
-    style,
-    render,
-    refs: () => [rootRef as any],
-    children,
-    defaultTag: 'div',
-  });
+  const rootProps = computed<Record<string, any>>(() => ({...elementProps.value}));
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
   return (
-    <NumberFieldRootContext.Provider
-      value={
-        (() => {
-          const stateValue = stateValueFn();
-          return buildContextValue(stateValue) as any;
-        })()
-      }
-    >
-      {element()}
+    <NumberFieldRootContext.Provider value={contextValue as any}>
+      {useRenderElement(
+        'div',
+        {
+          className: className?.value,
+          render: render?.value,
+          style: style?.value,
+        },
+        {
+          state: state.value,
+          stateAttributesMapping: stateAttributesMapping,
+          ref: useMergedRefs(rootRef, componentProps.ref as any),
+          props: rootProps.value,
+        },
+      )}
       <input
-        {...(() => buildHiddenInputProps())()}
+        {...buildHiddenInputProps()}
         ref={hiddenInputRef}
         type="number"
         form={form}
-        name={name}
+        name={name.value}
         value={value.value ?? ''}
         min={min}
         max={max}
         // stepMismatch validation is broken unless an explicit `min` is added.
         // See https://github.com/react/react/issues/12334.
         step={stepProp}
-        disabled={disabled}
+        disabled={disabled.value}
         readOnly={readOnly}
         required={required}
         aria-hidden
         tabIndex={-1}
-        style={name ? visuallyHiddenInput : visuallyHidden}
+        style={name.value ? visuallyHiddenInput : visuallyHidden}
       />
     </NumberFieldRootContext.Provider>
   );
@@ -670,7 +691,6 @@ export type NumberFieldRootCommitEventDetails =
   BaseUIGenericEventDetails<NumberFieldRoot.CommitEventReason>;
 
 import type { ChangeEventCustomProperties } from '../utils/types';
-import type { Ref } from 'actview';
 
 export namespace NumberFieldRoot {
   export type State = NumberFieldRootState;

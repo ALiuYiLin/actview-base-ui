@@ -1,23 +1,19 @@
 import { createContext } from 'actview';
-import type { Ref } from 'actview';
 
 export interface NumberFieldScrubAreaContext {
+  isPointerLockRef: {value: boolean};
   isScrubbing: boolean;
-  isTouchInput: boolean;
-  isPointerLockDenied: boolean;
-  scrubAreaCursorRef: Ref<HTMLSpanElement | null>;
 }
 
-export const NumberFieldScrubAreaContext = createContext<
-  NumberFieldScrubAreaContext | undefined
->(undefined);
+export const NumberFieldScrubAreaContext = createContext<NumberFieldScrubAreaContext | undefined>(
+  undefined,
+);
 
-export function useNumberFieldScrubAreaContext(): Ref<NumberFieldScrubAreaContext> {
+export function useNumberFieldScrubAreaContext(optional = true) {
+  // store-as-is：use() 原样返回注入的 getter 载体。
   const context = NumberFieldScrubAreaContext.use();
-  if (context.value === undefined) {
-    throw new Error(
-      'Base UI: NumberFieldScrubAreaContext missing. NumberFieldScrubAreaCursor must be placed within <NumberField.ScrubArea>.',
-    );
+  if (context === undefined && !optional) {
+    throw new Error('Base UI: <NumberField.ScrubArea> is missing.');
   }
-  return context as unknown as Ref<NumberFieldScrubAreaContext>;
+  return context;
 }
