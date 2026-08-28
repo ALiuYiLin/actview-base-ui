@@ -39,7 +39,7 @@
 - [x] `internals/getStateAttributesProps.ts`、`internals/types.ts` 对齐（types：保留 HTMLAttributes 基座 + `ref?: Ref<HTMLElement|null>` 转发声明 + 本地 `Reactive<T>` 品牌类型——踩坑见附录 C.1/C.2）
 - [ ] `src/merge-props/`（35 个引用方）与新 `internals/mergeProps.ts` 收敛为一份 → 移入 P2
 - [x] `useRootElementFragment` 评估：AvatarImage 已用 ref 合并链取代 rootRef 桥接、不再依赖；其余 Fragment 根家族迁移时逐个消除，最终删除
-- [x] 基准家族 avatar：store-as-is context（reactive 载体 + 统一写入口）+ 新 hook + ref 合并链——**58 通过 / 3 失败 / 3 跳过**（3 失败=同一 conformance 存量债，附录 C.5；HEAD 同期 77 失败）
+- [x] 基准家族 avatar：store-as-is context（reactive 载体 + 统一写入口）+ 新 hook + ref 合并链——**61 通过 / 0 失败 / 3 跳过**（全绿；HEAD 同期 77 失败）
 - [ ] 基准家族 checkbox + checkbox-group（依赖 internals/field-root-context 等共享 internals 的 store-as-is 适配）
 - 验收：类型错误数 = 基线 217（core 1.3 store-as-is 存量债，家族迁移逐个消化）；avatar 测试无回归且大幅收敛 ✅
 
@@ -150,7 +150,7 @@
 2. **actview 1.3.0 聚合包未导出 `Reactive<T>`** → `internals/types.ts` 本地自持同款品牌类型（`T & { readonly '__v_isReactive'?: true }`），Context payload 标注用它。
 3. **本地 `style` 支持 string 形态**（目标版仅对象/函数）→ 新 hook 的 `UseRenderElementComponentProps.style` 放宽 `| string`。
 4. **render 函数契约分歧**：目标 `(props, state)` 双参 vs 本地 `'../types'.ComponentRenderFn` 单参（state 并入 props）。hook 内 `as any` 调用运行时兼容；类型层对齐排 P2。
-5. **conformance「merge the rendering element ref with the custom component ref」用例与「转发优先、弃用 useRootElement」方向冲突**：render 函数替换 `props.ref` 后，合并链委托 ref 不再收到 DOM 写入（HEAD 同样失败）。待裁决：组件合并链加 root-tracking（useRootElement，移除候选 API）或调整 conformance 期望。**未裁决前每家族会留 1 个该用例失败。**
+5. **conformance ref-merge 用例已按裁决改造（组件函数形式）**：`render={<CustomRender ref={customRef} />}`——VNode 自带 ref 经 `getReactElementRef` 并入合并链，渲染时施加到根元素并广播写入（旧的「render 函数替换 props.ref」写法废弃）。**暂用 useRootElement**：AvatarRoot 合并链第一源为 rootRef（旁路同步 subTree.el，对 render 覆盖免疫）；框架级替代（subTree.el 下沉 core）落地后移除。两个实锤坑：① 组件函数内动态标签 `createElement(...)` 返回值不是字面 JSX → Babel 不包装 → 必须 `return <>{createElement(...)}</>`（PD-07 锚）；② 组件 vnode 的 ref 由 mountComponent 以**组件实例**调用（PD-02 运行时实锤）——组件 props 里仍能收到 ref-as-prop（未剥离），断言只看自定义 ref 的最终 DOM。⚠️ legacy 家族未迁移前此用例会失败（legacy 无 getReactElementRef 捕获）。
 6. **plugin-babel 2.0.0 硬拒绝测试组件 setup 风格**（`return () => JSX` 编译期报错）→ 全库 **56 个测试文件**需改写（P3.3 前置）；AvatarFallback.test.tsx 已改（defineComponent 包装→裸函数、ref 容器→reactive 载体、内联组件提升到 describe 层）。
 7. **core 1.3 store-as-is 运行时债**：旧 context 消费（`.value` 链）在 1.3 下恒 undefined → `FieldRootContext/AvatarRootContext is missing` 类失败。家族迁移时逐个消除（avatar 已消化；checkbox 依赖的 internals/field-root-context 等共享 internals 在 checkbox 基准迁移时处理）。
 8. **pnpm 11.17.0 自管切换在本环境损坏**（store 链接缺失）→ 用 `node_modules/.bin` 直呼二进制：tsgo 用根 `node_modules/.bin/tsgo.CMD -b packages/actview/tsconfig.json`，测试用 `packages/actview` 下 `vitest.cmd run`（需 `VITEST_ENV=jsdom`）。

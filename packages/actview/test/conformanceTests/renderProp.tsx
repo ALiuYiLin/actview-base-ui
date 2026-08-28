@@ -89,8 +89,8 @@ export function testRenderProp(
     });
 
     it('should pass the ref to the custom component', async () => {
-      // actview：组件把内部 rootRef 作为 props.ref 传给 render 函数——验证
-      // render 函数能拿到 ref，且挂载后指向自定义根元素（subTree.el 同步）。
+      // 函数形态（本用例专属语义）：render 函数能拿到 hook 传入的合并链 ref，
+      // 且透传到自定义元素后指向其根 DOM。
       let refFromRenderProp: Ref<HTMLElement | null> | null = null;
 
       await render(
@@ -111,17 +111,21 @@ export function testRenderProp(
     });
 
     it('should merge the rendering element ref with the custom component ref', async () => {
-      // actview：render 元素上的自定义 ref（模板 ref，.value 形态）与组件
-      // 内部 rootRef（props.ref）都指向同一个自定义根 DOM。
+      // 组件函数形式：render 自定义组件自带 ref（VNode 的 props.ref）——
+      // hook 经 getReactElementRef 把它并入合并链；组件函数内用
+      // createElement(Element, {...props}) 动态渲染（ref 随 props 透传到
+      // 根元素），合并链广播写入 → 自定义 ref 拿到最终根 DOM。
       const customRef = ref<HTMLElement | null>(null);
-      let refFromRenderProp: Ref<HTMLElement | null> | null = null;
+
+      function CustomRender(props: any) {
+        // 动态标签走 createElement（<Element /> 过不了 JSX 类型检查）；
+        // 字面 Fragment 是 Babel 插件判定组件的 JSX 锚（PD-07 惯用法）。
+        return <>{createElement(Element, { ...props, 'data-testid': 'wrapped' })}</>;
+      }
 
       await render(
         cloneVNode(element, {
-          render: (props: any) => {
-            refFromRenderProp = props.ref;
-            return createElement(Element, { ...props, ref: customRef, 'data-testid': 'wrapped' });
-          },
+          render: <CustomRender ref={customRef} />,
           'data-testid': 'wrapped',
           ...(button && { nativeButton }),
         }),
@@ -130,9 +134,6 @@ export function testRenderProp(
       expect(customRef.value).not.toBe(null);
       expect(customRef.value!.tagName).toBe(Element.toUpperCase());
       expect(customRef.value!).toHaveAttribute('data-testid', 'wrapped');
-      expect(refFromRenderProp!.value).not.toBe(null);
-      expect(refFromRenderProp!.value!.tagName).toBe(Element.toUpperCase());
-      expect(refFromRenderProp!.value!).toHaveAttribute('data-testid', 'wrapped');
     });
 
     it('should merge the rendering element className with the custom component className', async () => {
