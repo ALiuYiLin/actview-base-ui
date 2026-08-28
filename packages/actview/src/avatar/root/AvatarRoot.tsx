@@ -1,9 +1,8 @@
-import { reactive, toRefs, unrefs, useRootElement } from 'actview';
+import { reactive, toRefs, unrefs } from 'actview';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { AvatarRootContext } from './AvatarRootContext';
 import { avatarStateAttributesMapping } from './stateAttributesMapping';
 import { useRenderElement } from '@/internals/useRenderElement';
-import { useMergedRefs } from '@/internals/useMergedRefs';
 
 /**
  * Displays a user's profile picture, initials, or fallback icon.
@@ -13,10 +12,6 @@ import { useMergedRefs } from '@/internals/useMergedRefs';
  */
 export function AvatarRoot(componentProps: AvatarRoot.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  // ref 契约恒为根 DOM：rootRef 旁路同步 subTree.el（对 render 覆盖/换根免疫）。
-  // ⚠️ 暂用 useRootElement（PLAN 附录 C.5 裁决：框架级替代落地后移除）。
-  const rootRef = useRootElement();
-
   // context 载体：reactive 对象 + 统一写入口（方法内自引用载体自身，
   // 读走 get 陷阱 track、写走 set 陷阱 trigger——Ref 本体不入载体）。
   const contextValue = reactive<AvatarRootContext>({
@@ -45,7 +40,7 @@ export function AvatarRoot(componentProps: AvatarRoot.Props) {
         {
           state: { imageLoadingStatus: contextValue.imageLoadingStatus },
           stateAttributesMapping: avatarStateAttributesMapping,
-          ref: useMergedRefs(rootRef, componentProps.ref),
+          ref: componentProps.ref,
           props: [unrefs(elementProps)],
         },
       )}
