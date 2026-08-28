@@ -5,6 +5,7 @@ import { useCollapsibleRoot } from './useCollapsibleRoot';
 import { CollapsibleRootContext } from './CollapsibleRootContext';
 import { collapsibleStateAttributesMapping } from './stateAttributesMapping';
 import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import { REASONS } from '@/internals/reasons';
 import type { TransitionStatus } from '@/internals/useTransitionStatus';
 import { useRenderElement } from '@/internals/useRenderElement';
 

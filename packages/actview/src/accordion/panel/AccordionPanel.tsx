@@ -1,4 +1,5 @@
-import {computed, onUnmounted, toValue, watch, ref, toRefs, unrefs} from 'actview';
+import {computed, onUnmounted, ref, toRefs, watch} from 'actview';
+import type { Ref } from 'actview';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { mergePropsN } from '@/merge-props';
 import { useCollapsibleRootContext } from '@/collapsible/root/CollapsibleRootContext';
@@ -10,7 +11,7 @@ import { useAccordionItemContext } from '../item/AccordionItemContext';
 import { accordionStateAttributesMapping } from '../item/stateAttributesMapping';
 import { AccordionPanelCssVars } from '../AccordionDataAttributes';
 import type { TransitionStatus } from '@/internals/useTransitionStatus';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * A collapsible panel with the accordion item contents.
@@ -20,10 +21,9 @@ import { useRenderElement } from '@/internals/useRenderElementLegacy';
  */
 export function AccordionPanel(componentProps: AccordionPanel.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  const {hiddenUntilFound: contextHiddenUntilFound, keepMounted: contextKeepMounted} = toValue(
-    useAccordionRootContext(),
-  );
-
+  // context 载体直取（store-as-is）。⚠️ state/hiddenUntilFound/keepMounted 等
+  // getter 字段——不解构（解构会捕获快照），经属性访问路由。
+  const rootContext = useAccordionRootContext();
   const {
     defaultPanelId,
     mounted,
@@ -33,21 +33,21 @@ export function AccordionPanel(componentProps: AccordionPanel.Props) {
     setPanelIdState,
     setOpen,
     transitionStatus,
-  } = toValue(useCollapsibleRootContext());
+  } = useCollapsibleRootContext();
 
   const hiddenUntilFound = computed(
-    () => toValue(componentProps.hiddenUntilFound) ?? toValue(contextHiddenUntilFound),
+    () => componentProps.hiddenUntilFound ?? rootContext.hiddenUntilFound.value,
   );
   const keepMounted = computed(
-    () => toValue(componentProps.keepMounted) ?? toValue(contextKeepMounted),
+    () => componentProps.keepMounted ?? rootContext.keepMounted.value,
   );
-  const registeredId = computed(() => toValue(componentProps.id) || undefined);
-  const id = computed(() => toValue(componentProps.id) ?? defaultPanelId);
+  const registeredId = computed(() => componentProps.id || undefined);
+  const id = computed(() => componentProps.id ?? defaultPanelId);
 
   // dev 警告：keepMounted={false} + hiddenUntilFound
   if (process.env.NODE_ENV !== 'production') {
     watch(
-      () => [toValue(componentProps.keepMounted), hiddenUntilFound.value],
+      () => [keepMounted.value, hiddenUntilFound.value] as const,
       ([keepMountedProp, hiddenUntilFoundValue]) => {
         if (keepMountedProp === false && hiddenUntilFoundValue) {
           console.warn(
@@ -81,9 +81,9 @@ export function AccordionPanel(componentProps: AccordionPanel.Props) {
 
   const panel = useCollapsiblePanel({
     externalRef: null,
-    hiddenUntilFound: () => hiddenUntilFound.value,
-    id: () => id.value,
-    keepMounted: () => keepMounted.value,
+    hiddenUntilFound,
+    id,
+    keepMounted,
     mounted,
     onOpenChange,
     open,
@@ -92,52 +92,78 @@ export function AccordionPanel(componentProps: AccordionPanel.Props) {
     transitionStatus,
   });
 
-  const {state, triggerId} = toValue(useAccordionItemContext());
+  const itemContext = useAccordionItemContext();
 
-  const panelState = computed<AccordionPanelState>(() => ({
-    ...toValue(state),
-    transitionStatus: toValue(panel.transitionStatus),
-  }));
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
 
-  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
-
-  const {element} = useRenderElement({
-    props: () => {
-      const stateValue = toValue(panelState);
-      const resolvedStyle =
-        typeof style?.value === 'function' ? style.value(stateValue) : style?.value;
-
-      const merged: any = mergePropsN([
-        panel.props(),
-        {
-          'aria-labelledby': toValue(triggerId),
-          role: 'region',
-          style: {
-            [AccordionPanelCssVars.accordionPanelHeight as string]:
-              toValue(panel.height) === undefined ? 'auto' : `${toValue(panel.height)}px`,
-            [AccordionPanelCssVars.accordionPanelWidth as string]:
-              toValue(panel.width) === undefined ? 'auto' : `${toValue(panel.width)}px`,
-          },
-        },
-        {...unrefs(elementProps)},
-        resolvedStyle ? {style: resolvedStyle} : undefined,
-        toValue(panel.shouldPreventOpenAnimation) ? {style: {animationName: 'none'}} : undefined,
-      ]);
-      return [merged];
-    },
-    state: () => toValue(panelState),
-    stateAttributesMapping: accordionStateAttributesMapping,
-    className,
-    style,
-    render,
-    refs: () => [panel.ref as any],
-    children,
-    defaultTag: 'div',
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
   });
 
+  const panelState = computed<AccordionPanelState>(() => ({
+    ...itemContext.state.value,
+    transitionStatus: panel.transitionStatus.value,
+  }));
+
+  const panelStyle = computed(() => ({
+    [AccordionPanelCssVars.accordionPanelHeight as string]:
+      panel.height.value === undefined ? 'auto' : `${panel.height.value}px`,
+    [AccordionPanelCssVars.accordionPanelWidth as string]:
+      panel.width.value === undefined ? 'auto' : `${panel.width.value}px`,
+  }));
+
+  const userStyle = computed(() => {
+    const resolved = typeof style?.value === 'function' ? style.value(panelState.value) : style?.value;
+    return resolved ? {style: resolved} : undefined;
+  });
+
+  const preventOpenStyle = computed(() =>
+    panel.shouldPreventOpenAnimation.value ? {style: {animationName: 'none'}} : undefined,
+  );
+
+  const rootProps = computed(() =>
+    mergePropsN<any>([
+      panel.props(),
+      {
+        'aria-labelledby': itemContext.triggerId.value,
+        role: 'region',
+        style: panelStyle.value,
+      },
+      elementProps.value,
+      userStyle.value,
+      preventOpenStyle.value,
+    ]),
+  );
+
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  return <>{!toValue(panel.shouldRender) ? null : element()}</>;
+  // 条件在渲染期求值（表达式内 .value 直读，无 IIFE）。
+  return (
+    <>
+      {panel.shouldRender.value
+        ? useRenderElement(
+            'div',
+            {
+              className: className?.value,
+              render: render?.value,
+              style: style?.value,
+            },
+            {
+              state: panelState.value,
+              stateAttributesMapping: accordionStateAttributesMapping,
+              ref: panel.ref,
+              props: rootProps.value,
+            },
+          )
+        : null}
+    </>
+  );
 }
 
 export interface AccordionPanelState extends AccordionItemState {

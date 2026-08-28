@@ -1,21 +1,18 @@
-import { computed, ref, toValue, useRootElement, watch, toRefs, unrefs } from 'actview';
-import type { BaseUIComponentProps } from '@/internals/types';
+import {computed, ref, toRefs, watch} from 'actview';
+import type { Ref } from 'actview';
 import { useBaseUiId } from '@/internals/useBaseUiId';
-import {
-  useCollapsibleRoot,
-  type UseCollapsibleRootParameters,
-} from '@/collapsible/root/useCollapsibleRoot';
-import type { CollapsibleRoot, CollapsibleRootState } from '@/collapsible/root/CollapsibleRoot';
+import { useCollapsibleRoot } from '@/collapsible/root/useCollapsibleRoot';
 import { CollapsibleRootContext } from '@/collapsible/root/CollapsibleRootContext';
 import { useCompositeListItem } from '@/internals/composite/list/useCompositeListItem';
+import type { BaseUIComponentProps } from '@/internals/types';
 import type { AccordionRootState } from '../root/AccordionRoot';
 import { useAccordionRootContext } from '../root/AccordionRootContext';
 import { AccordionItemContext } from './AccordionItemContext';
 import { accordionStateAttributesMapping } from './stateAttributesMapping';
-import { type BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
+import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
-import { AccordionItemDataAttributes } from '../AccordionDataAttributes';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useMergedRefs } from '@/internals/useMergedRefs';
 
 /**
  * Groups an accordion header with the corresponding panel.
@@ -25,7 +22,9 @@ import { useRenderElement } from '@/internals/useRenderElementLegacy';
  */
 export function AccordionItem(componentProps: AccordionItem.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  const rootRef = useRootElement();
+  // 自持 ref：经 params.ref 合并链透传；listItemRef 经 watch 桥接注册到
+  // CompositeList（不用 useRootElement）。
+  const rootRef = ref<HTMLElement | null>(null);
 
   const {ref: listItemRef, index} = useCompositeListItem();
 
@@ -38,56 +37,64 @@ export function AccordionItem(componentProps: AccordionItem.Props) {
     {flush: 'post', immediate: true},
   );
 
-  const {disabled: contextDisabled, handleValueChange, state: rootState, value: openValues} =
-    toValue(useAccordionRootContext());
+  // context 载体直取（store-as-is）：字段为 computed refs 的渲染期 .value 读取。
+  const {
+    disabled: contextDisabled,
+    handleValueChange,
+    state: rootState,
+    value: openValues,
+  } = useAccordionRootContext();
 
   const fallbackValue = useBaseUiId();
 
-  const value = computed(() => toValue(componentProps.value) ?? fallbackValue);
+  const value = computed(() => componentProps.value ?? fallbackValue);
 
-  const disabled = computed(() => toValue(componentProps.disabled) || toValue(contextDisabled));
+  const disabled = computed(() => componentProps.disabled || contextDisabled.value);
 
-  const isOpen = computed(() => (toValue(openValues) as any[]).indexOf(value.value) !== -1);
+  const isOpen = computed(() => (openValues.value as any[]).indexOf(value.value) !== -1);
 
-  const onOpenChange = (nextOpen: boolean, eventDetails: CollapsibleRoot.ChangeEventDetails) => {
-    // onOpenChange 是函数 prop——直接调用（toValue 会把它当 getter）
-    componentProps.onOpenChange?.(nextOpen, eventDetails);
+  const onOpenChange = (nextOpen: boolean, eventDetails: BaseUIChangeEventDetails<any>) => {
+    componentProps.onOpenChange?.(nextOpen, eventDetails as any);
 
     if (eventDetails.isCanceled) {
       return;
     }
 
-    handleValueChange(value.value, nextOpen, eventDetails);
+    handleValueChange(value.value, nextOpen, eventDetails as any);
   };
 
   const collapsible = useCollapsibleRoot({
     open: isOpen,
     onOpenChange,
     disabled,
+    defaultOpen: computed(() => false),
   });
 
-  const collapsibleState = computed<CollapsibleRootState>(() => ({
-    open: toValue(collapsible.open) ?? false,
+  const collapsibleState = computed(() => ({
+    open: collapsible.open.value ?? false,
     disabled: collapsible.disabled,
-    transitionStatus: toValue(collapsible.transitionStatus),
+    transitionStatus: collapsible.transitionStatus.value,
   }));
 
+  // store-as-is 载体：identity 稳定（spread 的 refs/computed 字段保持实时；
+  // state 经 getter 路由——解构会捕获快照）。
   const collapsibleContext: CollapsibleRootContext = {
     ...collapsible,
     onOpenChange,
-    state: collapsibleState,
+    get state() {
+      return collapsibleState.value;
+    },
   };
 
   const state = computed<AccordionItemState>(() => ({
-    ...toValue(rootState),
-    hidden: !isOpen.value && !toValue(collapsible.mounted),
-    index: toValue(index),
+    ...rootState.value,
+    hidden: !isOpen.value && !collapsible.mounted.value,
+    index: index.value,
     disabled: disabled.value,
     open: isOpen.value,
   }));
 
   const defaultTriggerId = useBaseUiId();
-  // `undefined` uses the initial generated fallback; `null` means the trigger unmounted.
   const registeredTriggerId = ref<string | null | undefined>(undefined);
   const setTriggerId = (
     valueUpdate:
@@ -103,7 +110,7 @@ export function AccordionItem(componentProps: AccordionItem.Props) {
     registeredTriggerId.value === null ? undefined : (registeredTriggerId.value ?? defaultTriggerId),
   );
 
-  const accordionItemContext: AccordionItemContext = {
+  const accordionItemContext = {
     defaultTriggerId,
     open: isOpen,
     state,
@@ -111,26 +118,37 @@ export function AccordionItem(componentProps: AccordionItem.Props) {
     triggerId,
   };
 
-  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
 
-  const {element} = useRenderElement({
-    props: () => [{...unrefs(elementProps)}],
-    state: () => toValue(state),
-    stateAttributesMapping: accordionStateAttributesMapping,
-    className,
-    style,
-    render,
-    refs: () => [rootRef as any],
-    children,
-    defaultTag: 'div',
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
   });
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
   return (
     <CollapsibleRootContext.Provider value={collapsibleContext}>
       <AccordionItemContext.Provider value={accordionItemContext}>
-        {element()}
+        {useRenderElement(
+          'div',
+          {
+            className: className?.value,
+            render: render?.value,
+            style: style?.value,
+          },
+          {
+            state: state.value,
+            stateAttributesMapping: accordionStateAttributesMapping,
+            ref: useMergedRefs(rootRef, componentProps.ref as any),
+            props: elementProps.value,
+          },
+        )}
       </AccordionItemContext.Provider>
     </CollapsibleRootContext.Provider>
   );
@@ -153,20 +171,15 @@ export interface AccordionItemState extends AccordionRootState {
 
 export interface AccordionItemProps
   extends
-    BaseUIComponentProps<'div', AccordionItemState>,
-    Partial<Pick<UseCollapsibleRootParameters, 'disabled'>> {
+    BaseUIComponentProps<'div', AccordionItemState> {
+  /**
+   * Whether the component should ignore user interaction.
+   * @default false
+   */
+  disabled?: boolean | undefined;
   /**
    * A unique value that identifies this accordion item.
    * If no value is provided, a unique ID will be generated automatically.
-   * Use when controlling the accordion programmatically, or to set an initial
-   * open state.
-   * @example
-   * ```tsx
-   * <Accordion.Root value={['a']}>
-   *   <Accordion.Item value="a" /> // initially open
-   *   <Accordion.Item value="b" /> // initially closed
-   * </Accordion.Root>
-   * ```
    */
   value?: any;
   /**
@@ -188,5 +201,3 @@ export namespace AccordionItem {
   export type ChangeEventReason = AccordionItemChangeEventReason;
   export type ChangeEventDetails = AccordionItemChangeEventDetails;
 }
-
-

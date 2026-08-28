@@ -1,4 +1,5 @@
-import {computed, rawRef, toValue, useRootElement, watch, shallowRef, toRefs, unrefs} from 'actview';
+import {computed, rawRef, watch, shallowRef, toRefs} from 'actview';
+import type { Ref } from 'actview';
 import { useControlled } from '@/utils/useControlled';
 import { EMPTY_ARRAY } from '@/internals/noop';
 import type { BaseUIComponentProps, Orientation } from '@/internals/types';
@@ -6,7 +7,7 @@ import { CompositeList } from '@/internals/composite/list/CompositeList';
 import { AccordionRootContext } from './AccordionRootContext';
 import { type BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 const rootStateAttributesMapping = {
   value: () => null,
@@ -20,25 +21,25 @@ const rootStateAttributesMapping = {
  */
 export function AccordionRoot<Value = any>(componentProps: AccordionRoot.Props<Value>) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  const rootRef = useRootElement();
+  const accordionItemRefs = shallowRef([] as (HTMLElement | null)[]);
 
   const [value, setValue] = useControlled({
-    controlled: () => toValue(componentProps.value),
-    default: () => toValue(componentProps.defaultValue) ?? EMPTY_ARRAY,
+    controlled: () => componentProps.value,
+    default: () => componentProps.defaultValue ?? EMPTY_ARRAY,
     name: 'Accordion',
     state: 'value',
   });
 
-  const multiple = computed(() => toValue(componentProps.multiple) ?? false);
-  const disabled = computed(() => toValue(componentProps.disabled) ?? false);
-  const orientation = computed(() => toValue(componentProps.orientation) ?? 'vertical');
-  const hiddenUntilFound = computed(() => toValue(componentProps.hiddenUntilFound) ?? false);
-  const keepMounted = computed(() => toValue(componentProps.keepMounted) ?? false);
+  const multiple = computed(() => componentProps.multiple ?? false);
+  const disabled = computed(() => componentProps.disabled ?? false);
+  const orientation = computed(() => componentProps.orientation ?? 'vertical');
+  const hiddenUntilFound = computed(() => componentProps.hiddenUntilFound ?? false);
+  const keepMounted = computed(() => componentProps.keepMounted ?? false);
 
   // dev 警告：hiddenUntilFound 覆盖 keepMounted={false}
   if (process.env.NODE_ENV !== 'production') {
     watch(
-      () => [toValue(componentProps.hiddenUntilFound), toValue(componentProps.keepMounted)],
+      () => [componentProps.hiddenUntilFound, componentProps.keepMounted] as const,
       ([hiddenUntilFoundProp, keepMountedProp]) => {
         if (hiddenUntilFoundProp && keepMountedProp === false) {
           console.warn(
@@ -51,17 +52,15 @@ export function AccordionRoot<Value = any>(componentProps: AccordionRoot.Props<V
     );
   }
 
-  const accordionItemRefs = shallowRef([] as (HTMLElement | null)[]);
-
   const handleValueChange = (
     newValue: any,
     nextOpen: boolean,
     details: AccordionRoot.ChangeEventDetails,
   ) => {
-    const currentValue = toValue(value) as any[];
+    const currentValue = (value.value as any[]) ?? [];
     if (!multiple.value) {
       const nextValue = currentValue[0] === newValue ? [] : [newValue];
-      // onValueChange 是函数 prop——直接调用（toValue 会把它当 getter）
+      // onValueChange 是函数 prop——直接调用（不经过解包原语）
       componentProps.onValueChange?.(nextValue, details);
       if (details.isCanceled) {
         return;
@@ -86,11 +85,13 @@ export function AccordionRoot<Value = any>(componentProps: AccordionRoot.Props<V
   };
 
   const state = computed<AccordionRoot.State<any>>(() => ({
-    value: (toValue(value) as any[]) ?? [],
+    value: (value.value as any[]) ?? [],
     disabled: disabled.value,
     orientation: orientation.value,
   }));
 
+  // store-as-is 载体：setup 稳定对象，字段为 computed refs（消费端 .value 直读
+  // 保持追踪；identity 稳定——provide 只跑一次）。
   const contextValue: AccordionRootContext<any> = {
     disabled,
     handleValueChange,
@@ -100,25 +101,38 @@ export function AccordionRoot<Value = any>(componentProps: AccordionRoot.Props<V
     value: value as any,
   };
 
-  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
 
-  const {element} = useRenderElement({
-    props: () => [{...unrefs(elementProps)}],
-    state: () => toValue(state),
-    stateAttributesMapping: rootStateAttributesMapping as any,
-    className,
-    style,
-    render,
-    refs: () => [rootRef as any],
-    children,
-    defaultTag: 'div',
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
   });
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
   return (
     <AccordionRootContext.Provider value={contextValue}>
-      <CompositeList elementsRef={rawRef(accordionItemRefs)}>{element()}</CompositeList>
+      <CompositeList elementsRef={rawRef(accordionItemRefs)}>
+        {useRenderElement(
+          'div',
+          {
+            className: className?.value,
+            render: render?.value,
+            style: style?.value,
+          },
+          {
+            state: state.value,
+            stateAttributesMapping: rootStateAttributesMapping,
+            ref: componentProps.ref,
+            props: elementProps.value,
+          },
+        )}
+      </CompositeList>
     </AccordionRootContext.Provider>
   );
 }
@@ -206,7 +220,6 @@ export interface AccordionRootProps<Value = any> extends BaseUIComponentProps<
    * to remove roving focus.
    *
    * This prop no longer affects keyboard focus behavior.
-   * @default 'vertical'
    * @deprecated
    */
   orientation?: Orientation | undefined;
@@ -224,5 +237,3 @@ export namespace AccordionRoot {
   export type ChangeEventReason = AccordionRootChangeEventReason;
   export type ChangeEventDetails = AccordionRootChangeEventDetails;
 }
-
-

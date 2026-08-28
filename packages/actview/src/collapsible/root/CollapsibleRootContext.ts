@@ -1,11 +1,11 @@
 import { createContext } from 'actview';
-import type { ComputedRef, Ref } from 'actview';
+import type { Ref } from 'actview';
 import type { UseCollapsibleRootReturnValue } from './useCollapsibleRoot';
 import type { CollapsibleRootState } from './CollapsibleRoot';
 
 export interface CollapsibleRootContext extends UseCollapsibleRootReturnValue {
   onOpenChange: (open: boolean, eventDetails: any) => void;
-  state: ComputedRef<CollapsibleRootState>;
+  state: CollapsibleRootState;
 }
 
 export const CollapsibleRootContext = createContext<CollapsibleRootContext | undefined>(undefined);
