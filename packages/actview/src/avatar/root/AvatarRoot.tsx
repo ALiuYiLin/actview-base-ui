@@ -44,6 +44,7 @@ export function AvatarRoot(componentProps: AvatarRoot.Props) {
         },
         {
           state: { imageLoadingStatus: contextValue.imageLoadingStatus },
+          stateAttributesMapping: avatarStateAttributesMapping,
           ref: useMergedRefs(rootRef, componentProps.ref),
           props: [unrefs(elementProps)],
         },

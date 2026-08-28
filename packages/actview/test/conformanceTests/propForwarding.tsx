@@ -1,5 +1,4 @@
 import { expect } from 'vitest';
-import { createElement } from '@actview/jsx';
 import type { VNode } from '@actview/jsx';
 import { flushMicrotasks, randomStringValue } from '../test-utils';
 // @actview/testing 的 screen 只查询 render 容器；Teleport 内容挂载在 body 的
@@ -7,7 +6,6 @@ import { flushMicrotasks, randomStringValue } from '../test-utils';
 // screen（查 document.body）对齐 React 版查询行为。
 import { screen } from '@testing-library/dom';
 import type { BaseUiConformanceTestsOptions } from '../describeConformance';
-import { cloneVNode } from '../test-utils/cloneVNode';
 import { throwMissingPropError } from './utils';
 
 export function testPropForwarding(
@@ -22,6 +20,18 @@ export function testPropForwarding(
 
   const nativeButton = Element === 'button';
 
+  // 组件函数形式：不用 cloneVNode / createElement——动态原生标签用内置
+  // `<component is>`；目标组件经 Host 组件函数合并 props（返回真 vnode，
+  // 兼容 family render 包装器的 render(node.type, {...node.props}) 契约）。
+  const Target = element.type as any;
+
+  function renderElementWith(extraProps: Record<string, any>) {
+    function Host() {
+      return <Target {...(element.props ?? {})} {...extraProps} />;
+    }
+    return <Host />;
+  }
+
   describe('prop forwarding', () => {
     it('forwards custom props to the default element', async () => {
       const otherProps = {
@@ -29,7 +39,7 @@ export function testPropForwarding(
         'data-foobar': randomStringValue(),
       };
 
-      await render(cloneVNode(element, { 'data-testid': 'root', ...otherProps }));
+      await render(renderElementWith({ 'data-testid': 'root', ...otherProps }));
 
       await flushMicrotasks();
 
@@ -46,11 +56,9 @@ export function testPropForwarding(
       };
 
       await render(
-        cloneVNode(element, {
-          // 动态标签用 createElement（actview 的 IntrinsicElements 带索引签名，
-          // keyof 含 number，`<Element />` 过不了 JSX 类型检查）
+        renderElementWith({
           render: (props: any) => {
-            return createElement(Element, { ...props, 'data-testid': 'custom-root' });
+            return <component is={Element} {...props} data-testid="custom-root" />;
           },
           ...otherProps,
         }),
@@ -71,8 +79,8 @@ export function testPropForwarding(
       };
 
       await render(
-        cloneVNode(element, {
-          render: createElement(Element, { 'data-testid': 'custom-root' }),
+        renderElementWith({
+          render: <component is={Element} data-testid="custom-root" />,
           ...otherProps,
         }),
       );
@@ -86,7 +94,7 @@ export function testPropForwarding(
 
     it('forwards the custom `style` attribute defined on the component', async () => {
       await render(
-        cloneVNode(element, {
+        renderElementWith({
           style: { color: 'green' },
           'data-testid': 'custom-root',
         }),
@@ -101,13 +109,16 @@ export function testPropForwarding(
 
     it('forwards the custom `style` attribute defined on the render function', async () => {
       await render(
-        cloneVNode(element, {
+        renderElementWith({
           render: (props: any) => {
-            return createElement(Element, {
-              ...props,
-              style: { color: 'green' },
-              'data-testid': 'custom-root',
-            });
+            return (
+              <component
+                is={Element}
+                {...props}
+                style={{ color: 'green' }}
+                data-testid="custom-root"
+              />
+            );
           },
           ...(button && { nativeButton }),
         }),
@@ -122,11 +133,8 @@ export function testPropForwarding(
 
     it('forwards the custom `style` attribute defined on the render function', async () => {
       await render(
-        cloneVNode(element, {
-          render: createElement(Element, {
-            style: { color: 'green' },
-            'data-testid': 'custom-root',
-          }),
+        renderElementWith({
+          render: <component is={Element} style={{ color: 'green' }} data-testid="custom-root" />,
           ...(button && { nativeButton }),
         }),
       );
