@@ -62,10 +62,13 @@
 
 ### 批次 2：中型族
 - [x] progress（12）✅、meter（13）✅、switch（8）✅、radio（8）+ radio-group（4）✅——store-as-is 适配 + 新 hook + 无 toValue/useRootElement
-- [ ] collapsible（14）、accordion（18）——**context hooks 已适配（9 个 store-as-is 修正已提交），消费端 `.value` 链 + toValue/useRootElementFragment 待迁移**（类型 +24 为消费端暴露）
-- [ ] tabs（13）、toolbar（12）——TabsList/RootContext hooks 已适配，同上
-- [ ] scroll-area（16）——3 个 context hooks 已适配，消费端待迁移；otp-field（8）——context hook 已适配
-- [ ] fieldset（7）、field（19）——fieldset context 已适配
+- [x] collapsible（14）✅、accordion（18）✅——store-as-is + 新 hook 全迁（含 useCollapsibleRoot/Panel ComputedRef 化）
+- [x] tabs（13）✅——Root/List/Panel/Tab/Indicator 全迁；TabsRoot context 改 getter 载体（direction 状态机 computed 化）；TabsList 高亮索引改 useCompositeRoot 内部持有（受控回传在一次性 setup 下失效）
+- [x] scroll-area（16）✅——RootContext 改 getter 载体（值字段 getter 化）、ScrollbarContext 改 orientation getter 载体；Root/Viewport/Scrollbar/Thumb/Corner/Content 全迁
+- [x] field（19）✅——FieldRoot/Control/Label/Description/Error/Item/Validity 全迁；useFieldValidation 的 validationMode/validationDebounceTime 改 getter；useRegisterFieldControl/useFieldControlRegistration 参数 getter 化；form.test/input.test 解锁（绿）
+- [ ] toolbar（12）——context hooks 已适配，消费端待迁移
+- [ ] fieldset（7）——消费端待迁移（FieldsetLegend/Root 各有预存失败，Field 迁移后待复检）
+- [ ] otp-field（8）——context hook 已适配，消费端待迁移
 
 ### 批次 3：弹层族
 - [ ] tooltip（24）、popover（31）、preview-card（17）
