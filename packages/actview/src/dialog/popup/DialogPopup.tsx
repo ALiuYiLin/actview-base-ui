@@ -1,4 +1,4 @@
-import { computed, ref, toRefs, unrefs } from 'actview';
+import { computed, ref, toRefs } from 'actview';
 import { FloatingFocusManager } from '@/floating-ui-react';
 import { useDialogRootContext } from '../root/DialogRootContext';
 import { useDialogPortalContext } from '../portal/DialogPortalContext';
@@ -9,7 +9,8 @@ import { mergePropsN } from '@/merge-props';
 import type { BaseUIComponentProps } from '@/internals/types';
 import type { TransitionStatus } from '@/internals/useTransitionStatus';
 import type { Ref } from 'actview';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useMergedRefs } from '@/internals/useMergedRefs';
 
 /**
  * A container for the dialog contents.
@@ -18,13 +19,16 @@ import { useRenderElement } from '@/internals/useRenderElementLegacy';
  * Documentation: [Base UI Dialog](https://base-ui.com/react/components/dialog)
  */
 export function DialogPopup(componentProps: DialogPopup.Props) {
-  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
-  const {finalFocus, initialFocus} = componentProps;
-  const {render, className, style, children, ref: refProp, ...elementProps} =
-    toRefs(componentProps);
-
+  // ============ setup（只执行一次）：一次性初始化 ============
+  // context 载体直取（store-as-is）：store 的 useState 字段渲染期 `.value` 求值。
   const store = useDialogRootContext(false);
   useDialogPortalContext();
+
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
 
   const descriptionElementId = store.useState('descriptionElementId');
   const floatingRootContext = store.useState('floatingRootContext');
@@ -63,75 +67,60 @@ export function DialogPopup(componentProps: DialogPopup.Props) {
     syncedFloatingElement as any,
   );
 
-  const state = (): DialogPopupState => ({
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
+  });
+
+  const state = computed<DialogPopupState>(() => ({
     open: open.value,
-    // nested 在 setup 解构（useState 内含 onUnmounted——渲染期调用会在
-    // Teleport 内容挂载路径报"生命周期钩子只能在组件 setup 中调用"）。
     nested: nested.value,
     transitionStatus: transitionStatus.value,
     nestedDialogOpen: nestedOpenDialogCount.value > 0,
-  });
+  }));
 
-  const {element} = useRenderElement({
-    props: () => {
-      const stateValue = state();
-      const attributes: Record<string, string> = {};
-      if (stateValue.open) {
-        attributes['data-open'] = '';
-      } else {
-        attributes['data-closed'] = '';
-      }
-      if (stateValue.transitionStatus === 'starting') {
-        attributes['data-starting-style'] = '';
-      } else if (stateValue.transitionStatus === 'ending') {
-        attributes['data-ending-style'] = '';
-      }
+  // 根元素 props：store popupProps → id/aria/role/嵌套样式 → 挂载过渡样式 →
+  // 透传 → open/transition data-*。
+  const rootProps = computed<Record<string, any>>(() => {
+    const stateValue = state.value;
+    const attributes: Record<string, string> = {};
+    if (stateValue.open) {
+      attributes['data-open'] = '';
+    } else {
+      attributes['data-closed'] = '';
+    }
+    if (stateValue.transitionStatus === 'starting') {
+      attributes['data-starting-style'] = '';
+    } else if (stateValue.transitionStatus === 'ending') {
+      attributes['data-ending-style'] = '';
+    }
 
-      const merged: any = mergePropsN<any>([
-        rootPopupProps.value,
-        {
-          id: floatingId?.value,
-          'aria-labelledby': titleElementId.value,
-          'aria-describedby': descriptionElementId.value,
-          'aria-modal': modal.value !== false ? 'true' : undefined,
-          role: role.value,
-          tabIndex: -1,
-          hidden: !mounted.value,
-          onKeyDown(event: any) {
-            if (COMPOSITE_KEYS.has(event.key)) {
-              event.stopPropagation();
-            }
-          },
-          style: {
-            '--nested-dialogs': nestedOpenDialogCount.value,
-          },
+    const merged: any = mergePropsN<any>([
+      rootPopupProps.value,
+      {
+        id: floatingId?.value,
+        'aria-labelledby': titleElementId.value,
+        'aria-describedby': descriptionElementId.value,
+        'aria-modal': modal.value !== false ? 'true' : undefined,
+        role: role.value,
+        tabIndex: -1,
+        hidden: !mounted.value,
+        onKeyDown(event: any) {
+          if (COMPOSITE_KEYS.has(event.key)) {
+            event.stopPropagation();
+          }
         },
-        getDisabledMountTransitionStyles(transitionStatus.value),
-        unrefs(elementProps),
-      ]);
-      Object.assign(merged, attributes);
-      return [merged];
-    },
-    state,
-    className,
-    style,
-    render,
-    refs: () => {
-      const refs: any[] = [
-        (el: HTMLElement | null) => {
-          store.context.popupRef.value = el;
-          setPopupElement(el);
-          localFloatingElement.value = el;
-          (floatingRootContext.value as any)?.update?.({floatingElement: el});
+        style: {
+          '--nested-dialogs': nestedOpenDialogCount.value,
         },
-      ];
-      if (componentProps.ref !== undefined) {
-        refs.push(refProp);
-      }
-      return refs;
-    },
-    children,
-    defaultTag: 'div',
+      },
+      getDisabledMountTransitionStyles(transitionStatus.value),
+      elementProps.value,
+    ]);
+    Object.assign(merged, attributes);
+    return merged;
   });
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
@@ -142,12 +131,32 @@ export function DialogPopup(componentProps: DialogPopup.Props) {
       openInteractionType={openMethod.value as any}
       disabled={!mounted.value}
       closeOnFocusOut
-      initialFocus={(initialFocus === undefined ? true : initialFocus) as any}
-      returnFocus={finalFocus === undefined ? true : finalFocus}
+      initialFocus={(componentProps.initialFocus === undefined ? true : componentProps.initialFocus) as any}
+      returnFocus={componentProps.finalFocus === undefined ? true : componentProps.finalFocus}
       modal={modal.value !== false}
       restoreFocus="popup"
     >
-      {element()}
+      {useRenderElement(
+        'div',
+        {
+          className: className?.value,
+          render: render?.value,
+          style: style?.value,
+        },
+        {
+          state: state.value,
+          ref: useMergedRefs(
+            (el: HTMLElement | null) => {
+              store.context.popupRef.value = el;
+              setPopupElement(el);
+              localFloatingElement.value = el;
+              (floatingRootContext.value as any)?.update?.({floatingElement: el});
+            },
+            componentProps.ref as any,
+          ),
+          props: rootProps.value,
+        },
+      )}
     </FocusManager>
   );
 }
@@ -180,17 +189,7 @@ export interface DialogPopupProps extends BaseUIComponentProps<'div', DialogPopu
     | boolean
     | Ref<HTMLElement | null>
     | {value: HTMLElement | null}
-    | ((closeType: any) => boolean | HTMLElement | null | void)
-    | undefined;
-  /**
-   * Determines the element to focus when the dialog is opened.
-   */
-  initialFocus?:
-    | boolean
-    | HTMLElement
-    | Ref<HTMLElement | null>
-    | {value: HTMLElement | null}
-    | ((interactionType: any) => boolean | HTMLElement | null | void)
+    | ((closeType: string) => boolean | HTMLElement | null | void)
     | undefined;
   [key: string]: any;
 }

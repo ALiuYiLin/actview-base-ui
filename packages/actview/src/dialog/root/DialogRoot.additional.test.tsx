@@ -12,7 +12,7 @@ function openViaClick() {
 
 function TestDialog(props: any = {}) {
   const {rootProps = {}, popupProps = {}, includeBackdrop = false} = props;
-  return () => (
+  return (
     <Dialog.Root {...rootProps}>
       <Dialog.Trigger>Open</Dialog.Trigger>
       <Dialog.Portal>
