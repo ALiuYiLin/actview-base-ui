@@ -1,5 +1,5 @@
 import { expect, vi } from 'vitest';
-import { defineComponent, ref } from 'actview';
+import { ref } from 'actview';
 import { Fieldset } from '@/fieldset';
 import { createRenderer, describeConformance } from '#test-utils';
 import { fireEvent, screen, waitFor } from '#test-utils/rtl';
@@ -13,9 +13,11 @@ describe('<Fieldset.Legend />', () => {
     // 首个元素是 fieldset（React 版检查的是 legend 的 ref 转发），语义不符——跳过。
     skip: ['refForwarding'],
     render(node) {
+      // node 是 conformance 的 Host 包装 vnode（含 data-testid 等注入 props）——
+      // 直接放进 Fieldset.Root 渲染。
       return render(
         Fieldset.Root,
-        {children: <Fieldset.Legend {...(node.props ?? {})} />},
+        {children: node},
       );
     },
   }));
@@ -46,11 +48,11 @@ describe('<Fieldset.Legend />', () => {
   });
 
   it('updates and clears the legend association', async () => {
-    const legendId = ref('legend-a');
-    const showLegend = ref(true);
-
-    const Test = defineComponent(function () {
-      return () => (
+    // 裸函数组件形式：setup 建 refs（一次），JSX 渲染期求值。
+    function Test() {
+      const legendId = ref('legend-a');
+      const showLegend = ref(true);
+      return (
         <>
           <Fieldset.Root>
             {showLegend.value ? <Fieldset.Legend id={legendId.value}>Legend</Fieldset.Legend> : null}
@@ -63,7 +65,7 @@ describe('<Fieldset.Legend />', () => {
           </button>
         </>
       );
-    });
+    }
 
     await render(Test);
 
