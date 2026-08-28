@@ -1,8 +1,8 @@
-import { computed, onUnmounted, ref, toValue, watch } from 'actview';
+import { computed, onUnmounted, ref, watch } from 'actview';
 import type { ComputedRef, Ref } from 'actview';
 import { addEventListener } from '@/utils/addEventListener';
 import { AnimationFrame } from '@actview/base-ui-utils';
-import type { HTMLProps, MaybeRefOrGetter } from '@/internals/types';
+import type { HTMLProps } from '@/internals/types';
 import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
 import { useOpenChangeComplete } from '@/internals/useOpenChangeComplete';
@@ -48,7 +48,7 @@ export function useCollapsiblePanel(
   // Keyframe mount animations on initially open panels cause a visible layout
   // shift during the server-rendered first paint, so suppress that first open
   // lifecycle until the panel has been closed once.
-  const shouldPreventMountAnimationRef = ref(Boolean(toValue(open)));
+  const shouldPreventMountAnimationRef = ref(Boolean(open.value));
   // React.Activity tears down Effects while preserving state, so revealing an
   // already-open panel would otherwise replay its CSS keyframe open animation.
   const shouldPreventActivityResumeAnimationRef = ref(false);
@@ -69,9 +69,9 @@ export function useCollapsiblePanel(
 
   // React useValueAsRef(open)：latestOpen.value 始终是最新 open（避免
   // 异步回调读到旧闭包值）
-  const latestOpen = ref(toValue(open) ?? false);
+  const latestOpen = ref(open.value ?? false);
   watch(
-    () => toValue(open),
+    () => open.value,
     (v) => {
       latestOpen.value = v ?? false;
     },
@@ -80,14 +80,14 @@ export function useCollapsiblePanel(
   // Only used to handle panel close
   const runOnceCloseAnimationsFinish = useAnimationsFinished(panelRef);
 
-  const openValue = () => toValue(open) ?? false;
-  const mountedValue = () => toValue(mounted);
-  const hiddenUntilFoundValue = () => toValue(hiddenUntilFound);
-  const keepMountedValue = () => toValue(keepMounted);
-  const idValue = () => toValue(idParam);
+  const openValue = () => open.value ?? false;
+  const mountedValue = () => mounted.value;
+  const hiddenUntilFoundValue = () => hiddenUntilFound.value;
+  const keepMountedValue = () => keepMounted.value;
+  const idValue = () => idParam.value;
   const hidden = computed(() => !openValue() && !mountedValue());
   const panelTransitionStatus = computed(() =>
-    forcePanelIdle.value ? 'idle' : (toValue(transitionStatus) as TransitionStatus),
+    forcePanelIdle.value ? 'idle' : (transitionStatus.value as TransitionStatus),
   );
   const shouldPreventOpenAnimation = computed(
     () =>
@@ -154,7 +154,7 @@ export function useCollapsiblePanel(
   // motion. Keep it active while the shared root still reports `starting`,
   // then drop it once the root transition state catches up.
   watch(
-    () => [forcePanelIdle.value, toValue(transitionStatus)],
+    () => [forcePanelIdle.value, transitionStatus.value],
     ([forcePanelIdleValue, transitionStatusValue]) => {
       if (!forcePanelIdleValue || transitionStatusValue === 'starting') {
         return;
@@ -176,7 +176,7 @@ export function useCollapsiblePanel(
     () => [
       mountedValue(),
       openValue(),
-      toValue(transitionStatus),
+      transitionStatus.value,
       shouldPreventOpenAnimation.value,
     ],
     () => {
@@ -201,7 +201,7 @@ export function useCollapsiblePanel(
       // close animation can start from pixels instead of `auto`.
       if (
         openValue() &&
-        toValue(transitionStatus) === 'idle' &&
+        transitionStatus.value === 'idle' &&
         shouldPreventMountAnimationRef.value &&
         animationType === 'css-animation'
       ) {
@@ -211,7 +211,7 @@ export function useCollapsiblePanel(
 
       // Handle the opening pass: measure the expanded size and, when necessary,
       // neutralize author-defined motion so the panel can open immediately.
-      if (openValue() && toValue(transitionStatus) === 'starting') {
+      if (openValue() && transitionStatus.value === 'starting') {
         // `beforematch` opens should reveal the panel immediately so find-in-page
         // does not wait for the author-defined transition or animation to finish.
         const skipNextOpen = shouldSkipNextOpenRef.value;
@@ -260,7 +260,7 @@ export function useCollapsiblePanel(
       if (
         !openValue() &&
         mountedValue() &&
-        (toValue(transitionStatus) === 'idle' || toValue(transitionStatus) === 'starting')
+        (transitionStatus.value === 'idle' || transitionStatus.value === 'starting')
       ) {
         shouldPreventMountAnimationRef.value = false;
         shouldPreventActivityResumeAnimationRef.value = false;
@@ -275,7 +275,7 @@ export function useCollapsiblePanel(
         return;
       }
 
-      if (toValue(transitionStatus) !== 'ending') {
+      if (transitionStatus.value !== 'ending') {
         return;
       }
 
@@ -557,30 +557,30 @@ export interface UseCollapsiblePanelParameters {
    * Overrides the `keepMounted` prop and uses `hidden="until-found"`
    * to hide the element without removing it from the DOM.
    */
-  hiddenUntilFound: MaybeRefOrGetter<boolean>;
+  hiddenUntilFound: ComputedRef<boolean>;
   /**
    * The `id` attribute of the panel.
    */
-  id: MaybeRefOrGetter<string | undefined>;
+  id: ComputedRef<string | undefined>;
   /**
    * Whether to keep the element in the DOM while the panel is closed.
    * This prop is ignored when `hiddenUntilFound` is used.
    */
-  keepMounted: MaybeRefOrGetter<boolean>;
+  keepMounted: ComputedRef<boolean>;
   /**
    * Whether the collapsible panel is mounted for transition and hidden-state
    * purposes. This can be `false` while the element remains in the DOM when
    * `keepMounted` or `hiddenUntilFound` is enabled.
    */
-  mounted: MaybeRefOrGetter<boolean>;
+  mounted: ComputedRef<boolean>;
   onOpenChange: (open: boolean, eventDetails: any) => void;
   /**
    * Whether the collapsible panel is currently open.
    */
-  open: MaybeRefOrGetter<boolean | undefined>;
+  open: ComputedRef<boolean | undefined>;
   setMounted: (nextMounted: boolean) => void;
   setOpen: (nextOpen: boolean) => void;
-  transitionStatus: MaybeRefOrGetter<TransitionStatus>;
+  transitionStatus: ComputedRef<TransitionStatus>;
 }
 
 export interface UseCollapsiblePanelReturnValue {

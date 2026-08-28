@@ -1,18 +1,17 @@
-import { computed, ref, toValue } from 'actview';
+import { computed, ref } from 'actview';
 import type { ComputedRef } from 'actview';
 import { useControlled } from '@/utils/useControlled';
 import { useBaseUiId } from '@/internals/useBaseUiId';
 import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
 import { useTransitionStatus, type TransitionStatus } from '@/internals/useTransitionStatus';
-import type { MaybeRefOrGetter } from '@/internals/types';
 
 export function useCollapsibleRoot(
   parameters: UseCollapsibleRootParameters,
 ): UseCollapsibleRootReturnValue {
   const [open, setOpen] = useControlled({
-    controlled: () => toValue(parameters.open),
-    default: () => toValue(parameters.defaultOpen) ?? false,
+    controlled: () => parameters.open.value,
+    default: () => parameters.defaultOpen.value ?? false,
     name: 'Collapsible',
     state: 'open',
   });
@@ -39,7 +38,7 @@ export function useCollapsibleRoot(
   );
 
   const handleTrigger = (event: MouseEvent | KeyboardEvent) => {
-    const nextOpen = !toValue(open);
+    const nextOpen = !open.value;
     const eventDetails = createChangeEventDetails(REASONS.triggerPress, event);
 
     // onOpenChange 是普通函数（组件传入的包装闭包），不是 getter——直接调用
@@ -54,7 +53,7 @@ export function useCollapsibleRoot(
 
   return {
     defaultPanelId,
-    disabled: toValue(parameters.disabled) ?? false,
+    disabled: parameters.disabled.value,
     handleTrigger,
     mounted,
     open,
@@ -69,26 +68,23 @@ export function useCollapsibleRoot(
 export interface UseCollapsibleRootParameters {
   /**
    * Whether the collapsible panel is currently open.
-   *
-   * To render an uncontrolled collapsible, use the `defaultOpen` prop instead.
    */
-  open?: MaybeRefOrGetter<boolean | undefined> | undefined;
+  open: ComputedRef<boolean | undefined>;
   /**
    * Whether the collapsible panel is initially open.
    *
    * To render a controlled collapsible, use the `open` prop instead.
    * @default false
    */
-  defaultOpen?: MaybeRefOrGetter<boolean | undefined> | undefined;
+  defaultOpen: ComputedRef<boolean | undefined>;
   /**
    * Event handler called when the panel is opened or closed.
    */
   onOpenChange?: ((open: boolean, eventDetails: any) => void) | undefined;
   /**
    * Whether the component should ignore user interaction.
-   * @default false
    */
-  disabled?: MaybeRefOrGetter<boolean | undefined> | undefined;
+  disabled: ComputedRef<boolean>;
 }
 
 export interface UseCollapsibleRootReturnValue {

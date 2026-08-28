@@ -1,12 +1,12 @@
-import { computed, toValue, toRefs, unrefs, useRootElement } from 'actview';
+import { computed, toRefs } from 'actview';
+import type { Ref } from 'actview';
 import type { BaseUIComponentProps } from '@/internals/types';
-import { useCollapsibleRoot, type UseCollapsibleRootReturnValue } from './useCollapsibleRoot';
+import { useCollapsibleRoot } from './useCollapsibleRoot';
 import { CollapsibleRootContext } from './CollapsibleRootContext';
 import { collapsibleStateAttributesMapping } from './stateAttributesMapping';
 import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
-import { REASONS } from '@/internals/reasons';
 import type { TransitionStatus } from '@/internals/useTransitionStatus';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * Groups all parts of the collapsible.
@@ -16,51 +16,66 @@ import { useRenderElement } from '@/internals/useRenderElementLegacy';
  */
 export function CollapsibleRoot(componentProps: CollapsibleRoot.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  // Provider 根（`<CollapsibleRootContext.Provider>`），无 Fragment 根问题。
-  const rootRef = useRootElement();
-
   const collapsible = useCollapsibleRoot({
-    open: () => toValue(componentProps.open),
-    defaultOpen: () => toValue(componentProps.defaultOpen) ?? false,
+    open: computed(() => componentProps.open),
+    defaultOpen: computed(() => componentProps.defaultOpen ?? false),
     // onOpenChange 直接读代理（追踪 props 变化），不经 toValue（避免当 getter）
     onOpenChange: (open: boolean, eventDetails: any) =>
       componentProps.onOpenChange?.(open, eventDetails),
-    disabled: () => toValue(componentProps.disabled) ?? false,
+    disabled: computed(() => componentProps.disabled ?? false),
   });
 
   const state = computed<CollapsibleRootState>(() => ({
-    open: toValue(collapsible.open) ?? false,
-    disabled: collapsible.disabled,
-    transitionStatus: toValue(collapsible.transitionStatus),
+    open: collapsible.open.value ?? false,
+    disabled: componentProps.disabled ?? false,
+    transitionStatus: collapsible.transitionStatus.value,
   }));
 
-  // 稳定引用（Provider watch value——对象本身不变，内部 computed 响应式，
-  // 消费方 render 读 .value 建立追踪）
+  // store-as-is 载体：身份稳定 getter 对象（provide 只跑一次，computed 新对象
+  // 会冻结快照）——内部 refs/computed 经 getter 保持实时；disabled 渲染期直读。
   const contextValue: CollapsibleRootContext = {
     ...collapsible,
     onOpenChange: (open: boolean, eventDetails: any) =>
       componentProps.onOpenChange?.(open, eventDetails),
-    state,
+    get state() {
+      return state.value;
+    },
+    get disabled() {
+      return componentProps.disabled ?? false;
+    },
   };
 
-  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
 
-  const {element} = useRenderElement({
-    props: () => [{...unrefs(elementProps)}],
-    state,
-    stateAttributesMapping: collapsibleStateAttributesMapping as any,
-    className,
-    style,
-    render,
-    refs: () => [rootRef as any],
-    children,
-    defaultTag: 'div',
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
   });
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
   return (
-    <CollapsibleRootContext.Provider value={contextValue}>{element()}</CollapsibleRootContext.Provider>
+    <CollapsibleRootContext.Provider value={contextValue}>
+      {useRenderElement(
+        'div',
+        {
+          className: className?.value,
+          render: render?.value,
+          style: style?.value,
+        },
+        {
+          state: state.value,
+          stateAttributesMapping: collapsibleStateAttributesMapping,
+          ref: componentProps.ref,
+          props: elementProps.value,
+        },
+      )}
+    </CollapsibleRootContext.Provider>
   );
 }
 
@@ -80,7 +95,7 @@ export interface CollapsibleRootProps extends BaseUIComponentProps<'div', Collap
   /**
    * Whether the collapsible panel is initially open.
    *
-   * To render a controlled collapsible, use the `open` prop instead.
+   * To render an uncontrolled collapsible, use the `open` prop instead.
    * @default false
    */
   defaultOpen?: boolean | undefined;

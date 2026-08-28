@@ -1,4 +1,5 @@
-import {computed, onUnmounted, toValue, watch, ref, toRefs, unrefs} from 'actview';
+import {computed, onUnmounted, ref, toRefs, watch} from 'actview';
+import type { Ref } from 'actview';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { mergePropsN } from '@/merge-props';
 import { useCollapsibleRootContext } from '../root/CollapsibleRootContext';
@@ -7,7 +8,7 @@ import { collapsibleStateAttributesMapping } from '../root/stateAttributesMappin
 import { useCollapsiblePanel } from './useCollapsiblePanel';
 import { CollapsiblePanelCssVars } from './CollapsiblePanelCssVars';
 import type { TransitionStatus } from '@/internals/useTransitionStatus';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * A panel with the collapsible contents.
@@ -17,6 +18,9 @@ import { useRenderElement } from '@/internals/useRenderElementLegacy';
  */
 export function CollapsiblePanel(componentProps: CollapsiblePanel.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
+  // context 载体直取（store-as-is）。⚠️ state 是 Root 侧 getter——不解构
+  // （解构会捕获快照），经属性访问路由到 computed。
+  const rootContextRef = useCollapsibleRootContext();
   const {
     defaultPanelId,
     mounted,
@@ -25,19 +29,20 @@ export function CollapsiblePanel(componentProps: CollapsiblePanel.Props) {
     setMounted,
     setPanelIdState,
     setOpen,
-    state,
     transitionStatus,
-  } = toValue(useCollapsibleRootContext());
+  } = rootContextRef;
+  const state = computed(() => rootContextRef.state);
 
-  const hiddenUntilFound = toValue(componentProps.hiddenUntilFound) ?? false;
-  const keepMounted = toValue(componentProps.keepMounted) ?? false;
-  const registeredId = toValue(componentProps.id) || undefined;
-  const id = registeredId ?? defaultPanelId;
+  // 渲染期/事件期消费的 props：computed 直读（setup 快照会停留在首渲染）。
+  const hiddenUntilFound = computed(() => componentProps.hiddenUntilFound ?? false);
+  const keepMounted = computed(() => componentProps.keepMounted ?? false);
+  const registeredId = computed(() => componentProps.id || undefined);
+  const id = computed(() => registeredId.value ?? defaultPanelId);
 
   // dev 警告：hiddenUntilFound 覆盖 keepMounted={false}
   if (process.env.NODE_ENV !== 'production') {
     watch(
-      () => [toValue(componentProps.hiddenUntilFound), toValue(componentProps.keepMounted)],
+      () => [componentProps.hiddenUntilFound, componentProps.keepMounted] as const,
       ([hiddenUntilFoundProp, keepMountedProp]) => {
         if (hiddenUntilFoundProp && keepMountedProp === false) {
           console.warn(
@@ -52,9 +57,9 @@ export function CollapsiblePanel(componentProps: CollapsiblePanel.Props) {
 
   // 注册 panel id（React useIsoLayoutEffect + cleanup）。组件卸载时 watch 的
   // onCleanup 不保证执行（effectScope stop 只停 effect），用 onUnmounted 显式清理。
-  const latestRegisteredId = ref(registeredId);
+  const latestRegisteredId = ref(registeredId.value);
   watch(
-    () => registeredId,
+    registeredId,
     (registeredIdValue) => {
       latestRegisteredId.value = registeredIdValue;
       setPanelIdState((currentId: string | null | undefined) =>
@@ -82,51 +87,78 @@ export function CollapsiblePanel(componentProps: CollapsiblePanel.Props) {
     transitionStatus,
   });
 
-  const panelState = computed<CollapsiblePanelState>(() => ({
-    ...toValue(state),
-    transitionStatus: toValue(panel.transitionStatus),
-  }));
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
 
-  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
-
-  const {element} = useRenderElement({
-    props: () => {
-      const {hiddenUntilFound: _hiddenUntilFound, keepMounted: _keepMounted, ...restElementProps} =
-        unrefs(elementProps);
-
-      const stateValue = toValue(panelState);
-
-      const resolvedStyle = typeof style?.value === 'function' ? style.value(stateValue) : style?.value;
-
-      return [
-        panel.props(),
-        {
-          style: {
-            [CollapsiblePanelCssVars.collapsiblePanelHeight as string]:
-              toValue(panel.height) === undefined ? 'auto' : `${toValue(panel.height)}px`,
-            [CollapsiblePanelCssVars.collapsiblePanelWidth as string]:
-              toValue(panel.width) === undefined ? 'auto' : `${toValue(panel.width)}px`,
-          },
-        },
-        restElementProps,
-        resolvedStyle ? {style: resolvedStyle} : undefined,
-        // Resolve the public `style` prop so temporary `animationName: 'none'`
-        // can still win after user's inline styles have been merged.
-        toValue(panel.shouldPreventOpenAnimation) ? {style: {animationName: 'none'}} : undefined,
-      ].filter(Boolean) as Record<string, any>[];
-    },
-    state: () => toValue(panelState) as any,
-    stateAttributesMapping: collapsibleStateAttributesMapping as any,
-    className,
-    render,
-    refs: () => [panel.ref as any],
-    children,
-    defaultTag: 'div',
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    // hiddenUntilFound/keepMounted 由 panel.props 承担——透传排除。
+    delete out.hiddenUntilFound;
+    delete out.keepMounted;
+    return out;
   });
 
+  const panelState = computed<CollapsiblePanelState>(() => ({
+    ...state.value,
+    transitionStatus: panel.transitionStatus.value,
+  }));
+
+  const panelStyle = computed(() => ({
+    [CollapsiblePanelCssVars.collapsiblePanelHeight as string]:
+      panel.height.value === undefined ? 'auto' : `${panel.height.value}px`,
+    [CollapsiblePanelCssVars.collapsiblePanelWidth as string]:
+      panel.width.value === undefined ? 'auto' : `${panel.width.value}px`,
+  }));
+
+  const userStyle = computed(() => {
+    const resolved = typeof style?.value === 'function' ? style.value(panelState.value) : style?.value;
+    return resolved ? {style: resolved} : undefined;
+  });
+
+  const preventOpenStyle = computed(() =>
+    panel.shouldPreventOpenAnimation.value ? {style: {animationName: 'none'}} : undefined,
+  );
+
+  // 根元素 props：panel.props → css vars → 透传 → 用户 style → 首开动画抑制。
+  const rootProps = computed(() =>
+    mergePropsN<any>(
+      [
+        panel.props(),
+        {style: panelStyle.value},
+        elementProps.value,
+        userStyle.value,
+        preventOpenStyle.value,
+      ].filter(Boolean) as Record<string, any>[],
+    ),
+  );
+
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  return <>{toValue(panel.shouldRender) ? element() : null}</>;
+  // 条件在渲染期求值（表达式内 .value 直读，无 IIFE）。
+  return (
+    <>
+      {panel.shouldRender.value
+        ? useRenderElement(
+            'div',
+            {
+              className: className?.value,
+              render: render?.value,
+              style: style?.value,
+            },
+            {
+              state: panelState.value,
+              stateAttributesMapping: collapsibleStateAttributesMapping,
+              ref: panel.ref,
+              props: rootProps.value,
+            },
+          )
+        : null}
+    </>
+  );
 }
 
 export interface CollapsiblePanelState extends CollapsibleRootState {
