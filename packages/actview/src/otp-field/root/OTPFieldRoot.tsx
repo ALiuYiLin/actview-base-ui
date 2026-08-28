@@ -1,8 +1,7 @@
-import { computed, ref, toValue, watch, onUnmounted } from 'actview';
-import type { Ref } from 'actview';
+import {computed, ref} from 'actview';
 import { useId } from '@/utils/useId';
 import { useControlled } from '@/utils/useControlled';
-import { OTPFieldRootContext } from './OTPFieldRootContext';
+import { OTPFieldRootContext, type OTPFieldRootContextValue } from './OTPFieldRootContext';
 import { normalizeOTPValue, type OTPValidationType } from '../utils/otp';
 
 /**
@@ -13,44 +12,34 @@ import { normalizeOTPValue, type OTPValidationType } from '../utils/otp';
  * 焦点队列（queueFocusInput）未迁移。
  */
 export function OTPFieldRoot(props: OTPFieldRoot.Props) {
-  const {
-    length = 4,
-    defaultValue = '',
-    value: valueProp,
-    validationType = 'numeric',
-    onValueChange,
-    disabled = false,
-    readOnly = false,
-    required = false,
-    invalid = false,
-    mask = false,
-    autoComplete = 'one-time-code',
-  } = props as any;
+  // ============ setup（只执行一次）：一次性初始化 ============
+  // 渲染期消费的 props：computed 直读（setup 快照会停留在首渲染）。
+  const length = computed(() => props.length ?? 4);
+  const validationType = computed(() => props.validationType ?? 'numeric');
+  const disabled = computed(() => props.disabled ?? false);
+  const readOnly = computed(() => props.readOnly ?? false);
+  const required = computed(() => props.required ?? false);
+  const invalid = computed(() => props.invalid ?? false);
+  const mask = computed(() => props.mask ?? false);
+  const autoComplete = computed(() => props.autoComplete ?? 'one-time-code');
 
   const [valueState, setValueState] = useControlled<string>({
-    controlled: valueProp,
-    default: defaultValue,
+    controlled: () => props.value,
+    default: () => props.defaultValue ?? '',
     name: 'OTPFieldRoot',
     state: 'value',
   });
 
-  const value = ref(valueState.value);
-  watch(
-    () => valueState.value,
-    (v) => {
-      value.value = normalizeOTPValue(v, length, validationType);
-    },
-    {immediate: true},
-  );
+  const value = computed(() => normalizeOTPValue(valueState.value ?? '', length.value, validationType.value));
 
   const activeIndex = ref(-1);
   const inputId = useId();
 
+  // 事件 handler：setup 闭包读 computed——事件触发时拿到实时值。
   const setValue = (nextValue: string) => {
-    const normalized = normalizeOTPValue(nextValue, length, validationType);
-    value.value = normalized;
+    const normalized = normalizeOTPValue(nextValue, length.value, validationType.value);
     setValueState(normalized);
-    onValueChange?.(normalized, {value: normalized});
+    props.onValueChange?.(normalized, {value: normalized});
   };
 
   const focusInput = (index: number) => {
@@ -66,61 +55,68 @@ export function OTPFieldRoot(props: OTPFieldRoot.Props) {
     activeIndex.value = -1;
   };
 
-  const contextValue = {
-    valueRef: value,
-    activeIndexRef: activeIndex,
-    value: value.value ?? '',
-    setValue,
-    activeIndex: activeIndex.value,
+  // store-as-is 载体：身份稳定的 getter 对象（provide 只在 Provider setup 执行
+  // 一次，渲染期新对象会冻结快照）——value/activeIndex/配置字段渲染期求值。
+  const contextValue: OTPFieldRootContextValue = {
+    get value() {
+      return value.value ?? '';
+    },
+    get activeIndex() {
+      return activeIndex.value;
+    },
     setActiveIndex: (index: number) => (activeIndex.value = index),
-    length,
-    disabled,
-    readOnly,
-    required,
-    invalid,
-    mask,
-    inputMode: validationType === 'none' ? 'text' : 'numeric',
-    validationType,
+    setValue,
+    get length() {
+      return length.value;
+    },
+    get disabled() {
+      return disabled.value;
+    },
+    get readOnly() {
+      return readOnly.value;
+    },
+    get required() {
+      return required.value;
+    },
+    get invalid() {
+      return invalid.value;
+    },
+    get mask() {
+      return mask.value;
+    },
+    get inputMode() {
+      return validationType.value === 'none' ? 'text' : 'numeric';
+    },
+    get validationType() {
+      return validationType.value;
+    },
+    get autoComplete() {
+      return autoComplete.value;
+    },
     inputId,
     focusInput,
     handleInputFocus,
     handleInputBlur,
   };
 
-  const filled = computed(() => (value.value ?? '') !== '');
-  const focused = computed(() => activeIndex.value !== -1);
-  const complete = computed(() => (value.value ?? '').length === length);
-
-  const state = (): OTPFieldRootState => ({
-    complete: complete.value,
-    disabled,
-    filled: filled.value,
-    focused: focused.value,
-    length,
-    readOnly,
-    required,
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const state = computed<OTPFieldRootState>(() => ({
+    complete: (value.value ?? '').length === length.value,
+    disabled: disabled.value,
+    filled: (value.value ?? '') !== '',
+    focused: activeIndex.value !== -1,
+    length: length.value,
+    readOnly: readOnly.value,
+    required: required.value,
     value: value.value ?? '',
-    validationType,
-  });
+    validationType: validationType.value,
+  }));
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  // children/context 渲染期求值（PD-15）——IIFE
+  // children 兼容 render prop（渲染期求值，表达式内直读）。
   return (
-    <OTPFieldRootContext.Provider
-      value={
-        {
-          ...contextValue,
-          value: value.value ?? '',
-          activeIndex: activeIndex.value,
-        } as any
-      }
-    >
-      {(() => {
-        const {children} = props as any;
-        // actview 的 toValue 会对函数值直接调用（ref.ts 语义），render prop 需先检测。
-        const child = typeof children === 'function' ? children : toValue(children);
-        return typeof child === 'function' ? child(state()) : child;
-      })()}
+    <OTPFieldRootContext.Provider value={contextValue}>
+      {typeof props.children === 'function' ? props.children(state.value) : props.children}
     </OTPFieldRootContext.Provider>
   );
 }

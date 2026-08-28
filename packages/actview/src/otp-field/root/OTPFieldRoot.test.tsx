@@ -8,7 +8,7 @@ async function settle() {
 
 function TestOTP(props: any = {}) {
   const {rootProps = {}, inputProps = {}} = props;
-  return () => (
+  return (
     <OTPField.Root {...rootProps}>
       {(state: any) =>
         Array.from({length: state.length}, (_, index) => (
