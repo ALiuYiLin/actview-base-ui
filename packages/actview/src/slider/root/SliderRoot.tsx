@@ -1,4 +1,5 @@
-import {computed, rawRef, ref, toValue, watch, shallowRef, toRefs, unrefs} from 'actview';
+import {computed, rawRef, ref, watch, shallowRef, toRefs} from 'actview';
+import type { Ref } from 'actview';
 import type { ComputedRef } from 'actview';
 import { ownerDocument } from '@/utils/owner';
 import { useControlled } from '@/utils/useControlled';
@@ -26,7 +27,8 @@ import type { ThumbMetadata } from '../thumb/SliderThumb';
 import { sliderStateAttributesMapping } from './stateAttributesMapping';
 import { SliderRootContext } from './SliderRootContext';
 import { REASONS } from '@/internals/reasons';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useMergedRefs } from '@/internals/useMergedRefs';
 
 function areValuesEqual(
   newValue: number | readonly number[],
@@ -48,41 +50,30 @@ export function SliderRoot<Value extends number | readonly number[]>(
   componentProps: SliderRoot.Props<Value>,
 ) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  const {
-    disabled: disabledProp = false,
-    largeStep = 10,
-    max = 100,
-    min = 0,
-    minStepsBetweenValues = 0,
-    orientation = 'horizontal',
-    step = 1,
-    thumbCollisionBehavior = 'push',
-    thumbAlignment = 'center',
-  } = componentProps;
+  // 渲染期/事件期消费的 props：computed 直读（setup 快照会停留在首渲染）；
+  // 回调类 props（onValueChange 等）事件期直读 componentProps。
+  const min = componentProps.min ?? 0;
+  const max = componentProps.max ?? 100;
+  const largeStep = componentProps.largeStep ?? 10;
+  const step = componentProps.step ?? 1;
+  const minStepsBetweenValues = componentProps.minStepsBetweenValues ?? 0;
+  const orientation = componentProps.orientation ?? 'horizontal';
+  const thumbCollisionBehavior = componentProps.thumbCollisionBehavior ?? 'push';
+  const thumbAlignment = componentProps.thumbAlignment ?? 'center';
 
-  const idProp = toValue(componentProps.id);
-  const ariaLabelledByProp = toValue(componentProps['aria-labelledby']);
-  const format = toValue(componentProps.format);
-  const locale = toValue(componentProps.locale);
-  const form = toValue(componentProps.form);
-  const nameProp = toValue(componentProps.name);
-  const defaultValue = toValue(componentProps.defaultValue);
-  const valueProp = toValue(componentProps.value);
-  const onValueChangeProp = componentProps.onValueChange;
-  const onValueCommittedProp = componentProps.onValueCommitted;
+  const idProp = componentProps.id;
+  const ariaLabelledByProp = componentProps['aria-labelledby'];
+  const format = componentProps.format;
+  const locale = componentProps.locale;
+  const form = componentProps.form;
+  const nameProp = componentProps.name;
+  const defaultValue = componentProps.defaultValue;
 
   const id = useBaseUiId(idProp);
   const defaultLabelId = getDefaultLabelId(id);
-  const onValueChange = onValueChangeProp as unknown as (
-    value: number | number[],
-    eventDetails: SliderRoot.ChangeEventDetails,
-  ) => void;
-  const onValueCommitted = onValueCommittedProp as unknown as (
-    value: number | readonly number[],
-    eventDetails: SliderRoot.CommitEventDetails,
-  ) => void;
+  const labelId = ref<string | undefined>(undefined);
 
-  const {clearErrors} = toValue(useFormContext());
+  const {clearErrors} = useFormContext();
   const {
     state: fieldState,
     disabled: fieldDisabled,
@@ -91,23 +82,22 @@ export function SliderRoot<Value extends number | readonly number[]>(
     setDirty,
     validityData,
     validation,
-  } = toValue(useFieldRootContext());
-  const {labelId: fieldLabelId} = toValue(useLabelableContext());
-  const labelId = ref<string | undefined>(undefined);
+  } = useFieldRootContext();
+  const {labelId: fieldLabelId} = useLabelableContext();
 
   const ariaLabelledby = computed(
     () =>
       (ariaLabelledByProp as string | undefined) ??
       resolveAriaLabelledBy(fieldLabelId.value, labelId.value),
   );
-  const disabled = fieldDisabled.value || disabledProp;
-  const name = fieldName.value ?? nameProp;
+  const disabled = computed(() => fieldDisabled.value || (componentProps.disabled ?? false));
+  const name = computed(() => fieldName.value ?? nameProp);
 
   // The internal value is potentially unsorted, e.g. to support frozen arrays
   // https://github.com/mui/material-ui/pull/28472
   const [valueUnwrapped, setValueUnwrapped] = useControlled<number | readonly number[]>({
-    controlled: valueProp,
-    default: (defaultValue ?? min) as number | readonly number[],
+    controlled: () => componentProps.value,
+    default: (componentProps.defaultValue ?? min) as number | readonly number[],
     name: 'Slider',
   });
 
@@ -161,14 +151,14 @@ export function SliderRoot<Value extends number | readonly number[]>(
   useRegisterFieldControl(
     validation.inputRef,
     id,
-    fieldValue.value,
+    fieldValue,
     undefined,
-    !disabled,
-    nameProp,
+    computed(() => !disabled.value),
+    () => componentProps.name,
   );
 
   useValueChanged(() => fieldValue.value, () => {
-    clearErrors(name);
+    clearErrors(name.value);
 
     validation.change(fieldValue.value);
 
@@ -208,7 +198,10 @@ export function SliderRoot<Value extends number | readonly number[]>(
 
     (details as any).event = clonedEvent;
 
-    onValueChange?.(newValue, details);
+    (componentProps.onValueChange as unknown as (
+      value: number | number[],
+      eventDetails: SliderRoot.ChangeEventDetails,
+    ) => void)?.(newValue, details);
 
     if (details.isCanceled) {
       return false;
@@ -239,7 +232,7 @@ export function SliderRoot<Value extends number | readonly number[]>(
       setTouched(true);
 
       if (applied) {
-        onValueCommitted?.(newValue, createGenericEventDetails(reason, event as any));
+        (componentProps.onValueCommitted as unknown as (v: number | readonly number[], d: SliderRoot.CommitEventDetails) => void)?.(newValue, createGenericEventDetails(reason, event as any));
       }
     }
   };
@@ -253,7 +246,7 @@ export function SliderRoot<Value extends number | readonly number[]>(
 
   // React 版 useIsoLayoutEffect：disabled 时移除焦点 + 清除 active
   watch(
-    () => [disabled, active.value] as const,
+    () => [disabled.value, active.value] as const,
     ([disabledValue, activeValue]) => {
       if (!disabledValue) {
         return;
@@ -275,12 +268,24 @@ export function SliderRoot<Value extends number | readonly number[]>(
   );
 
   // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
+  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
 
-  const stateValueFn = (): SliderRootState => ({
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
+  });
+
+  const state = computed<SliderRootState>(() => ({
     ...fieldState.value,
     activeThumbIndex: active.value,
-    disabled,
+    disabled: disabled.value,
     dragging: dragging.value,
     orientation,
     max,
@@ -288,86 +293,119 @@ export function SliderRoot<Value extends number | readonly number[]>(
     minStepsBetweenValues,
     step,
     values: values.value,
+  }));
+
+  const rootProps = computed<Record<string, any>>(() => {
+    const merged: any = {
+      'aria-labelledby': ariaLabelledby.value,
+      id,
+      role: 'group',
+      ...elementProps.value,
+    };
+    const validationProps = validation.getValidationProps(disabled.value, merged);
+    Object.assign(merged, validationProps);
+    return merged;
   });
 
-  const buildContextValue = (stateValue: SliderRootState): SliderRootContext => ({
-    active: active.value,
+  // store-as-is 载体：身份稳定的 getter 对象——值字段渲染期求值，
+  // handlers/refs 为稳定引用（provide 只在 Provider setup 执行一次）。
+  const contextValue: SliderRootContext = {
+    get active() {
+      return active.value;
+    },
     controlRef,
-    disabled,
-    dragging: dragging.value,
+    get disabled() {
+      return disabled.value;
+    },
+    get dragging() {
+      return dragging.value;
+    },
     validation,
-    format,
+    get format() {
+      return componentProps.format;
+    },
     handleInputChange,
-    indicatorPosition: indicatorPosition.value,
-    inset: thumbAlignment !== 'center',
-    labelId: ariaLabelledby.value,
+    get indicatorPosition() {
+      return indicatorPosition.value;
+    },
+    get inset() {
+      return thumbAlignment !== 'center';
+    },
+    get labelId() {
+      return ariaLabelledby.value;
+    },
     rootLabelId: defaultLabelId,
     largeStep,
-    lastUsedThumbIndex: lastUsedThumbIndex.value,
+    get lastUsedThumbIndex() {
+      return lastUsedThumbIndex.value;
+    },
     lastChangeReasonRef,
-    form,
-    locale,
+    get form() {
+      return componentProps.form;
+    },
+    get locale() {
+      return componentProps.locale;
+    },
     max,
     min,
     minStepsBetweenValues,
-    name,
-    onValueCommitted,
+    get name() {
+      return name.value;
+    },
+    onValueCommitted: componentProps.onValueCommitted as unknown as (
+      value: number | readonly number[],
+      eventDetails: SliderRoot.CommitEventDetails,
+    ) => void,
     orientation,
     pressedThumbCenterOffsetRef,
     pressedThumbIndexRef,
     pressedValuesRef,
     registerFieldControlRef,
-    renderBeforeHydration: thumbAlignment === 'edge',
+    get renderBeforeHydration() {
+      return thumbAlignment === 'edge';
+    },
     setActive,
     setDragging: (v: boolean) => (dragging.value = v),
     setIndicatorPosition: (v: (number | undefined)[]) => (indicatorPosition.value = v),
     setLabelId: (v: string | undefined) => (labelId.value = v),
     setValue,
-    state: stateValue,
+    get state() {
+      return state.value;
+    },
     step,
     thumbCollisionBehavior,
-    thumbMap: thumbMap.value,
-    thumbRefs,
-    values: values.value,
-  });
-
-  const {element} = useRenderElement({
-    props: () => {
-      const merged: any = {};
-      Object.assign(
-        merged,
-        {
-          'aria-labelledby': ariaLabelledby.value,
-          id,
-          role: 'group',
-        },
-        {...unrefs(elementProps)},
-      );
-      const validationProps = validation.getValidationProps(disabled, merged);
-      Object.assign(merged, validationProps);
-      return [merged];
+    get thumbMap() {
+      return thumbMap.value;
     },
-    state: stateValueFn,
-    stateAttributesMapping: sliderStateAttributesMapping as any,
-    className,
-    style,
-    render,
-    children,
-    defaultTag: 'div',
-  });
+    thumbRefs,
+    get values() {
+      return values.value;
+    },
+  };
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
   return (
-    <SliderRootContext.Provider
-      value={
-        (() => {
-          const stateValue = stateValueFn();
-          return buildContextValue(stateValue) as any;
-        })()
-      }
-    >
+    <SliderRootContext.Provider value={contextValue as any}>
       <CompositeList elementsRef={rawRef(thumbRefs)} onMapChange={(m) => (thumbMap.value = m)}>
-        {element()}
+        {useRenderElement(
+          'div',
+          {
+            className: className?.value,
+            render: render?.value,
+            style: style?.value,
+          },
+          {
+            state: state.value,
+            stateAttributesMapping: sliderStateAttributesMapping,
+            ref: useMergedRefs(
+              (el: HTMLElement | null) => {
+                sliderRef.value = el;
+              },
+              componentProps.ref as any,
+            ),
+            props: rootProps.value,
+          },
+        )}
       </CompositeList>
     </SliderRootContext.Provider>
   );

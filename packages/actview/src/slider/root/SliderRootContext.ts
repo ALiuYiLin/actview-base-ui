@@ -103,13 +103,13 @@ export interface SliderRootContext {
 
 export const SliderRootContext = createContext<SliderRootContext | undefined>(undefined);
 
-export function useSliderRootContext(): Ref<SliderRootContext> {
+export function useSliderRootContext(): SliderRootContext {
+  // store-as-is：use() 原样返回注入的 getter 载体。
   const context = SliderRootContext.use();
-  if (context.value === undefined) {
+  if (context === undefined) {
     throw new Error(
       'Base UI: SliderRootContext is missing. Slider parts must be placed within <Slider.Root>.',
     );
   }
-  // hook 已 throw，消费方可安全解构（actview context 为 Ref）
-  return context as unknown as Ref<SliderRootContext>;
+  return context;
 }
