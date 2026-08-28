@@ -552,32 +552,35 @@ export function MenuRoot<Payload>(props: MenuRoot.Props<Payload>) {
     parent: parentFromContext,
   };
 
-  // ============ render（最后 return JSX——插件转换为渲染函数）============
-  // PD-15：children 必须 render 期求值（setup 快照会让动态 children——
-  // 如条件渲染的 Trigger——永远停留首次渲染）。render prop（({payload}) =>
-  // ...）直接函数调用。
+  // 渲染期求值：children 兼容 render prop（({payload}) => ...）——payload 经
+  // store 同步（activeTriggerId 变化后 trigger 的 useTriggerDataForwarding 写入），
+  // setup 快照会停留首次渲染，故 computed 在渲染函数内读取。
   const content = computed(() => {
     const rawChildren = props.children;
     return typeof rawChildren === 'function' ? rawChildren({payload: payload.value}) : rawChildren;
   });
 
-  const provider = (
-    <>
-      <MenuRootContext.Provider value={context as MenuRootContext}>
-        {props.handle && <PopupHandleAttachment handle={props.handle} store={store} />}
-        {content.value}
-      </MenuRootContext.Provider>
-    </>
-  );
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  // PD-15：children 必须 render 期求值（setup 快照会让动态 children——
+  // 如条件渲染的 Trigger——永远停留首次渲染）。render prop（({payload}) =>
+  // ...）直接函数调用。Provider 内联在渲染函数内（content.value 渲染期读取）。
 
   // set up a FloatingTree to provide the context to nested menus
   // 条件在渲染期求值（表达式内 .value 直读，无 IIFE）。
   return (
     <>
       {parent.value.type === undefined || parent.value.type === 'context-menu' ? (
-        <FloatingTree externalTree={floatingTreeRoot.value}>{provider}</FloatingTree>
+        <FloatingTree externalTree={floatingTreeRoot.value}>
+          <MenuRootContext.Provider value={context as MenuRootContext}>
+            {props.handle && <PopupHandleAttachment handle={props.handle} store={store} />}
+            {content.value}
+          </MenuRootContext.Provider>
+        </FloatingTree>
       ) : (
-        provider
+        <MenuRootContext.Provider value={context as MenuRootContext}>
+          {props.handle && <PopupHandleAttachment handle={props.handle} store={store} />}
+          {content.value}
+        </MenuRootContext.Provider>
       )}
     </>
   );
