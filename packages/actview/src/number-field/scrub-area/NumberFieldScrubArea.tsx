@@ -1,4 +1,5 @@
-import {onMounted, onUnmounted, ref, toValue, useRootElement, watch, shallowRef, toRefs, unrefs} from 'actview';
+import {computed, onMounted, onUnmounted, ref, watch, shallowRef, toRefs} from 'actview';
+import type { Ref } from 'actview';
 import type { BaseUIComponentProps } from '@/internals/types';
 import type { NumberFieldRootState } from '../root/NumberFieldRoot';
 import { useNumberFieldRootContext } from '../root/NumberFieldRootContext';
@@ -12,7 +13,8 @@ import { ownerDocument, ownerWindow } from '@/utils/owner';
 import { platform } from '@/utils/platform';
 import { addEventListener } from '@/utils/addEventListener';
 import { useTimeout } from '@/utils/useTimeout';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useMergedRefs } from '@/internals/useMergedRefs';
 
 const SCRUB_AREA_STYLE: any = {
   touchAction: 'none',
@@ -28,12 +30,15 @@ const SCRUB_AREA_STYLE: any = {
  */
 export function NumberFieldScrubArea(componentProps: NumberFieldScrubArea.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  const direction = toValue(componentProps.direction) ?? 'horizontal';
-  const pixelSensitivity = toValue(componentProps.pixelSensitivity) ?? 2;
-  const teleportDistance = toValue(componentProps.teleportDistance);
+  // 自持 ref：经 params.ref 合并链透传（不用 useRootElement）。
+  const scrubAreaRef = ref(null as HTMLSpanElement | null);
+
+  // 事件期消费的 props：computed 直读（事件触发时拿实时值）。
+  const direction = computed(() => componentProps.direction ?? 'horizontal');
+  const pixelSensitivity = computed(() => componentProps.pixelSensitivity ?? 2);
+  const teleportDistance = computed(() => componentProps.teleportDistance);
 
   const rootContext = useNumberFieldRootContext();
-  const scrubAreaRef = useRootElement();
 
   const isScrubbingRef = ref(false);
   const didMoveRef = ref(false);
@@ -46,6 +51,10 @@ export function NumberFieldScrubArea(componentProps: NumberFieldScrubArea.Props)
   const isTouchInput = ref(false);
   const isPointerLockDenied = ref(false);
   const isScrubbing = ref(false);
+
+  // 事件期消费的 state 字段：computed 直读（渲染期求值、事件期读 .value）。
+  const disabled = computed(() => rootContext.state.disabled);
+  const readOnly = computed(() => rootContext.state.readOnly);
 
   function updateCursorTransform(virtualCursor: HTMLSpanElement, x: number, y: number) {
     // Invert the visual viewport scale so the cursor matches the OS cursor, which doesn't
@@ -62,7 +71,7 @@ export function NumberFieldScrubArea(componentProps: NumberFieldScrubArea.Props)
       return;
     }
 
-    const rect = getViewportRect(teleportDistance, scrubAreaEl);
+    const rect = getViewportRect(teleportDistance.value, scrubAreaEl);
 
     const coords = virtualCursorCoords.value;
 
@@ -120,7 +129,6 @@ export function NumberFieldScrubArea(componentProps: NumberFieldScrubArea.Props)
   };
 
   const {
-    state,
     inputRef,
     incrementValue,
     allowInputSyncRef,
@@ -129,7 +137,6 @@ export function NumberFieldScrubArea(componentProps: NumberFieldScrubArea.Props)
     lastChangedValueRef,
     valueRef,
   } = rootContext;
-  const {disabled, readOnly} = state;
 
   // React 版 useEffect：scrubbing 期间全局监听
   let scrubListenersCleanup: (() => void) | undefined;
@@ -138,7 +145,7 @@ export function NumberFieldScrubArea(componentProps: NumberFieldScrubArea.Props)
     scrubListenersCleanup = undefined;
 
     // Only listen while actively scrubbing; avoids unrelated pointerup events committing.
-    if (!inputRef.value || disabled || readOnly || !isScrubbing.value) {
+    if (!inputRef.value || disabled.value || readOnly.value || !isScrubbing.value) {
       return;
     }
 
@@ -199,12 +206,12 @@ export function NumberFieldScrubArea(componentProps: NumberFieldScrubArea.Props)
 
       const {movementX, movementY} = event;
 
-      cumulativeDelta += direction === 'vertical' ? movementY : movementX;
+      cumulativeDelta += direction.value === 'vertical' ? movementY : movementX;
 
-      if (Math.abs(cumulativeDelta) >= pixelSensitivity) {
+      if (Math.abs(cumulativeDelta) >= pixelSensitivity.value) {
         cumulativeDelta = 0;
         didMoveRef.value = true;
-        const dValue = direction === 'vertical' ? -movementY : movementX;
+        const dValue = direction.value === 'vertical' ? -movementY : movementX;
         const stepAmount = getStepAmount(event);
         const rawAmount = dValue * stepAmount;
 
@@ -233,7 +240,7 @@ export function NumberFieldScrubArea(componentProps: NumberFieldScrubArea.Props)
   // React 版 useEffect deps：isScrubbing 等变化时重挂
   onMounted(() => {
     const stop = watch(
-      () => [isScrubbing.value, disabled, readOnly] as const,
+      () => [isScrubbing.value, disabled.value, readOnly.value] as const,
       () => setupScrubListeners(),
       {flush: 'post', immediate: true},
     );
@@ -261,7 +268,7 @@ export function NumberFieldScrubArea(componentProps: NumberFieldScrubArea.Props)
   let touchCleanup: (() => void) | undefined;
   onMounted(() => {
     const element = scrubAreaRef.value;
-    if (!element || disabled || readOnly) {
+    if (!element || disabled.value || readOnly.value) {
       return;
     }
 
@@ -277,73 +284,73 @@ export function NumberFieldScrubArea(componentProps: NumberFieldScrubArea.Props)
     touchCleanup?.();
   });
 
-  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
+  // ============ setup：值形 props toRefs 活引用 ============
+  // children 不解构、随 elementRefs 流入渲染元素。
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
 
-  const stateFn = () => rootContext.state;
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
+  });
 
-  const {element} = useRenderElement({
-    props: () => {
-      const defaultProps: any = {
-        role: 'presentation',
-        style: SCRUB_AREA_STYLE,
-        async onPointerDown(event: any) {
-          if (event.defaultPrevented || readOnly || event.button || disabled) {
-            return;
-          }
+  // 根元素 props：presentation 语义 + pointer 处理 → 透传。
+  const rootProps = computed<Record<string, any>>(() => {
+    const defaultProps: any = {
+      role: 'presentation',
+      style: SCRUB_AREA_STYLE,
+      async onPointerDown(event: any) {
+        if (event.defaultPrevented || readOnly.value || event.button || disabled.value) {
+          return;
+        }
 
-          const isTouch = event.pointerType === 'touch';
-          isTouchInput.value = isTouch;
+        const isTouch = event.pointerType === 'touch';
+        isTouchInput.value = isTouch;
 
-          if (event.pointerType === 'mouse') {
-            event.preventDefault();
-            inputRef.value?.focus();
-          }
+        if (event.pointerType === 'mouse') {
+          event.preventDefault();
+          inputRef.value?.focus();
+        }
 
-          isScrubbingRef.value = true;
-          didMoveRef.value = false;
-          pointerDownTargetRef.value = getTarget(event.nativeEvent ?? event);
-          onScrubbingChange(true, event.nativeEvent ?? event);
+        isScrubbingRef.value = true;
+        didMoveRef.value = false;
+        pointerDownTargetRef.value = getTarget(event.nativeEvent ?? event);
+        onScrubbingChange(true, event.nativeEvent ?? event);
 
-          // WebKit causes significant layout shift with the native message, so we can't use it.
-          if (!isTouch && !platform.engine.webkit) {
-            try {
-              // Avoid non-deterministic errors in testing environments.
-              await ownerDocument(scrubAreaRef.value).body.requestPointerLock();
-              isPointerLockDenied.value = false;
-            } catch (error) {
-              isPointerLockDenied.value = true;
-            } finally {
-              // `onScrubbingChange` already wraps its state updates, so re-emit the
-              // scrubbing state directly to reflect the resolved pointer-lock result.
-              if (isScrubbingRef.value) {
-                onScrubbingChange(true, event.nativeEvent ?? event);
-              }
+        // WebKit causes significant layout shift with the native message, so we can't use it.
+        if (!isTouch && !platform.engine.webkit) {
+          try {
+            // Avoid non-deterministic errors in testing environments.
+            await ownerDocument(scrubAreaRef.value).body.requestPointerLock();
+            isPointerLockDenied.value = false;
+          } catch (error) {
+            isPointerLockDenied.value = true;
+          } finally {
+            // `onScrubbingChange` already wraps its state updates, so re-emit the
+            // scrubbing state directly to reflect the resolved pointer-lock result.
+            if (isScrubbingRef.value) {
+              onScrubbingChange(true, event.nativeEvent ?? event);
             }
           }
-        },
-      };
+        }
+      },
+    };
 
-      const stateValue = stateFn();
-      const resolvedStyle =
-        typeof style?.value === 'function' ? style.value(stateValue) : style?.value;
+    const stateValue = rootContext.state;
+    const resolvedStyle =
+      typeof style?.value === 'function' ? style.value(stateValue) : style?.value;
 
-      const merged: any = {};
-      Object.assign(
-        merged,
-        defaultProps,
-        {...unrefs(elementProps)},
-        resolvedStyle !== undefined ? {style: Object.assign({}, SCRUB_AREA_STYLE, resolvedStyle)} : undefined,
-      );
-      return [merged];
-    },
-    state: stateFn,
-    stateAttributesMapping: stateAttributesMapping as any,
-    className,
-    render,
-    refs: () => [scrubAreaRef as any],
-    children,
-    defaultTag: 'span',
+    return {
+      ...defaultProps,
+      ...elementProps.value,
+      ...(resolvedStyle !== undefined
+        ? {style: Object.assign({}, SCRUB_AREA_STYLE, resolvedStyle)}
+        : undefined),
+    };
   });
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
@@ -358,7 +365,20 @@ export function NumberFieldScrubArea(componentProps: NumberFieldScrubArea.Props)
         } as any
       }
     >
-      {element()}
+      {useRenderElement(
+        'span',
+        {
+          className: className?.value,
+          render: render?.value,
+          style: style?.value,
+        },
+        {
+          state: rootContext.state,
+          stateAttributesMapping: stateAttributesMapping as any,
+          ref: useMergedRefs(scrubAreaRef, componentProps.ref as any),
+          props: rootProps.value,
+        },
+      )}
     </NumberFieldScrubAreaContext.Provider>
   );
 }

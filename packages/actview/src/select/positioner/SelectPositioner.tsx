@@ -1,35 +1,48 @@
-import { toRefs, unrefs } from 'actview';
+import { computed, toRefs } from 'actview';
+import type { Ref } from 'actview';
 import { useSelectRootContext } from '../root/SelectRootContext';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useMergedRefs } from '@/internals/useMergedRefs';
 
 /** Positions the popup. Renders a `<div>` element. actview 简化：无定位计算。 */
 export function SelectPositioner(props: SelectPositioner.Props) {
-  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
+  // ============ setup（只执行一次）：值形 props toRefs 活引用 ============
+  // children 不解构、随 elementRefs 流入渲染元素。
   const store = useSelectRootContext(false);
-  const {render, className, style, children, ref: refProp, ...elementProps} = toRefs(props);
+  const { className, render, style, ...elementRefs } = toRefs(props) as Record<
+    string,
+    Ref<any>
+  >;
 
-  const {element} = useRenderElement({
-    props: () => [{...unrefs(elementProps)}],
-    className,
-    style,
-    render,
-    refs: () => {
-      const refs: any[] = [
-        (el: any) => {
-          store.setPositionerElement(el ?? null);
-        },
-      ];
-      if (props.ref !== undefined) {
-        refs.push(refProp);
-      }
-      return refs;
-    },
-    children,
-    defaultTag: 'div',
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
   });
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  return <>{element()}</>;
+  return (
+    <>
+      {useRenderElement(
+        'div',
+        {
+          className: className?.value,
+          render: render?.value,
+          style: style?.value,
+        },
+        {
+          ref: useMergedRefs(
+            (el: any) => {
+              store.setPositionerElement(el ?? null);
+            },
+            props.ref as any,
+          ),
+          props: [elementProps.value],
+        },
+      )}
+    </>
+  );
 }
 
 export interface SelectPositionerProps {

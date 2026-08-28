@@ -17,7 +17,7 @@ const FRUITS = {apple: 'Apple', banana: 'Banana', cherry: 'Cherry', date: 'Date'
 
 function BasicCombobox(props: any = {}) {
   const {rootProps = {}} = props;
-  return () => (
+  return (
     <Root items={FRUITS} {...rootProps}>
       <Input data-testid="input" />
       <Positioner>

@@ -1,4 +1,3 @@
-import { defineComponent, ref, toValue } from 'actview';
 import type { BaseUIComponentProps, NativeButtonProps } from '@/internals/types';
 import { useButton } from '@/internals/use-button/useButton';
 import { isTouchLikePointerType, usePressAndHold } from '@/internals/usePressAndHold';

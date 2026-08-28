@@ -11,7 +11,7 @@ const Root = Combobox.Root;
 const FRUITS = {apple: 'Apple', banana: 'Banana', cherry: 'Cherry', date: 'Date', elderberry: 'Elderberry'};
 
 function ComboboxFixture() {
-  return () => (
+  return (
     <Root items={FRUITS}>
       <Combobox.Input data-testid="input" />
       <Combobox.Positioner>

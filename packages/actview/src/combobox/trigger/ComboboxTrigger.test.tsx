@@ -16,7 +16,7 @@ const Positioner = Combobox.Positioner;
 const FRUITS = {apple: 'Apple', banana: 'Banana', cherry: 'Cherry', date: 'Date', elderberry: 'Elderberry'};
 
 function ComboboxFixture() {
-  return () => (
+  return (
     <Root items={FRUITS}>
       <Trigger>Open</Trigger>
       <Positioner>

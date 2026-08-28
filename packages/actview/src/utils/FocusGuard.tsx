@@ -1,4 +1,5 @@
-import { defineComponent } from 'actview';
+import { computed, toRefs } from 'actview';
+import type { Ref } from 'actview';
 
 const visuallyHiddenStyle = {
   position: 'absolute',
@@ -16,16 +17,24 @@ const visuallyHiddenStyle = {
 /**
  * @internal
  */
-export const FocusGuard = defineComponent(function FocusGuard(props: any) {
-  const {children, ...restProps} = props;
+export function FocusGuard(props: any) {
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { ...elementRefs } = toRefs(props) as Record<string, Ref<any>>;
 
-  const merged = {
-    tabIndex: 0,
-    ...restProps,
-    style: visuallyHiddenStyle,
-    'aria-hidden': true,
-    'data-base-ui-focus-guard': '',
-  };
+  // ---- 渲染期求值：computed ----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
+  });
 
-  return () => <span {...merged}>{children}</span>;
-});
+  return (
+    <span
+      {...elementProps.value}
+      tabIndex={0}
+      style={visuallyHiddenStyle}
+      aria-hidden="true"
+      data-base-ui-focus-guard=""
+    />
+  );
+}

@@ -18,7 +18,7 @@ const FRUITS = {apple: 'Apple', banana: 'Banana', cherry: 'Cherry', date: 'Date'
 
 function ComboboxFixture(props: {rootProps?: any} = {}) {
   const {rootProps = {}} = props;
-  return () => (
+  return (
     <Root items={FRUITS} {...rootProps}>
       <Input data-testid="input" />
       <Clear data-testid="clear">x</Clear>
