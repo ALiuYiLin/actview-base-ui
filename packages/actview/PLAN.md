@@ -1,698 +1,148 @@
-# actview 重构与测试拆分待办（PLAN）
-
-## P0：useRenderElement 重构——按 ToggleGroup 标准去除 defineComponent
-
-> 目标：全库组件统一为 ToggleGroup 的**裸函数写法**（函数体 = setup 执行一次、
-> 最后 return JSX 作为渲染模板——`defineComponentPlugin` 自动转换），
-> 渲染合并统一走 `useRenderElement`（`src/internals/useRenderElement.tsx`），组件源码不再出现 `defineComponent`。
-> **已完成基准**：`toggle-group/ToggleGroup.tsx`、`toggle/Toggle.tsx`、
-> `internals/composite/item/CompositeItem.tsx`、`internals/composite/root/CompositeRoot.tsx`、
-> `toolbar/group/ToolbarGroup.tsx`（useRenderElement 首批迁移，jsdom 835 passed 无回归）。
-> 范围：组件源码（**36 个组件 / 223 个文件**）；排除 internals 内部工具、
-> createContext Provider 内部实现、floating-ui-react 移植层、use-render、utils、测试文件。
-> 完成标准：每组件重构后 tsgo + jsdom `pnpm test` 全绿。
-
-### combobox（26 个文件）
-
-- [ ] 重构 combobox → 裸函数 + useRenderElement（26 个文件）
-  - [ ] combobox/arrow/ComboboxArrow.tsx
-  - [ ] combobox/backdrop/ComboboxBackdrop.tsx
-  - [ ] combobox/chip-remove/ComboboxChipRemove.tsx
-  - [ ] combobox/chip/ComboboxChip.tsx
-  - [ ] combobox/chips/ComboboxChips.tsx
-  - [ ] combobox/clear/ComboboxClear.tsx
-  - [ ] combobox/collection/ComboboxCollection.tsx
-  - [ ] combobox/empty/ComboboxEmpty.tsx
-  - [ ] combobox/group-label/ComboboxGroupLabel.tsx
-  - [ ] combobox/group/ComboboxGroup.tsx
-  - [ ] combobox/icon/ComboboxIcon.tsx
-  - [ ] combobox/input-group/ComboboxInputGroup.tsx
-  - [ ] combobox/input/ComboboxInput.tsx
-  - [ ] combobox/item-indicator/ComboboxItemIndicator.tsx
-  - [ ] combobox/item/ComboboxItem.tsx
-  - [ ] combobox/label/ComboboxLabel.tsx
-  - [ ] combobox/list/ComboboxList.tsx
-  - [ ] combobox/popup/ComboboxPopup.tsx
-  - [ ] combobox/portal/ComboboxPortal.tsx
-  - [ ] combobox/positioner/ComboboxPositioner.tsx
-  - [ ] combobox/root/ComboboxRoot.tsx
-  - [ ] combobox/row/ComboboxRow.tsx
-  - [ ] combobox/separator/ComboboxSeparator.tsx
-  - [ ] combobox/status/ComboboxStatus.tsx
-  - [ ] combobox/trigger/ComboboxTrigger.tsx
-  - [ ] combobox/value/ComboboxValue.tsx
-
-### select（20 个文件）
-
-- [ ] 重构 select → 裸函数 + useRenderElement（20 个文件）
-  - [ ] select/arrow/SelectArrow.tsx
-  - [ ] select/backdrop/SelectBackdrop.tsx
-  - [ ] select/group-label/SelectGroupLabel.tsx
-  - [ ] select/group/SelectGroup.tsx
-  - [ ] select/icon/SelectIcon.tsx
-  - [ ] select/item-indicator/SelectItemIndicator.tsx
-  - [ ] select/item-text/SelectItemText.tsx
-  - [ ] select/item/SelectItem.tsx
-  - [ ] select/label/SelectLabel.tsx
-  - [ ] select/list/SelectList.tsx
-  - [ ] select/popup/SelectPopup.tsx
-  - [ ] select/portal/SelectPortal.tsx
-  - [ ] select/positioner/SelectPositioner.tsx
-  - [ ] select/root/SelectRoot.tsx
-  - [ ] select/scroll-arrow/SelectScrollArrow.tsx
-  - [ ] select/scroll-down-arrow/SelectScrollDownArrow.tsx
-  - [ ] select/scroll-up-arrow/SelectScrollUpArrow.tsx
-  - [ ] select/separator/SelectSeparator.tsx
-  - [ ] select/trigger/SelectTrigger.tsx
-  - [ ] select/value/SelectValue.tsx
-
-### menu（19 个文件）
-
-- [ ] 重构 menu → 裸函数 + useRenderElement（19 个文件）
-  - [ ] menu/arrow/MenuArrow.tsx
-  - [ ] menu/backdrop/MenuBackdrop.tsx
-  - [ ] menu/checkbox-item-indicator/MenuCheckboxItemIndicator.tsx
-  - [ ] menu/checkbox-item/MenuCheckboxItem.tsx
-  - [ ] menu/group-label/MenuGroupLabel.tsx
-  - [ ] menu/group/MenuGroup.tsx
-  - [ ] menu/item/MenuItem.tsx
-  - [ ] menu/link-item/MenuLinkItem.tsx
-  - [ ] menu/popup/MenuPopup.tsx
-  - [ ] menu/portal/MenuPortal.tsx
-  - [ ] menu/positioner/MenuPositioner.tsx
-  - [ ] menu/radio-group/MenuRadioGroup.tsx
-  - [ ] menu/radio-item-indicator/MenuRadioItemIndicator.tsx
-  - [ ] menu/radio-item/MenuRadioItem.tsx
-  - [ ] menu/root/MenuRoot.tsx
-  - [ ] menu/submenu-root/MenuSubmenuRoot.tsx
-  - [ ] menu/submenu-trigger/MenuSubmenuTrigger.tsx
-  - [ ] menu/trigger/MenuTrigger.tsx
-  - [ ] menu/viewport/MenuViewport.tsx
-
-### navigation-menu（13 个文件）
-
-- [ ] 重构 navigation-menu → 裸函数 + useRenderElement（13 个文件）
-  - [ ] navigation-menu/arrow/NavigationMenuArrow.tsx
-  - [ ] navigation-menu/backdrop/NavigationMenuBackdrop.tsx
-  - [ ] navigation-menu/content/NavigationMenuContent.tsx
-  - [ ] navigation-menu/icon/NavigationMenuIcon.tsx
-  - [ ] navigation-menu/item/NavigationMenuItem.tsx
-  - [ ] navigation-menu/link/NavigationMenuLink.tsx
-  - [ ] navigation-menu/list/NavigationMenuList.tsx
-  - [ ] navigation-menu/popup/NavigationMenuPopup.tsx
-  - [ ] navigation-menu/portal/NavigationMenuPortal.tsx
-  - [ ] navigation-menu/positioner/NavigationMenuPositioner.tsx
-  - [ ] navigation-menu/root/NavigationMenuRoot.tsx
-  - [ ] navigation-menu/trigger/NavigationMenuTrigger.tsx
-  - [ ] navigation-menu/viewport/NavigationMenuViewport.tsx
-
-### drawer（11 个文件）
-
-- [ ] 重构 drawer → 裸函数 + useRenderElement（11 个文件）
-  - [ ] drawer/backdrop/DrawerBackdrop.tsx
-  - [ ] drawer/close/DrawerClose.tsx
-  - [ ] drawer/content/DrawerContent.tsx
-  - [ ] drawer/description/DrawerDescription.tsx
-  - [ ] drawer/popup/DrawerPopup.tsx
-  - [ ] drawer/portal/DrawerPortal.tsx
-  - [ ] drawer/provider/DrawerProvider.tsx
-  - [ ] drawer/root/DrawerRoot.tsx
-  - [ ] drawer/title/DrawerTitle.tsx
-  - [ ] drawer/trigger/DrawerTrigger.tsx
-  - [ ] drawer/viewport/DrawerViewport.tsx
-
-### popover（11 个文件）
-
-- [ ] 重构 popover → 裸函数 + useRenderElement（11 个文件）
-  - [ ] popover/arrow/PopoverArrow.tsx
-  - [ ] popover/backdrop/PopoverBackdrop.tsx
-  - [ ] popover/close/PopoverClose.tsx
-  - [ ] popover/description/PopoverDescription.tsx
-  - [ ] popover/popup/PopoverPopup.tsx
-  - [ ] popover/portal/PopoverPortal.tsx
-  - [ ] popover/positioner/PopoverPositioner.tsx
-  - [ ] popover/root/PopoverRoot.tsx
-  - [ ] popover/title/PopoverTitle.tsx
-  - [ ] popover/trigger/PopoverTrigger.tsx
-  - [ ] popover/viewport/PopoverViewport.tsx
-
-### toast（11 个文件）
-
-- [ ] 重构 toast → 裸函数 + useRenderElement（11 个文件）
-  - [ ] toast/action/ToastAction.tsx
-  - [ ] toast/arrow/ToastArrow.tsx
-  - [ ] toast/close/ToastClose.tsx
-  - [ ] toast/content/ToastContent.tsx
-  - [ ] toast/description/ToastDescription.tsx
-  - [ ] toast/portal/ToastPortal.tsx
-  - [ ] toast/positioner/ToastPositioner.tsx
-  - [ ] toast/provider/ToastProvider.tsx
-  - [ ] toast/root/ToastRoot.tsx
-  - [ ] toast/title/ToastTitle.tsx
-  - [ ] toast/viewport/ToastViewport.tsx
-
-### dialog（9 个文件）
-
-- [ ] 重构 dialog → 裸函数 + useRenderElement（9 个文件）
-  - [ ] dialog/backdrop/DialogBackdrop.tsx
-  - [ ] dialog/close/DialogClose.tsx
-  - [ ] dialog/description/DialogDescription.tsx
-  - [ ] dialog/popup/DialogPopup.tsx
-  - [ ] dialog/portal/DialogPortal.tsx
-  - [ ] dialog/root/DialogRoot.tsx
-  - [ ] dialog/title/DialogTitle.tsx
-  - [ ] dialog/trigger/DialogTrigger.tsx
-  - [ ] dialog/viewport/DialogViewport.tsx
-
-### number-field（8 个文件）
-
-- [ ] 重构 number-field → 裸函数 + useRenderElement（8 个文件）
-  - [ ] number-field/decrement/NumberFieldDecrement.tsx
-  - [ ] number-field/group/NumberFieldGroup.tsx
-  - [ ] number-field/increment/NumberFieldIncrement.tsx
-  - [ ] number-field/input/NumberFieldInput.tsx
-  - [ ] number-field/root/NumberFieldRoot.tsx
-  - [ ] number-field/root/useNumberFieldStepperButton.tsx
-  - [ ] number-field/scrub-area-cursor/NumberFieldScrubAreaCursor.tsx
-  - [ ] number-field/scrub-area/NumberFieldScrubArea.tsx
-
-### preview-card（8 个文件）
-
-- [ ] 重构 preview-card → 裸函数 + useRenderElement（8 个文件）
-  - [ ] preview-card/arrow/PreviewCardArrow.tsx
-  - [ ] preview-card/backdrop/PreviewCardBackdrop.tsx
-  - [ ] preview-card/popup/PreviewCardPopup.tsx
-  - [ ] preview-card/portal/PreviewCardPortal.tsx
-  - [ ] preview-card/positioner/PreviewCardPositioner.tsx
-  - [ ] preview-card/root/PreviewCardRoot.tsx
-  - [ ] preview-card/trigger/PreviewCardTrigger.tsx
-  - [ ] preview-card/viewport/PreviewCardViewport.tsx
-
-### tooltip（8 个文件）
-
-- [ ] 重构 tooltip → 裸函数 + useRenderElement（8 个文件）
-  - [ ] tooltip/arrow/TooltipArrow.tsx
-  - [ ] tooltip/popup/TooltipPopup.tsx
-  - [ ] tooltip/portal/TooltipPortal.tsx
-  - [ ] tooltip/positioner/TooltipPositioner.tsx
-  - [ ] tooltip/provider/TooltipProvider.tsx
-  - [ ] tooltip/root/TooltipRoot.tsx
-  - [ ] tooltip/trigger/TooltipTrigger.tsx
-  - [ ] tooltip/viewport/TooltipViewport.tsx
-
-### field（7 个文件）
-
-- [ ] 重构 field → 裸函数 + useRenderElement（7 个文件）
-  - [ ] field/control/FieldControl.tsx
-  - [ ] field/description/FieldDescription.tsx
-  - [ ] field/error/FieldError.tsx
-  - [ ] field/item/FieldItem.tsx
-  - [ ] field/label/FieldLabel.tsx
-  - [ ] field/root/FieldRoot.tsx
-  - [ ] field/validity/FieldValidity.tsx
-
-### slider（7 个文件）
-
-- [ ] 重构 slider → 裸函数 + useRenderElement（7 个文件）
-  - [ ] slider/control/SliderControl.tsx
-  - [ ] slider/indicator/SliderIndicator.tsx
-  - [ ] slider/label/SliderLabel.tsx
-  - [ ] slider/root/SliderRoot.tsx
-  - [ ] slider/thumb/SliderThumb.tsx
-  - [ ] slider/track/SliderTrack.tsx
-  - [ ] slider/value/SliderValue.tsx
-
-### autocomplete（6 个文件）
-
-- [ ] 重构 autocomplete → 裸函数 + useRenderElement（6 个文件）
-  - [ ] autocomplete/input-group/AutocompleteInputGroup.tsx
-  - [ ] autocomplete/item/AutocompleteItem.tsx
-  - [ ] autocomplete/root/AutocompleteRoot.tsx
-  - [ ] autocomplete/separator/AutocompleteSeparator.tsx
-  - [ ] autocomplete/trigger/AutocompleteTrigger.tsx
-  - [ ] autocomplete/value/AutocompleteValue.tsx
-
-### scroll-area（6 个文件）
-
-- [ ] 重构 scroll-area → 裸函数 + useRenderElement（6 个文件）
-  - [ ] scroll-area/content/ScrollAreaContent.tsx
-  - [ ] scroll-area/corner/ScrollAreaCorner.tsx
-  - [ ] scroll-area/root/ScrollAreaRoot.tsx
-  - [ ] scroll-area/scrollbar/ScrollAreaScrollbar.tsx
-  - [ ] scroll-area/thumb/ScrollAreaThumb.tsx
-  - [ ] scroll-area/viewport/ScrollAreaViewport.tsx
-
-### toolbar（6 个文件）
-
-- [ ] 重构 toolbar → 裸函数 + useRenderElement（6 个文件）
-  - [ ] toolbar/button/ToolbarButton.tsx
-  - [ ] toolbar/group/ToolbarGroup.tsx
-  - [ ] toolbar/input/ToolbarInput.tsx
-  - [ ] toolbar/link/ToolbarLink.tsx
-  - [ ] toolbar/root/ToolbarRoot.tsx
-  - [ ] toolbar/separator/ToolbarSeparator.tsx
-
-### accordion（5 个文件）
-
-- [ ] 重构 accordion → 裸函数 + useRenderElement（5 个文件）
-  - [ ] accordion/header/AccordionHeader.tsx
-  - [ ] accordion/item/AccordionItem.tsx
-  - [ ] accordion/panel/AccordionPanel.tsx
-  - [ ] accordion/root/AccordionRoot.tsx
-  - [ ] accordion/trigger/AccordionTrigger.tsx
-
-### meter（5 个文件）
-
-- [ ] 重构 meter → 裸函数 + useRenderElement（5 个文件）
-  - [ ] meter/indicator/MeterIndicator.tsx
-  - [ ] meter/label/MeterLabel.tsx
-  - [ ] meter/root/MeterRoot.tsx
-  - [ ] meter/track/MeterTrack.tsx
-  - [ ] meter/value/MeterValue.tsx
-
-### progress（5 个文件）
-
-- [ ] 重构 progress → 裸函数 + useRenderElement（5 个文件）
-  - [ ] progress/indicator/ProgressIndicator.tsx
-  - [ ] progress/label/ProgressLabel.tsx
-  - [ ] progress/root/ProgressRoot.tsx
-  - [ ] progress/track/ProgressTrack.tsx
-  - [ ] progress/value/ProgressValue.tsx
-
-### tabs（5 个文件）
-
-- [ ] 重构 tabs → 裸函数 + useRenderElement（5 个文件）
-  - [ ] tabs/indicator/TabsIndicator.tsx
-  - [ ] tabs/list/TabsList.tsx
-  - [ ] tabs/panel/TabsPanel.tsx
-  - [ ] tabs/root/TabsRoot.tsx
-  - [ ] tabs/tab/TabsTab.tsx
-
-### avatar（3 个文件）
-
-- [ ] 重构 avatar → 裸函数 + useRenderElement（3 个文件）
-  - [ ] avatar/fallback/AvatarFallback.tsx
-  - [ ] avatar/image/AvatarImage.tsx
-  - [ ] avatar/root/AvatarRoot.tsx
-
-### collapsible（3 个文件）
-
-- [ ] 重构 collapsible → 裸函数 + useRenderElement（3 个文件）
-  - [ ] collapsible/panel/CollapsiblePanel.tsx
-  - [ ] collapsible/root/CollapsibleRoot.tsx
-  - [ ] collapsible/trigger/CollapsibleTrigger.tsx
-
-### alert-dialog（2 个文件）
-
-- [ ] 重构 alert-dialog → 裸函数 + useRenderElement（2 个文件）
-  - [ ] alert-dialog/root/AlertDialogRoot.tsx
-  - [ ] alert-dialog/trigger/AlertDialogTrigger.tsx
-
-### checkbox（2 个文件）
-
-- [ ] 重构 checkbox → 裸函数 + useRenderElement（2 个文件）
-  - [ ] checkbox/indicator/CheckboxIndicator.tsx
-  - [ ] checkbox/root/CheckboxRoot.tsx
-
-### context-menu（2 个文件）
-
-- [ ] 重构 context-menu → 裸函数 + useRenderElement（2 个文件）
-  - [ ] context-menu/root/ContextMenuRoot.tsx
-  - [ ] context-menu/trigger/ContextMenuTrigger.tsx
-
-### fieldset（2 个文件）
-
-- [ ] 重构 fieldset → 裸函数 + useRenderElement（2 个文件）
-  - [ ] fieldset/legend/FieldsetLegend.tsx
-  - [ ] fieldset/root/FieldsetRoot.tsx
-
-### otp-field（2 个文件）
-
-- [ ] 重构 otp-field → 裸函数 + useRenderElement（2 个文件）
-  - [ ] otp-field/input/OTPFieldInput.tsx
-  - [ ] otp-field/root/OTPFieldRoot.tsx
-
-### radio（2 个文件）
-
-- [ ] 重构 radio → 裸函数 + useRenderElement（2 个文件）
-  - [ ] radio/indicator/RadioIndicator.tsx
-  - [ ] radio/root/RadioRoot.tsx
-
-### switch（2 个文件）
-
-- [ ] 重构 switch → 裸函数 + useRenderElement（2 个文件）
-  - [ ] switch/root/SwitchRoot.tsx
-  - [ ] switch/thumb/SwitchThumb.tsx
-
-### button（1 个文件）
-
-- [ ] 重构 button → 裸函数 + useRenderElement（1 个文件）
-  - [ ] button/Button.tsx
-
-### checkbox-group（1 个文件）
-
-- [ ] 重构 checkbox-group → 裸函数 + useRenderElement（1 个文件）
-  - [ ] checkbox-group/CheckboxGroup.tsx
-
-### form（1 个文件）
-
-- [ ] 重构 form → 裸函数 + useRenderElement（1 个文件）
-  - [ ] form/Form.tsx
-
-### input（1 个文件）
-
-- [ ] 重构 input → 裸函数 + useRenderElement（1 个文件）
-  - [ ] input/Input.tsx
-
-### menubar（1 个文件）
-
-- [ ] 重构 menubar → 裸函数 + useRenderElement（1 个文件）
-  - [ ] menubar/Menubar.tsx
-
-### radio-group（1 个文件）
-
-- [ ] 重构 radio-group → 裸函数 + useRenderElement（1 个文件）
-  - [ ] radio-group/RadioGroup.tsx
-
-### separator（1 个文件）
-
-- [ ] 重构 separator → 裸函数 + useRenderElement（1 个文件）
-  - [ ] separator/Separator.tsx
-
-## P1：测试文件——无测试组件按 React 分布新建
-
-### toggle-group（React 2 个——actview 0，全部新建）
-
-- [ ] 新建 src/toggle-group/ToggleGroup.test.tsx（对应 React ToggleGroup.test.tsx）
-- [ ] 新建 src/toggle-group/enumSync.test.tsx（对应 React enumSync.test.tsx）
-
-### meter（React 5 个——actview 0，全部新建）
-
-- [ ] 新建 src/meter/indicator/MeterIndicator.test.tsx（对应 React indicator/MeterIndicator.test.tsx）
-- [ ] 新建 src/meter/label/MeterLabel.test.tsx（对应 React label/MeterLabel.test.tsx）
-- [ ] 新建 src/meter/root/MeterRoot.test.tsx（对应 React root/MeterRoot.test.tsx）
-- [ ] 新建 src/meter/track/MeterTrack.test.tsx（对应 React track/MeterTrack.test.tsx）
-- [ ] 新建 src/meter/value/MeterValue.test.tsx（对应 React value/MeterValue.test.tsx）
-
-### checkbox-group（React 2 个——actview 0，全部新建）
-
-- [ ] 新建 src/checkbox-group/CheckboxGroup.test.tsx（对应 React CheckboxGroup.test.tsx）
-- [ ] 新建 src/checkbox-group/useCheckboxGroupParent.test.tsx（对应 React useCheckboxGroupParent.test.tsx）
-
-## P2：测试文件——合并测试拆分到子组件（对齐 React 分布）
-
-### combobox（React 38 vs actview 1：合并文件 `packages/actview/src/combobox/root/ComboboxRoot.test.tsx`）
-
-- [x] 拆分 packages/actview/src/combobox/root/ComboboxRoot.test.tsx → 6 个子组件测试（input/trigger/item/value/clear/root；其余子组件无现有用例，P3 补齐）
-  - [ ] arrow/ComboboxArrow.test.tsx
-  - [ ] backdrop/ComboboxBackdrop.test.tsx
-  - [ ] chip-remove/ComboboxChipRemove.test.tsx
-  - [ ] chip/ComboboxChip.test.tsx
-  - [ ] chips/ComboboxChips.test.tsx
-  - [ ] clear/ComboboxClear.test.tsx
-  - [ ] collection/ComboboxCollection.test.tsx
-  - [ ] empty/ComboboxEmpty.test.tsx
-  - [ ] group-label/ComboboxGroupLabel.test.tsx
-  - [ ] group/ComboboxGroup.test.tsx
-  - [ ] group/ComboboxGroupContext.test.tsx
-  - [ ] icon/ComboboxIcon.test.tsx
-  - [ ] input-group/ComboboxInputGroup.test.tsx
-  - [ ] input/ComboboxInput.android.test.tsx
-  - [ ] input/ComboboxInput.gecko.test.tsx
-  - [ ] input/ComboboxInput.test.tsx
-  - [ ] item-indicator/ComboboxItemIndicator.test.tsx
-  - [ ] item/ComboboxItem.test.tsx
-  - [ ] item/ComboboxItemContext.test.tsx
-  - [ ] items/createItems.test.tsx
-  - [ ] label/ComboboxLabel.test.tsx
-  - [ ] list/ComboboxList.test.tsx
-  - [ ] popup/ComboboxPopup.test.tsx
-  - [ ] portal/ComboboxPortal.test.tsx
-  - [ ] portal/ComboboxPortalContext.test.tsx
-  - [ ] positioner/ComboboxPositioner.test.tsx
-  - [ ] positioner/ComboboxPositionerContext.test.tsx
-  - [ ] root/ComboboxRoot.test.tsx
-  - [ ] root/ComboboxRootContext.test.tsx
-  - [ ] root/utils/index.test.ts
-  - [ ] root/utils/useFilter.test.tsx
-  - [ ] status/ComboboxStatus.iOS.test.tsx
-  - [ ] status/ComboboxStatus.test.tsx
-  - [ ] trigger/ComboboxTrigger.test.tsx
-  - [ ] utils/handleInputPress.test.ts
-  - [ ] utils/parts.test.ts
-  - [ ] utils/useInitialLiveRegionTextMutation.test.tsx
-  - [ ] value/ComboboxValue.test.tsx
-
-### select（React 19 vs actview 1：合并文件 `packages/actview/src/select/root/SelectRoot.test.tsx`）
-
-- [x] 拆分 packages/actview/src/select/root/SelectRoot.test.tsx → 6 个子组件测试（root/trigger/item/value/popup/item-indicator）
-  - [ ] arrow/SelectArrow.test.tsx
-  - [ ] backdrop/SelectBackdrop.test.tsx
-  - [ ] group-label/SelectGroupLabel.test.tsx
-  - [ ] group/SelectGroup.test.tsx
-  - [ ] icon/SelectIcon.test.tsx
-  - [ ] item-indicator/SelectItemIndicator.test.tsx
-  - [ ] item-text/SelectItemText.test.tsx
-  - [ ] item/SelectItem.test.tsx
-  - [ ] label/SelectLabel.test.tsx
-  - [ ] list/SelectList.test.tsx
-  - [ ] popup/SelectPopup.test.tsx
-  - [ ] portal/SelectPortal.test.tsx
-  - [ ] positioner/SelectPositioner.test.tsx
-  - [ ] root/SelectRoot.test.tsx
-  - [ ] scroll-arrow/SelectScrollArrow.test.tsx
-  - [ ] scroll-down-arrow/SelectScrollDownArrow.test.tsx
-  - [ ] scroll-up-arrow/SelectScrollUpArrow.test.tsx
-  - [ ] trigger/SelectTrigger.test.tsx
-  - [ ] value/SelectValue.test.tsx
-
-### toast（React 16 vs actview 1：合并文件 `packages/actview/src/toast/useToastManager.test.tsx`）
-
-- [x] 拆分 packages/actview/src/toast/useToastManager.test.tsx → 3 个测试文件（useToastManager/createToastManager/close）
-  - [ ] action/ToastAction.test.tsx
-  - [ ] arrow/ToastArrow.test.tsx
-  - [ ] close/ToastClose.test.tsx
-  - [ ] content/ToastContent.test.tsx
-  - [ ] createToastManager.test.tsx
-  - [ ] description/ToastDescription.test.tsx
-  - [ ] enumSync.test.tsx
-  - [ ] portal/ToastPortal.test.tsx
-  - [ ] positioner/ToastPositioner.test.tsx
-  - [ ] provider/ToastProvider.test.tsx
-  - [ ] root/ToastRoot.test.tsx
-  - [ ] store.test.ts
-  - [ ] title/ToastTitle.test.tsx
-  - [ ] useToastManager.test.tsx
-  - [ ] utils/isRenderableNode.test.ts
-  - [ ] viewport/ToastViewport.test.tsx
-
-### navigation-menu（React 15 vs actview 1：合并文件 `packages/actview/src/navigation-menu/root/NavigationMenuRoot.test.tsx`）
-
-- [x] 拆分 packages/actview/src/navigation-menu/root/NavigationMenuRoot.test.tsx → 6 个子组件测试（root/trigger/item/backdrop/link/viewport）
-  - [ ] arrow/NavigationMenuArrow.test.tsx
-  - [ ] backdrop/NavigationMenuBackdrop.test.tsx
-  - [ ] content/NavigationMenuContent.test.tsx
-  - [ ] icon/NavigationMenuIcon.test.tsx
-  - [ ] item/NavigationMenuItem.test.tsx
-  - [ ] link/NavigationMenuLink.test.tsx
-  - [ ] list/NavigationMenuList.test.tsx
-  - [ ] popup/NavigationMenuPopup.test.tsx
-  - [ ] portal/NavigationMenuPortal.test.tsx
-  - [ ] positioner/NavigationMenuPositioner.test.tsx
-  - [ ] root/NavigationMenuRoot.test.tsx
-  - [ ] root/NavigationMenuRoot.webkit.test.tsx
-  - [ ] root/NavigationMenuRootContext.test.ts
-  - [ ] trigger/NavigationMenuTrigger.test.tsx
-  - [ ] viewport/NavigationMenuViewport.test.tsx
-
-### number-field（React 12 vs actview 1：合并文件 `packages/actview/src/number-field/NumberField.test.tsx`）
-
-- [x] 拆分 packages/actview/src/number-field/NumberField.test.tsx → 5 个子组件测试（root/input/group/increment/decrement）
-  - [ ] decrement/NumberFieldDecrement.test.tsx
-  - [ ] group/NumberFieldGroup.test.tsx
-  - [ ] increment/NumberFieldIncrement.test.tsx
-  - [ ] input/NumberFieldInput.test.tsx
-  - [ ] root/NumberFieldRoot.iOS.test.tsx
-  - [ ] root/NumberFieldRoot.test.tsx
-  - [ ] scrub-area-cursor/NumberFieldScrubAreaCursor.test.tsx
-  - [ ] scrub-area/NumberFieldScrubArea.gecko.test.tsx
-  - [ ] scrub-area/NumberFieldScrubArea.test.tsx
-  - [ ] utils/getViewportRect.test.ts
-  - [ ] utils/parse.test.ts
-  - [ ] utils/validate.test.ts
-
-### slider（React 12 vs actview 1：合并文件 `packages/actview/src/slider/Slider.test.tsx`）
-
-- [x] 拆分 packages/actview/src/slider/Slider.test.tsx → 3 个子组件测试（root/value/indicator）
-  - [ ] control/SliderControl.test.tsx
-  - [ ] enumSync.test.tsx
-  - [ ] indicator/SliderIndicator.test.tsx
-  - [ ] label/SliderLabel.test.tsx
-  - [ ] root/SliderRoot.test.tsx
-  - [ ] thumb/SliderThumb.test.tsx
-  - [ ] track/SliderTrack.test.tsx
-  - [ ] utils/getPushedThumbValues.test.ts
-  - [ ] utils/getSliderValue.test.ts
-  - [ ] utils/resolveThumbCollision.test.ts
-  - [ ] utils/roundValueToStep.test.ts
-  - [ ] value/SliderValue.test.tsx
-
-### drawer（React 11 vs actview 1：合并文件 `packages/actview/src/drawer/root/DrawerRoot.test.tsx`）
-
-- [x] 拆分 packages/actview/src/drawer/root/DrawerRoot.test.tsx → 3 个子组件测试（root/close/backdrop）
-  - [ ] content/DrawerContent.test.tsx
-  - [ ] indent-background/DrawerIndentBackground.test.tsx
-  - [ ] indent/DrawerIndent.test.tsx
-  - [ ] popup/DrawerPopup.test.tsx
-  - [ ] provider/DrawerProvider.test.tsx
-  - [ ] root/DrawerRoot.test.tsx
-  - [ ] root/DrawerSnapPoints.test.tsx
-  - [ ] root/useDrawerSnapPoints.test.ts
-  - [ ] swipe-area/DrawerSwipeArea.test.tsx
-  - [ ] viewport/DrawerViewport.test.tsx
-  - [ ] virtual-keyboard-provider/DrawerVirtualKeyboardProvider.test.tsx
-
-### preview-card（React 9 vs actview 1：合并文件 `packages/actview/src/preview-card/root/PreviewCardRoot.test.tsx`）
-
-- [x] 拆分 packages/actview/src/preview-card/root/PreviewCardRoot.test.tsx → 2 个子组件测试（root/trigger）
-  - [ ] arrow/PreviewCardArrow.test.tsx
-  - [ ] backdrop/PreviewCardBackdrop.test.tsx
-  - [ ] popup/PreviewCardPopup.test.tsx
-  - [ ] portal/PreviewCardPortal.test.tsx
-  - [ ] positioner/PreviewCardPositioner.test.tsx
-  - [ ] root/PreviewCardRoot.detached-triggers.test.tsx
-  - [ ] root/PreviewCardRoot.test.tsx
-  - [ ] trigger/PreviewCardTrigger.test.tsx
-  - [ ] viewport/PreviewCardViewport.test.tsx
-
-### scroll-area（React 7 vs actview 1：合并文件 `packages/actview/src/scroll-area/ScrollArea.test.tsx`）
-
-- [x] 拆分 packages/actview/src/scroll-area/ScrollArea.test.tsx → 2 个子组件测试（root/scrollbar）
-  - [ ] content/ScrollAreaContent.test.tsx
-  - [ ] corner/ScrollAreaCorner.test.tsx
-  - [ ] enumSync.test.tsx
-  - [ ] root/ScrollAreaRoot.test.tsx
-  - [ ] scrollbar/ScrollAreaScrollbar.test.tsx
-  - [ ] thumb/ScrollAreaThumb.test.tsx
-  - [ ] viewport/ScrollAreaViewport.test.tsx
-
-### progress（React 6 vs actview 1：合并文件 `packages/actview/src/progress/Progress.test.tsx`）
-
-- [x] 拆分 packages/actview/src/progress/Progress.test.tsx → 2 个子组件测试（root/value；Meter 用例并入 meter 测试）
-  - [ ] enumSync.test.ts
-  - [ ] indicator/ProgressIndicator.test.tsx
-  - [ ] label/ProgressLabel.test.tsx
-  - [ ] root/ProgressRoot.test.tsx
-  - [ ] track/ProgressTrack.test.tsx
-  - [ ] value/ProgressValue.test.tsx
-
-### tabs（React 6 vs actview 1：合并文件 `packages/actview/src/tabs/Tabs.test.tsx`）
-
-- [x] 拆分 packages/actview/src/tabs/Tabs.test.tsx → 3 个子组件测试（root/tab/panel）
-  - [ ] enumSync.test.tsx
-  - [ ] indicator/TabsIndicator.test.tsx
-  - [ ] list/TabsList.test.tsx
-  - [ ] panel/TabsPanel.test.tsx
-  - [ ] root/TabsRoot.test.tsx
-  - [ ] tab/TabsTab.test.tsx
-
-### toolbar（React 6 vs actview 1：合并文件 `packages/actview/src/toolbar/Toolbar.test.tsx`）
-
-- [x] 拆分 packages/actview/src/toolbar/Toolbar.test.tsx → 2 个子组件测试（root/group）
-  - [ ] button/ToolbarButton.test.tsx
-  - [ ] group/ToolbarGroup.test.tsx
-  - [ ] input/ToolbarInput.test.tsx
-  - [ ] link/ToolbarLink.test.tsx
-  - [ ] root/ToolbarRoot.test.tsx
-  - [ ] separator/ToolbarSeparator.test.tsx
-
-### checkbox（React 4 vs actview 1：合并文件 `packages/actview/src/checkbox/Checkbox.test.tsx`）
-
-- [x] 拆分 packages/actview/src/checkbox/Checkbox.test.tsx → 2 个子组件测试（root/indicator；CheckboxGroup 用例并入 checkbox-group 测试）
-  - [ ] enumSync.test.ts
-  - [ ] indicator/CheckboxIndicator.test.tsx
-  - [ ] root/CheckboxRoot.react17.test.tsx
-  - [ ] root/CheckboxRoot.test.tsx
-
-### otp-field（React 4 vs actview 1：合并文件 `packages/actview/src/otp-field/root/OTPFieldRoot.test.tsx`）
-
-- [x] 拆分 packages/actview/src/otp-field/root/OTPFieldRoot.test.tsx → 2 个子组件测试（root/input）
-  - [ ] input/OTPFieldInput.test.tsx
-  - [ ] root/OTPFieldRoot.react17.test.tsx
-  - [ ] root/OTPFieldRoot.test.tsx
-  - [ ] utils/otp.test.ts
-
-### autocomplete（React 3 vs actview 1：合并文件 `packages/actview/src/autocomplete/root/AutocompleteRoot.test.tsx`）
-
-- [x] 拆分 packages/actview/src/autocomplete/root/AutocompleteRoot.test.tsx → 3 个子组件测试（root/item/value）
-  - [ ] item/AutocompleteItem.test.tsx
-  - [ ] root/AutocompleteRoot.test.tsx
-  - [ ] value/AutocompleteValue.test.tsx
-
-### radio（React 3 vs actview 1：合并文件 `packages/actview/src/radio/Radio.test.tsx`）
-
-- [x] 拆分 packages/actview/src/radio/Radio.test.tsx → 2 个子组件测试（root/indicator；RadioGroup 用例并入 radio-group 测试）
-  - [ ] enumSync.test.ts
-  - [ ] indicator/RadioIndicator.test.tsx
-  - [ ] root/RadioRoot.test.tsx
-
-### switch（React 3 vs actview 1：合并文件 `packages/actview/src/switch/Switch.test.tsx`）
-
-- [x] 拆分 packages/actview/src/switch/Switch.test.tsx → 2 个子组件测试（root/thumb）
-  - [ ] enumSync.test.ts
-  - [ ] root/SwitchRoot.test.tsx
-  - [ ] thumb/SwitchThumb.test.tsx
-
-## P3：测试文件——已按子组件分布，补齐缺失
-
-### menu（React 21 vs actview 18：缺 3 个）
-
-- [x] menu detached-triggers：跳过（actview 无 createHandle API）
-- [x] menu talkBack：跳过（平台限定）
-- [x] menu voiceOver：跳过（平台限定）
-
-### popover（React 13 vs actview 9：缺 5 个）
-
-- [x] 补齐 arrow/PopoverArrow.test.tsx
-- [x] 补齐 description/PopoverDescription.test.tsx
-- [x] 补齐 enumSync.test.tsx
-- [x] 补齐 portal/PopoverPortal.test.tsx
-- [x] popover detached-triggers：跳过（actview 无 createHandle API）
-
-### dialog（React 10 vs actview 6：缺 5 个）
-
-- [x] 补齐 description/DialogDescription.test.tsx
-- [x] 补齐 popup/DialogPopup.test.tsx
-- [x] dialog detached-triggers：跳过（actview 无 createHandle API）
-- [x] 补齐 title/DialogTitle.test.tsx
-- [x] 补齐 viewport/DialogViewport.test.tsx
-
-### tooltip（React 9 vs actview 3：缺 6 个）
-
-- [x] 补齐 arrow/TooltipArrow.test.tsx
-- [x] 补齐 portal/TooltipPortal.test.tsx
-- [x] 补齐 positioner/TooltipPositioner.test.tsx
-- [x] 补齐 provider/TooltipProvider.test.tsx
-- [x] tooltip detached-triggers：跳过（actview 无 createHandle API）
-- [x] 补齐 viewport/TooltipViewport.test.tsx
-
-### field（React 8 vs actview 6：缺 2 个）
-
-- [x] 补齐 item/FieldItem.test.tsx
-- [x] field react17：跳过（平台限定）
-
-### accordion（React 5 vs actview 4：缺 1 个）
-
-- [x] 补齐 panel/AccordionPanel.test.tsx
-
-### collapsible（React 3 vs actview 2：缺 1 个）
-
-- [x] 补齐 panel/CollapsiblePanel.test.tsx
-
-## 备注
-
-- 重构与测试拆分可并行（重构先行更优：裸函数组件更接近 React 测试转写形态）；
-- actview 现有合并测试文件拆分后删除原文件（用例已归位），保持每子组件一个测试文件；
-- 平台限定测试（`.android` / `.gecko` / `.iOS` / `talkBack` / `voiceOver` / `.react17`）按 actview 当前平台能力决定是否转写；
-- `utils/`、`Context`、`enumSync` 等纯逻辑测试独立成文件（对齐 React 分布）；
-- 未列出的组件 = React 测试数 ≤ actview（含 actview 反超项），分布已达标。
+# actview 组件重构计划（PLAN）
+
+> **本轮重写**：实现基准变更——范式与 API 以 `E:\code3\actview\src\components`（2026-08 大版本更新）的**签名与语义**为基准。
+> **实现方式：全部本地实现，不做整文件拷贝/覆盖**（原「用权威版覆盖」条目已移除）——适配本地类型体系（`@/` 路径、MaybeRefOrGetter、本地 hooks 与 floating-ui 移植层）；`E:\code3\actview\src\components` 仅作行为参照。
+> 旧计划的 P0/P1/P2/P3 已清空；测试差距分析（React 分布对照）经验证仍有效，收编进 P3。
+> 范式文档：`E:\code3\actview\docs\`（API / components / react-migration / vue-migration / babel-defineComponent / headless-components / dual-ref-props 案例）。
+
+---
+
+## 0. 范式基准（相对旧计划 / MIGRATION.md 的关键变化）
+
+| # | 变化 | 说明 |
+|---|---|---|
+| 1 | **裸函数是唯一推荐形态** | 函数体 = setup（只执行一次），最后直接 return JSX，Babel 自动包 render 函数。`return () => JSX`（setup 风格）**编译期直接报错**；手动 `defineComponent(fn)` 仅限 .ts/测试直调场景（fn 必须返回渲染函数）。MIGRATION.md 案例 1 / 案例总结的 defineComponent 范式**作废** |
+| 2 | **useRenderElement 签名更换** | 本地旧版 `useRenderElement(options) → { merged(), element(extraRefs?) }` → 目标签名 **`useRenderElement(element, componentProps, params) → VNode`**（state/ref/props/stateAttributesMapping，render 双形态与 ref 合并链内建）。调用约定：字面 JSX 内嵌调用（Fragment/JSX 锚）。**过渡期旧实现暂存 `useRenderElementLegacy.tsx` 供存量调用点使用，P1 迁移完成后删除** |
+| 3 | **ref 形 props 惯用法** | `toRefs` 只解构**值形 props**；ref 形 props（`props.ref`/`props.inputRef`）**直读本体**，禁入 toRefs/useProps 解构（toRef 的 ref 透传 → 双重解包 + setup 快照二义性）；rest 转发用 EXCLUDE 集合剔除 ref 形键。详见 `E:\code3\actview\docs\dual-ref-props.md` |
+| 4 | **ref 传递（父侧）** | 自定义名 ref 形 prop 必须 `rawRef()` 包裹——jsxFactory 对顶层 ref 属性值解包成值快照；`ref` 键本身不解包，直达 `props.ref` |
+| 5 | **Context：store-as-is 新契约** | 官方 `createContext` **零包装零监听**（2026-08 语义变更）：Provider 原样存储 value，响应式由传入载体携带（reactive 对象/装 ref 容器/rawRef）；**传快照 = 静态注入**。payload 用 `reactive()` 时泛型标注 `Reactive<T>`（对象默认值重载已编译期强制 Reactive）。MIGRATION.md 案例 5 的「Provider watch 同步 value」描述已过期；本地 internals 已无 createContext.tsx（旧案例 16.2 的 internals 版不可用） |
+| 6 | **aria-*/data-* 布尔已规范化** | setProp 对布尔输出 `"true"/"false"`（false 不移除），SSR 同步——可直接传布尔，无需手工 `? 'true' : undefined` |
+| 7 | **根 DOM 引用** | `<Comp ref={x}/>` 拿**组件实例是有意设计**；需要 DOM 时组件内转发：`<div ref={props.ref}>` 或 `useRenderElement` 的 `params.ref` 透传（首选）；`useRootElement()`（core lifecycle）为备选且可能被移除。Fragment 根场景本地 `useRootElementFragment` 的去留在 P0 评估 |
+| 8 | **事件/属性差异（仍有效）** | `onChange`=原生 change（受控文本用 onInput）；`for` 而非 `htmlFor`；无合成事件（原生 Event + `preventBaseUIHandler` 链合并）；类名映射仅 `className→class` |
+
+---
+
+## 现状盘点（本轮扫描数据）
+
+- 非测试组件 tsx 共 **229 个**；其中 ~169 个使用本地旧签名 useRenderElement（**全部需要调用点迁移**）；60 个完全不用 useRenderElement（Provider / 薄委托 / Portal / 简单包装——权威 `CheckboxGroup.tsx` 先例允许保持纯 JSX，按豁免类处理）。
+- **defineComponent 残留仅 4 个源码文件**：`csp-provider/CSPProvider.tsx`、`direction-provider/DirectionProvider.tsx`、`select/separator/SelectSeparator.tsx`、`toggle/Toggle.tsx`。
+- **internals 与权威差异**：3 个 DIFF（`useRenderElement.tsx` / `getStateAttributesProps.ts` / `types.ts`）+ 5 个缺失（`mergeProps.ts`、`useMergedRefs.ts`、`utils/getReactElementRef.ts`、`utils/mergeObjects.ts`、`utils/resolveClassNameStyle.ts`）；本地 `src/merge-props/mergeProps.ts` 为旧变体（哈希不同）。
+- 本地特有（权威没有，保留或评估）：`useRootElementFragment`、`defineHeadless`、`store`、`composite`、`use-button`、`useAnchorPositioning`、`useTransitionStatus` 等 hooks、`floating-ui-react` 移植层（30 文件）。
+- 权威参照共 16 文件：`internals/`（useRenderElement / mergeProps / getStateAttributesProps / types / useMergedRefs / utils×3）+ `avatar/`（Root/Context/stateAttributesMapping/index）+ `checkbox/`（CheckboxRoot/CheckboxGroup/checkbox-context/index）。
+
+---
+
+## P0 基线：internals 对齐（先行，后续一切工作的地基；全部本地实现，不整文件拷贝）
+
+- [ ] 本地新增 5 个缺失模块（按目标语义实现，适配本地路径/类型）：`internals/mergeProps.ts`（mergeProps/mergePropsN/mergeClassNames + `preventBaseUIHandler` 链）、`internals/useMergedRefs.ts`（委托型 ref）、`internals/utils/{getReactElementRef,mergeObjects,resolveClassNameStyle}.ts`
+- [ ] 本地重写 `internals/useRenderElement.tsx` 为目标签名 `(element, componentProps, params) → VNode`（render 双形态、ref 合并链、renderTag button/img 特判内建）；**旧实现暂存 `internals/useRenderElementLegacy.tsx`** 供 ~169 个存量调用点过渡
+- [ ] `internals/getStateAttributesProps.ts`、`internals/types.ts` 对齐目标语义（`BaseUIComponentProps` 含 `ref?: Ref<HTMLElement|null>`、`ComponentRenderFn`；MaybeRefOrGetter 等本地扩展按需保留）
+- [ ] `src/merge-props/` 与新 `internals/mergeProps.ts` 收敛为一份，更新 import 路径
+- [ ] `useRootElementFragment` 去留评估（Fragment 根实测；core `useRootElement` 为移除候选，不作为依赖项）
+- [ ] 基准家族落地：**avatar + checkbox + checkbox-group** 按目标范式本地实现（作为后续所有家族的样板）
+- 验收：`pnpm typescript`（tsgo）通过；avatar/checkbox 现有 jsdom 测试全绿；差异逐条记录到本文件附录 C
+
+---
+
+## P1 组件重构（229 个 tsx，按家族四批推进）
+
+每家族固定步骤：
+1. context 文件先行（官方 createContext + store-as-is + `Reactive<T>` payload + 统一写入口）；
+2. hooks（use-button / composite / useTransitionStatus 等）适配新签名；
+3. Root → 子件逐个转裸函数 + 权威 useRenderElement（值形 props toRefs 活引用、ref 形直读、EXCLUDE、aria 布尔直传）；
+4. 该家族 jsdom 测试同步跑绿后再进下一家族。
+
+### 批次 1：简单族（有权威直接参照 / 叶子组件）
+- [ ] avatar（13 文件）—— 权威参照
+- [ ] checkbox（9）+ checkbox-group（6）—— 权威参照
+- [ ] separator（4）、button（5）、toggle（4）、toggle-group（6）
+- [ ] input（3）、form（3）
+- [ ] csp-provider（4）、direction-provider（5）—— 无 DOM Provider（豁免类范式样板）
+
+### 批次 2：中型族
+- [ ] collapsible（14）、accordion（18）
+- [ ] progress（12）、meter（13）、switch（8）、radio（8）、radio-group（4）
+- [ ] tabs（13）、toolbar（12）、toggle 相关收尾
+- [ ] fieldset（7）、otp-field（8）、scroll-area（16）、field（19）
+
+### 批次 3：弹层族
+- [ ] tooltip（24）、popover（31）、preview-card（17）
+- [ ] dialog（26）、alert-dialog（6）、drawer（18）
+- [ ] menu（54）、context-menu（8）、menubar（5）、navigation-menu（22）
+
+### 批次 4：大族（最后，调用点最多）
+- [ ] combobox（37）、autocomplete（12）、select（31）
+- [ ] number-field（22）、toast（20）、slider（21）
+
+**豁免类**（不强制 useRenderElement，对齐权威 CheckboxGroup 先例）：纯 Provider（CSP/Direction）、薄委托（Input → FieldControl）、Portal/Value 等无状态包装——但范式细节（裸函数、渲染期解构、ref 形直读）仍须统一。
+
+**floating-ui-react 移植层（30 文件）**：仅适配新 useRenderElement 签名与 ref 契约，不改定位行为；单独小批穿插在批次 3 之前（弹层族依赖它）。
+
+---
+
+## P2 工具函数对齐
+
+- [ ] `utils/`（59 文件）中与渲染相关部分归位：mergeClassNames / mergeStyles / resolveClassNameStyle / mergeObjects / getReactElementRef 与权威 internals 互相引用关系理清，消除双份实现
+- [ ] `stateAttributesMapping.ts`（internals 根）与各家族 `*DataAttributes.ts` 对齐权威 `getStateAttributesProps` 行为（布尔规范化后校对映射）
+- [ ] `use-render/`（3 文件）与权威 useRenderElement 关系评估：能删则删，保留则注明差异
+- [ ] `collapsibleOpenStateMapping` 等映射常量核对
+
+---
+
+## P3 测试用例（收编旧计划已验证的差距分析）
+
+### 3.1 无测试组件按 React 分布新建（旧 P1）
+- [ ] toggle-group：`ToggleGroup.test.tsx`、`enumSync.test.tsx`（React 2 → actview 0）
+- [ ] meter：indicator / label / root / track / value 5 个（React 5 → 0）
+- [ ] checkbox-group：`CheckboxGroup.test.tsx`、`useCheckboxGroupParent.test.tsx`（React 2 → 0）
+
+### 3.2 合并测试拆分到子组件（旧 P2，拆分标记保留：combobox/select/toast/navigation-menu/number-field/slider/drawer/preview-card/scroll-area/progress/tabs/toolbar/checkbox/otp-field/autocomplete/radio/switch 已拆出首批，余下子文件按旧清单补齐）
+- 详细文件清单沿用旧计划（React 分布对照仍有效），拆完删除原合并文件，保持每子组件一个测试文件。
+
+### 3.3 测试范式更新（转写 React 用例时统一执行）
+- [ ] 测试组件：函数声明**直接 return JSX**（Babel 自动包装；禁手写双层 `return () =>`——现为编译期报错）
+- [ ] 包装组件渲染期解构 props（setup 快照陷阱）；`{...props}` 展开引用稳定性注意
+- [ ] `fireEvent` 后 `await act(() => {})`；跨组件 watch 链额外 flush；`setProps` 浅合并不删除
+- [ ] 查询：`data-testid` + 按目标默认标签精确 `querySelector`（防祖先误配）；label 关联用 `getElementById`
+- [ ] 渲染计数用 `onUpdated`（render 函数内改 ref = 死循环）
+- [ ] `htmlFor` → `for`；受控文本断言用 onInput 语义
+- [ ] 平台限定（.android/.gecko/.iOS/talkBack/voiceOver/.react17）按 actview 能力决定转写或跳过
+
+---
+
+## 附录 A：MIGRATION.md 案例有效性判定（只做参考，不可全信）
+
+| 案例 | 判定 | 说明 |
+|---|---|---|
+| 1 defineComponent 范式 | ❌ **过期** | 新权威=裸函数+最后 return JSX；setup 风格编译期报错；「唯一合法形态」已变更 |
+| 2 render 单 props 对象 | ⚠️ 以权威为准 | 以权威 `types.ts` 的 `ComponentRenderFn` + `evaluateRenderProp` 逐字对齐（props 含 state 合并、state 亦作第二参） |
+| 3 VNode 透传 key/className/style 合并 | ✅ 已内建 | 权威 useRenderElement 的 clone 分支处理，组件内手写克隆代码删除 |
+| 4 className/style 函数解析 | ✅ 已内建 | 权威 useRenderElementProps 的 resolveClassName/resolveStyle |
+| 5 官方 createContext | ⚠️ 部分过期 | store-as-is 新契约取代「watch 同步 value」；Provider 传响应式引用；internals createContext 已不存在 |
+| 6 根 ref 形态 | ✅ 有效+补充 | 补充：ref=实例是设计语义；DOM 靠转发；`{ current }` 手动对象不做模板 ref 的结论仍有效 |
+| 7 watch 时序（flush:sync 注册类 / onCleanup 卸载不执行） | ✅ 有效 | 方案 B（保存 stop + onUnmounted）继续沿用 |
+| 8 defineComponent 泛型 as 断言 | ❌ 过期 | 裸函数泛型组件直接保留泛型签名 |
+| 9 测试基建（await act / setProps / 查询） | ✅ 有效 | 收编进 P3.3 |
+| 10 propsGetter 替换语义 | ✅ 有效 | 与权威 mergePropsN 的 getter 替换语义一致；「消费 prev 的 getter 放最后」规则保留 |
+| 11 无 DOM Provider | ✅ 有效 | 写法更新为裸函数 |
+| 12 Button 要点 | ✅ 有效 | data-* 默认映射 + getButtonProps 放最后 |
+| 13 Form/Input 泛型 | ⚠️ 半过期 | defineComponent→裸函数；泛型签名直接可用 |
+| 14 FieldControl getter 链 | ⚠️ 半过期 | getter 规则有效，写法随新签名 |
+| 15 Meter 家族范式 | ⚠️ 半过期 | 步骤有效，代码范式随新基准 |
+| 16 radio 事件语义（onInput/修饰键/for） | ✅ 有效 | 原生事件语义未变 |
+| 17 Field 子件（rendered 渲染期判断） | ⚠️ 半过期 | 「响应式条件必须渲染期判断」仍有效 |
+| 18 渲染计数 onUpdated | ✅ 有效 | 收编进 P3.3 |
+| 19 测试组件写法 | ✅ 有效 | 且升级为硬约束（编译期报错） |
+
+---
+
+## 附录 B：执行流程（每轮会话）
+
+1. 读权威参照（本文件附录 C + `E:\code3\actview\src\components` 对应文件）；
+2. 重构一个家族（P0 步骤 1–4）；
+3. `pnpm typescript` + 该家族 jsdom 测试全绿；
+4. 回写本文件勾选 + 把新发现的范式差异记入附录 C。
+
+## 附录 C：迁移中发现的范式差异（滚动记录）
+
+（空——执行时逐条追加）
