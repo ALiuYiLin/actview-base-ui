@@ -1,4 +1,4 @@
-import { createContext, defineComponent, ref, toValue, watch } from 'actview';
+import { createContext, ref, watch } from 'actview';
 import type { Ref } from 'actview';
 import { useId } from '@/utils/useId';
 import { useRefWithInit } from '@/utils/useRefWithInit';
@@ -11,15 +11,16 @@ const FloatingTreeContext = createContext<FloatingTreeType | null>(null);
 /**
  * Returns the parent node id for nested floating elements, if available.
  * Returns `null` for top-level floating elements.
+ * (store-as-is：use() 原样返回载体——直读字段，不读 `.value`。)
  */
 export const useFloatingParentNodeId = (): string | null =>
-  FloatingNodeContext.use().value?.id || null;
+  FloatingNodeContext.use()?.id || null;
 
 /**
  * Returns the nearest floating tree context, if available.
  */
 export const useFloatingTree = (externalTree?: FloatingTreeStore): FloatingTreeType | null => {
-  const contextTree = FloatingTreeContext.use().value as FloatingTreeType | null;
+  const contextTree = FloatingTreeContext.use() as FloatingTreeType | null;
   return externalTree ?? contextTree;
 };
 
@@ -61,18 +62,24 @@ export interface FloatingNodeProps {
  * Provides parent node context for nested floating elements.
  * @see https://floating-ui.com/docs/FloatingTree
  */
-export const FloatingNode = defineComponent(function (props: FloatingNodeProps) {
+export function FloatingNode(props: FloatingNodeProps) {
+  // ============ setup（只执行一次）：一次性初始化 ============
   const parentId = useFloatingParentNodeId();
 
-  return () => {
-    // PD-15：children 必须 render 期求值（setup 快照会让 payload 驱动的
-    // 动态子树永远停留首次渲染）。
-    const {children, id} = props;
-    return (
-      <FloatingNodeContext.Provider value={{id, parentId}}>{children}</FloatingNodeContext.Provider>
-    );
+  // store-as-is 载体：身份稳定 getter 对象（渲染期新对象会冻结消费端快照）——
+  // id 渲染期求值；children 渲染期直读（setup 快照会让动态子树停留首次渲染）。
+  const payload = {
+    get id() {
+      return props.id;
+    },
+    parentId,
   };
-});
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return (
+    <FloatingNodeContext.Provider value={payload}>{props.children}</FloatingNodeContext.Provider>
+  );
+}
 
 export interface FloatingTreeProps {
   children?: any;
@@ -84,18 +91,16 @@ export interface FloatingTreeProps {
  * each other on the DOM.
  * @see https://floating-ui.com/docs/FloatingTree
  */
-export const FloatingTree = defineComponent(function (props: FloatingTreeProps) {
-  const externalTree = toValue(props.externalTree);
-
+export function FloatingTree(props: FloatingTreeProps) {
+  // ============ setup（只执行一次）：一次性初始化 ============
+  // store 标识初始化型快照（React useRefWithInit 同语义，初始化后不随 prop 变化）。
+  const externalTree = props.externalTree;
   const tree = useRefWithInit(() => externalTree ?? new FloatingTreeStore()).value;
 
-  return () => {
-    // PD-15：children 必须 render 期解构（setup 快照会让动态 children——
-    // 如条件渲染的 Trigger——永远停留首次渲染）。
-    const children = toValue(props.children);
-    return (
-      <FloatingTreeContext.Provider value={tree}>{children}</FloatingTreeContext.Provider>
-    );
-  };
-});
-
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  // children 渲染期直读（setup 快照会让动态 children——如条件渲染的
+  // Trigger——永远停留首次渲染）。
+  return (
+    <FloatingTreeContext.Provider value={tree}>{props.children}</FloatingTreeContext.Provider>
+  );
+}

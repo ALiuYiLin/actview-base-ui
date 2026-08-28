@@ -1,4 +1,4 @@
-import {defineComponent, onUnmounted, watch, ref} from 'actview';
+import {onUnmounted, watch, ref} from 'actview';
 import { getNodeName, isHTMLElement } from '@floating-ui/utils/dom';
 import { addEventListener } from '@/internals/addEventListener';
 import { mergeCleanups } from '@/internals/mergeCleanups';
@@ -44,9 +44,9 @@ import { resolveRef } from '@/utils/resolveRef';
 import { FloatingPortalContext, type PortalContextValue } from './FloatingPortal';
 import type { Ref } from 'actview';
 
-// actview FloatingPortal 的 context 结构：usePortalContext 返回 Ref<PortalContextValue | undefined>。
-// 本地 FloatingPortal（components/FloatingPortal.tsx）provide 该 context。
-export function usePortalContext(): Ref<PortalContextValue | undefined> | undefined {
+// actview FloatingPortal 的 context 结构（store-as-is）：usePortalContext
+// 原样返回载体（PortalContextValue | undefined）。
+export function usePortalContext(): PortalContextValue | undefined {
   return FloatingPortalContext.use();
 }
 
@@ -218,7 +218,7 @@ export interface FloatingFocusManagerProps {
  * @see https://floating-ui.com/docs/FloatingFocusManager
  * (actview 版：store 模式；原生 DOM 事件；useIsoLayoutEffect → watch flush post。)
  */
-export const FloatingFocusManager = defineComponent(function FloatingFocusManager(
+export function FloatingFocusManager(
   props: FloatingFocusManagerProps,
 ): any {
   const {
@@ -270,8 +270,7 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
   );
 
   const tree = useFloatingTree(externalTree);
-  const portalContextRef = usePortalContext();
-  const portalContext = portalContextRef?.value;
+  const portalContext = usePortalContext();
 
   const preventReturnFocusRef = ref(false);
   const isPointerDownRef = ref(false);
@@ -947,12 +946,11 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
   const shouldRenderGuards =
     !disabled && (modal ? !isUntrappedTypeableCombobox : true) && (isInsidePortal || modal);
 
-  return () => {
-    // PD-15：children 必须在 render 期解构（props 代理追踪），
-    // setup 快照会让子组件（如 Dialog.Popup 的 element vnode）永远停留首次渲染。
-    const {children} = props;
-    return (
-      <>
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  // children 渲染期直读（props 代理追踪；setup 快照会让子组件——如
+  // Dialog.Popup 的 element vnode——永远停留首次渲染）。
+  return (
+    <>
       {shouldRenderGuards && (
         <FocusGuard
           data-type="inside"
@@ -981,7 +979,7 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
           }}
         />
       )}
-      {children}
+      {props.children}
       {shouldRenderGuards && (
         <FocusGuard
           data-type="inside"
@@ -1013,9 +1011,7 @@ export const FloatingFocusManager = defineComponent(function FloatingFocusManage
         />
       )}
     </>
-    );
-  };
-});
-
+  );
+}
 
 
