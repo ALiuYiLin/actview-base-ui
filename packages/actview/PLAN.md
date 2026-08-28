@@ -1,7 +1,7 @@
 # actview 组件重构计划（PLAN）
 
 > **本轮重写**：实现基准变更——范式与 API 以 `E:\code3\actview\src\components`（2026-08 大版本更新）的**签名与语义**为基准。
-> **实现方式：全部本地实现，不做整文件拷贝/覆盖**（原「用权威版覆盖」条目已移除）——适配本地类型体系（`@/` 路径、MaybeRefOrGetter、本地 hooks 与 floating-ui 移植层）；`E:\code3\actview\src\components` 仅作行为参照。
+> **实现方式（已按裁决更新）**：internals 基础（useRenderElement / mergeProps / useMergedRefs / utils×3）**直接采用目标版文件**落地到规范路径；旧签名实现暂存 `internals/useRenderElementLegacy.tsx` 供 ~169 个存量调用点过渡，P1 迁移完成后删除。家族组件按目标范式逐族迁移；类型/本地扩展（`@/` 路径、MaybeRefOrGetter、style string 形态）做最小适配。
 > 旧计划的 P0/P1/P2/P3 已清空；测试差距分析（React 分布对照）经验证仍有效，收编进 P3。
 > 范式文档：`E:\code3\actview\docs\`（API / components / react-migration / vue-migration / babel-defineComponent / headless-components / dual-ref-props 案例）。
 
@@ -32,15 +32,16 @@
 
 ---
 
-## P0 基线：internals 对齐（先行，后续一切工作的地基；全部本地实现，不整文件拷贝）
+## P0 基线：internals 对齐（先行，后续一切工作的地基）
 
-- [ ] 本地新增 5 个缺失模块（按目标语义实现，适配本地路径/类型）：`internals/mergeProps.ts`（mergeProps/mergePropsN/mergeClassNames + `preventBaseUIHandler` 链）、`internals/useMergedRefs.ts`（委托型 ref）、`internals/utils/{getReactElementRef,mergeObjects,resolveClassNameStyle}.ts`
-- [ ] 本地重写 `internals/useRenderElement.tsx` 为目标签名 `(element, componentProps, params) → VNode`（render 双形态、ref 合并链、renderTag button/img 特判内建）；**旧实现暂存 `internals/useRenderElementLegacy.tsx`** 供 ~169 个存量调用点过渡
-- [ ] `internals/getStateAttributesProps.ts`、`internals/types.ts` 对齐目标语义（`BaseUIComponentProps` 含 `ref?: Ref<HTMLElement|null>`、`ComponentRenderFn`；MaybeRefOrGetter 等本地扩展按需保留）
-- [ ] `src/merge-props/` 与新 `internals/mergeProps.ts` 收敛为一份，更新 import 路径
-- [ ] `useRootElementFragment` 去留评估（Fragment 根实测；core `useRootElement` 为移除候选，不作为依赖项）
-- [ ] 基准家族落地：**avatar + checkbox + checkbox-group** 按目标范式本地实现（作为后续所有家族的样板）
-- 验收：`pnpm typescript`（tsgo）通过；avatar/checkbox 现有 jsdom 测试全绿；差异逐条记录到本文件附录 C
+- [x] 落地 5 个基础模块：`internals/mergeProps.ts`、`internals/useMergedRefs.ts`、`internals/utils/{getReactElementRef,mergeObjects,resolveClassNameStyle}.ts`
+- [x] `internals/useRenderElement.tsx` 换为目标签名 `(element, componentProps, params) → VNode`；旧实现暂存 `internals/useRenderElementLegacy.tsx`（169 个调用点 import 已批量改写指向 Legacy）
+- [x] `internals/getStateAttributesProps.ts`、`internals/types.ts` 对齐（types：保留 HTMLAttributes 基座 + `ref?: Ref<HTMLElement|null>` 转发声明 + 本地 `Reactive<T>` 品牌类型——踩坑见附录 C.1/C.2）
+- [ ] `src/merge-props/`（35 个引用方）与新 `internals/mergeProps.ts` 收敛为一份 → 移入 P2
+- [x] `useRootElementFragment` 评估：AvatarImage 已用 ref 合并链取代 rootRef 桥接、不再依赖；其余 Fragment 根家族迁移时逐个消除，最终删除
+- [x] 基准家族 avatar：store-as-is context（reactive 载体 + 统一写入口）+ 新 hook + ref 合并链——**58 通过 / 3 失败 / 3 跳过**（3 失败=同一 conformance 存量债，附录 C.5；HEAD 同期 77 失败）
+- [ ] 基准家族 checkbox + checkbox-group（依赖 internals/field-root-context 等共享 internals 的 store-as-is 适配）
+- 验收：类型错误数 = 基线 217（core 1.3 store-as-is 存量债，家族迁移逐个消化）；avatar 测试无回归且大幅收敛 ✅
 
 ---
 
@@ -52,8 +53,8 @@
 3. Root → 子件逐个转裸函数 + 权威 useRenderElement（值形 props toRefs 活引用、ref 形直读、EXCLUDE、aria 布尔直传）；
 4. 该家族 jsdom 测试同步跑绿后再进下一家族。
 
-### 批次 1：简单族（有权威直接参照 / 叶子组件）
-- [ ] avatar（13 文件）—— 权威参照
+### 批次 1：简单族（有直接参照 / 叶子组件）
+- [x] avatar（13 文件）—— ✅ 已迁移（P0 基准）
 - [ ] checkbox（9）+ checkbox-group（6）—— 权威参照
 - [ ] separator（4）、button（5）、toggle（4）、toggle-group（6）
 - [ ] input（3）、form（3）
@@ -145,4 +146,11 @@
 
 ## 附录 C：迁移中发现的范式差异（滚动记录）
 
-（空——执行时逐条追加）
+1. **types.ts 基座必须用 `HTMLAttributes`**：@actview/jsx 的 `JSX.IntrinsicElements[Tag]` **不含** children/id/aria-* 键，用它作 `BaseUIComponentProps` 基座会让全库组件丢 children/id（-92 个新增类型错误的根因，已回退为 HTMLAttributes + Omit className/style/ref）。
+2. **actview 1.3.0 聚合包未导出 `Reactive<T>`** → `internals/types.ts` 本地自持同款品牌类型（`T & { readonly '__v_isReactive'?: true }`），Context payload 标注用它。
+3. **本地 `style` 支持 string 形态**（目标版仅对象/函数）→ 新 hook 的 `UseRenderElementComponentProps.style` 放宽 `| string`。
+4. **render 函数契约分歧**：目标 `(props, state)` 双参 vs 本地 `'../types'.ComponentRenderFn` 单参（state 并入 props）。hook 内 `as any` 调用运行时兼容；类型层对齐排 P2。
+5. **conformance「merge the rendering element ref with the custom component ref」用例与「转发优先、弃用 useRootElement」方向冲突**：render 函数替换 `props.ref` 后，合并链委托 ref 不再收到 DOM 写入（HEAD 同样失败）。待裁决：组件合并链加 root-tracking（useRootElement，移除候选 API）或调整 conformance 期望。**未裁决前每家族会留 1 个该用例失败。**
+6. **plugin-babel 2.0.0 硬拒绝测试组件 setup 风格**（`return () => JSX` 编译期报错）→ 全库 **56 个测试文件**需改写（P3.3 前置）；AvatarFallback.test.tsx 已改（defineComponent 包装→裸函数、ref 容器→reactive 载体、内联组件提升到 describe 层）。
+7. **core 1.3 store-as-is 运行时债**：旧 context 消费（`.value` 链）在 1.3 下恒 undefined → `FieldRootContext/AvatarRootContext is missing` 类失败。家族迁移时逐个消除（avatar 已消化；checkbox 依赖的 internals/field-root-context 等共享 internals 在 checkbox 基准迁移时处理）。
+8. **pnpm 11.17.0 自管切换在本环境损坏**（store 链接缺失）→ 用 `node_modules/.bin` 直呼二进制：tsgo 用根 `node_modules/.bin/tsgo.CMD -b packages/actview/tsconfig.json`，测试用 `packages/actview` 下 `vitest.cmd run`（需 `VITEST_ENV=jsdom`）。
