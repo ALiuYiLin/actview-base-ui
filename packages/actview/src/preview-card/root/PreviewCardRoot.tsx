@@ -1,4 +1,4 @@
-import { defineComponent, onUnmounted, ref, toValue, watch } from 'actview';
+import { computed, onUnmounted, watch } from 'actview';
 import type { Ref } from 'actview';
 import { useId } from '@/utils/useId';
 import { useStableCallback } from '@/utils/useStableCallback';
@@ -7,7 +7,7 @@ import {
   useFloatingParentNodeId,
   useSyncedFloatingRootContext,
 } from '@/floating-ui-react';
-import { PreviewCardRootContext, usePreviewCardRootContext } from './PreviewCardRootContext';
+import { PreviewCardRootContext } from './PreviewCardRootContext';
 import { PreviewCardStore, type State as PreviewCardStoreState } from '../store/PreviewCardStore';
 import { PreviewCardHandle } from '../store/PreviewCardHandle';
 import {
@@ -37,35 +37,29 @@ import {
 export function PreviewCardRoot<Payload = unknown>(
   props: PreviewCardRoot.Props<Payload>,
 ) {
-  const {
-    open: openProp,
-    defaultOpen = false,
-    onOpenChange,
-    onOpenChangeComplete,
-    modal = false,
-    disabled = false,
-    handle,
-    triggerId: triggerIdProp,
-    defaultTriggerId: defaultTriggerIdProp = null,
-  } = props as any;
+  // ============ setup（只执行一次）：一次性初始化 ============
+  // 渲染期/事件期消费的 props：computed 直读（setup 快照会停留在首渲染）；
+  // 回调类 props（onOpenChange 等）事件期直读 props。
+  const modal = computed(() => props.modal ?? false);
+  const disabled = computed(() => props.disabled ?? false);
 
-  const store = usePreviewCardRootStore<Payload>(handle, {
-    modal,
-    open: defaultOpen,
-    openProp,
-    activeTriggerId: defaultTriggerIdProp,
-    triggerIdProp,
+  const store = usePreviewCardRootStore<Payload>(props.handle, {
+    modal: modal.value as any,
+    open: props.defaultOpen ?? false,
+    openProp: props.open,
+    activeTriggerId: props.defaultTriggerId ?? null,
+    triggerIdProp: props.triggerId,
   });
 
-  store.useControlledProp('openProp', openProp);
-  store.useControlledProp('triggerIdProp', triggerIdProp);
+  store.useControlledProp('openProp', () => props.open);
+  store.useControlledProp('triggerIdProp', () => props.triggerId);
 
   const open = store.useState('open');
   const mounted = store.useState('mounted');
   const payload = store.useState('payload') as Ref<Payload | undefined>;
 
-  store.useContextCallback('onOpenChange', onOpenChange);
-  store.useContextCallback('onOpenChangeComplete', onOpenChangeComplete);
+  store.useContextCallback('onOpenChange', (...args: any[]) => props.onOpenChange?.(...(args as [boolean, PreviewCardRoot.ChangeEventDetails])));
+  store.useContextCallback('onOpenChangeComplete', (...args: any[]) => props.onOpenChangeComplete?.(...(args as [boolean])));
 
   usePopupRootSync(store, open as any);
   useImplicitActiveTrigger(store);
@@ -85,15 +79,25 @@ export function PreviewCardRoot<Payload = unknown>(
     {flush: 'post', immediate: true},
   );
 
-  if ((props as any).actionsRef) {
-    (props as any).actionsRef.value = {
-      unmount: forceUnmount,
-      close: () => store.setOpen(false, createChangeEventDetails(REASONS.imperativeAction)),
-    };
-    onUnmounted(() => {
-      (props as any).actionsRef.value = null;
-    });
-  }
+  // actionsRef：ref 对象事件期直读（prop 变化时写入最新对象）。
+  watch(
+    () => props.actionsRef,
+    (actionsRefObj) => {
+      if (actionsRefObj) {
+        actionsRefObj.value = {
+          unmount: forceUnmount,
+          close: () => store.setOpen(false, createChangeEventDetails(REASONS.imperativeAction)),
+        };
+      }
+    },
+    {immediate: true},
+  );
+  onUnmounted(() => {
+    const actionsRefObj = props.actionsRef;
+    if (actionsRefObj) {
+      actionsRefObj.value = null;
+    }
+  });
 
   const floatingId = useId();
   const floatingParentNodeIdFromContext = useFloatingParentNodeId();
@@ -137,7 +141,7 @@ export function PreviewCardRoot<Payload = unknown>(
         eventDetails.trigger = activeTriggerElement.value ?? undefined;
       }
 
-      onOpenChange?.(nextOpen, eventDetails as PreviewCardRoot.ChangeEventDetails);
+      props.onOpenChange?.(nextOpen, eventDetails as PreviewCardRoot.ChangeEventDetails);
 
       if ((eventDetails as any).isCanceled) {
         return;
@@ -219,18 +223,14 @@ export function PreviewCardRoot<Payload = unknown>(
   const shouldRenderInteractions = () => open.value || mounted.value;
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  // children（render-prop 或 vnode）渲染期从 props 读取（PD-15）
+  // children（render-prop 或 vnode）渲染期从 props 直读（表达式内，无 IIFE）。
   return (
     <PreviewCardRootContext.Provider value={store as unknown as PreviewCardRootContext<unknown>}>
-      {handle && <PopupHandleAttachment handle={handle} store={store} />}
-      {shouldRenderInteractions() && <PreviewCardInteractions store={store} modal={modal} />}
-      {(() => {
-        const rawChildren = (props as any).children;
-        const child = typeof rawChildren === 'function' ? rawChildren : toValue(rawChildren);
-        return typeof child === 'function'
-          ? (child as PayloadChildRenderFunction<Payload>)({payload: payload.value})
-          : child;
-      })()}
+      {props.handle && <PopupHandleAttachment handle={props.handle} store={store} />}
+      {shouldRenderInteractions() && <PreviewCardInteractions store={store} modal={modal.value} />}
+      {typeof props.children === 'function'
+        ? (props.children as PayloadChildRenderFunction<Payload>)({payload: payload.value})
+        : props.children}
     </PreviewCardRootContext.Provider>
   );
 }

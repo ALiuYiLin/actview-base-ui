@@ -1,7 +1,8 @@
+import { computed } from 'actview';
+import type { Ref } from 'actview';
 import { FloatingPortal } from '@/floating-ui-react';
 import { usePreviewCardRootContext } from '../root/PreviewCardRootContext';
 import { PreviewCardPortalContext } from './PreviewCardPortalContext';
-import type { Ref } from 'actview';
 
 /**
  * A portal element that moves the popup to a different part of the DOM.
@@ -11,27 +12,22 @@ import type { Ref } from 'actview';
  * Documentation: [Base UI PreviewCard](https://base-ui.com/react/components/preview-card)
  */
 export function PreviewCardPortal(props: PreviewCardPortal.Props) {
-  const store = usePreviewCardRootContext(false);
+  // ============ setup（只执行一次）：一次性初始化 ============
+  // context 载体直取（store-as-is）：store 的 useState 字段渲染期 `.value` 求值。
+  const store = usePreviewCardRootContext(false)!;
   const mounted = store.useState('mounted');
 
-  // ============ render（最后 return JSX——插件转换为渲染函数）============
-  // props（keepMounted/portalProps）渲染期读取（PD-15）
-  return (
-    <>
-      {(() => {
-        const {keepMounted = false, ...portalProps} = props;
-        const shouldRender = mounted.value || keepMounted;
-        if (!shouldRender) {
-          return null;
-        }
+  // 渲染期消费的 props：computed 直读（setup 快照会停留在首渲染）。
+  const keepMounted = computed(() => props.keepMounted ?? false);
 
-        return (
-          <PreviewCardPortalContext.Provider value={keepMounted}>
-            <FloatingPortal {...(portalProps as any)} />
-          </PreviewCardPortalContext.Provider>
-        );
-      })()}
-    </>
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  // 条件在渲染期求值（表达式内 .value 直读，无 IIFE）。
+  return (
+    <PreviewCardPortalContext.Provider value={keepMounted.value}>
+      {mounted.value || keepMounted.value ? (
+        <FloatingPortal {...(props as any)} keepMounted={keepMounted.value} />
+      ) : null}
+    </PreviewCardPortalContext.Provider>
   );
 }
 

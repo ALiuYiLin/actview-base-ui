@@ -16,11 +16,12 @@ export interface PreviewCardPositionerContext {
 }
 
 export function usePreviewCardPositionerContext() {
+  // store-as-is：use() 原样返回注入的 getter 载体（无 Provider 时 undefined）。
   const context = PreviewCardPositionerContext.use();
-  if (context.value === undefined) {
+  if (context === undefined) {
     throw new Error(
       'Base UI: PreviewCardPositionerContext is missing. PreviewCard parts must be placed within <PreviewCard.Positioner>.',
     );
   }
-  return context.value;
+  return context;
 }
