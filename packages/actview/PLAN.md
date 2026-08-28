@@ -76,7 +76,7 @@
 - [x] dialog（16）✅——Root/Trigger/Popup/Portal/Backdrop/Close/Title/Description/Viewport + 2 context 全迁；**69/69 测试绿（原 0/63）**
 - [x] alert-dialog（5）✅——Root/Trigger 全迁（复用 DialogRootContext/store）；6/6 测试绿
 - [x] drawer（15）✅——Root/Trigger/Popup/Portal/Backdrop/Close/Title/Description/Content/Viewport/Provider + context 全迁；8/8 测试绿；useDrawerPortalContext 更名对齐
-- [~] menu 系进行中——**14/17 组件完成**（MenuSubmenuRoot 本已合规；全部 context hooks 完成）。menu 套件 **57/58 绿**；唯一失败：viewport remount 用例（payload→children 深链路异步，待专项排查；类型 92→54，menu 残留 0）
+- [x] menu 系（menu 17 + context-menu 5 + menubar 3）✅——全部组件/context hooks store-as-is + 新 hook；**57/58 测试绿**（唯一失败：viewport remount 深链路用例，预存行为待专项排查）；navigation-menu（13）✅——12/12 绿（关闭态不渲染内容语义补齐）；类型 92→52，批次 3 收官
 
 ### 批次 4：大族（最后，调用点最多）
 - [ ] combobox（37）、autocomplete（12）、select（31）
