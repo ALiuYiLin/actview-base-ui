@@ -1,14 +1,14 @@
 import { createContext } from 'actview';
-import type { Ref } from 'actview';
 import type { CheckboxRootState } from './CheckboxRoot';
 
 export type CheckboxRootContext = CheckboxRootState;
 
 export const CheckboxRootContext = createContext<CheckboxRootContext | undefined>(undefined);
 
-export function useCheckboxRootContext(): Ref<CheckboxRootContext | undefined> {
+export function useCheckboxRootContext(): CheckboxRootContext {
+  // store-as-is：原样返回注入的载体。
   const context = CheckboxRootContext.use();
-  if (context.value === undefined) {
+  if (context === undefined) {
     throw new Error(
       'Base UI: CheckboxRootContext is missing. Checkbox parts must be placed within <Checkbox.Root>.',
     );

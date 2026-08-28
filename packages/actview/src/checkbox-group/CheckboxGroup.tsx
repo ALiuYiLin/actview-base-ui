@@ -1,5 +1,4 @@
-import { computed, toValue, toRefs, unrefs, useRootElement } from 'actview';
-import type { ComputedRef } from 'actview';
+import { computed, ref, toRefs, unrefs } from 'actview';
 import { useControlled } from '@/utils/useControlled';
 import { EMPTY_ARRAY } from '@/internals/noop';
 import { areArraysEqual } from '@/utils/areArraysEqual';
@@ -19,7 +18,7 @@ import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDeta
 import { REASONS } from '@/internals/reasons';
 import { useFormContext } from '@/internals/form-context/FormContext';
 import { useValueChanged } from '@/internals/useValueChanged';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * Provides a shared state to a series of checkboxes.
@@ -28,8 +27,8 @@ import { useRenderElement } from '@/internals/useRenderElementLegacy';
  */
 export function CheckboxGroup(componentProps: CheckboxGroup.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  // Provider 根（`<CheckboxGroupContext.Provider>`），无 Fragment 根问题。
-  const rootRef = useRootElement();
+  // 自持 ref：经 params.ref 合并链透传到渲染元素（不用 useRootElement）。
+  const rootRef = ref<HTMLElement | null>(null);
 
   const {
     disabled: fieldDisabled,
@@ -39,23 +38,23 @@ export function CheckboxGroup(componentProps: CheckboxGroup.Props) {
     setFilled,
     setDirty,
     validityData,
-  } = toValue(useFieldRootContext());
-  const {labelId, registerControlId, getDescriptionProps} = toValue(useLabelableContext());
-  const {clearErrors, elementRef} = toValue(useFormContext());
+  } = useFieldRootContext();
+  const {labelId, registerControlId, getDescriptionProps} = useLabelableContext();
+  const {clearErrors, elementRef} = useFormContext();
 
-  const defaultValueProp = toValue(componentProps.defaultValue);
-  const idProp = toValue(componentProps.id);
+  const defaultValueProp = componentProps.defaultValue;
+  const idProp = componentProps.id;
   const onValueChange = componentProps.onValueChange;
 
   // setup 快照（用于 useRegisterFieldControl 等 setup 期注册）；渲染期的
-  // contextValue/stateFn 会重新计算 disabled（Field.Root 或本组件 disabled
-  // 动态变化时实时生效——见下方注释）。
-  const disabled = fieldDisabled.value || (toValue(componentProps.disabled) ?? false);
+  // context 载体 getter/state 会重新计算 disabled（Field.Root 或本组件
+  // disabled 动态变化时实时生效——见下方注释）。
+  const disabled = fieldDisabled.value || (componentProps.disabled ?? false);
   const defaultValue = defaultValueProp ?? EMPTY_ARRAY;
 
   const [value, setValueUnwrapped] = useControlled<string[]>({
     // getter：渲染期读 componentProps.value（setup 快照会导致受控更新不生效）
-    controlled: () => (toValue(componentProps.value) as string[]) || undefined,
+    controlled: () => (componentProps.value as string[]) || undefined,
     default: defaultValue as string[],
     name: 'CheckboxGroup',
     state: 'value',
@@ -76,8 +75,8 @@ export function CheckboxGroup(componentProps: CheckboxGroup.Props) {
 
   const parent = useCheckboxGroupParent({
     // getter：渲染期读 componentProps.allValues（响应式）——setup 快照会停留在首渲染
-    allValues: (() => toValue(componentProps.allValues) ?? ([] as string[])) as any,
-    value: value as ComputedRef<string[]>,
+    allValues: (() => componentProps.allValues ?? ([] as string[])) as any,
+    value: value as any,
     onValueChange: setValue,
   });
 
@@ -139,54 +138,59 @@ export function CheckboxGroup(componentProps: CheckboxGroup.Props) {
     validation.change(currentValue);
   });
 
-  // computed：value/disabled/allValues 变化时重建 contextValue（新对象引用）——
-  // Provider 只响应 value 引用变化，setup 快照对象会导致子组件不重渲染。
-  // disabled 在 getter 内渲染期求值（componentProps 响应式）——动态变化实时生效。
-  const contextValue = computed(() => ({
-    allValues: toValue(componentProps.allValues),
-    value,
+  // store-as-is 载体：身份稳定的 getter 对象（provide 只在 Provider setup 执行
+  // 一次，每次渲染新对象会冻结快照）——字段经 getter 渲染期求值（componentProps
+  // /computed 响应式），消费端读字段即追踪。
+  const contextValue: CheckboxGroupContext = {
+    get allValues() {
+      return componentProps.allValues;
+    },
+    get value() {
+      return value.value;
+    },
     setValue,
     parent,
-    disabled: fieldDisabled.value || (toValue(componentProps.disabled) ?? false),
+    get disabled() {
+      return fieldDisabled.value || (componentProps.disabled ?? false);
+    },
     validation,
     registerControlId,
-  }));
+  };
 
-  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
-
-  const stateFn = (): CheckboxGroupState => ({
-    ...fieldState.value,
-    disabled: fieldDisabled.value || (toValue(componentProps.disabled) ?? false),
-  });
-
-  const {element} = useRenderElement({
-    props: () => {
-      const stateValue = stateFn();
-      const stateAttributes = getStateAttributesProps(stateValue, fieldValidityMapping);
-
-      const merged: any = Object.assign(
-        {},
-        {id: idProp, role: 'group', 'aria-labelledby': labelId.value},
-        unrefs(elementProps),
-        stateAttributes,
-      );
-      const describedByProps = getDescriptionProps(merged);
-      return [merged, describedByProps];
-    },
-    state: stateFn,
-    className,
-    style,
-    render,
-    refs: () => [rootRef as any],
-    children,
-    defaultTag: 'div',
-  });
+  // ============ setup：值形 props toRefs 活引用；ref 形 props 直读本體 ============
+  const { className, render, style, ...elementProps } = toRefs(componentProps);
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
   return (
-    <CheckboxGroupContext.Provider value={contextValue.value as any}>
-      {element()}
+    <CheckboxGroupContext.Provider value={contextValue}>
+      {useRenderElement(
+        'div',
+        {
+          className: className?.value,
+          render: render?.value,
+          style: style?.value,
+        },
+        {
+          state: {
+            ...fieldState.value,
+            disabled: fieldDisabled.value || (componentProps.disabled ?? false),
+          },
+          ref: rootRef,
+          props: [
+            {id: idProp, role: 'group', 'aria-labelledby': labelId.value},
+            unrefs(elementProps),
+            (prev: any) => {
+              const stateValue: CheckboxGroupState = {
+                ...fieldState.value,
+                disabled: fieldDisabled.value || (componentProps.disabled ?? false),
+              };
+              const stateAttributes = getStateAttributesProps(stateValue, fieldValidityMapping);
+              const merged: any = {...prev, ...stateAttributes};
+              return getDescriptionProps(merged);
+            },
+          ],
+        },
+      )}
     </CheckboxGroupContext.Provider>
   );
 }

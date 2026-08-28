@@ -1,4 +1,4 @@
-import { computed, toValue, toRefs, unrefs } from 'actview';
+import { computed, ref, toRefs, unrefs } from 'actview';
 import { useCheckboxRootContext } from '../root/CheckboxRootContext';
 import { getCheckboxStateAttributesMapping } from '../utils/getCheckboxStateAttributesMapping';
 import type { CheckboxRootState } from '../root/CheckboxRoot';
@@ -8,8 +8,7 @@ import { type TransitionStatus, useTransitionStatus } from '@/internals/useTrans
 import type { StateAttributesMapping } from '@/internals/getStateAttributesProps';
 import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
 import { transitionStatusMapping } from '@/internals/stateAttributesMapping';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
-import { useRootElementFragment } from '@/internals/useRootElementFragment';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * Indicates whether the checkbox is ticked.
@@ -19,22 +18,18 @@ import { useRootElementFragment } from '@/internals/useRootElementFragment';
  */
 export function CheckboxIndicator(componentProps: CheckboxIndicator.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  // Fragment 根（`<>{element()}</>` + 条件）下 actview 内置 useRootElement 的
-  // subTree.el 恒 null——用 Fragment 兼容版本。
-  const rootRef = useRootElementFragment();
-
+  // context 载体直取（store-as-is）：读字段即追踪（Root 侧为身份稳定载体）。
   const rootState = useCheckboxRootContext();
 
-  const keepMounted = toValue(componentProps.keepMounted) ?? false;
+  const keepMounted = computed(() => componentProps.keepMounted ?? false);
 
-  const rendered = computed(() => rootState.value!.checked || rootState.value!.indeterminate);
+  const rendered = computed(() => rootState.checked || rootState.indeterminate);
 
   const {mounted, transitionStatus, setMounted} = useTransitionStatus(rendered);
 
-  const state = (): CheckboxIndicatorState => ({
-    ...(rootState.value as CheckboxRootState),
-    transitionStatus: transitionStatus.value,
-  });
+  // 自持 ref：useOpenChangeComplete 需要元素 ref；经 params.ref 合并链
+  // 透传到最终渲染元素（不用 useRootElement / useRootElementFragment）。
+  const rootRef = ref<HTMLElement | null>(null);
 
   useOpenChangeComplete({
     open: rendered,
@@ -46,33 +41,50 @@ export function CheckboxIndicator(componentProps: CheckboxIndicator.Props) {
     },
   });
 
-  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
-
-  const {element} = useRenderElement({
-    // stateAttributesMapping 依赖渲染期 state（mapping 动态）——props getter
-    // 里手动合并 data-* 属性（hook 的 stateAttributesMapping 仅支持静态对象）。
-    props: () => {
-      const stateValue = state();
-      const baseStateAttributesMapping = getCheckboxStateAttributesMapping(stateValue);
-      const mapping: StateAttributesMapping<CheckboxIndicatorState> = {
-        ...baseStateAttributesMapping,
-        ...transitionStatusMapping,
-      };
-      const stateAttributes = getStateAttributesProps(stateValue, mapping);
-      return [{...unrefs(elementProps), ...stateAttributes}];
-    },
-    state,
-    className,
-    style,
-    render,
-    refs: () => [rootRef as any],
-    children,
-    defaultTag: 'span',
-  });
+  // ============ setup：值形 props toRefs 活引用；ref 形 props 直读本體 ============
+  const { className, render, style, ...elementProps } = toRefs(componentProps);
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  return <>{keepMounted || mounted.value ? element() : null}</>;
+  // 条件在渲染期求值；state attrs 依赖渲染期 state（mapping 动态）——整次
+  // useRenderElement 调用逐渲染求值，mapping 在 props getter 内按当前 state 构建。
+  return (
+    <>
+      {keepMounted.value || mounted.value
+        ? useRenderElement(
+            'span',
+            {
+              className: className?.value,
+              render: render?.value,
+              style: style?.value,
+            },
+            {
+              state: {
+                ...rootState,
+                transitionStatus: transitionStatus.value,
+              },
+              ref: rootRef,
+              props: [
+                (prev: any) => {
+                  const stateValue: CheckboxIndicatorState = {
+                    ...rootState,
+                    transitionStatus: transitionStatus.value,
+                  };
+                  const mapping: StateAttributesMapping<CheckboxIndicatorState> = {
+                    ...getCheckboxStateAttributesMapping(stateValue),
+                    ...transitionStatusMapping,
+                  };
+                  return {
+                    ...prev,
+                    ...unrefs(elementProps),
+                    ...getStateAttributesProps(stateValue, mapping),
+                  };
+                },
+              ],
+            },
+          )
+        : null}
+    </>
+  );
 }
 
 export interface CheckboxIndicatorState extends CheckboxRootState {

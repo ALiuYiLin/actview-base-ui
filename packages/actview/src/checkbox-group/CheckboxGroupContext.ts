@@ -1,5 +1,4 @@
 import { createContext } from 'actview';
-import type { Ref } from 'actview';
 import type { UseFieldValidationReturnValue } from '@/field/root/useFieldValidation';
 import type { UseCheckboxGroupParentReturnValue } from './useCheckboxGroupParent';
 import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
@@ -25,6 +24,7 @@ export interface CheckboxGroupContext {
 
 export const CheckboxGroupContext = createContext<CheckboxGroupContext | undefined>(undefined);
 
-export function useCheckboxGroupContext(): Ref<CheckboxGroupContext | undefined> {
+export function useCheckboxGroupContext(): CheckboxGroupContext | undefined {
+  // store-as-is：原样返回注入的载体（无 Provider 时 undefined，调用方降级）。
   return CheckboxGroupContext.use();
 }
