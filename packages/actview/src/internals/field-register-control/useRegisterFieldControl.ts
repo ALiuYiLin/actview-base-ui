@@ -10,7 +10,7 @@ export function useRegisterFieldControl(
   enabled = true,
   name?: FieldControlRegistration['name'],
 ) {
-  const {registerFieldControl} = toValueFieldRootContext();
+  const {registerFieldControl} = useFieldRootContext();
   const sourceRef = ref(Symbol());
 
   // Re-register without unregistering first: re-registration with the same id updates the
@@ -42,9 +42,4 @@ export function useRegisterFieldControl(
   onUnmounted(() => {
     registerFieldControl(sourceRef.value, undefined);
   });
-}
-
-function toValueFieldRootContext() {
-  const ctx = useFieldRootContext();
-  return ctx.value;
 }

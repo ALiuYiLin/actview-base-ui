@@ -72,8 +72,7 @@ export function useLabel(params: UseLabelParameters = {}): UseLabelReturnValue {
 }
 
 function toValueLabelable() {
-  const ctx = useLabelableContext();
-  return ctx.value;
+  return useLabelableContext();
 }
 
 function getTarget(event: any): Element | null {

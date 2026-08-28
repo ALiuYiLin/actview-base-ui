@@ -1,5 +1,4 @@
 import { createContext } from 'actview';
-import type { Ref } from 'actview';
 
 export interface FieldsetRootContext {
   legendId: string | undefined;
@@ -11,11 +10,12 @@ export interface FieldsetRootContext {
 
 export const FieldsetRootContext = createContext<FieldsetRootContext | undefined>(undefined);
 
-export function useFieldsetRootContext(optional: true): Ref<FieldsetRootContext | undefined>;
-export function useFieldsetRootContext(optional?: false): Ref<FieldsetRootContext>;
+export function useFieldsetRootContext(optional: true): FieldsetRootContext | undefined;
+export function useFieldsetRootContext(optional?: false): FieldsetRootContext;
 export function useFieldsetRootContext(optional = false) {
+  // store-as-is：原样返回注入的载体（无 Provider 时 undefined）。
   const context = FieldsetRootContext.use();
-  if (!context.value && !optional) {
+  if (!context && !optional) {
     throw new Error(
       'Base UI: FieldsetRootContext is missing. Fieldset parts must be placed within <Fieldset.Root>.',
     );

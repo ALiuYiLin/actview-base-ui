@@ -44,7 +44,7 @@ export function RadioGroup<Value>(componentProps: RadioGroup.Props<Value>) {
   } = toValue(useFieldRootContext());
   const {labelId} = toValue(useLabelableContext());
   const {clearErrors, elementRef} = toValue(useFormContext());
-  const fieldsetContext = toValue(useFieldsetRootContext(true));
+  const fieldsetContext = useFieldsetRootContext(true);
 
   const defaultValue = toValue(componentProps.defaultValue);
   const idProp = toValue(componentProps.id);

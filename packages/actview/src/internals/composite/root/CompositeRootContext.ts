@@ -18,12 +18,13 @@ export const CompositeRootContext = createContext<CompositeRootContext | undefin
 export function useCompositeRootContext(optional: true): CompositeRootContext | undefined;
 export function useCompositeRootContext(optional?: false): CompositeRootContext;
 export function useCompositeRootContext(optional = false) {
+  // store-as-is：原样返回注入的载体（无 Provider 时 undefined）。
   const context = CompositeRootContext.use();
-  if (context.value === undefined && !optional) {
+  if (context === undefined && !optional) {
     throw new Error(
       'Base UI: CompositeRootContext is missing. Composite parts must be placed within <Composite.Root>.',
     );
   }
 
-  return context.value;
+  return context;
 }

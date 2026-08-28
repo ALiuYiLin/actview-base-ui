@@ -78,8 +78,7 @@ export function useLabelableId(params: UseLabelableIdParameters = {}): string {
 }
 
 function toValueLabelable() {
-  const ctx = useLabelableContext();
-  return ctx.value;
+  return useLabelableContext();
 }
 
 export interface UseLabelableIdParameters {

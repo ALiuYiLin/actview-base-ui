@@ -195,7 +195,7 @@ export function useFieldControlRegistration(params: UseFieldControlRegistrationP
 
 function toValueFormContext() {
   const ctx = useFormContext();
-  return {formRef: ctx.value.formRef};
+  return {formRef: ctx.formRef};
 }
 
 export interface UseFieldControlRegistrationParameters {

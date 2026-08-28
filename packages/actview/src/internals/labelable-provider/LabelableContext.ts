@@ -1,5 +1,5 @@
 import { computed, createContext } from 'actview';
-import type { ComputedRef, Ref } from 'actview';
+import type { ComputedRef } from 'actview';
 import { NOOP } from '@/internals/noop';
 import type { HTMLProps } from '@/internals/types';
 
@@ -42,6 +42,7 @@ export const LabelableContext = createContext<LabelableContext>({
   getDescriptionProps: (externalProps: HTMLProps) => externalProps,
 });
 
-export function useLabelableContext(): Ref<LabelableContext> {
+export function useLabelableContext(): LabelableContext {
+  // store-as-is：原样返回载体（computed 字段在消费端渲染期 .value 读取保持追踪）。
   return LabelableContext.use();
 }

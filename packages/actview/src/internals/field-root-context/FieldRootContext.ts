@@ -79,10 +79,11 @@ export const DEFAULT_FIELD_ROOT_CONTEXT: FieldRootContext = {
 
 export const FieldRootContext = createContext<FieldRootContext>(DEFAULT_FIELD_ROOT_CONTEXT);
 
-export function useFieldRootContext(optional = true) {
+export function useFieldRootContext(optional = true): FieldRootContext {
+  // store-as-is：use() 原样返回注入表中的载体（或默认值）——不读 .value。
   const context = FieldRootContext.use();
 
-  if (context.value.setValidityData === NOOP && !optional) {
+  if (context.setValidityData === NOOP && !optional) {
     throw new Error(
       'Base UI: FieldRootContext is missing. Field parts must be placed within <Field.Root>.',
     );

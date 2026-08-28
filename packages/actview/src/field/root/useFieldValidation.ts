@@ -375,12 +375,12 @@ export function useFieldValidation(
 
 function toValueFormContext() {
   const ctx = useFormContext();
-  return {elementRef: ctx.value.elementRef, formRef: ctx.value.formRef};
+  return {elementRef: ctx.elementRef, formRef: ctx.formRef};
 }
 
 function toValueLabelable() {
   const ctx = useLabelableContext();
-  return {controlId: ctx.value.controlId, getDescriptionProps: ctx.value.getDescriptionProps};
+  return {controlId: ctx.controlId, getDescriptionProps: ctx.getDescriptionProps};
 }
 
 export interface UseFieldValidationParameters {

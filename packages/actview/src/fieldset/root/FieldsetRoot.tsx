@@ -25,7 +25,7 @@ export function FieldsetRoot(componentProps: FieldsetRoot.Props) {
   // 父 fieldset disabled 变化时自动重算（不能在 setup 快照，否则嵌套不响应）。
   const parentFieldset = useFieldsetRootContext(true);
   const disabled = computed(
-    () => parentFieldset.value?.disabled || (toValue((componentProps as any).disabled) ?? false),
+    () => parentFieldset?.disabled || (toValue((componentProps as any).disabled) ?? false),
   );
 
   const state = () => ({

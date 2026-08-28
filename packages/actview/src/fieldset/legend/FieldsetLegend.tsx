@@ -16,7 +16,7 @@ export function FieldsetLegend(componentProps: FieldsetLegend.Props) {
   // Fragment 根（`<>{element()}</>`）下 actview 内置 useRootElement 的
   // subTree.el 恒 null——用 Fragment 兼容版本。
   const rootRef = useRootElementFragment();
-  const {disabled, setLegendId} = toValue(useFieldsetRootContext());
+  const {disabled, setLegendId} = useFieldsetRootContext();
 
   const id = useRegisteredLabelId(() => toValue(componentProps.id), setLegendId);
 

@@ -25,7 +25,7 @@ function FieldRootInner(componentProps: FieldRoot.Props) {
   // 读取（不能在 setup 快照），fieldset 祖先/父级 disabled 变化时自动重算。
   // （hook 调用留在 setup：computed 惰性求值可能在渲染期外，context.use() 依赖实例）
   const fieldsetContext = useFieldsetRootContext(true);
-  const disabledFieldset = computed(() => fieldsetContext.value?.disabled);
+  const disabledFieldset = computed(() => fieldsetContext?.disabled);
   const disabled = computed(
     () => disabledFieldset.value || (toValue(componentProps.disabled) ?? false),
   );
