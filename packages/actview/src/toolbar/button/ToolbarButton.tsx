@@ -1,4 +1,5 @@
-import { toValue, toRefs, unrefs } from 'actview';
+import {computed, toRefs} from 'actview';
+import type { Ref } from 'actview';
 import type { BaseUIComponentProps, NativeButtonProps } from '@/internals/types';
 import { useButton } from '@/internals/use-button/useButton';
 import type { ToolbarRootState } from '../root/ToolbarRoot';
@@ -15,53 +16,71 @@ import { EMPTY_OBJECT } from '@/utils/empty';
  */
 export function ToolbarButton(componentProps: ToolbarButton.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  const disabledProp = toValue(componentProps.disabled) ?? false;
-  const focusableWhenDisabled = toValue(componentProps.focusableWhenDisabled) ?? true;
-  const nativeButton = toValue(componentProps.nativeButton);
-  const rootContextRef = useToolbarRootContext();
-  const groupContextRef = useToolbarGroupContext();
+  // context 载体直取（store-as-is）：getter 字段渲染期属性访问即追踪。
+  const rootContext = useToolbarRootContext();
+  const groupContext = useToolbarGroupContext();
 
-  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  const {className, render, style, ...elementProps} = toRefs(componentProps);
+  // 渲染期/事件期消费的 props：computed 直读（setup 快照会停留在首渲染）。
+  const disabled = computed(
+    () =>
+      rootContext.disabled ||
+      (groupContext?.disabled ?? false) ||
+      (componentProps.disabled ?? false),
+  );
+  const focusableWhenDisabled = computed(
+    () => componentProps.focusableWhenDisabled ?? true,
+  );
+  const nativeButton = computed(() => componentProps.nativeButton);
 
-  // ============ render（最后 return JSX——插件转换为渲染函数）============
-  const {disabled: toolbarDisabled, orientation} = rootContextRef.value;
-  const groupContext = groupContextRef.value;
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
 
-  const disabled = toolbarDisabled || (groupContext?.disabled ?? false) || disabledProp;
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
+  });
 
-  const itemMetadata = {disabled, focusableWhenDisabled};
+  const itemMetadata = computed(() => ({
+    disabled: disabled.value,
+    focusableWhenDisabled: focusableWhenDisabled.value,
+  }));
 
   const {getButtonProps, buttonRef} = useButton({
     disabled,
-    focusableWhenDisabled,
-    native: nativeButton,
+    focusableWhenDisabled: focusableWhenDisabled.value,
+    native: nativeButton.value,
   });
 
-  const stateValue: ToolbarButtonState = {
-    disabled,
-    orientation,
-    focusable: focusableWhenDisabled,
-  };
+  const state = computed<ToolbarButtonState>(() => ({
+    disabled: disabled.value,
+    orientation: rootContext.orientation,
+    focusable: focusableWhenDisabled.value,
+  }));
 
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
   return (
     <CompositeItem
       tag="button"
       render={render as any}
       className={className as any}
       style={style as any}
-      metadata={itemMetadata as any}
-      state={stateValue as any}
-      refs={[buttonRef]}
+      metadata={itemMetadata.value as any}
+      state={state.value as any}
+      refs={[buttonRef as any]}
       props={[
-        unrefs(elementProps),
+        elementProps.value,
         // When a render prop is provided (typically another Base UI component
         // like Menu.Trigger), forward `disabled` so the rendered component can
         // derive its own disabled state. For the default toolbar button, avoid
         // forwarding a React `disabled` prop so focusable disabled buttons remain
         // hoverable for interactions like tooltips.
         // TODO: follow up after https://github.com/mui/base-ui/issues/1976#issuecomment-2916905663
-        render ? {disabled} : EMPTY_OBJECT,
+        render?.value ? {disabled: disabled.value} : EMPTY_OBJECT,
         getButtonProps,
       ]}
     />

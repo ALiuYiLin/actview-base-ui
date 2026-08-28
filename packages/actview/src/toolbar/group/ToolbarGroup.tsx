@@ -1,6 +1,8 @@
-import { toValue, toRefs, unrefs, useRootElement } from 'actview';
+import {computed, ref, toRefs} from 'actview';
+import type { Ref } from 'actview';
 import type { BaseUIComponentProps } from '@/internals/types';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useMergedRefs } from '@/internals/useMergedRefs';
 import { useToolbarRootContext } from '../root/ToolbarRootContext';
 import { ToolbarGroupContext } from './ToolbarGroupContext';
 import type { ToolbarRootState } from '../root/ToolbarRoot';
@@ -13,39 +15,61 @@ import type { ToolbarRootState } from '../root/ToolbarRoot';
  */
 export function ToolbarGroup(componentProps: ToolbarGroup.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  // Provider 根（`<ToolbarGroupContext.Provider>`），无 Fragment 根问题。
-  const rootRef = useRootElement();
+  // 自持 ref：经 params.ref 合并链透传（不用 useRootElement）。
+  const rootRef = ref(null as HTMLElement | null);
 
-  const rootContextRef = useToolbarRootContext();
-  const disabledProp = toValue(componentProps.disabled) ?? false;
+  // context 载体直取（store-as-is）：getter 字段渲染期属性访问即追踪。
+  const rootContext = useToolbarRootContext();
 
-  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
+  // 渲染期消费的 props：computed 直读（setup 快照会停留在首渲染）。
+  const disabled = computed(
+    () => rootContext.disabled || (componentProps.disabled ?? false),
+  );
 
-  const stateFn = (): ToolbarRootState => {
-    const {orientation, disabled: toolbarDisabled} = rootContextRef.value;
-    return {
-      disabled: toolbarDisabled || disabledProp,
-      orientation,
-    };
-  };
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
 
-  const {element} = useRenderElement({
-    props: () => [{role: 'group'}, unrefs(elementProps)],
-    state: stateFn,
-    stateAttributesMapping: {},
-    className,
-    style,
-    render,
-    refs: () => [rootRef],
-    children,
-    defaultTag: 'div',
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
   });
+
+  const state = computed<ToolbarRootState>(() => ({
+    disabled: disabled.value,
+    orientation: rootContext.orientation,
+  }));
+
+  const rootProps = computed<Record<string, any>>(() => ({role: 'group'}));
+
+  // store-as-is 载体：身份稳定的 getter 对象——disabled 渲染期求值。
+  const contextValue: ToolbarGroupContext = {
+    get disabled() {
+      return disabled.value;
+    },
+  };
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
   return (
-    <ToolbarGroupContext.Provider value={{disabled: stateFn().disabled} as any}>
-      {element()}
+    <ToolbarGroupContext.Provider value={contextValue}>
+      {useRenderElement(
+        'div',
+        {
+          className: className?.value,
+          render: render?.value,
+          style: style?.value,
+        },
+        {
+          state: state.value,
+          stateAttributesMapping: {},
+          ref: useMergedRefs(rootRef, componentProps.ref as any),
+          props: [rootProps.value, elementProps.value],
+        },
+      )}
     </ToolbarGroupContext.Provider>
   );
 }
