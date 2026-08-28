@@ -1,5 +1,5 @@
-import { useRootElementFragment } from '@/internals/useRootElementFragment';
-import {computed, toValue, watch, ref, toRefs, unrefs} from 'actview';
+import {computed, ref, toRefs, watch} from 'actview';
+import type { Ref } from 'actview';
 import { useControlled } from '@/utils/useControlled';
 import { useFieldRootContext } from '@/internals/field-root-context/FieldRootContext';
 import { useRegisterFieldControl } from '@/internals/field-register-control/useRegisterFieldControl';
@@ -13,7 +13,10 @@ import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
 import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import type { FieldRootState } from '../root/FieldRoot';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useMergedRefs } from '@/internals/useMergedRefs';
+import { activeElement } from '@/utils/shadowDom';
+import { ownerDocument } from '@/utils/owner';
 
 /**
  * The form control to label and validate.
@@ -27,8 +30,10 @@ import { useRenderElement } from '@/internals/useRenderElementLegacy';
  */
 export function FieldControl(componentProps: FieldControl.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  const rootRef = useRootElementFragment();
+  // 自持 ref：经 params.ref 合并链透传（不用 useRootElementFragment）。
+  const inputRef = ref(null as HTMLElement | null);
 
+  // context 载体直取（store-as-is）：字段渲染期 `.value` 求值即追踪。
   const {
     state: fieldState,
     name: fieldName,
@@ -40,37 +45,33 @@ export function FieldControl(componentProps: FieldControl.Props) {
     setFilled,
     validationMode,
     validation,
-  } = toValue(useFieldRootContext());
-  const {clearErrors} = toValue(useFormContext());
+  } = useFieldRootContext();
+  const {clearErrors} = useFormContext();
+  const {labelId} = useLabelableContext();
 
-  // disabled 须响应式：fieldset 祖先/Field.Root disabled 变化时联动
+  // 渲染期/事件期消费的 props：computed 直读（setup 快照会停留在首渲染）。
   const disabled = computed(
-    () => fieldDisabled.value || (toValue(componentProps.disabled) ?? false),
+    () => fieldDisabled.value || (componentProps.disabled ?? false),
   );
-  const nameProp = toValue(componentProps.name);
-  const idProp = toValue(componentProps.id);
-  const valueProp = toValue(componentProps.value);
-  const defaultValue = toValue(componentProps.defaultValue);
-  const autoFocus = toValue(componentProps.autoFocus) ?? false;
-  const onValueChange = componentProps.onValueChange;
-
-  const name = fieldName.value ?? nameProp;
-
-  const {labelId} = toValue(useLabelableContext());
+  const name = computed(() => fieldName.value ?? componentProps.name);
+  const idProp = componentProps.id;
+  const autoFocus = computed(() => componentProps.autoFocus ?? false);
 
   const id = useLabelableId({id: idProp});
 
+  // 受控/非受控 value（isControlled 取初始化快照，对齐 React 首渲染语义）。
+  const isControlled = componentProps.value !== undefined;
   const [valueUnwrapped] = useControlled({
-    controlled: valueProp,
-    default: defaultValue,
+    controlled: () => componentProps.value,
+    default: () => componentProps.defaultValue,
     name: 'FieldControl',
     state: 'value',
   });
-
-  const isControlled = valueProp !== undefined;
-  const value = isControlled ? valueUnwrapped.value : undefined;
+  const value = computed(() => (isControlled ? valueUnwrapped.value : undefined));
   // The DOM value is always a string, so dirty comparisons must serialize the controlled value.
-  const serializedValue = value == null ? undefined : String(value);
+  const serializedValue = computed(() =>
+    value.value == null ? undefined : String(value.value),
+  );
 
   const getValueFromInput = () => validation.inputRef.value?.value;
 
@@ -79,8 +80,8 @@ export function FieldControl(componentProps: FieldControl.Props) {
     id,
     serializedValue,
     getValueFromInput,
-    !disabled.value,
-    nameProp,
+    computed(() => !disabled.value),
+    () => componentProps.name,
   );
 
   // React 版 useIsoLayoutEffect：input 有值时标记 filled
@@ -94,23 +95,21 @@ export function FieldControl(componentProps: FieldControl.Props) {
     {flush: 'post', immediate: true},
   );
 
-  useValueChanged(() => serializedValue, () => {
-    if (serializedValue === undefined) {
+  useValueChanged(serializedValue, () => {
+    if (serializedValue.value === undefined) {
       return;
     }
 
-    clearErrors(name);
-    setDirty(serializedValue !== (validityData.value.initialValue ?? ''));
-    setFilled(serializedValue !== '');
+    clearErrors(name.value);
+    setDirty(serializedValue.value !== (validityData.value.initialValue ?? ''));
+    setFilled(serializedValue.value !== '');
 
-    validation.change(serializedValue);
+    validation.change(serializedValue.value);
   });
-
-  const inputRef = ref(null as HTMLElement | null);
 
   // React 版 useIsoLayoutEffect：autoFocus 时标记 focused
   watch(
-    () => autoFocus,
+    autoFocus,
     (v) => {
       if (v && inputRef.value === activeElement(ownerDocument(inputRef.value))) {
         setFocused(true);
@@ -119,96 +118,115 @@ export function FieldControl(componentProps: FieldControl.Props) {
     {flush: 'post', immediate: true},
   );
 
-  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  const {className, render, style, ...elementProps} = toRefs(componentProps);
+  // 事件 handler：setup 闭包读 computed/refs——事件触发时拿到实时值。
+  const handleInput = (event: Event) => {
+    const inputValue = (event.currentTarget as HTMLInputElement).value;
+    const details = createChangeEventDetails(REASONS.none, event as any);
+    componentProps.onValueChange?.(inputValue, details as any);
 
-  const {element} = useRenderElement({
-    props: () => {
-      const merged: any = {};
-      Object.assign(
-        merged,
-        {
-          id,
-          disabled: disabled.value,
-          name,
-          'aria-labelledby': labelId.value,
-          autoFocus,
-          ...(isControlled ? {value} : {defaultValue}),
-          onChange(event: Event) {
-            const inputValue = (event.currentTarget as HTMLInputElement).value;
-            const details = createChangeEventDetails(REASONS.none, event as any);
-            onValueChange?.(inputValue, details as any);
+    // Controlled values sync from the `value` prop instead, so that a value the consumer
+    // rejects or rewrites never reaches the field state.
+    if (isControlled) {
+      return;
+    }
 
-            // Controlled values sync from the `value` prop instead, so that a value the consumer
-            // rejects or rewrites never reaches the field state.
-            if (isControlled) {
-              return;
-            }
+    // `validation.change` reads `markedDirtyRef`, so update dirty before validating.
+    setDirty(inputValue !== (validityData.value.initialValue ?? ''));
+    setFilled(inputValue !== '');
 
-            // `validation.change` reads `markedDirtyRef`, so update dirty before validating.
-            setDirty(inputValue !== (validityData.value.initialValue ?? ''));
-            setFilled(inputValue !== '');
+    // Workaround for https://github.com/react/react/issues/9023
+    if (!(event as any).nativeEvent?.defaultPrevented && !details.isCanceled) {
+      clearErrors(name.value);
+      validation.change(inputValue);
+    }
+  };
 
-            // Workaround for https://github.com/react/react/issues/9023
-            if (!(event as any).nativeEvent?.defaultPrevented && !details.isCanceled) {
-              clearErrors(name);
-              validation.change(inputValue);
-            }
-          },
-          onFocus() {
-            setFocused(true);
-          },
-          onBlur(event: Event) {
-            const inputValue = (event.currentTarget as HTMLInputElement).value;
-            setTouched(true);
-            setFocused(false);
+  const handleFocus = () => {
+    setFocused(true);
+  };
 
-            if (validationMode.value === 'onBlur') {
-              validation.commit(inputValue);
-            }
-          },
-          onKeyDown(event: KeyboardEvent) {
-            if (
-              (event.currentTarget as HTMLInputElement).tagName === 'INPUT' &&
-              event.key === 'Enter'
-            ) {
-              setTouched(true);
-              validation.commit((event.currentTarget as HTMLInputElement).value);
-            }
-          },
-        },
-        unrefs(elementProps),
-      );
-      return [validation.getValidationProps(disabled.value, merged)];
-    },
-    state: () => ({
-      ...fieldState.value,
+  const handleBlur = (event: Event) => {
+    const inputValue = (event.currentTarget as HTMLInputElement).value;
+    setTouched(true);
+    setFocused(false);
+
+    if (validationMode.value === 'onBlur') {
+      validation.commit(inputValue);
+    }
+  };
+
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (
+      (event.currentTarget as HTMLInputElement).tagName === 'INPUT' &&
+      event.key === 'Enter'
+    ) {
+      setTouched(true);
+      validation.commit((event.currentTarget as HTMLInputElement).value);
+    }
+  };
+
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
+
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
+  });
+
+  const state = computed<FieldControlState>(() => ({
+    ...fieldState.value,
+    disabled: disabled.value,
+  }));
+
+  // 根元素 props：fixed（id/aria/handlers/value）→ 透传 → validation 包装
+  // （getValidationProps 合并 aria-describedby/aria-invalid）。
+  const rootProps = computed<Record<string, any>>(() => {
+    const base: Record<string, any> = {
+      id,
       disabled: disabled.value,
-    }),
-    stateAttributesMapping: fieldValidityMapping,
-    className,
-    style,
-    render,
-    refs: () => [
-      (el: any) => {
-        validation.inputRef.value = el;
-        inputRef.value = el;
-        rootRef.value = el;
-      },
-    ],
-    defaultTag: 'input',
+      name: name.value,
+      'aria-labelledby': labelId.value,
+      autoFocus: autoFocus.value,
+      ...(isControlled ? {value: value.value} : {defaultValue: componentProps.defaultValue}),
+      onChange: handleInput,
+      onFocus: handleFocus,
+      onBlur: handleBlur,
+      onKeyDown: handleKeyDown,
+      ...elementProps.value,
+    };
+    return validation.getValidationProps(disabled.value, base);
   });
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  return <>{element()}</>;
-}
-
-function activeElement(doc: Document | null): Element | null {
-  return doc?.activeElement ?? null;
-}
-
-function ownerDocument(node: Element | null | undefined): Document {
-  return (node && node.ownerDocument) || document;
+  return (
+    <>
+      {useRenderElement(
+        'input',
+        {
+          className: className?.value,
+          render: render?.value,
+          style: style?.value,
+        },
+        {
+          state: state.value,
+          stateAttributesMapping: fieldValidityMapping,
+          ref: useMergedRefs(
+            inputRef,
+            (el: any) => {
+              validation.inputRef.value = el;
+            },
+            componentProps.ref as any,
+          ),
+          props: rootProps.value,
+        },
+      )}
+    </>
+  );
 }
 
 export interface FieldControlState extends FieldRootState {}
@@ -238,5 +256,3 @@ export namespace FieldControl {
   export type ChangeEventReason = FieldControlChangeEventReason;
   export type ChangeEventDetails = FieldControlChangeEventDetails;
 }
-
-

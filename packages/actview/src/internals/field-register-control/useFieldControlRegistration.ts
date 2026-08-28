@@ -38,7 +38,7 @@ export function useFieldControlRegistration(params: UseFieldControlRegistrationP
     validityData,
   } = params;
 
-  const {formRef} = toValueFormContext();
+  const {formRef} = getFormContext();
 
   const activeFieldControlSourceRef = ref(null as symbol | null);
   const registrationRef = ref(null as FieldControlRegistration | null);
@@ -81,7 +81,7 @@ export function useFieldControlRegistration(params: UseFieldControlRegistrationP
 
     formRef.value.fields.set(registration.id, {
       getValue: getValueForForm,
-      name: name ?? registration.name,
+      name: name() ?? registration.name,
       controlRef: registration.controlRef,
       validityData: getCombinedFieldValidityData(validityData.value, invalid.value),
       validate,
@@ -115,18 +115,18 @@ export function useFieldControlRegistration(params: UseFieldControlRegistrationP
 
   // React 版第一个 useIsoLayoutEffect：deps 变化时重注册
   watch(
-    () => [invalid.value, name, validityData.value] as const,
+    () => [invalid.value, name(), validityData.value] as const,
     () => {
       const registration = registrationRef.value;
       if (!registration || !registration.id) {
         return;
       }
 
-      setRegisteredFieldName(name ? undefined : registration.name);
+      setRegisteredFieldName(name() ? undefined : registration.name);
 
       formRef.value.fields.set(registration.id, {
         getValue: getValueForForm,
-        name: name ?? registration.name,
+        name: name() ?? registration.name,
         controlRef: registration.controlRef,
         validityData: getCombinedFieldValidityData(validityData.value, invalid.value),
         validate,
@@ -177,7 +177,7 @@ export function useFieldControlRegistration(params: UseFieldControlRegistrationP
 
     activeFieldControlSourceRef.value = source;
     registrationRef.value = registration;
-    if (!name) {
+    if (!name()) {
       setRegisteredFieldName(registration.name);
     }
     registeredFieldIdRef.value = registration.id;
@@ -193,7 +193,7 @@ export function useFieldControlRegistration(params: UseFieldControlRegistrationP
   return [validate, register] as const;
 }
 
-function toValueFormContext() {
+function getFormContext() {
   const ctx = useFormContext();
   return {formRef: ctx.formRef};
 }
@@ -203,7 +203,8 @@ export interface UseFieldControlRegistrationParameters {
   commit: (value: unknown) => void;
   invalid: ComputedRef<boolean>;
   markedDirtyRef: Ref<boolean>;
-  name: string | undefined;
+  /** 事件期求值的 getter（prop 动态变化时拿到实时值） */
+  name: () => string | undefined;
   setRegisteredFieldName: (name: string | undefined) => void;
   registeredFieldIdRef: Ref<string | undefined>;
   setValidityData: (

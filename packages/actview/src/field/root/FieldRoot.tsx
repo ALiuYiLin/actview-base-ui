@@ -1,5 +1,5 @@
-import { computed, ref, toValue, useRootElement, watch, toRefs, unrefs } from 'actview';
-import type { ComputedRef } from 'actview';
+import {computed, ref, toRefs, watch} from 'actview';
+import type { Ref } from 'actview';
 import { FieldRootContext } from '@/internals/field-root-context/FieldRootContext';
 import type { FieldRootContext as FieldRootContextValue } from '@/internals/field-root-context/FieldRootContext';
 import { DEFAULT_VALIDITY_STATE, fieldValidityMapping } from '@/internals/field-constants/constants';
@@ -9,55 +9,54 @@ import { LabelableProvider } from '@/internals/labelable-provider';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { useFieldValidation } from './useFieldValidation';
 import { useFieldControlRegistration } from '@/internals/field-register-control/useFieldControlRegistration';
-import type { Ref } from 'actview';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useMergedRefs } from '@/internals/useMergedRefs';
 
 /**
  * @internal
  */
 function FieldRootInner(componentProps: FieldRoot.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  const rootRef = useRootElement();
+  // 自持 ref：经 params.ref 合并链透传（不用 useRootElement）。
+  const rootRef = ref(null as HTMLElement | null);
 
-  const {errors, validationMode: formValidationMode, submitAttemptedRef} = toValue(useFormContext());
+  const {errors, validationMode: formValidationMode, submitAttemptedRef} = useFormContext();
 
-  // context.use() 返回响应式 Ref + props 走 toValue：disabled 须在 computed 里
-  // 读取（不能在 setup 快照），fieldset 祖先/父级 disabled 变化时自动重算。
-  // （hook 调用留在 setup：computed 惰性求值可能在渲染期外，context.use() 依赖实例）
+  // context 载体直取（store-as-is）；fieldset disabled 为 plain boolean 字段。
   const fieldsetContext = useFieldsetRootContext(true);
   const disabledFieldset = computed(() => fieldsetContext?.disabled);
   const disabled = computed(
-    () => disabledFieldset.value || (toValue(componentProps.disabled) ?? false),
+    () => disabledFieldset.value || (componentProps.disabled ?? false),
   );
 
-  // toValue 会把函数型 prop 当 getter 调用——validate 是函数 prop，直接读取
-  const validateProp = componentProps.validate;
-  const validationDebounceTime = toValue(componentProps.validationDebounceTime) ?? 0;
-  const validationMode = toValue(componentProps.validationMode) ?? formValidationMode;
-  const name = toValue(componentProps.name);
-  const invalidProp = toValue(componentProps.invalid);
-  const dirtyProp = toValue(componentProps.dirty);
-  const touchedProp = toValue(componentProps.touched);
+  // 渲染期/事件期消费的 props：computed/getter 直读（setup 快照会停留在首渲染）。
+  const name = computed(() => componentProps.name);
+  const invalidProp = computed(() => componentProps.invalid);
+  const dirtyProp = computed(() => componentProps.dirty);
+  const touchedProp = computed(() => componentProps.touched);
+  const validationDebounceTime = () => componentProps.validationDebounceTime ?? 0;
+  const validationMode = () => componentProps.validationMode ?? formValidationMode;
 
-  type NonUndefinedValidate = Exclude<FieldRoot.Props['validate'], undefined>;
-  const validate = (validateProp || (() => null)) as NonUndefinedValidate;
+  // validate 是函数 prop——事件期直读（包装一层，避免 setup 快照）。
+  const validate = (value: unknown, formValues: Record<string, unknown>) =>
+    (componentProps.validate ?? (() => null))(value, formValues);
 
   const touchedState = ref(false);
   const dirtyState = ref(false);
   const filled = ref(false);
   const focused = ref(false);
 
-  const dirty = computed(() => dirtyProp ?? dirtyState.value);
-  const touched = computed(() => touchedProp ?? touchedState.value);
+  const dirty = computed(() => dirtyProp.value ?? dirtyState.value);
+  const touched = computed(() => touchedProp.value ?? touchedState.value);
 
   const markedDirtyRef = ref(dirty.value);
   const registeredFieldIdRef = ref(undefined as string | undefined);
   const registeredFieldName = ref<string | undefined>(undefined);
-  const effectiveName = computed(() => name ?? registeredFieldName.value);
+  const effectiveName = computed(() => name.value ?? registeredFieldName.value);
 
   // 受控 dirtyProp 变化时同步 markedDirtyRef（React 版 useIsoLayoutEffect 等价物）
   watch(
-    () => dirtyProp,
+    dirtyProp,
     (v) => {
       if (v !== undefined) {
         markedDirtyRef.value = v;
@@ -66,8 +65,9 @@ function FieldRootInner(componentProps: FieldRoot.Props) {
     {immediate: true},
   );
 
+  // 事件 handler：setup 闭包读 computed/refs——事件触发时拿到实时值。
   const setDirty = (value: boolean | ((prev: boolean) => boolean)) => {
-    if (dirtyProp !== undefined) {
+    if (dirtyProp.value !== undefined) {
       return;
     }
 
@@ -79,7 +79,7 @@ function FieldRootInner(componentProps: FieldRoot.Props) {
   };
 
   const setTouched = (value: boolean | ((prev: boolean) => boolean)) => {
-    if (touchedProp !== undefined) {
+    if (touchedProp.value !== undefined) {
       return;
     }
     touchedState.value = typeof value === 'function' ? value(touchedState.value) : value;
@@ -94,8 +94,8 @@ function FieldRootInner(componentProps: FieldRoot.Props) {
   };
 
   const shouldValidateOnChange = () =>
-    validationMode === 'onChange' ||
-    (validationMode === 'onSubmit' && submitAttemptedRef.value);
+    validationMode() === 'onChange' ||
+    (validationMode() === 'onSubmit' && submitAttemptedRef.value);
 
   const formError = computed(() => {
     const fieldName = effectiveName.value;
@@ -104,7 +104,7 @@ function FieldRootInner(componentProps: FieldRoot.Props) {
   const hasFormError = computed(() =>
     !!(Array.isArray(formError.value) ? formError.value.length : formError.value),
   );
-  const invalid = computed(() => invalidProp === true || hasFormError.value);
+  const invalid = computed(() => invalidProp.value === true || hasFormError.value);
 
   const validityDataState = ref<FieldValidityData>({
     state: DEFAULT_VALIDITY_STATE,
@@ -153,7 +153,7 @@ function FieldRootInner(componentProps: FieldRoot.Props) {
     commit: validation.commit,
     invalid,
     markedDirtyRef,
-    name,
+    name: () => componentProps.name,
     setRegisteredFieldName: (v) => (registeredFieldName.value = v),
     registeredFieldIdRef,
     setValidityData,
@@ -162,7 +162,7 @@ function FieldRootInner(componentProps: FieldRoot.Props) {
 
   // React 版 useImperativeHandle 等价物：actionsRef 就绪后写入 validate
   watch(
-    () => toValue(componentProps.actionsRef),
+    () => componentProps.actionsRef,
     (actionsRefObj) => {
       if (actionsRefObj) {
         (actionsRefObj as any).value = {validate: validateFieldControl};
@@ -171,6 +171,8 @@ function FieldRootInner(componentProps: FieldRoot.Props) {
     {immediate: true},
   );
 
+  // store-as-is 载体：身份稳定（setup 构建一次），ComputedRef 字段渲染期 `.value`
+  // 求值——消费端读字段即追踪，不存在冻结快照。
   const contextValue: FieldRootContextValue = {
     invalid,
     name: effectiveName,
@@ -181,31 +183,44 @@ function FieldRootInner(componentProps: FieldRoot.Props) {
     setDirty,
     setFilled,
     setFocused,
-    validationMode: computed(() => validationMode),
+    validationMode: computed(() => validationMode()),
     shouldValidateOnChange,
     state,
     registerFieldControl,
     validation,
   };
 
-  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
 
-  const {element} = useRenderElement({
-    props: () => [{...unrefs(elementProps)}],
-    state,
-    stateAttributesMapping: fieldValidityMapping,
-    className,
-    style,
-    render,
-    refs: () => [rootRef as any],
-    children,
-    defaultTag: 'div',
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
   });
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
   return (
-    <FieldRootContext.Provider value={contextValue}>{element()}</FieldRootContext.Provider>
+    <FieldRootContext.Provider value={contextValue}>
+      {useRenderElement(
+        'div',
+        {
+          className: className?.value,
+          render: render?.value,
+          style: style?.value,
+        },
+        {
+          state: state.value,
+          stateAttributesMapping: fieldValidityMapping,
+          ref: useMergedRefs(rootRef, componentProps.ref as any),
+          props: elementProps.value,
+        },
+      )}
+    </FieldRootContext.Provider>
   );
 }
 
@@ -216,7 +231,12 @@ function FieldRootInner(componentProps: FieldRoot.Props) {
  * Documentation: [Base UI Field](https://base-ui.com/react/components/field)
  */
 export function FieldRoot(componentProps: FieldRoot.Props) {
-  return <LabelableProvider>{<FieldRootInner {...(componentProps as any)} />}</LabelableProvider>;
+  // LabelableProvider 在上层注入 labelable 作用域（Inner 及其子组件消费）。
+  return (
+    <LabelableProvider>
+      <FieldRootInner {...(componentProps as any)} />
+    </LabelableProvider>
+  );
 }
 
 export interface FieldValidityData {

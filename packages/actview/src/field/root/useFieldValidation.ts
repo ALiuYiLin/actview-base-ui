@@ -75,7 +75,7 @@ function getNativeErrors(element: HTMLInputElement | null): string[] {
 export function useFieldValidation(
   params: UseFieldValidationParameters,
 ): UseFieldValidationReturnValue {
-  const {elementRef, formRef} = toValueFormContext();
+  const {elementRef, formRef} = getFormContext();
 
   const {
     setValidityData,
@@ -90,7 +90,7 @@ export function useFieldValidation(
     registeredFieldIdRef,
   } = params;
 
-  const {controlId, getDescriptionProps} = toValueLabelable();
+  const {controlId, getDescriptionProps} = getLabelable();
 
   const timeout = useTimeout();
   const inputRef = ref(null as HTMLInputElement | null);
@@ -302,7 +302,7 @@ export function useFieldValidation(
         'then' in resultOrPromise
       ) {
         // Retire a previous async result before an onSubmit validation begins.
-        if (validationMode === 'onSubmit') {
+        if (validationMode() === 'onSubmit') {
           publish(nextState, validationErrors);
         }
 
@@ -344,9 +344,10 @@ export function useFieldValidation(
     }
 
     const validateOnChange = shouldValidateOnChange();
+    const debounceTime = validationDebounceTime();
 
-    if (validateOnChange && value !== '' && validationDebounceTime) {
-      timeout.start(validationDebounceTime, () => {
+    if (validateOnChange && value !== '' && debounceTime) {
+      timeout.start(debounceTime, () => {
         commit(value);
       });
     } else {
@@ -373,12 +374,12 @@ export function useFieldValidation(
   };
 }
 
-function toValueFormContext() {
+function getFormContext() {
   const ctx = useFormContext();
   return {elementRef: ctx.elementRef, formRef: ctx.formRef};
 }
 
-function toValueLabelable() {
+function getLabelable() {
   const ctx = useLabelableContext();
   return {controlId: ctx.controlId, getDescriptionProps: ctx.getDescriptionProps};
 }
@@ -392,12 +393,14 @@ export interface UseFieldValidationParameters {
     formValues: Record<string, unknown>,
   ) => string | string[] | null | void | Promise<string | string[] | null | void>;
   validityData: ComputedRef<FieldValidityData>;
-  validationDebounceTime: number;
+  /** 事件期求值的 getter（prop 动态变化时拿到实时值） */
+  validationDebounceTime: () => number;
   invalid: ComputedRef<boolean>;
   markedDirtyRef: Ref<boolean>;
   state: ComputedRef<FieldRootState>;
   shouldValidateOnChange: () => boolean;
-  validationMode: ValidationMode;
+  /** 事件期求值的 getter（prop 动态变化时拿到实时值） */
+  validationMode: () => ValidationMode;
   registeredFieldIdRef: Ref<string | undefined>;
 }
 
