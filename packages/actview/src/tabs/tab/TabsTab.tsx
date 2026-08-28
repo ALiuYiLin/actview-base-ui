@@ -15,6 +15,7 @@ import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
 import { activeElement, contains } from '@/utils/shadowDom';
 import { useRenderElement } from '@/internals/useRenderElement';
+import { useMergedRefs } from '@/internals/useMergedRefs';
 
 /**
  * An individual interactive tab button that toggles the corresponding panel.
