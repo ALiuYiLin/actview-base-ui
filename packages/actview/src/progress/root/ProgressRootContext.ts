@@ -1,5 +1,4 @@
 import { createContext } from 'actview';
-import type { Ref } from 'actview';
 import type { ProgressRootState } from './ProgressRoot';
 
 export type ProgressRootContext = {
@@ -25,13 +24,14 @@ export type ProgressRootContext = {
  */
 export const ProgressRootContext = createContext<ProgressRootContext | undefined>(undefined);
 
-export function useProgressRootContext(): Ref<ProgressRootContext> {
+export function useProgressRootContext(): ProgressRootContext {
+  // store-as-is：原样返回注入的载体（无 Provider 时 undefined → 抛缺上下文错误）。
   const context = ProgressRootContext.use();
-  if (context.value === undefined) {
+  if (context === undefined) {
     throw new Error(
       'Base UI: ProgressRootContext is missing. Progress parts must be placed within <Progress.Root>.',
     );
   }
 
-  return context as unknown as Ref<ProgressRootContext>;
+  return context;
 }

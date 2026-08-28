@@ -1,4 +1,4 @@
-import { ref, toValue, toRefs, unrefs, useRootElement } from 'actview';
+import { computed, ref, toRefs } from 'actview';
 import { visuallyHidden } from '@/utils/visuallyHidden';
 import { formatNumber } from '@/utils/formatNumber';
 import { clamp } from '@/utils/clamp';
@@ -6,7 +6,7 @@ import { valueToPercent } from '@/utils/valueToPercent';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { ProgressRootContext } from './ProgressRootContext';
 import { progressStateAttributesMapping } from './stateAttributesMapping';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * Groups all parts of the progress bar and provides the task completion status to screen readers.
@@ -16,21 +16,18 @@ import { useRenderElement } from '@/internals/useRenderElementLegacy';
  */
 export function ProgressRoot(componentProps: ProgressRoot.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  // Provider 根（`<ProgressRootContext.Provider>`），无 Fragment 根问题。
-  const rootRef = useRootElement();
-
   const labelId = ref<string | undefined>(undefined);
   const setLabelId = (v: string | undefined) => (labelId.value = v);
 
-  // 派生值每次渲染重算（对齐 React 版每次 render）——setup 快照会导致
-  // value/max/min 动态变化时 status/aria-valuenow 停留在首渲染。
-  function computeDerived() {
-    const format = toValue(componentProps.format);
+  // 派生值：setup 级 computed（.value 在 JSX 内读取 → 归渲染 effect；props 直读
+  // 响应式——value/max/min 动态变化时 status/aria-valuenow 实时重算）。
+  const derived = computed(() => {
+    const format = componentProps.format;
     const getAriaValueText = componentProps.getAriaValueText;
-    const locale = toValue(componentProps.locale);
-    const max = toValue(componentProps.max) ?? 100;
-    const min = toValue(componentProps.min) ?? 0;
-    const value = toValue(componentProps.value) ?? null;
+    const locale = componentProps.locale;
+    const max = componentProps.max ?? 100;
+    const min = componentProps.min ?? 0;
+    const value = componentProps.value ?? null;
 
     // `value === null` (or any non-finite value) keeps Progress indeterminate. Otherwise compute a
     // single clamped value and normalized percentage so completion status, `aria-valuenow`, the
@@ -67,63 +64,77 @@ export function ProgressRoot(componentProps: ProgressRoot.Props) {
       max,
       min,
     };
-  }
-
-  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  const {render, className, children, style, ...elementProps} = toRefs(componentProps);
-
-  const stateFn = (): ProgressRootState => ({status: computeDerived().status});
-
-  const {element} = useRenderElement({
-    props: () => {
-      const d = computeDerived();
-      return [
-        {
-          'aria-labelledby': labelId.value,
-          'aria-valuemax': d.max,
-          'aria-valuemin': d.min,
-          'aria-valuenow': d.clampedValue ?? undefined,
-          'aria-valuetext': d.getAriaValueText
-            ? d.getAriaValueText(d.formattedValue, d.value)
-            : d.defaultAriaValueText,
-          role: 'progressbar',
-        },
-        unrefs(elementProps),
-      ];
-    },
-    state: stateFn,
-    stateAttributesMapping: progressStateAttributesMapping as any,
-    className,
-    style,
-    render,
-    refs: () => [rootRef as any],
-    // 显式 children：用户 children + 隐藏 NVDA 朗读 span
-    children: () => (
-      <>
-        {children?.value}
-        <span role="presentation" style={visuallyHidden}>
-          {/* force NVDA to read the label https://github.com/mui/base-ui/issues/4184 */}x
-        </span>
-      </>
-    ),
-    defaultTag: 'div',
   });
+
+  // 值形 props toRefs 活引用；children 单独引用（追加隐藏 NVDA 朗读 span）。
+  const { render, className, style, children: childrenRef, ...elementRefs } = toRefs(
+    componentProps,
+  ) as Record<string, Ref<any>>;
+
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
+  });
+  const state = computed(() => ({status: derived.value.status}));
+  const rootChildren = computed(() => (
+    <>
+      {childrenRef?.value}
+      <span role="presentation" style={visuallyHidden}>
+        {/* force NVDA to read the label https://github.com/mui/base-ui/issues/4184 */}x
+      </span>
+    </>
+  ));
+
+  // store-as-is 载体：身份稳定 getter 对象（provide 只跑一次，computed 新对象
+  // 会冻结快照）——字段渲染期求值，消费端读字段即追踪。
+  const contextValue: ProgressRootContext = {
+    get formattedValue() {
+      return derived.value.formattedValue;
+    },
+    get percentageValue() {
+      return derived.value.percentageValue;
+    },
+    setLabelId,
+    get state() {
+      return {status: derived.value.status};
+    },
+    get value() {
+      return derived.value.value;
+    },
+  };
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
   return (
-    <ProgressRootContext.Provider
-      value={(() => {
-        const d = computeDerived();
-        return {
-          formattedValue: d.formattedValue,
-          percentageValue: d.percentageValue,
-          setLabelId,
-          state: {status: d.status},
-          value: d.value,
-        };
-      })() as any}
-    >
-      {element()}
+    <ProgressRootContext.Provider value={contextValue}>
+      {useRenderElement(
+        'div',
+        {
+          className: className?.value,
+          render: render?.value,
+          style: style?.value,
+        },
+        {
+          state: state.value,
+          stateAttributesMapping: progressStateAttributesMapping,
+          ref: componentProps.ref,
+          props: [
+            {
+              'aria-labelledby': labelId.value,
+              'aria-valuemax': derived.value.max,
+              'aria-valuemin': derived.value.min,
+              'aria-valuenow': derived.value.clampedValue ?? undefined,
+              'aria-valuetext': derived.value.getAriaValueText
+                ? derived.value.getAriaValueText(derived.value.formattedValue, derived.value.value)
+                : derived.value.defaultAriaValueText,
+              role: 'progressbar',
+            },
+            elementProps.value,
+            {children: rootChildren.value},
+          ],
+        },
+      )}
     </ProgressRootContext.Provider>
   );
 }

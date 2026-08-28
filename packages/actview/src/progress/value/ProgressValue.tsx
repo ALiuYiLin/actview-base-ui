@@ -1,10 +1,9 @@
-import { toRefs, unrefs } from 'actview';
+import { computed, toRefs } from 'actview';
+import type { Ref } from 'actview';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { useProgressRootContext } from '../root/ProgressRootContext';
 import { progressStateAttributesMapping } from '../root/stateAttributesMapping';
-import type { ProgressRootState } from '../root/ProgressRoot';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
-import { useRootElementFragment } from '@/internals/useRootElementFragment';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * Displays the current value of the progress bar.
@@ -14,50 +13,56 @@ import { useRootElementFragment } from '@/internals/useRootElementFragment';
  */
 export function ProgressValue(componentProps: ProgressValue.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  // Fragment 根（`<>{element()}</>`）下 actview 内置 useRootElement 的
-  // subTree.el 恒 null——用 Fragment 兼容版本。
-  const rootRef = useRootElementFragment();
+  const rootContext = useProgressRootContext();
 
-  const rootContextRef = useProgressRootContext();
+  // 值形 props toRefs 活引用；children（render-prop 函数）单独引用——渲染期
+  // 求值后作为元素 children（函数形态传 (formattedValue, value)，否则展示
+  // 格式化文本；indeterminate 时无文本可展示）。
+  const { className, render, style, children: childrenRef, ...elementRefs } = toRefs(
+    componentProps,
+  ) as Record<string, Ref<any>>;
 
-  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  const {className, render, children, style, ...elementProps} = toRefs(componentProps);
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
+  });
+  const state = computed(() => rootContext.state);
+  const childrenValue = computed(() => {
+    const {value, formattedValue, state: st} = rootContext;
 
-  const stateFn = () => rootContextRef.value.state;
+    // Follow `status` rather than re-deriving it: a non-finite `value` is also indeterminate, and
+    // has no formatted text to show.
+    const indeterminate = st.status === 'indeterminate';
+    const formattedValueArg = indeterminate ? 'indeterminate' : formattedValue;
+    const formattedValueDisplay = indeterminate ? null : formattedValue;
 
-  const {element} = useRenderElement({
-    props: () => [
-      {
-        'aria-hidden': true,
-      },
-      unrefs(elementProps),
-    ],
-    state: stateFn,
-    stateAttributesMapping: progressStateAttributesMapping as any,
-    className,
-    style,
-    render,
-    refs: () => [rootRef as any],
-    // children：render-prop（(formattedValue, value) => any）渲染期求值
-    children: () => {
-      const {value, formattedValue, state} = rootContextRef.value;
-
-      // Follow `status` rather than re-deriving it: a non-finite `value` is also indeterminate, and
-      // has no formatted text to show.
-      const indeterminate = state.status === 'indeterminate';
-      const formattedValueArg = indeterminate ? 'indeterminate' : formattedValue;
-      const formattedValueDisplay = indeterminate ? null : formattedValue;
-
-      const childrenValue = children?.value;
-      return typeof childrenValue === 'function'
-        ? (childrenValue as any)(formattedValueArg, value)
-        : formattedValueDisplay;
-    },
-    defaultTag: 'span',
+    const childrenProp = childrenRef?.value;
+    return typeof childrenProp === 'function'
+      ? (childrenProp as any)(formattedValueArg, value)
+      : formattedValueDisplay;
   });
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  return <>{element()}</>;
+  return (
+    <>
+      {useRenderElement(
+        'span',
+        {
+          className: className?.value,
+          render: render?.value,
+          style: style?.value,
+        },
+        {
+          state: state.value,
+          stateAttributesMapping: progressStateAttributesMapping,
+          ref: componentProps.ref,
+          props: [{'aria-hidden': true}, elementProps.value, {children: childrenValue.value}],
+        },
+      )}
+    </>
+  );
 }
 
 export interface ProgressValueState extends ProgressRootState {}
