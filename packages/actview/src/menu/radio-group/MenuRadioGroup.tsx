@@ -1,25 +1,28 @@
-import { toRefs, unrefs, ref } from 'actview';
-import { MenuRadioGroupContext, type MenuRadioGroupContextValue } from './MenuRadioGroupContext';
+import {computed, ref, toRefs} from 'actview';
+import type { Ref } from 'actview';
+import { MenuRadioGroupContext } from './MenuRadioGroupContext';
 import { MenuGroupContext } from '../group/MenuGroupContext';
 import { useControlled } from '@/utils/useControlled';
 import { useStableCallback } from '@/utils/useStableCallback';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useMergedRefs } from '@/internals/useMergedRefs';
 
 /**
  * Groups related radio items.
  * Renders a `<div>` element.
  */
 export function MenuRadioGroup(componentProps: MenuRadioGroup.Props) {
-  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
-  const {
-    value: valueProp,
-    defaultValue,
-    onValueChange: onValueChangeProp,
-    disabled = false,
-    'aria-labelledby': ariaLabelledByProp,
-  } = componentProps as any;
+  // ============ setup（只执行一次）：一次性初始化 ============
+  // 渲染期/事件期消费的 props：computed 直读（setup 快照会停留在首渲染）；
+  // 回调类 props（onValueChange）事件期直读 componentProps。
+  const disabled = computed(() => componentProps.disabled ?? false);
+  const ariaLabelledByProp = computed(() => componentProps['aria-labelledby']);
 
-  const {render, className, style, children, ref: refProp, ...elementProps} = toRefs(componentProps);
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
 
   const labelId = ref<string | undefined>(undefined);
 
@@ -30,13 +33,14 @@ export function MenuRadioGroup(componentProps: MenuRadioGroup.Props) {
   };
 
   const [value, setValueUnwrapped] = useControlled<any>({
-    controlled: valueProp,
-    default: defaultValue,
+    controlled: () => componentProps.value,
+    default: () => componentProps.defaultValue,
     name: 'MenuRadioGroup',
   });
 
+  // 事件 handler：setup 闭包读 props——事件触发时拿到实时值。
   const setValue = useStableCallback((newValue: any, eventDetails: any) => {
-    onValueChangeProp?.(newValue, eventDetails);
+    componentProps.onValueChange?.(newValue, eventDetails);
 
     if (eventDetails.isCanceled) {
       return;
@@ -45,37 +49,50 @@ export function MenuRadioGroup(componentProps: MenuRadioGroup.Props) {
     setValueUnwrapped(newValue);
   });
 
-  const {element} = useRenderElement({
-    props: () => [
-      {
-        role: 'group',
-        'aria-labelledby': ariaLabelledByProp ?? labelId.value,
-        'aria-disabled': disabled || undefined,
-      },
-      unrefs(elementProps),
-    ],
-    state: (): MenuRadioGroupState => ({disabled}),
-    className,
-    style,
-    render,
-    refs: () => (componentProps.ref !== undefined ? [refProp as any] : []),
-    children,
-    defaultTag: 'div',
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
   });
+
+  const state = computed<MenuRadioGroupState>(() => ({disabled: disabled.value}));
+
+  const rootProps = computed<Record<string, any>>(() => ({
+    role: 'group',
+    'aria-labelledby': ariaLabelledByProp.value ?? labelId.value,
+    'aria-disabled': disabled.value || undefined,
+    ...elementProps.value,
+  }));
+
+  // store-as-is 载体：身份稳定的 getter 对象——value/disabled 渲染期求值。
+  const radioGroupContextValue = {
+    get value() {
+      return value.value;
+    },
+    setValue,
+    get disabled() {
+      return disabled.value;
+    },
+  };
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
   return (
     <MenuGroupContext.Provider value={setLabelId as any}>
-      <MenuRadioGroupContext.Provider
-        value={
+      <MenuRadioGroupContext.Provider value={radioGroupContextValue as any}>
+        {useRenderElement(
+          'div',
           {
-            value: value.value,
-            setValue,
-            disabled,
-          } as any
-        }
-      >
-        {element()}
+            className: className?.value,
+            render: render?.value,
+            style: style?.value,
+          },
+          {
+            state: state.value,
+            ref: componentProps.ref as any,
+            props: rootProps.value,
+          },
+        )}
       </MenuRadioGroupContext.Provider>
     </MenuGroupContext.Provider>
   );
@@ -112,14 +129,4 @@ export interface MenuRadioGroupState {
    * Whether the component is disabled.
    */
   disabled: boolean;
-}
-
-export type MenuRadioGroupChangeEventReason = string;
-export type MenuRadioGroupChangeEventDetails = any;
-
-export namespace MenuRadioGroup {
-  export type Props = MenuRadioGroupProps;
-  export type State = MenuRadioGroupState;
-  export type ChangeEventReason = MenuRadioGroupChangeEventReason;
-  export type ChangeEventDetails = MenuRadioGroupChangeEventDetails;
 }

@@ -1,4 +1,5 @@
-import {computed, toRefs, unrefs, toValue, ref} from 'actview';
+import {computed, toRefs} from 'actview';
+import type { Ref } from 'actview';
 import { mergePropsN } from '@/merge-props';
 import { NOOP } from '@/utils/empty';
 import { MenuCheckboxItemContext } from './MenuCheckboxItemContext';
@@ -11,132 +12,144 @@ import { useMenuPositionerContext } from '../positioner/MenuPositionerContext';
 import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
 import { useControlled } from '@/utils/useControlled';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useMergedRefs } from '@/internals/useMergedRefs';
 
 /**
  * A menu item that toggles a setting on or off.
  * Renders a `<div>` element.
  */
 export function MenuCheckboxItem(componentProps: MenuCheckboxItem.Props) {
-  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
-  const {
-    id: idProp,
-    label,
-    nativeButton = false,
-    disabled: disabledProp = false,
-    closeOnClick = false,
-    checked: checkedProp,
-    defaultChecked,
-    onCheckedChange,
-  } = componentProps as any;
+  // ============ setup（只执行一次）：一次性初始化 ============
+  // 渲染期/事件期消费的 props：computed 直读（setup 快照会停留在首渲染）。
+  const label = componentProps.label;
+  const nativeButton = computed(() => componentProps.nativeButton ?? false);
 
-  const {render, className, style, children, ref, ...elementProps} = toRefs(componentProps);
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
 
   const listItem = useCompositeListItem({guess: true, label});
   const menuPositionerContext = useMenuPositionerContext(true);
-  const id = useBaseUiId(idProp);
+  const id = useBaseUiId(componentProps.id);
 
   const {store} = useMenuRootContext();
   const rootDisabled = store.useState('disabled');
-  const disabled = disabledProp || rootDisabled.value;
-  const highlighted = computed(() => store.select('isActive', toValue(listItem.index)));
+  const disabled = computed(
+    () => (componentProps.disabled ?? false) || rootDisabled.value,
+  );
+  const highlighted = computed(() => store.select('isActive', listItem.index.value));
   const itemProps = store.useState('itemProps');
 
   const [checked, setChecked] = useControlled<any>({
-    controlled: checkedProp,
-    default: defaultChecked ?? false,
+    controlled: () => componentProps.checked,
+    default: () => componentProps.defaultChecked ?? false,
     name: 'MenuCheckboxItem',
     state: 'checked',
   });
 
   const {getItemProps, itemRef} = useMenuItem({
-    closeOnClick,
+    closeOnClick: componentProps.closeOnClick ?? false,
     disabled,
-    highlighted: false,
+    highlighted: false, // data-highlighted 由 rootProps computed 计算
     id,
     store,
-    nativeButton,
+    nativeButton: nativeButton.value,
     nodeId: menuPositionerContext?.nodeId,
     itemMetadata: REGULAR_ITEM,
   });
 
+  // 事件 handler：setup 闭包读 computed——事件触发时拿到实时值；
+  // onCheckedChange 回调 props 事件期直读 componentProps。
   function handleClick(event: any) {
     const details = createChangeEventDetails(REASONS.itemPress, event, undefined, {
       preventUnmountOnClose: NOOP,
     });
 
-    onCheckedChange?.(!checked.value, details);
+    componentProps.onCheckedChange?.(!checked.value, details);
     if (!details.isCanceled) {
       setChecked(!checked.value);
     }
   }
 
-  const {element} = useRenderElement({
-    props: () => {
-      const state: MenuCheckboxItemState = {
-        disabled,
-        highlighted: highlighted.value,
-        checked: checked.value,
-      };
-      const merged: any = mergePropsN<any>([
-        itemProps.value,
-        {
-          role: 'menuitemcheckbox',
-          'aria-checked': state.checked,
-          onClick: handleClick,
-        },
-        unrefs(elementProps),
-        getItemProps as any,
-      ]);
-      if (state.checked) {
-        merged[itemMapping.checkedKey] = '';
-      } else {
-        merged[itemMapping.uncheckedKey] = '';
-      }
-      if (state.highlighted) {
-        merged['data-highlighted'] = '';
-      }
-      if (state.disabled) {
-        merged['data-disabled'] = '';
-      }
-      return [merged];
-    },
-    state: (): MenuCheckboxItemState => ({
-      disabled,
-      highlighted: highlighted.value,
-      checked: checked.value,
-    }),
-    className,
-    style,
-    render,
-    refs: () => {
-      const refs: any[] = [
-        (el: HTMLElement | null) => {
-          itemRef?.(el);
-          listItem.ref(el);
-        },
-      ];
-      if (componentProps.ref !== undefined) {
-        refs.push(ref);
-      }
-      return refs;
-    },
-    children,
-    defaultTag: 'div',
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
   });
+
+  const state = computed<MenuCheckboxItemState>(() => ({
+    disabled: disabled.value,
+    highlighted: highlighted.value,
+    checked: checked.value,
+  }));
+
+  // 根元素 props：store itemProps → role/aria/handler → 透传 → getItemProps →
+  // checked/highlighted/disabled data-*。
+  const rootProps = computed<Record<string, any>>(() => {
+    const stateValue = state.value;
+    const merged: any = mergePropsN<any>([
+      itemProps.value,
+      {
+        role: 'menuitemcheckbox',
+        'aria-checked': stateValue.checked,
+        onClick: handleClick,
+      },
+      elementProps.value,
+      getItemProps as any,
+    ]);
+    if (stateValue.checked) {
+      merged[itemMapping.checkedKey] = '';
+    } else {
+      merged[itemMapping.uncheckedKey] = '';
+    }
+    if (stateValue.highlighted) {
+      merged['data-highlighted'] = '';
+    }
+    if (stateValue.disabled) {
+      merged['data-disabled'] = '';
+    }
+    return merged;
+  });
+
+  // store-as-is 载体：身份稳定的 getter 对象。
+  const checkboxItemContextValue = {
+    get disabled() {
+      return disabled.value;
+    },
+    get highlighted() {
+      return highlighted.value;
+    },
+    get checked() {
+      return checked.value;
+    },
+  };
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
   return (
-    <MenuCheckboxItemContext.Provider
-      value={
+    <MenuCheckboxItemContext.Provider value={checkboxItemContextValue as any}>
+      {useRenderElement(
+        'div',
         {
-          disabled,
-          highlighted: highlighted.value,
-          checked: checked.value,
-        } as any
-      }
-    >
-      {element()}
+          className: className?.value,
+          render: render?.value,
+          style: style?.value,
+        },
+        {
+          state: state.value,
+          ref: useMergedRefs(
+            (el: HTMLElement | null) => {
+              itemRef?.(el);
+              listItem.ref(el);
+            },
+            componentProps.ref as any,
+          ),
+          props: rootProps.value,
+        },
+      )}
     </MenuCheckboxItemContext.Provider>
   );
 }
@@ -154,13 +167,4 @@ export interface MenuCheckboxItemState {
    * Whether the item is checked.
    */
   checked: boolean;
-}
-
-export interface MenuCheckboxItemProps {
-  [key: string]: any;
-}
-
-export namespace MenuCheckboxItem {
-  export type State = MenuCheckboxItemState;
-  export type Props = MenuCheckboxItemProps;
 }

@@ -1,4 +1,4 @@
-import {computed, toRefs, unrefs, ref, toValue} from 'actview';
+import {computed, ref, toRefs} from 'actview';
 import { mergeProps, mergePropsN } from '@/merge-props';
 import type { HTMLProps } from '@/internals/types';
 import { useMenuRootContext } from '../root/MenuRootContext';
@@ -9,27 +9,31 @@ import { useMenuItemCommonProps } from '../item/useMenuItemCommonProps';
 import { REGULAR_ITEM } from '../item/useMenuItem';
 import { useButton } from '@/internals/use-button/useButton';
 import type { Ref } from 'actview';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useMergedRefs } from '@/internals/useMergedRefs';
 
 /**
  * A link in the menu that can be used to navigate to a different page or section.
  * Renders an `<a>` element.
  */
 export function MenuLinkItem(componentProps: MenuLinkItem.Props) {
-  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
-  const {id: idProp, label, closeOnClick = false} = componentProps as any;
-  const {render, className, style, children, ref: refProp, ...elementProps} = toRefs(componentProps);
-
+  // ============ setup（只执行一次）：一次性初始化 ============
   const linkRef = ref(null as HTMLAnchorElement | null);
 
-  const listItem = useCompositeListItem({guess: true, label});
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
+
+  const listItem = useCompositeListItem({guess: true, label: componentProps.label});
   const menuPositionerContext = useMenuPositionerContext(true);
   const nodeId = menuPositionerContext?.nodeId;
 
-  const id = useBaseUiId(idProp);
+  const id = useBaseUiId(componentProps.id);
 
   const {store} = useMenuRootContext();
-  const highlighted = computed(() => store.select('isActive', toValue(listItem.index)));
+  const highlighted = computed(() => store.select('isActive', listItem.index.value));
   const itemProps = store.useState('itemProps');
   const typingRef = store.context.typingRef;
 
@@ -40,7 +44,7 @@ export function MenuLinkItem(componentProps: MenuLinkItem.Props) {
   });
 
   const commonProps = useMenuItemCommonProps({
-    closeOnClick,
+    closeOnClick: componentProps.closeOnClick ?? false,
     highlighted: false,
     id,
     nodeId,
@@ -54,43 +58,55 @@ export function MenuLinkItem(componentProps: MenuLinkItem.Props) {
     return mergeProps(commonProps, externalProps, getButtonProps);
   };
 
-  const {element} = useRenderElement({
-    props: () => {
-      const merged: any = mergePropsN<any>([
-        itemProps.value,
-        unrefs(elementProps),
-        getItemProps as any,
-      ]);
-      if (highlighted.value) {
-        merged['data-highlighted'] = '';
-      }
-      return [merged];
-    },
-    state: (): MenuLinkItemState => ({
-      highlighted: highlighted.value,
-    }),
-    className,
-    style,
-    render,
-    refs: () => {
-      const refs: any[] = [
-        (el: HTMLAnchorElement | null) => {
-          linkRef.value = el;
-          buttonRef(el);
-          listItem.ref(el);
-        },
-      ];
-      if (componentProps.ref !== undefined) {
-        refs.push(refProp);
-      }
-      return refs;
-    },
-    children,
-    defaultTag: 'a',
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
+  });
+
+  const state = computed<MenuLinkItemState>(() => ({
+    highlighted: highlighted.value,
+  }));
+
+  // 根元素 props：store itemProps → 透传 → getItemProps → highlighted data-*。
+  const rootProps = computed<Record<string, any>>(() => {
+    const merged: any = mergePropsN<any>([
+      itemProps.value,
+      elementProps.value,
+      getItemProps as any,
+    ]);
+    if (highlighted.value) {
+      merged['data-highlighted'] = '';
+    }
+    return merged;
   });
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  return <>{element()}</>;
+  return (
+    <>
+      {useRenderElement(
+        'a',
+        {
+          className: className?.value,
+          render: render?.value,
+          style: style?.value,
+        },
+        {
+          state: state.value,
+          ref: useMergedRefs(
+            (el: HTMLAnchorElement | null) => {
+              linkRef.value = el;
+              buttonRef(el);
+              listItem.ref(el);
+            },
+            componentProps.ref as any,
+          ),
+          props: rootProps.value,
+        },
+      )}
+    </>
+  );
 }
 
 export interface MenuLinkItemState {

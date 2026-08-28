@@ -1,11 +1,13 @@
-import {toRefs, unrefs, toValue} from 'actview';
+import {computed, toRefs} from 'actview';
+import type { Ref } from 'actview';
 import { REGULAR_ITEM, useMenuItem } from './useMenuItem';
 import { useMenuRootContext } from '../root/MenuRootContext';
 import { useBaseUiId } from '@/internals/useBaseUiId';
 import type { BaseUIComponentProps, NonNativeButtonProps } from '@/internals/types';
 import { useCompositeListItem } from '@/internals/composite/list/useCompositeListItem';
 import { useMenuPositionerContext } from '../positioner/MenuPositionerContext';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useMergedRefs } from '@/internals/useMergedRefs';
 
 /**
  * An individual interactive item in the menu.
@@ -14,81 +16,98 @@ import { useRenderElement } from '@/internals/useRenderElementLegacy';
  * Documentation: [Base UI Menu](https://base-ui.com/react/components/menu)
  */
 export function MenuItem(componentProps: MenuItem.Props) {
-  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
-  const {
-    id: idProp,
-    label,
-    nativeButton = false,
-    disabled: disabledProp = false,
-    closeOnClick = true,
-  } = componentProps;
+  // ============ setup（只执行一次）：一次性初始化 ============
+  // 渲染期/事件期消费的 props：computed 直读（setup 快照会停留在首渲染）。
+  const label = componentProps.label;
+  const nativeButton = computed(() => componentProps.nativeButton ?? false);
+  const disabled = computed(
+    () => (componentProps.disabled ?? false) || rootDisabled.value,
+  );
+  const closeOnClick = computed(() => componentProps.closeOnClick ?? true);
 
-  const {render, className, style, children, ref, ...elementProps} = toRefs(componentProps);
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
 
   const listItem = useCompositeListItem({guess: true, label});
   const menuPositionerContext = useMenuPositionerContext(true);
-  const id = useBaseUiId(idProp);
+  const id = useBaseUiId(componentProps.id);
 
   const {store} = useMenuRootContext();
   const rootDisabled = store.useState('disabled');
-  const disabled = disabledProp || rootDisabled.value;
   const activeIndex = store.useState('activeIndex');
   const itemProps = store.useState('itemProps');
 
   const {getItemProps, itemRef} = useMenuItem({
-    closeOnClick,
+    closeOnClick: closeOnClick.value,
     disabled,
-    highlighted: false, // 由 render 期按 activeIndex 计算
+    highlighted: false, // data-highlighted 由 rootProps computed 按 activeIndex 计算
     id,
     store,
-    nativeButton,
+    nativeButton: nativeButton.value,
     nodeId: menuPositionerContext?.nodeId,
     itemMetadata: REGULAR_ITEM,
   });
 
-  const {element} = useRenderElement({
-    props: () => {
-      const merged: any = {};
-      for (const prop of [itemProps.value, unrefs(elementProps), getItemProps as any]) {
-        const resolved = typeof (prop as any) === 'function' ? (prop as any)(merged) : prop;
-        Object.assign(merged, resolved);
-      }
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
+  });
 
-      // `data-highlighted` / `data-disabled` state attributes
-      const highlighted = activeIndex.value === toValue(listItem.index);
-      if (highlighted) {
-        merged['data-highlighted'] = '';
-      }
-      if (disabled) {
-        merged['data-disabled'] = '';
-      }
-      return [merged];
-    },
-    state: (): MenuItemState => ({
-      disabled,
-      highlighted: activeIndex.value === toValue(listItem.index),
-    }),
-    className,
-    style,
-    render,
-    refs: () => {
-      const refs: any[] = [
-        (el: HTMLElement | null) => {
-          itemRef?.(el);
-          listItem.ref(el);
-        },
-      ];
-      if (componentProps.ref !== undefined) {
-        refs.push(ref);
-      }
-      return refs;
-    },
-    children,
-    defaultTag: 'div',
+  const highlighted = computed(() => activeIndex.value === listItem.index.value);
+
+  const state = computed<MenuItemState>(() => ({
+    disabled: disabled.value,
+    highlighted: highlighted.value,
+  }));
+
+  // 根元素 props：store itemProps → 透传 → getItemProps → highlighted/
+  // disabled data-*。
+  const rootProps = computed<Record<string, any>>(() => {
+    const merged: any = {};
+    for (const prop of [itemProps.value, elementProps.value, getItemProps as any]) {
+      const resolved = typeof (prop as any) === 'function' ? (prop as any)(merged) : prop;
+      Object.assign(merged, resolved);
+    }
+
+    // `data-highlighted` / `data-disabled` state attributes
+    if (highlighted.value) {
+      merged['data-highlighted'] = '';
+    }
+    if (disabled.value) {
+      merged['data-disabled'] = '';
+    }
+    return merged;
   });
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  return <>{element()}</>;
+  return (
+    <>
+      {useRenderElement(
+        'div',
+        {
+          className: className?.value,
+          render: render?.value,
+          style: style?.value,
+        },
+        {
+          state: state.value,
+          ref: useMergedRefs(
+            (el: HTMLElement | null) => {
+              itemRef?.(el);
+              listItem.ref(el);
+            },
+            componentProps.ref as any,
+          ),
+          props: rootProps.value,
+        },
+      )}
+    </>
+  );
 }
 
 export interface MenuItemState {
