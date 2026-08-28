@@ -36,7 +36,7 @@ import {
   type ReasonToEvent,
 } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * Groups all parts of the number field and manages its state.

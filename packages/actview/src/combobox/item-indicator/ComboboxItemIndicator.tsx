@@ -1,5 +1,5 @@
 import { toRefs, unrefs } from 'actview';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** Shows a checkmark when the item is selected. Renders a `<span>` element. */
 export function ComboboxItemIndicator(props: ComboboxItemIndicator.Props) {

@@ -9,7 +9,7 @@ import { useMenuItemCommonProps } from '../item/useMenuItemCommonProps';
 import { REGULAR_ITEM } from '../item/useMenuItem';
 import { useButton } from '@/internals/use-button/useButton';
 import type { Ref } from 'actview';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * A link in the menu that can be used to navigate to a different page or section.

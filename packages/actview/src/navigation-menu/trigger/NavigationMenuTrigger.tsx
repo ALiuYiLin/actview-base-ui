@@ -1,6 +1,6 @@
 import { toRefs, unrefs, computed } from 'actview';
 import { useNavigationMenuRootContext } from '../root/NavigationMenuRootContext';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * A trigger for the navigation menu.

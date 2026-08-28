@@ -4,7 +4,7 @@ import { CompositeList } from '@/internals/composite/list/CompositeList';
 import { useCompositeRoot } from './useCompositeRoot';
 import { CompositeRootContext } from './CompositeRootContext';
 import type { BaseUIComponentProps } from '@/internals/types';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 import type { ModifierKey } from '@/internals/composite/composite';
 import type { CompositeGridNavigator } from './gridNavigation';
 import { useDirection } from '@/internals/direction-context/DirectionContext';

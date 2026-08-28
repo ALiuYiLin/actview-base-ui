@@ -13,7 +13,7 @@ import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
 import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import type { FieldRootState } from '../root/FieldRoot';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * The form control to label and validate.

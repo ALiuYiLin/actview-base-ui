@@ -1,6 +1,6 @@
 import { toRefs, unrefs } from 'actview';
 import { useNavigationMenuRootContext } from '../root/NavigationMenuRootContext';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** Displays an arrow indicator. Renders a `<div>` element. */
 export function NavigationMenuArrow(props: NavigationMenuArrow.Props) {

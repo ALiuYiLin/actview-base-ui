@@ -13,7 +13,7 @@ import { useOpenMethodTriggerProps } from '@/utils/useOpenInteractionType';
 import { usePopoverRootContext } from '../root/PopoverRootContext';
 import { EMPTY_OBJECT } from '@/utils/empty';
 import { mergePropsN } from '@/merge-props';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 const OPEN_DELAY = 300;
 

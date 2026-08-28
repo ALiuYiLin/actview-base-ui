@@ -1,6 +1,6 @@
 import { toRefs, unrefs } from 'actview';
 import { useNavigationMenuRootContext } from '../root/NavigationMenuRootContext';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** The content of the popup. Renders a `<div>` element. */
 export function NavigationMenuContent(props: NavigationMenuContent.Props) {

@@ -5,7 +5,7 @@ import { useNumberFieldRootContext } from '../root/NumberFieldRootContext';
 import { useNumberFieldScrubAreaContext } from '../scrub-area/NumberFieldScrubAreaContext';
 import { stateAttributesMapping } from '../utils/stateAttributesMapping';
 import { platform } from '@/utils/platform';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 import { useRootElementFragment } from '@/internals/useRootElementFragment';
 
 const CURSOR_STYLE: any = {

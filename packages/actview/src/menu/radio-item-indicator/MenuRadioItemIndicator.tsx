@@ -4,7 +4,7 @@ import type { BaseUIComponentProps } from '@/internals/types';
 import { itemMapping } from '../utils/stateAttributesMapping';
 import { useTransitionStatus } from '@/internals/useTransitionStatus';
 import { useOpenChangeComplete } from '@/internals/useOpenChangeComplete';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * Indicates whether the radio item is selected.

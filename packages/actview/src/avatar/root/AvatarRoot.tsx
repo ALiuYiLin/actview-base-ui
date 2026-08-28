@@ -2,7 +2,7 @@ import { ref, toRefs, unrefs, useRootElement } from 'actview';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { AvatarRootContext } from './AvatarRootContext';
 import { avatarStateAttributesMapping } from './stateAttributesMapping';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * Displays a user's profile picture, initials, or fallback icon.

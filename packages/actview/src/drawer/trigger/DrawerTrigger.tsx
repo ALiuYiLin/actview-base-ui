@@ -10,7 +10,7 @@ import { useClick } from '@/floating-ui-react';
 import { useButton } from '@/internals/use-button/useButton';
 import { useTriggerFocusGuards } from '@/utils/popups/useTriggerFocusGuards';
 import { FocusGuard } from '@/utils/FocusGuard';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * A button that opens the Drawer.

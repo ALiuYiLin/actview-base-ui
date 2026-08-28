@@ -31,7 +31,7 @@ import type { MenuParent } from '../root/MenuRoot';
 import { PATIENT_CLICK_THRESHOLD } from '@/internals/constants';
 import { FocusGuard } from '@/utils/FocusGuard';
 import { mergeProps, mergePropsN } from '@/merge-props';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * A button that opens the menu.

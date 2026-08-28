@@ -3,7 +3,7 @@ import type { BaseUIComponentProps } from '@/internals/types';
 import { useMeterRootContext } from '../root/MeterRootContext';
 import { useLabel } from '@/internals/labelable-provider/useLabel';
 import type { MeterRootState } from '../root/MeterRoot';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 import { useRootElementFragment } from '@/internals/useRootElementFragment';
 
 /**

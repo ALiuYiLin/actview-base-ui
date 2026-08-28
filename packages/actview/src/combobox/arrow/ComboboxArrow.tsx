@@ -1,5 +1,5 @@
 import { toRefs, unrefs } from 'actview';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** Displays an arrow indicator. Renders a `<div>` element. */
 export function ComboboxArrow(props: ComboboxArrow.Props) {

@@ -2,7 +2,7 @@ import { ref, toValue, watch, computed, toRefs, unrefs } from 'actview';
 import { useControlled } from '@/utils/useControlled';
 import { NavigationMenuRootContext } from './NavigationMenuRootContext';
 import type { BaseUIComponentProps } from '@/internals/types';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * Groups all parts of the navigation menu.

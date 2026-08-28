@@ -1,6 +1,6 @@
 import { toRefs, unrefs, ref } from 'actview';
 import { MenuGroupContext, type MenuGroupContextValue } from './MenuGroupContext';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * Groups related menu items with the corresponding label.

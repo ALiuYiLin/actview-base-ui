@@ -2,7 +2,7 @@ import { ref, toValue, toRefs, unrefs } from 'actview';
 import { MenubarContext, useMenubarContext } from './MenubarContext';
 import type { MenuRoot } from '@/menu/root/MenuRoot';
 import type { BaseUIComponentProps } from '@/internals/types';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * A horizontal or vertical menu bar.

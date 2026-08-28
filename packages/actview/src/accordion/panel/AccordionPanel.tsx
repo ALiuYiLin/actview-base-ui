@@ -10,7 +10,7 @@ import { useAccordionItemContext } from '../item/AccordionItemContext';
 import { accordionStateAttributesMapping } from '../item/stateAttributesMapping';
 import { AccordionPanelCssVars } from '../AccordionDataAttributes';
 import type { TransitionStatus } from '@/internals/useTransitionStatus';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * A collapsible panel with the accordion item contents.

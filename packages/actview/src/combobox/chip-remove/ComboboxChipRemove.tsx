@@ -1,5 +1,5 @@
 import { toRefs, unrefs } from 'actview';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** Removes a chip. Renders a `<button>` element. actview 简化：无回调（由用户 onClick 处理）。 */
 export function ComboboxChipRemove(props: ComboboxChipRemove.Props) {

@@ -1,5 +1,5 @@
 import { toRefs, unrefs } from 'actview';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** Groups select items. Renders a `<div>` element. */
 export function SelectGroup(props: SelectGroup.Props) {

@@ -7,7 +7,7 @@ import { fieldValidityMapping } from '@/internals/field-constants/constants';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { useBaseUiId } from '@/internals/useBaseUiId';
 import { useFieldItemContext } from '../item/FieldItemContext';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * A paragraph with additional information about the field.

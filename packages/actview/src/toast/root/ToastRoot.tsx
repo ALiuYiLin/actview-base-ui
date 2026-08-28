@@ -2,7 +2,7 @@ import { toRefs, unrefs, computed } from 'actview';
 import { useToastProviderContext } from '../provider/ToastProviderContext';
 import { ToastRootContext } from './ToastRootContext';
 import type { BaseUIComponentProps } from '@/internals/types';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * Renders a toast.

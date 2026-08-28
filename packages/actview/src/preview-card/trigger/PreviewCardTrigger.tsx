@@ -8,7 +8,7 @@ import { useBaseUiId } from '@/internals/useBaseUiId';
 import { PreviewCardHandle } from '../store/PreviewCardHandle';
 import { useHoverReferenceInteraction, useFocus } from '@/floating-ui-react';
 import { useButton } from '@/internals/use-button/useButton';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * An element to attach the preview-card to.

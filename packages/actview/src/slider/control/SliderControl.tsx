@@ -16,7 +16,7 @@ import { sliderStateAttributesMapping } from '../root/stateAttributesMapping';
 import type { BaseUIComponentProps } from '@/internals/types';
 import type { SliderRootState } from '../root/SliderRoot';
 import type { Ref } from 'actview';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 import { useRootElementFragment } from '@/internals/useRootElementFragment';
 
 const INTENTIONAL_DRAG_COUNT_THRESHOLD = 3;

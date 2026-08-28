@@ -11,7 +11,7 @@ import type { TabsPanel } from '../panel/TabsPanel';
 import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 function findTabElement(
   tabMap: Map<Node, CompositeMetadata<TabsTab.Metadata>>,

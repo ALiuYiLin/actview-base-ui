@@ -11,7 +11,7 @@ import { useBaseUiId } from '@/internals/useBaseUiId';
 import { useOpenChangeComplete } from '@/internals/useOpenChangeComplete';
 import { transitionStatusMapping } from '@/internals/stateAttributesMapping';
 import { type TransitionStatus, useTransitionStatus } from '@/internals/useTransitionStatus';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 const stateAttributesMapping: StateAttributesMapping<FieldErrorState> = {
   ...fieldValidityMapping,

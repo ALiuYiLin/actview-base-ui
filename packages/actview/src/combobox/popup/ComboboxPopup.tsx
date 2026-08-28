@@ -1,6 +1,6 @@
 import { toRefs, unrefs } from 'actview';
 import { useComboboxRootContext } from '../root/ComboboxRootContext';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** The popup of the combobox. Renders a `<div>` element when open. */
 export function ComboboxPopup(props: ComboboxPopup.Props) {

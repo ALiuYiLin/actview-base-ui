@@ -8,7 +8,7 @@ import { useOpenChangeComplete } from '@/internals/useOpenChangeComplete';
 import { transitionStatusMapping } from '@/internals/stateAttributesMapping';
 import { type TransitionStatus, useTransitionStatus } from '@/internals/useTransitionStatus';
 import { useImageLoadingStatus } from './useImageLoadingStatus';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 import { useRootElementFragment } from '@/internals/useRootElementFragment';
 
 const stateAttributesMapping: StateAttributesMapping<AvatarImageState> = {

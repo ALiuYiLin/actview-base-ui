@@ -3,7 +3,7 @@ import { mergePropsN } from '@/merge-props';
 import { useDialogRootContext } from '../root/DialogRootContext';
 import { usePopupViewport } from '@/utils/usePopupViewport';
 import type { BaseUIComponentProps } from '@/internals/types';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * A viewport for displaying content transitions.

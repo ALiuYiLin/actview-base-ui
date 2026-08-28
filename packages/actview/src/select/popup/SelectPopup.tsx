@@ -1,6 +1,6 @@
 import { toRefs, unrefs, computed } from 'actview';
 import { useSelectRootContext } from '../root/SelectRootContext';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** The popup of the select. Renders a `<div>` element when open. */
 export function SelectPopup(props: SelectPopup.Props) {

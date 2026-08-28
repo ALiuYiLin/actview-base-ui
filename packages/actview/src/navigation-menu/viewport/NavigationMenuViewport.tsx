@@ -1,6 +1,6 @@
 import { toRefs, unrefs } from 'actview';
 import { useNavigationMenuRootContext } from '../root/NavigationMenuRootContext';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** A viewport for the popup content. Renders a `<div>` element. actview 简化：无布局计算。 */
 export function NavigationMenuViewport(props: NavigationMenuViewport.Props) {

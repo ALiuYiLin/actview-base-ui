@@ -1,6 +1,6 @@
 import { toRefs, unrefs } from 'actview';
 import { useToastRootContext } from '../root/ToastRootContext';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** A button for the toast action. Renders a `<button>` element with the toast's actionProps. */
 export function ToastAction(props: ToastAction.Props) {

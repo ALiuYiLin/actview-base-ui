@@ -1,185 +1,205 @@
-import { toValue } from 'actview';
-import type { Ref } from 'actview';
-import type { MaybeRefOrGetter } from '@/types';
+// ============================================================
+// useRenderElement —— 统一"合并 props + 渲染元素"工具（新契约）
+// 签名: useRenderElement(element, componentProps, params) → VNode
+// 与旧版（useRenderElementLegacy.tsx，options → {merged, element}）的差异:
+//   1. 直接收默认标签 + 组件 props（render/className/style）+ params，
+//      内部完成 state→data-* 映射、className/style 求值、props 数组归并
+//      （getter 整体替换语义）、ref 合并链与 render 双形态分发
+//   2. render 函数形态: (props, state) 双参——props 为合并后的元素 props
+//      （含 useMergedRefs 合并链 ref），state 为第二参
+//   3. render VNode 形态: clone 合并（重建 _jsx(type, mergedProps, key)），
+//      Base UI 展开顺序（render 自带 props 为右侧，仅 ref 用合并链）
+// 渲染期调用约定: 组件体末尾以 <>{useRenderElement(...)}</> 收尾——
+// 字面 Fragment 是 babel 插件判定的 JSX 锚，helper 调用保持逐渲染求值。
+// ============================================================
+
+import { jsx as _jsx } from '@actview/jsx'
+import type {
+  BaseUIComponentProps,
+  ComponentRenderFn,
+  HTMLProps,
+} from './types'
 import {
   getStateAttributesProps,
   type StateAttributesMapping,
-} from '@/internals/getStateAttributesProps';
-import type { HTMLProps } from '@/internals/types';
+} from './getStateAttributesProps'
+import { resolveClassName, resolveStyle } from './utils/resolveClassNameStyle'
+import { mergeClassNames, mergeProps, mergePropsN } from './mergeProps'
+import { useMergedRefs } from './useMergedRefs'
+import { mergeObjects } from './utils/mergeObjects'
+import { getReactElementRef } from './utils/getReactElementRef'
 
-/**
- * 统一的"合并 props + 渲染元素"工具（内部）。
- *
- * 吸收全库各组件手写重复的模式：
- * 1. props 数组合并（`for (const prop of props) Object.assign(merged, prop)`，
- *    函数元素接收已合并的 merged——useButton 保留外部 role 的语义）；
- * 2. state → data-* 属性（`getStateAttributesProps`，配合 `stateAttributesMapping`）；
- * 3. className / style 的函数形式调用（`(state) => value`）；
- * 4. render prop 渲染：函数形式（单参 `{...merged, ...state, ref}`——
- *    全库 177 处统一签名）或元素对象形式（className/style 合并）；
- * 5. refs 合并（函数 / ref 对象数组 → mergedRefs）。
- *
- * 无状态纯函数：`merged()` / `element()` 每次调用即时计算——响应性由渲染
- * effect 内的 `toValue` 读取保证（裸函数组件与 defineComponent 组件均可
- * 在 setup 或渲染函数内调用本 hook）。
- */
-export function useRenderElement<State extends Record<string, any>>(
-  options: UseRenderElementOptions<State>,
-): {
-  /** 合并后的元素 props（每次调用即时计算）。 */
-  merged: () => HTMLProps;
-  /** 渲染最终元素：render 分支（函数 / 元素对象）或默认 Tag（含 children / refs）。 */
-  element: (
-    extraRefs?: Array<((element: HTMLElement | null) => void) | Ref<HTMLElement | null>>,
-  ) => any;
-} {
-  const getState = () => toValue(options.state) ?? ({} as State);
+type IntrinsicTagName = keyof JSX.IntrinsicElements
 
-  const merged = (): HTMLProps => {
-    const m: HTMLProps = {};
-    for (const prop of toValue(options.props) ?? []) {
-      const resolved = typeof prop === 'function' ? prop(m) : prop;
-      if (resolved) {
-        Object.assign(m, resolved);
-      }
-    }
-    if (options.stateAttributesMapping) {
-      Object.assign(m, getStateAttributesProps(getState(), options.stateAttributesMapping));
-    }
-    const cls = toValue(options.className);
-    if (typeof cls === 'function') {
-      m.className = cls(getState());
-    } else if (cls !== undefined) {
-      m.className = cls;
-    }
-    const st = toValue(options.style);
-    if (typeof st === 'function') {
-      m.style = st(getState());
-    } else if (st !== undefined) {
-      m.style = typeof st === 'object' ? cleanStyle(st) : st;
-    }
-    return m;
-  };
+const DEV = (import.meta as any)?.env?.DEV !== false
+const COMPONENT_IDENTIFIER_PATTERN = /^[A-Z][A-Za-z0-9$]*$/
+const LOWERCASE_CHARACTER_PATTERN = /[a-z]/
 
-  const element = (
-    extraRefs?: Array<((element: HTMLElement | null) => void) | Ref<HTMLElement | null>>,
-  ) => {
-    const mergedRefs = (el: HTMLElement | null) => {
-      const refs = [...(toValue(options.refs) ?? []), ...(extraRefs ?? [])];
-      for (const r of refs) {
-        if (!r) {
-          continue;
-        }
-        const resolved =
-          typeof r === 'function' ? r : (element: HTMLElement | null) => (r.value = element);
-        resolved(el);
-      }
-    };
-
-    const renderValue = toValue(options.render);
-    if (renderValue) {
-      if (typeof renderValue === 'function') {
-        const renderFunctionProps = {...merged(), ...getState()};
-        const childrenValue = toValue(options.children);
-        if (childrenValue !== undefined) {
-          renderFunctionProps.children = childrenValue;
-        }
-        if (options.refToRender !== false) {
-          // 单一非函数 ref（Ref 对象）直接透传（render 函数可读 `.value`——
-          // 对齐 React 契约）；多个 refs / 函数 refs 合并为 mergedRefs。
-          const refs = toValue(options.refs) ?? [];
-          if (refs.length === 1 && typeof refs[0] !== 'function') {
-            renderFunctionProps.ref = refs[0];
-          } else {
-            renderFunctionProps.ref = mergedRefs;
-          }
-        }
-        return renderValue(renderFunctionProps as any);
-      }
-      const m = merged();
-      const renderProps = renderValue.props ?? {};
-      const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-      const Tag = renderValue.type as any;
-      const mergedRenderProps = Object.assign({}, m, restRenderProps);
-      mergedRenderProps.className =
-        typeof m.className === 'string' && typeof renderClassName === 'string'
-          ? `${m.className} ${renderClassName}`.trim()
-          : (m.className ?? renderClassName);
-      mergedRenderProps.style = Object.assign({}, m.style, renderStyle);
-      if (options.refToRender !== false) {
-        return (
-          <Tag key={renderValue.key} {...mergedRenderProps} ref={mergedRefs}>
-            {toValue(options.children)}
-          </Tag>
-        );
-      }
-      return (
-        <Tag key={renderValue.key} {...mergedRenderProps}>
-          {toValue(options.children)}
-        </Tag>
-      );
-    }
-
-    const Tag = (toValue(options.defaultTag) ?? 'div') as any;
-    return (
-      <Tag {...merged()} ref={mergedRefs}>
-        {toValue(options.children)}
-      </Tag>
-    );
-  };
-
-  return {merged, element};
-}
-
-export interface UseRenderElementOptions<State extends Record<string, any>> {
-  /**
-   * 合并源 props 数组：每个元素可为对象或函数（函数接收已合并的 merged，
-   * 可读取/覆盖既有属性——`useButton` 保留外部 role 的语义）。
-   */
-  props?: MaybeRefOrGetter<
-    Array<Record<string, any> | ((merged: Record<string, any>) => Record<string, any>)>
-  >;
-  /**
-   * 状态：用于 data-* 属性（配合 `stateAttributesMapping`）、
-   * className/style 函数调用与 render 函数展开。
-   */
-  state?: State | Ref<State | undefined> | (() => State | undefined) | undefined;
-  /**
-   * 状态 → data-* 属性映射；不传时**不**产生 data-* 属性。
-   */
-  stateAttributesMapping?: StateAttributesMapping<State>;
-  className?: MaybeRefOrGetter<string | ((state: State) => string | undefined) | undefined>;
-  style?: MaybeRefOrGetter<
-    | string
-    | Record<string, string | number>
-    | ((state: State) => string | Record<string, string | number> | undefined)
+export interface UseRenderElementParameters<State> {
+  /** false 时跳过渲染直接返回 null（条件渲染用） */
+  enabled?: boolean | undefined
+  /** 要施加到渲染元素上的 ref（可数组,useMergedRefs 合并） */
+  ref?:
+    | { value: any }
+    | ((v: any) => void)
+    | ({ value: any } | ((v: any) => void) | null | undefined)[]
     | undefined
-  >;
-  /**
-   * render prop：函数（单参 `{...merged, ...state, ref}`）或元素对象。
-   */
-  render?: MaybeRefOrGetter<any>;
-  /** 需要合并到最终元素上的 refs（函数 / ref 对象）。 */
-  refs?: MaybeRefOrGetter<Array<((element: HTMLElement | null) => void) | Ref<HTMLElement | null>>>;
-  children?: MaybeRefOrGetter<any>;
-  /** 默认渲染标签（无 render prop 时）。@default 'div' */
-  defaultTag?: MaybeRefOrGetter<keyof JSX.IntrinsicElements | string | undefined>;
-  /**
-   * render 函数形式是否携带 `ref`（mergedRefs）。默认 true（全库组件
-   * 均向 render 函数传 ref）；个别组件（如 CompositeRoot）原实现不带，
-   * 传 `false` 保持行为。
-   * @default true
-   */
-  refToRender?: boolean | undefined;
+  /** 组件内部状态 */
+  state?: State | undefined
+  /** 展开在渲染元素上的宿主 props（数组形态按序归并,右侧覆盖） */
+  props?:
+    | Record<string, any>
+    | Array<Record<string, any> | ((prev: any) => any) | undefined>
+    | undefined
+  /** state → data-* 属性的逐键自定义映射 */
+  stateAttributesMapping?: StateAttributesMapping<State> | undefined
 }
 
-/** 剔除样式对象里的 undefined 值（Object.assign 合并会产生——DOM style 语义上无 undefined）。 */
-function cleanStyle(style: Record<string, unknown>): Record<string, string | number> {
-  const out: Record<string, string | number> = {};
-  for (const [key, value] of Object.entries(style)) {
-    if (value !== undefined) {
-      out[key] = value as string | number;
+export interface UseRenderElementComponentProps<State> {
+  className?: string | ((state: State) => string | undefined) | undefined
+  render?: JSX.Element | ComponentRenderFn<HTMLProps, State> | undefined
+  style?:
+    | Record<string, any>
+    | ((state: State) => Record<string, any> | undefined)
+    | undefined
+}
+
+/** 计算 render 元素的最终 props（state attrs → params.props → className/style → ref 合并链） */
+function useRenderElementProps<State extends Record<string, any>>(
+  componentProps: UseRenderElementComponentProps<State>,
+  params: UseRenderElementParameters<State> = {},
+): Record<string, any> {
+  const {
+    className: classNameProp,
+    style: styleProp,
+    render: renderProp,
+  } = componentProps
+
+  const {
+    state = {} as State,
+    ref,
+    props,
+    stateAttributesMapping,
+    enabled = true,
+  } = params
+
+  const className = enabled ? resolveClassName(classNameProp, state) : undefined
+  const style = enabled ? resolveStyle(styleProp, state) : undefined
+
+  const stateProps = enabled
+    ? getStateAttributesProps(state, stateAttributesMapping)
+    : {}
+
+  const resolvedProps =
+    enabled && props ? resolveRenderFunctionProps(props) : undefined
+
+  const outProps: Record<string, any> = enabled
+    ? (mergeObjects(stateProps, resolvedProps) ?? {})
+    : {}
+
+  // ref 合并链：既有 outProps.ref（一般来自 params.props 数组）+ render 节点自带
+  // ref + 转发 ref —— 写入时广播全部
+  if (enabled) {
+    outProps.ref = useMergedRefs(
+      outProps.ref,
+      getReactElementRef(renderProp),
+      ref as any,
+    )
+  }
+
+  if (!enabled) return outProps
+
+  if (className !== undefined) {
+    outProps.className = mergeClassNames(outProps.className, className)
+  }
+
+  if (style !== undefined) {
+    outProps.style = mergeObjects(outProps.style as any, style)
+  }
+
+  return outProps
+}
+
+function resolveRenderFunctionProps(
+  props: NonNullable<UseRenderElementParameters<any>['props']>,
+): Record<string, any> {
+  if (Array.isArray(props)) {
+    return mergePropsN(props)
+  }
+  return mergeProps(undefined, props)
+}
+
+function evaluateRenderProp<S extends Record<string, any>>(
+  element: IntrinsicTagName | undefined,
+  render: BaseUIComponentProps<IntrinsicTagName, S>['render'],
+  props: Record<string, any>,
+  state: S,
+): any {
+  if (render) {
+    if (typeof render === 'function') {
+      if (DEV) warnIfRenderPropLooksLikeComponent(render as any)
+      return (render as any)(props, state)
+    }
+
+    // 节点形态 = cloneElement(mergeProps(props, render.props), ref 覆盖为合并链,
+    // key 透传)。注意展开顺序:render 自带 props 为右侧（覆盖出口 props）,
+    // 仅 ref 强制使用合并链。
+    const node = render as JSX.Element
+    const mergedProps = mergeProps(props, node.props)
+    mergedProps.ref = props.ref
+    return _jsx(node.type as any, mergedProps, node.key ?? undefined)
+  }
+  if (element) {
+    if (typeof element === 'string') {
+      return renderTag(element, props)
     }
   }
-  return out;
+  throw new Error('Base UI: Render element or function are not defined.')
+}
+
+function warnIfRenderPropLooksLikeComponent(renderFn: { name?: string }) {
+  const functionName = renderFn.name ?? ''
+  if (functionName.length === 0) return
+  if (!COMPONENT_IDENTIFIER_PATTERN.test(functionName)) return
+  if (!LOWERCASE_CHARACTER_PATTERN.test(functionName)) return
+  console.warn(
+    `The \`render\` prop received a function named \`${functionName}\` that starts with an uppercase letter.`,
+    'This usually means a component was passed directly as `render={Component}`.',
+    'Render props are called as plain functions; use `render={<Component />}` or `render={(props) => <Component {...props} />}` instead.',
+  )
+}
+
+function renderTag(Tag: string, props: Record<string, any>) {
+  if (Tag === 'button') {
+    return _jsx('button', { type: 'button', ...props }, props.key ?? undefined)
+  }
+  if (Tag === 'img') {
+    return _jsx('img', { alt: '', ...props }, props.key ?? undefined)
+  }
+  return _jsx(Tag, props, props.key ?? undefined)
+}
+
+/**
+ * 渲染一个 Base UI 风格元素。
+ *
+ * @param element 默认 HTML 标签;可被 render prop 接管
+ * @param componentProps 含 render/className/style 的完整组件 props
+ * @param params { state, ref, props, stateAttributesMapping, enabled }
+ */
+export function useRenderElement<
+  State extends Record<string, any>,
+  TagName extends IntrinsicTagName | undefined = IntrinsicTagName | undefined,
+>(
+  element: TagName,
+  componentProps: UseRenderElementComponentProps<State>,
+  params: UseRenderElementParameters<State> = {},
+): any {
+  const renderProp = componentProps.render
+  const outProps = useRenderElementProps(componentProps, params)
+  if (params.enabled === false) {
+    return null
+  }
+
+  const state = params.state ?? ({} as State)
+  return evaluateRenderProp(element, renderProp, outProps, state)
 }

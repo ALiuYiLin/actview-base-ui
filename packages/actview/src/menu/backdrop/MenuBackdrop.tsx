@@ -4,7 +4,7 @@ import type { BaseUIComponentProps } from '@/internals/types';
 import type { TransitionStatus } from '@/internals/useTransitionStatus';
 import { useContextMenuRootContext } from '@/context-menu/root/ContextMenuRootContext';
 import { REASONS } from '@/internals/reasons';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * An overlay displayed beneath the menu popup.

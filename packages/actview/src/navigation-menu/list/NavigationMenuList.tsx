@@ -1,6 +1,6 @@
 import { toRefs, unrefs } from 'actview';
 import { useNavigationMenuRootContext } from '../root/NavigationMenuRootContext';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** A list of navigation menu items. Renders a `<div>` element. */
 export function NavigationMenuList(props: NavigationMenuList.Props) {

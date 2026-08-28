@@ -1,5 +1,5 @@
 import { toRefs, unrefs } from 'actview';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** A label for a group of combobox items. Renders a `<div>` element. */
 export function ComboboxGroupLabel(props: ComboboxGroupLabel.Props) {

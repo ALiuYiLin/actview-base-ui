@@ -1,6 +1,6 @@
 import { toRefs, unrefs } from 'actview';
 import { useNavigationMenuRootContext } from '../root/NavigationMenuRootContext';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** An individual navigation menu item. Renders a `<button>` element. */
 export function NavigationMenuItem(componentProps: NavigationMenuItem.Props) {

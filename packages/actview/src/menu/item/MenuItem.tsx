@@ -5,7 +5,7 @@ import { useBaseUiId } from '@/internals/useBaseUiId';
 import type { BaseUIComponentProps, NonNativeButtonProps } from '@/internals/types';
 import { useCompositeListItem } from '@/internals/composite/list/useCompositeListItem';
 import { useMenuPositionerContext } from '../positioner/MenuPositionerContext';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * An individual interactive item in the menu.

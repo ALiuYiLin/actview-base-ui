@@ -1,6 +1,6 @@
 import { toRefs, unrefs, computed } from 'actview';
 import { useNavigationMenuRootContext } from '../root/NavigationMenuRootContext';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** A backdrop for the popup. Renders a `<div>` element. */
 export function NavigationMenuBackdrop(props: NavigationMenuBackdrop.Props) {

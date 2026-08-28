@@ -3,7 +3,7 @@ import type { BaseUIComponentProps } from '@/internals/types';
 import { useScrollAreaRootContext } from '../root/ScrollAreaRootContext';
 import { useScrollAreaViewportContext } from '../viewport/ScrollAreaViewportContext';
 import { scrollAreaStateAttributesMapping } from '../root/stateAttributes';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 import { useRootElementFragment } from '@/internals/useRootElementFragment';
 
 /**

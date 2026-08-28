@@ -1,6 +1,6 @@
 import { toValue, toRefs, unrefs, useRootElement } from 'actview';
 import type { BaseUIComponentProps } from '@/internals/types';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 import { useToolbarRootContext } from '../root/ToolbarRootContext';
 import { ToolbarGroupContext } from './ToolbarGroupContext';
 import type { ToolbarRootState } from '../root/ToolbarRoot';

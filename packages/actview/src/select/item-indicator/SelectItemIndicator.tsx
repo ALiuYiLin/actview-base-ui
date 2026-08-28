@@ -1,6 +1,6 @@
 import { toRefs, unrefs } from 'actview';
 import { useSelectItemContext } from '../item/SelectItemContext';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** Shows a checkmark when the item is selected. Renders a `<span>` element. */
 export function SelectItemIndicator(props: SelectItemIndicator.Props) {

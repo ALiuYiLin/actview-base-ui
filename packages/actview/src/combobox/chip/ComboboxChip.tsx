@@ -1,5 +1,5 @@
 import { toRefs, unrefs } from 'actview';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** An individual chip for a selected value. Renders a `<div>` element. */
 export function ComboboxChip(props: ComboboxChip.Props) {

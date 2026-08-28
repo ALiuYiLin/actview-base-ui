@@ -1,5 +1,5 @@
 import { toRefs, unrefs } from 'actview';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** Groups combobox items. Renders a `<div>` element. */
 export function ComboboxGroup(props: ComboboxGroup.Props) {

@@ -10,7 +10,7 @@ import type { BaseUIComponentProps } from '@/internals/types';
 import { useFieldValidation } from './useFieldValidation';
 import { useFieldControlRegistration } from '@/internals/field-register-control/useFieldControlRegistration';
 import type { Ref } from 'actview';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * @internal

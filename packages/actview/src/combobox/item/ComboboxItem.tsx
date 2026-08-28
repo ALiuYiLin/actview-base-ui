@@ -1,6 +1,6 @@
 import { toRefs, unrefs } from 'actview';
 import { useComboboxRootContext } from '../root/ComboboxRootContext';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** An individual combobox item. Renders a `<div>` element with role option. */
 export function ComboboxItem(componentProps: ComboboxItem.Props) {

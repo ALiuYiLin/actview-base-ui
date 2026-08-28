@@ -1,5 +1,5 @@
 import { toRefs, unrefs } from 'actview';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** A status for screen readers. Renders a `<div>` element. actview 简化：静态渲染。 */
 export function ComboboxStatus(props: ComboboxStatus.Props) {

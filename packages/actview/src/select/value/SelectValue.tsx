@@ -1,6 +1,6 @@
 import { toRefs, unrefs, computed } from 'actview';
 import { useSelectRootContext } from '../root/SelectRootContext';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** The value of the select. Renders a `<span>` element. */
 export function SelectValue(componentProps: SelectValue.Props) {

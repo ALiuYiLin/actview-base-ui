@@ -26,7 +26,7 @@ import {
 } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
 import { hasNumberFormatRoundingOptions, removeFloatingPointErrors } from '../utils/validate';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 import { useRootElementFragment } from '@/internals/useRootElementFragment';
 
 const NAVIGATE_KEYS = new Set([

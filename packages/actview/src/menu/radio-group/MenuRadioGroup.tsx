@@ -3,7 +3,7 @@ import { MenuRadioGroupContext, type MenuRadioGroupContextValue } from './MenuRa
 import { MenuGroupContext } from '../group/MenuGroupContext';
 import { useControlled } from '@/utils/useControlled';
 import { useStableCallback } from '@/utils/useStableCallback';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * Groups related radio items.

@@ -1,6 +1,6 @@
 import { toRefs, unrefs } from 'actview';
 import { useToastProviderContext } from '../provider/ToastProviderContext';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * A container viewport for toasts.

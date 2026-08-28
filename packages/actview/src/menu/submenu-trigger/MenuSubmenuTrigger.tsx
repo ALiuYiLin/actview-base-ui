@@ -13,7 +13,7 @@ import { useTriggerRegistration } from '@/utils/popups';
 import { useMenuSubmenuRootContext } from '../submenu-root/MenuSubmenuRootContext';
 import { REASONS } from '@/internals/reasons';
 import type { Ref } from 'actview';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 const VOICE_OVER_EXPANDED_PROPS = {'aria-expanded': undefined};
 

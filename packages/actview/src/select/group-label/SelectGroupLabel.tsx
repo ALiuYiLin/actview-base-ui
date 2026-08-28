@@ -1,5 +1,5 @@
 import { toRefs, unrefs } from 'actview';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** A label for a group of select items. Renders a `<div>` element. */
 export function SelectGroupLabel(props: SelectGroupLabel.Props) {

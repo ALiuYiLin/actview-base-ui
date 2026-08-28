@@ -1,5 +1,5 @@
 import { toRefs, unrefs } from 'actview';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** A backdrop for the popup. Renders a `<div>` element. */
 export function ComboboxBackdrop(props: ComboboxBackdrop.Props) {

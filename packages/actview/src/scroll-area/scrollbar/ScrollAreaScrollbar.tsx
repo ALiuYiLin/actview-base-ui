@@ -7,7 +7,7 @@ import { contains, getTarget } from '@/utils/shadowDom';
 import { scrollAreaStateAttributesMapping } from '../root/stateAttributes';
 import type { ScrollAreaRootState } from '../root/ScrollAreaRoot';
 import { ScrollAreaScrollbarContext } from './ScrollAreaScrollbarContext';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * A vertical or horizontal scrollbar for the scroll area.

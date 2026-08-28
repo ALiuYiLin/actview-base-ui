@@ -1,6 +1,6 @@
 import { toRefs, unrefs, computed } from 'actview';
 import { useSelectRootContext } from '../root/SelectRootContext';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** The trigger of the select. Renders a `<button>` element. */
 export function SelectTrigger(componentProps: SelectTrigger.Props) {

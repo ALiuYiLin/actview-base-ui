@@ -3,7 +3,7 @@ import type { BaseUIComponentProps } from '@/internals/types';
 import { useSwitchRootContext } from '../root/SwitchRootContext';
 import { stateAttributesMapping } from '../stateAttributesMapping';
 import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 import { useRootElementFragment } from '@/internals/useRootElementFragment';
 import type { SwitchRootState } from '../root/SwitchRoot';
 

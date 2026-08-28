@@ -6,7 +6,7 @@ import { valueToPercent } from '@/utils/valueToPercent';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { ProgressRootContext } from './ProgressRootContext';
 import { progressStateAttributesMapping } from './stateAttributesMapping';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * Groups all parts of the progress bar and provides the task completion status to screen readers.

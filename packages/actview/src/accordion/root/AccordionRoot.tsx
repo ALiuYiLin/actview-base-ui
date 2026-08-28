@@ -6,7 +6,7 @@ import { CompositeList } from '@/internals/composite/list/CompositeList';
 import { AccordionRootContext } from './AccordionRootContext';
 import { type BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 const rootStateAttributesMapping = {
   value: () => null,

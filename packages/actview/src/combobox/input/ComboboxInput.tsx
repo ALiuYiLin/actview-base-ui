@@ -1,6 +1,6 @@
 import { toRefs, unrefs, computed } from 'actview';
 import { useComboboxRootContext } from '../root/ComboboxRootContext';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** The input of the combobox. Renders an `<input>` element. */
 export function ComboboxInput(componentProps: ComboboxInput.Props) {

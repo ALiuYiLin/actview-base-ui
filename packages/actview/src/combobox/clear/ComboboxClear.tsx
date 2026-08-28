@@ -1,6 +1,6 @@
 import { toRefs, unrefs } from 'actview';
 import { useComboboxRootContext } from '../root/ComboboxRootContext';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** Clears the selected value. Renders a `<button>` element. */
 export function ComboboxClear(props: ComboboxClear.Props) {

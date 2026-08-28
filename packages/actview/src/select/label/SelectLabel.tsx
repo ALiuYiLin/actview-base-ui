@@ -1,5 +1,5 @@
 import { toRefs, unrefs } from 'actview';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** A label for the select. Renders a `<label>` element. */
 export function SelectLabel(props: SelectLabel.Props) {

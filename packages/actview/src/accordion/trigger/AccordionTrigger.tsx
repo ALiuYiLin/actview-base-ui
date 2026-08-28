@@ -5,7 +5,7 @@ import { useButton } from '@/internals/use-button';
 import { useCollapsibleRootContext } from '@/collapsible/root/CollapsibleRootContext';
 import { useAccordionItemContext } from '../item/AccordionItemContext';
 import { mergeProps } from '@/merge-props';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 import { useRootElementFragment } from '@/internals/useRootElementFragment';
 
 /**

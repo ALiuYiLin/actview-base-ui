@@ -4,7 +4,7 @@ import { usePreviewCardRootContext } from '../root/PreviewCardRootContext';
 import type { Side, Align } from '@/internals/useAnchorPositioning';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { popupStateMapping } from '@/utils/popupStateMapping';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * Displays an element positioned against the preview-card anchor.

@@ -1,7 +1,7 @@
 import { toRefs, unrefs, computed } from 'actview';
 import { useSelectRootContext } from '../root/SelectRootContext';
 import { SelectItemContext } from './SelectItemContext';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** An individual select item. Renders a `<div>` element with role option. */
 export function SelectItem(componentProps: SelectItem.Props) {

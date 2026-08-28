@@ -1,5 +1,5 @@
 import { toRefs, unrefs } from 'actview';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** The content of the drawer. Renders a `<div>` element. */
 export function DrawerContent(props: DrawerContent.Props) {

@@ -7,7 +7,7 @@ import { collapsibleStateAttributesMapping } from '../root/stateAttributesMappin
 import { useCollapsiblePanel } from './useCollapsiblePanel';
 import { CollapsiblePanelCssVars } from './CollapsiblePanelCssVars';
 import type { TransitionStatus } from '@/internals/useTransitionStatus';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * A panel with the collapsible contents.

@@ -1,6 +1,6 @@
 import { toRefs, unrefs } from 'actview';
 import { useComboboxRootContext } from '../root/ComboboxRootContext';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** Positions the popup. Renders a `<div>` element. actview 简化：无定位计算。 */
 export function ComboboxPositioner(props: ComboboxPositioner.Props) {

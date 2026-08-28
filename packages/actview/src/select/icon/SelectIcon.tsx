@@ -1,5 +1,5 @@
 import { toRefs, unrefs } from 'actview';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** Displays a chevron icon. Renders a `<span>` element. */
 export function SelectIcon(props: SelectIcon.Props) {

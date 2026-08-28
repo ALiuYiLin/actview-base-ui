@@ -7,7 +7,7 @@ import type { BaseUIComponentProps, NativeButtonProps } from '@/internals/types'
 import { useButton } from '@/internals/use-button';
 import { useCollapsibleRootContext } from '../root/CollapsibleRootContext';
 import { type CollapsibleRootState } from '../root/CollapsibleRoot';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 import { useRootElementFragment } from '@/internals/useRootElementFragment';
 
 const stateAttributesMapping: StateAttributesMapping<CollapsibleRootState> = {

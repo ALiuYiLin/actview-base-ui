@@ -13,7 +13,7 @@ import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
 import { COMPOSITE_KEYS } from '@/internals/composite/composite';
 import { useToolbarRootContext } from '@/toolbar/root/ToolbarRootContext';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * A container for the menu items.

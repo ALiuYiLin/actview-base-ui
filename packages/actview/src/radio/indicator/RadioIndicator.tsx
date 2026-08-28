@@ -6,7 +6,7 @@ import { stateAttributesMapping } from '../utils/stateAttributesMapping';
 import { useOpenChangeComplete } from '@/internals/useOpenChangeComplete';
 import { type TransitionStatus, useTransitionStatus } from '@/internals/useTransitionStatus';
 import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 import { useRootElementFragment } from '@/internals/useRootElementFragment';
 
 /**

@@ -5,7 +5,7 @@ import { sliderStateAttributesMapping } from '../root/stateAttributesMapping';
 import { useLabel, focusElementWithVisible } from '@/internals/labelable-provider/useLabel';
 import { ownerDocument } from '@/utils/owner';
 import type { SliderRootState } from '../root/SliderRoot';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 import { useRootElementFragment } from '@/internals/useRootElementFragment';
 
 function isHTMLElement(value: unknown): value is HTMLElement {

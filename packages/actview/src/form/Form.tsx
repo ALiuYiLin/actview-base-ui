@@ -10,7 +10,7 @@ import type { FormContext as FormContextValue } from '@/internals/form-context/F
 import { useValueChanged } from '@/internals/useValueChanged';
 import { EMPTY_OBJECT } from '@/internals/empty';
 import type { Ref } from 'actview';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * A native form element with consolidated error handling.

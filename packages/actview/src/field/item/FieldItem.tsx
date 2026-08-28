@@ -6,7 +6,7 @@ import { fieldValidityMapping } from '@/internals/field-constants/constants';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { FieldItemContext } from './FieldItemContext';
 import { LabelableProvider } from '@/internals/labelable-provider';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * Groups individual items in a checkbox group or radio group with a label and description.

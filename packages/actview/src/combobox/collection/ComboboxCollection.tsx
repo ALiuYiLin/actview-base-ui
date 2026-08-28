@@ -1,5 +1,5 @@
 import { toRefs, unrefs } from 'actview';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** A collection of combobox items. Renders a `<div>` element. */
 export function ComboboxCollection(props: ComboboxCollection.Props) {

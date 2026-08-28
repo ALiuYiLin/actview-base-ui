@@ -19,7 +19,7 @@ import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDeta
 import { REASONS } from '@/internals/reasons';
 import { useFormContext } from '@/internals/form-context/FormContext';
 import { useValueChanged } from '@/internals/useValueChanged';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * Provides a shared state to a series of checkboxes.

@@ -1,7 +1,7 @@
 import { computed, ref, toValue, toRefs, unrefs, useRootElement } from 'actview';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { FieldsetRootContext, useFieldsetRootContext } from './FieldsetRootContext';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * Groups a shared legend with related controls.

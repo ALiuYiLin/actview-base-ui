@@ -2,7 +2,7 @@ import { toRefs, unrefs } from 'actview';
 import { useDialogRootContext } from '@/dialog/root/DialogRootContext';
 import type { BaseUIComponentProps } from '@/internals/types';
 import type { TransitionStatus } from '@/internals/useTransitionStatus';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * An overlay displayed beneath the Drawer popup.

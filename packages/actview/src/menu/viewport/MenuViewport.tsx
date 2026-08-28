@@ -3,7 +3,7 @@ import { mergePropsN } from '@/merge-props';
 import { useMenuRootContext } from '../root/MenuRootContext';
 import { useMenuPositionerContext } from '../positioner/MenuPositionerContext';
 import { usePopupViewport } from '@/utils/usePopupViewport';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * A viewport for displaying content transitions.

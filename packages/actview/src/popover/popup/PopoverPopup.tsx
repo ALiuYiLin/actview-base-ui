@@ -11,7 +11,7 @@ import { REASONS } from '@/internals/reasons';
 import { getDisabledMountTransitionStyles } from '@/internals/getDisabledMountTransitionStyles';
 import { mergePropsN } from '@/merge-props';
 import type { Ref } from 'actview';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * A container for the popover contents.

@@ -1,5 +1,5 @@
 import { toRefs, unrefs } from 'actview';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** Renders when there are no matching items. Renders a `<div>` element. actview 简化：静态渲染。 */
 export function ComboboxEmpty(props: ComboboxEmpty.Props) {

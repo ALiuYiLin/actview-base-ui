@@ -1,6 +1,6 @@
 import { toRefs, unrefs } from 'actview';
 import { useSelectRootContext } from '../root/SelectRootContext';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** A list of select items. Renders a `<div>` element with role listbox. */
 export function SelectList(props: SelectList.Props) {

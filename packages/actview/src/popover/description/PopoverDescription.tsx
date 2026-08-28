@@ -2,7 +2,7 @@ import { toRefs, unrefs } from 'actview';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { usePopoverRootContext } from '../root/PopoverRootContext';
 import { useBaseUiId } from '@/internals/useBaseUiId';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * A paragraph that describes the popover.

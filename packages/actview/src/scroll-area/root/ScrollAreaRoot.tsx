@@ -9,7 +9,7 @@ import { useBaseUiId } from '@/internals/useBaseUiId';
 import { scrollAreaStateAttributesMapping } from './stateAttributes';
 import { contains } from '@/utils/shadowDom';
 import { useCSPContext } from '@/internals/csp-context/CSPContext';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 const DEFAULT_COORDS = {x: 0, y: 0};
 const DEFAULT_SIZE = {width: 0, height: 0};

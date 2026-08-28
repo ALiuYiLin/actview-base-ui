@@ -1,5 +1,5 @@
 import { toRefs, unrefs } from 'actview';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** A label for the combobox. Renders a `<label>` element. */
 export function ComboboxLabel(props: ComboboxLabel.Props) {

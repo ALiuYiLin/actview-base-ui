@@ -12,7 +12,7 @@ import { ownerDocument, ownerWindow } from '@/utils/owner';
 import { platform } from '@/utils/platform';
 import { addEventListener } from '@/utils/addEventListener';
 import { useTimeout } from '@/utils/useTimeout';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 const SCRUB_AREA_STYLE: any = {
   touchAction: 'none',

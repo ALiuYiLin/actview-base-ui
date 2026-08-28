@@ -1,5 +1,5 @@
 import { toRefs, unrefs } from 'actview';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** A separator between combobox items. Renders a `<div>` element. */
 export function ComboboxSeparator(props: ComboboxSeparator.Props) {

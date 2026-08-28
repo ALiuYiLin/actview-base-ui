@@ -8,7 +8,7 @@ import { type TransitionStatus, useTransitionStatus } from '@/internals/useTrans
 import type { StateAttributesMapping } from '@/internals/getStateAttributesProps';
 import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
 import { transitionStatusMapping } from '@/internals/stateAttributesMapping';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 import { useRootElementFragment } from '@/internals/useRootElementFragment';
 
 /**

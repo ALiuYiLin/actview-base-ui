@@ -7,7 +7,7 @@ import type { BaseUIComponentProps } from '@/internals/types';
 import { useLabelableContext } from '@/internals/labelable-provider/LabelableContext';
 import { useLabel } from '@/internals/labelable-provider/useLabel';
 import { useFieldItemContext } from '../item/FieldItemContext';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * An accessible label that is automatically associated with the field control.

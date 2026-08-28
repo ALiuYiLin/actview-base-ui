@@ -1,4 +1,5 @@
 import type { VNode, HTMLAttributes } from '@actview/jsx';
+import type { Ref } from 'actview';
 import type { BaseUIEvent, ComponentRenderFn, HTMLProps, MaybeRefOrGetter } from '../types';
 
 export type { HTMLProps, ComponentRenderFn, BaseUIEvent, MaybeRefOrGetter };
@@ -51,12 +52,16 @@ export type RequiredExcept<T, K extends keyof T> = Required<Omit<T, K>> & Pick<T
  * Props shared by all Base UI components.
  * Contains `className` (string or callback taking the component's state as an argument)
  * and `render` (function or VNode to customize rendering).
+ *
+ * 宿主属性基座为 `HTMLAttributes`（含 children/id/aria-* 等；注意：@actview/jsx 的
+ * `JSX.IntrinsicElements[Tag]` 反而不含这些键，勿改用其作基座）；`ref` 重新声明为
+ * 转发引用（React 19 形态：ref-as-prop）。
  */
 export interface BaseUIComponentProps<
   ElementType extends keyof JSX.IntrinsicElements,
   State,
   RenderFunctionProps = HTMLProps,
-> extends Omit<HTMLAttributes, 'className' | 'style'> {
+> extends Omit<HTMLAttributes, 'className' | 'style' | 'ref'> {
   /**
    * CSS class applied to the element, or a function that
    * returns a class based on the component's state.
@@ -78,4 +83,10 @@ export interface BaseUIComponentProps<
     | Record<string, string | number>
     | ((state: State) => string | Record<string, string | number> | undefined)
     | undefined;
+  /**
+   * 转发用根元素引用（使用方 `<Comp ref={x}/>` 经 props.ref 到达——React 19 形态）。
+   * actview 契约：组件 ref 默认收到**组件实例**（设计语义）；把本 ref 绑定到
+   * 根元素（或经 useRenderElement 的 params.ref 透传）即转发最终根 DOM。
+   */
+  ref?: Ref<HTMLElement | null>;
 }

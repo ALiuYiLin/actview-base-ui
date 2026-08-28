@@ -1,5 +1,5 @@
 import { toRefs, unrefs } from 'actview';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** Wraps the input. Renders a `<div>` element. */
 export function ComboboxInputGroup(props: ComboboxInputGroup.Props) {

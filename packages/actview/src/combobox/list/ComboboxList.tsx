@@ -1,6 +1,6 @@
 import { toRefs, unrefs, computed } from 'actview';
 import { useComboboxRootContext } from '../root/ComboboxRootContext';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** A list of combobox items. Renders a `<div>` element with role listbox. */
 export function ComboboxList(props: ComboboxList.Props) {

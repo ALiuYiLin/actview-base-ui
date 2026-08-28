@@ -1,6 +1,6 @@
 import { toRefs, unrefs } from 'actview';
 import { useComboboxRootContext } from '../root/ComboboxRootContext';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** The value of the combobox. Renders a `<span>` element. */
 export function ComboboxValue(componentProps: ComboboxValue.Props) {

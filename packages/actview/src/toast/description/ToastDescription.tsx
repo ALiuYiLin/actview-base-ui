@@ -1,6 +1,6 @@
 import { toRefs, unrefs } from 'actview';
 import { useToastRootContext } from '../root/ToastRootContext';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** The description of the toast. Renders a `<div>` element. */
 export function ToastDescription(props: ToastDescription.Props) {

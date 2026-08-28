@@ -2,7 +2,7 @@ import { toRefs, unrefs } from 'actview';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { useDialogRootContext } from '../root/DialogRootContext';
 import { useBaseUiId } from '@/internals/useBaseUiId';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * A paragraph that describes the dialog.

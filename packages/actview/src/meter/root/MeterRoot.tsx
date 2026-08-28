@@ -5,7 +5,7 @@ import { clamp } from '@/utils/clamp';
 import { valueToPercent } from '@/utils/valueToPercent';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { MeterRootContext, type MeterRootContext as MeterRootContextValue } from './MeterRootContext';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 import { useRootElementFragment } from '@/internals/useRootElementFragment';
 
 /**

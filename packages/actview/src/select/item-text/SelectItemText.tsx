@@ -1,6 +1,6 @@
 import { toRefs, unrefs } from 'actview';
 import { useSelectItemContext } from '../item/SelectItemContext';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** The text of the item. Renders a `<span>` element. */
 export function SelectItemText(props: SelectItemText.Props) {

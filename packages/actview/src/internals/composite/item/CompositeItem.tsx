@@ -1,6 +1,6 @@
 import { defineComponent, toValue } from 'actview';
 import { useCompositeItem } from './useCompositeItem';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 import type { StateAttributesMapping } from '@/internals/getStateAttributesProps';
 import type { BaseUIComponentProps } from '@/internals/types';
 import type { Ref } from 'actview';

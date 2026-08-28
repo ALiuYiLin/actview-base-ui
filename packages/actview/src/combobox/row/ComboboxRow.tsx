@@ -1,5 +1,5 @@
 import { toRefs, unrefs } from 'actview';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** A row for the item value. Renders a `<div>` element. */
 export function ComboboxRow(props: ComboboxRow.Props) {

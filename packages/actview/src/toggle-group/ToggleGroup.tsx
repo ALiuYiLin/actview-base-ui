@@ -4,7 +4,7 @@ import { useControlled } from '@/utils/useControlled';
 import { EMPTY_ARRAY } from '@/utils/empty';
 import type { BaseUIComponentProps, HTMLProps, Orientation } from '@/internals/types';
 import { CompositeRoot } from '@/internals/composite/root/CompositeRoot';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 import { useRootElementFragment } from '@/internals/useRootElementFragment';
 import { ToggleGroupContext } from './ToggleGroupContext';
 import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';

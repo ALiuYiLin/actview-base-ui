@@ -6,7 +6,7 @@ import type { BaseUIComponentProps, NativeButtonProps } from '@/internals/types'
 import { useToggleGroupContext } from '@/toggle-group/ToggleGroupContext';
 import { useButton } from '@/internals/use-button/useButton';
 import { CompositeItem } from '@/internals/composite/item/CompositeItem';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';

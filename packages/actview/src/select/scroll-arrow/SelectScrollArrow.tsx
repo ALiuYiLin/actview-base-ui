@@ -1,5 +1,5 @@
 import { toRefs, unrefs } from 'actview';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** A scroll arrow for the select. Renders a `<div>` element. actview 简化：静态渲染。 */
 export function SelectScrollArrow(props: SelectScrollArrow.Props) {

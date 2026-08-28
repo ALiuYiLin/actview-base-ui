@@ -1,6 +1,6 @@
 import { toRefs, unrefs } from 'actview';
 import { useComboboxRootContext } from '../root/ComboboxRootContext';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** The trigger of the combobox. Renders a `<button>` element. */
 export function ComboboxTrigger(componentProps: ComboboxTrigger.Props) {

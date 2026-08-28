@@ -4,7 +4,7 @@ import { useDialogRootContext } from '../root/DialogRootContext';
 import { useButton } from '@/internals/use-button/useButton';
 import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * A button that closes the dialog.

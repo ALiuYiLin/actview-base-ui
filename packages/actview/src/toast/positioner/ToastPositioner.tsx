@@ -1,6 +1,6 @@
 import { toRefs, unrefs } from 'actview';
 import { useToastRootContext } from '../root/ToastRootContext';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** Positions the toast. Renders a `<div>` element. actview 简化：无定位计算。 */
 export function ToastPositioner(props: ToastPositioner.Props) {

@@ -2,7 +2,7 @@ import { toRefs, unrefs, watch } from 'actview';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { useBaseUiId } from '@/internals/useBaseUiId';
 import { useMenuGroupRootContext } from '../group/MenuGroupContext';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * An accessible label that is automatically associated with its parent group.

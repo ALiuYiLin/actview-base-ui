@@ -1,7 +1,7 @@
 import { toRefs, toValue, unrefs } from 'actview';
 import type { BaseUIComponentProps, Orientation } from '@/internals/types';
 import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 import { useRootElementFragment } from '@/internals/useRootElementFragment';
 
 /**

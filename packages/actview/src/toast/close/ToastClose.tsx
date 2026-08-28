@@ -1,6 +1,6 @@
 import { toRefs, unrefs } from 'actview';
 import { useToastRootContext } from '../root/ToastRootContext';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /** A button that closes the toast. Renders a `<button>` element. */
 export function ToastClose(props: ToastClose.Props) {

@@ -12,7 +12,7 @@ import { styleDisableScrollbar } from '@/utils/styles';
 import { scrollAreaStateAttributesMapping } from '../root/stateAttributes';
 import type { HiddenState, ScrollAreaRootState } from '../root/ScrollAreaRoot';
 import { normalizeScrollOffset } from '@/utils/scrollEdges';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 // CSS variable names inlined so `ScrollAreaViewportCssVars` tree-shakes out.
 const OVERFLOW_EDGE_VARS = [

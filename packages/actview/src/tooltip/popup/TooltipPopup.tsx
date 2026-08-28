@@ -7,7 +7,7 @@ import { useOpenChangeComplete } from '@/internals/useOpenChangeComplete';
 import { useHoverFloatingInteraction } from '@/floating-ui-react';
 import { getDisabledMountTransitionStyles } from '@/internals/getDisabledMountTransitionStyles';
 import { mergePropsN } from '@/merge-props';
-import { useRenderElement } from '@/internals/useRenderElement';
+import { useRenderElement } from '@/internals/useRenderElementLegacy';
 
 /**
  * A container for the tooltip contents.
