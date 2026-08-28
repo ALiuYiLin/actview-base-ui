@@ -80,7 +80,8 @@
 
 ### 批次 4：大族（最后，调用点最多）
 - [ ] combobox（37）、autocomplete（12）、select（31）
-- [ ] number-field（22）、toast（20）、slider（21）
+- [~] toast（18）——全部 9 组件 + 2 context hooks 已迁移（getter 载体）；**测试 5/7 失败待查**（useToastManager 深链路：ManagedUI harness 转裸函数后 add 链路未渲染，疑似 manager 订阅时机）
+- [ ] number-field（22）、slider（21）
 
 **豁免类**（不强制 useRenderElement，对齐权威 CheckboxGroup 先例）：纯 Provider（CSP/Direction）、薄委托（Input → FieldControl）、Portal/Value 等无状态包装——但范式细节（裸函数、渲染期解构、ref 形直读）仍须统一。
 
