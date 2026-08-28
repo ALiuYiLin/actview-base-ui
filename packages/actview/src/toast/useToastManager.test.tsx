@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { defineComponent } from 'actview';
+import { watch } from 'actview';
 import { Toast, useToastManager } from '@/toast';
 import { render, screen, act } from '#test-utils/rtl';
 
@@ -7,16 +7,20 @@ async function settle() {
   await act(async () => {});
 }
 
-const ManagedUIDef = defineComponent(function ManagedUI(props: any) {
+function ManagedUI(props: any) {
   const manager = useToastManager();
-  return () => {
-    props.actions.value = manager;
-    return <div data-testid="manager-ready" />;
-  };
-});
+  watch(
+    () => manager,
+    () => {
+      props.actions.value = manager;
+    },
+    {immediate: true},
+  );
+  return <div data-testid="manager-ready" />;
+}
 
 function TestHarness(props: any) {
-  return () => (
+  return (
     <Toast.Provider>
       <Toast.Viewport>
         {(toast: any) => (
@@ -30,17 +34,16 @@ function TestHarness(props: any) {
           </Toast.Root>
         )}
       </Toast.Viewport>
-      <ManagedUIDef actions={props.actions} />
+      <ManagedUI actions={props.actions} />
     </Toast.Provider>
   );
 }
 
-const HarnessDef = defineComponent(TestHarness);
 
 describe('useToastManager', () => {
   it('adds a toast and renders it in the viewport', async () => {
     const actions = {value: null as any};
-    await render(<HarnessDef actions={actions} />);
+    await render(<TestHarness actions={actions} />);
     await settle();
 
     expect(screen.queryByText('Hello')).toBe(null);
@@ -56,7 +59,7 @@ describe('useToastManager', () => {
 
   it('closes a toast by id', async () => {
     const actions = {value: null as any};
-    await render(<HarnessDef actions={actions} />);
+    await render(<TestHarness actions={actions} />);
     await settle();
 
     const id = actions.value.add({title: 'Temp'});
@@ -73,7 +76,7 @@ describe('useToastManager', () => {
 
   it('updates a toast', async () => {
     const actions = {value: null as any};
-    await render(<HarnessDef actions={actions} />);
+    await render(<TestHarness actions={actions} />);
     await settle();
 
     const id = actions.value.add({title: 'Before'});
@@ -90,7 +93,7 @@ describe('useToastManager', () => {
 
   it('renders multiple toasts in the viewport', async () => {
     const actions = {value: null as any};
-    await render(<HarnessDef actions={actions} />);
+    await render(<TestHarness actions={actions} />);
     await settle();
 
     actions.value.add({title: 'One'});
@@ -105,7 +108,7 @@ describe('useToastManager', () => {
   it('calls onClose when a toast is closed', async () => {
     let closed = false;
     const actions = {value: null as any};
-    await render(<HarnessDef actions={actions} />);
+    await render(<TestHarness actions={actions} />);
     await settle();
 
     const id = actions.value.add({title: 'X', onClose: () => (closed = true)});

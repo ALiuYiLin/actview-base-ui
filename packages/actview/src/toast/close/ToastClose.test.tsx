@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { defineComponent } from 'actview';
+import { watch } from 'actview';
 import { Toast, useToastManager } from '@/toast';
 import { render, screen, fireEvent, act } from '#test-utils/rtl';
 
@@ -7,16 +7,20 @@ async function settle() {
   await act(async () => {});
 }
 
-const ManagedUIDef = defineComponent(function ManagedUI(props: any) {
+function ManagedUI(props: any) {
   const manager = useToastManager();
-  return () => {
-    props.actions.value = manager;
-    return <div data-testid="manager-ready" />;
-  };
-});
+  watch(
+    () => manager,
+    () => {
+      props.actions.value = manager;
+    },
+    {immediate: true},
+  );
+  return <div data-testid="manager-ready" />;
+}
 
 function TestHarness(props: any) {
-  return () => (
+  return (
     <Toast.Provider>
       <Toast.Viewport>
         {(toast: any) => (
@@ -30,17 +34,16 @@ function TestHarness(props: any) {
           </Toast.Root>
         )}
       </Toast.Viewport>
-      <ManagedUIDef actions={props.actions} />
+      <ManagedUI actions={props.actions} />
     </Toast.Provider>
   );
 }
 
-const HarnessDef = defineComponent(TestHarness);
 
 describe('<Toast.Close />', () => {
   it('closes a toast via Toast.Close', async () => {
     const actions = {value: null as any};
-    await render(<HarnessDef actions={actions} />);
+    await render(<TestHarness actions={actions} />);
     await settle();
 
     actions.value.add({title: 'CloseMe'});
