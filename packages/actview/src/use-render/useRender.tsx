@@ -1,5 +1,3 @@
-import { defineComponent } from 'actview';
-
 /**
  * Renders a Base UI element, converting `state` values into `data-*` attributes.
  *
@@ -117,5 +115,3 @@ export namespace useRender {
 }
 
 export type ComponentRenderFn<Props, State> = (props: Props, state: State) => any;
-
-export const _defineComponentForUseRenderTest = defineComponent;

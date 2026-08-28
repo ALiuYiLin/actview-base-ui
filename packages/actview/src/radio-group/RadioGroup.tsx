@@ -1,5 +1,5 @@
-import { ref, toRefs, unrefs, computed } from 'actview';
-import type { ComputedRef } from 'actview';
+import { ref, toRefs, computed } from 'actview';
+import type { ComputedRef, Ref } from 'actview';
 import { useControlled } from '@/utils/useControlled';
 import { useBaseUiId } from '@/internals/useBaseUiId';
 import { contains } from '@/utils/shadowDom';
@@ -18,7 +18,6 @@ import { RadioGroupContext } from './RadioGroupContext';
 import type { BaseUIComponentProps } from '@/internals/types';
 import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
-import type { Ref } from 'actview';
 
 const MODIFIER_KEYS = [SHIFT];
 
@@ -211,71 +210,82 @@ export function RadioGroup<Value>(componentProps: RadioGroup.Props<Value>) {
     touched,
   };
 
-  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  const {render, className, style, children, ...elementProps} = toRefs(componentProps);
+  // ============ setup：值形 props toRefs 活引用；children 不解构、随 elementRefs 流入 ============
+  const {render, className, style, ...elementRefs} = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
+
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  // children 排除（显式作为 CompositeRoot children 传入）。
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) {
+      if (k === 'children') continue;
+      out[k] = elementRefs[k].value;
+    }
+    return out;
+  });
+
+  // 根元素 props：radiogroup 语义 + 事件 handler（setup 闭包读 computed/refs 实时）。
+  const defaultProps = computed<Record<string, any>>(() => {
+    const readOnlyValue = readOnly.value;
+    const requiredValue = required.value;
+
+    return {
+      id: idProp,
+      role: 'radiogroup',
+      'aria-required': requiredValue || undefined,
+      'aria-disabled': disabled.value || undefined,
+      'aria-readonly': readOnlyValue || undefined,
+      'aria-labelledby': ariaLabelledby,
+      onFocus() {
+        setFocused(true);
+      },
+      onBlur(event: any) {
+        if (!contains(event.currentTarget, event.relatedTarget)) {
+          setFieldTouched(true);
+          setFocused(false);
+
+          if (validationMode.value === 'onBlur') {
+            validation.commit(checkedValue.value);
+          }
+        }
+      },
+      onKeyDownCapture(event: any) {
+        if (event.key.startsWith('Arrow')) {
+          touched.value = true;
+          setFocused(true);
+        }
+      },
+    };
+  });
+
+  const state = computed<RadioGroupState>(() => ({
+    ...fieldState.value,
+    disabled: disabled.value,
+    required: required.value ?? false,
+    readOnly: readOnly.value ?? false,
+  }));
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  // defaultProps/state 在渲染期 IIFE 中构建（对齐 React 版每次 render 重算——
-  // setup 快照会导致 disabled/readOnly 等动态变化时 data-* 不更新）。
   return (
     <RadioGroupContext.Provider value={contextValue as any}>
-      {(() => {
-        const readOnlyValue = readOnly.value;
-        const requiredValue = required.value;
-
-        const defaultProps = {
-          id: idProp,
-          role: 'radiogroup',
-          'aria-required': requiredValue || undefined,
-          'aria-disabled': disabled.value || undefined,
-          'aria-readonly': readOnlyValue || undefined,
-          'aria-labelledby': ariaLabelledby,
-          onFocus() {
-            setFocused(true);
-          },
-          onBlur(event: any) {
-            if (!contains(event.currentTarget, event.relatedTarget)) {
-              setFieldTouched(true);
-              setFocused(false);
-
-              if (validationMode.value === 'onBlur') {
-                validation.commit(checkedValue.value);
-              }
-            }
-          },
-          onKeyDownCapture(event: any) {
-            if (event.key.startsWith('Arrow')) {
-              touched.value = true;
-              setFocused(true);
-            }
-          },
-        };
-
-        const state: RadioGroupState = {
-          ...fieldState.value,
-          disabled: disabled.value,
-          required: requiredValue ?? false,
-          readOnly: readOnlyValue ?? false,
-        };
-
-        return (
-          <CompositeRoot
-            render={render as any}
-            className={className as any}
-            style={style as any}
-            state={state as any}
-            props={[
-              defaultProps,
-              unrefs(elementProps),
-              (props: any) => validation.getValidationProps(disabled.value, props),
-            ]}
-            stateAttributesMapping={fieldValidityMapping}
-            enableHomeAndEndKeys={false}
-            modifierKeys={MODIFIER_KEYS}
-            children={children?.value}
-          />
-        );
-      })()}
+      <CompositeRoot
+        render={render as any}
+        className={className as any}
+        style={style as any}
+        state={state.value as any}
+        props={[
+          defaultProps.value,
+          elementProps.value,
+          (props: any) => validation.getValidationProps(disabled.value, props),
+        ]}
+        stateAttributesMapping={fieldValidityMapping}
+        enableHomeAndEndKeys={false}
+        modifierKeys={MODIFIER_KEYS}
+        children={elementRefs.children?.value}
+      />
     </RadioGroupContext.Provider>
   );
 }

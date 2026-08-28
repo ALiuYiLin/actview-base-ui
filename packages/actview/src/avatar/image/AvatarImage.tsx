@@ -1,4 +1,5 @@
-import { computed, onUnmounted, ref, toRefs, unrefs, watch } from 'actview';
+import { computed, onUnmounted, ref, toRefs, watch } from 'actview';
+import type { Ref } from 'actview';
 import type { BaseUIComponentProps, HTMLProps } from '@/internals/types';
 import type { StateAttributesMapping } from '@/internals/getStateAttributesProps';
 import { useAvatarRootContext } from '../root/AvatarRootContext';
@@ -68,7 +69,21 @@ export function AvatarImage(componentProps: AvatarImage.Props) {
   });
 
   // ============ setup：值形 props toRefs 活引用；ref 形 props 直读本體 ============
-  const { className, render, style, ...elementProps } = toRefs(componentProps);
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
+
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  // onLoadingStatusChange 为组件自定义 props，剔除（watch 已单独消费）。
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) {
+      if (k === 'onLoadingStatusChange') continue;
+      out[k] = elementRefs[k].value;
+    }
+    return out;
+  });
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
   // 条件（mounted）在渲染期求值；getter 在 props 数组里逐渲染求值并消费 prev。
@@ -89,10 +104,7 @@ export function AvatarImage(componentProps: AvatarImage.Props) {
               },
               ref: [componentProps.ref, imageRef],
               props: [
-                (prev: any) => {
-                  const {onLoadingStatusChange: _onLoadingStatusChange, ...rest} = unrefs(elementProps);
-                  return {...prev, ...rest};
-                },
+                (prev: any) => ({...prev, ...elementProps.value}),
               ],
             },
           )

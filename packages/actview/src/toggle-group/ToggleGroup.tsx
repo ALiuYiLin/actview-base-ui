@@ -1,4 +1,5 @@
-import { computed, ref, toRefs, unrefs, watch } from 'actview';
+import { computed, ref, toRefs, watch } from 'actview';
+import type { Ref } from 'actview';
 import { useControlled } from '@/utils/useControlled';
 import { EMPTY_ARRAY } from '@/utils/empty';
 import type { BaseUIComponentProps, HTMLProps, Orientation } from '@/internals/types';
@@ -49,8 +50,8 @@ export function ToggleGroup<Value extends string>(props: ToggleGroup.Props<Value
     multiple,
     onValueChange,
     orientation,
-    ...elementProps
-  } = toRefs(props);
+    ...elementRefs
+  } = toRefs(props) as Record<string, Ref<any>>;
 
   const toolbarContext = useToolbarRootContext(true);
   const toolbarGroupContext = useToolbarGroupContext();
@@ -127,45 +128,48 @@ export function ToggleGroup<Value extends string>(props: ToggleGroup.Props<Value
 
   const defaultProps: HTMLProps = {role: 'group'};
 
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
+  });
+
   // ============ render（最后 return JSX——插件转换为渲染函数）============
   return (
     <ToggleGroupContext.Provider value={contextValue}>
-      {(() => {
-        if (toolbarContext) {
-          // Toolbar 内：直接渲染 group 元素（Toolbar.Group 包裹时无 CompositeRoot）
-          return useRenderElement(
-            'div',
-            {
-              className: className?.value,
-              render: render?.value,
-              style: style?.value,
-            },
-            {
-              state: stateValue.value,
-              ref: useMergedRefs(rootRef, (props as any).ref),
-              props: [defaultProps, unrefs(elementProps)],
-            },
-          );
-        }
-
-        return (
-          <CompositeRoot
-            render={render as any}
-            className={className as any}
-            style={style as any}
-            state={stateValue.value as any}
-            refs={[rootRef as any]}
-            props={[defaultProps, unrefs(elementProps)]}
-            stateAttributesMapping={toggleGroupStateAttributesMapping}
-            loopFocus={loopFocus?.value ?? true}
-            enableHomeAndEndKeys
-            orientation={orientationState.value}
-            refToRender
-          >
-            {props.children}
-          </CompositeRoot>
-        );
-      })()}
+      {toolbarContext ? (
+        // Toolbar 内：直接渲染 group 元素（Toolbar.Group 包裹时无 CompositeRoot）
+        useRenderElement(
+          'div',
+          {
+            className: className?.value,
+            render: render?.value,
+            style: style?.value,
+          },
+          {
+            state: stateValue.value,
+            ref: useMergedRefs(rootRef, (props as any).ref),
+            props: [defaultProps, elementProps.value],
+          },
+        )
+      ) : (
+        <CompositeRoot
+          render={render as any}
+          className={className as any}
+          style={style as any}
+          state={stateValue.value as any}
+          refs={[rootRef as any]}
+          props={[defaultProps, elementProps.value]}
+          stateAttributesMapping={toggleGroupStateAttributesMapping}
+          loopFocus={loopFocus?.value ?? true}
+          enableHomeAndEndKeys
+          orientation={orientationState.value}
+          refToRender
+        >
+          {props.children}
+        </CompositeRoot>
+      )}
     </ToggleGroupContext.Provider>
   );
 }

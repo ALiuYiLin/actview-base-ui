@@ -1,4 +1,5 @@
-import { reactive, toRefs, unrefs } from 'actview';
+import { computed, reactive, toRefs } from 'actview';
+import type { Ref } from 'actview';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { AvatarRootContext } from './AvatarRootContext';
 import { avatarStateAttributesMapping } from './stateAttributesMapping';
@@ -22,7 +23,17 @@ export function AvatarRoot(componentProps: AvatarRoot.Props) {
   });
 
   // ============ setup：值形 props toRefs 活引用；ref 形 props 直读本體 ============
-  const { className, render, style, ...elementProps } = toRefs(componentProps);
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
+
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
+  });
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
   // 字面 JSX 是插件判定的锚；useRenderElement 调用在 JSX 内逐渲染求值。
@@ -41,7 +52,7 @@ export function AvatarRoot(componentProps: AvatarRoot.Props) {
           state: { imageLoadingStatus: contextValue.imageLoadingStatus },
           stateAttributesMapping: avatarStateAttributesMapping,
           ref: componentProps.ref,
-          props: [unrefs(elementProps)],
+          props: [elementProps.value],
         },
       )}
     </AvatarRootContext.Provider>

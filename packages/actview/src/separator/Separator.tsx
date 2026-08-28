@@ -1,4 +1,5 @@
-import { toRefs, unrefs } from 'actview';
+import { computed, toRefs } from 'actview';
+import type { Ref } from 'actview';
 import type { BaseUIComponentProps, Orientation } from '@/internals/types';
 import { useRenderElement } from '@/internals/useRenderElement';
 
@@ -10,7 +11,17 @@ import { useRenderElement } from '@/internals/useRenderElement';
  */
 export function Separator(componentProps: Separator.Props) {
   // ============ setup：值形 props toRefs 活引用；ref 形 props 直读本體 ============
-  const { className, render, style, ...elementProps } = toRefs(componentProps);
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
+
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
+  });
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
   // 整次 useRenderElement 调用逐渲染求值（props 直读响应式，无 toValue）；
@@ -30,7 +41,7 @@ export function Separator(componentProps: Separator.Props) {
           ref: componentProps.ref,
           props: [
             { role: 'separator', 'aria-orientation': componentProps.orientation ?? 'horizontal' },
-            unrefs(elementProps),
+            elementProps.value,
           ],
         },
       )}

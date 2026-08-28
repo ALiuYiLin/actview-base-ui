@@ -1,7 +1,7 @@
 # actview 组件重构计划（PLAN）
 
 > **本轮重写**：实现基准变更——范式与 API 以 `E:\code3\actview\src\components`（2026-08 大版本更新）的**签名与语义**为基准。
-> **实现方式（已按裁决更新）**：internals 基础（useRenderElement / mergeProps / useMergedRefs / utils×3）**直接采用目标版文件**落地到规范路径；旧签名实现暂存 `internals/useRenderElementLegacy.tsx` 供 ~169 个存量调用点过渡，P1 迁移完成后删除。家族组件按目标范式逐族迁移；类型/本地扩展（`@/` 路径、MaybeRefOrGetter、style string 形态）做最小适配。
+> **实现方式（已按裁决更新）**：internals 基础（useRenderElement / mergeProps / useMergedRefs / utils×3）**直接采用目标版文件**落地到规范路径；旧签名实现暂存 `internals/useRenderElementLegacy.tsx` 供存量调用点过渡——**已全部迁移并删除**。家族组件按目标范式逐族迁移；类型/本地扩展（`@/` 路径、MaybeRefOrGetter、style string 形态）做最小适配。
 > 旧计划的 P0/P1/P2/P3 已清空；测试差距分析（React 分布对照）经验证仍有效，收编进 P3。
 > 范式文档：`E:\code3\actview\docs\`（API / components / react-migration / vue-migration / babel-defineComponent / headless-components / dual-ref-props 案例）。
 
@@ -12,7 +12,7 @@
 | # | 变化 | 说明 |
 |---|---|---|
 | 1 | **裸函数是唯一推荐形态** | 函数体 = setup（只执行一次），最后直接 return JSX，Babel 自动包 render 函数。`return () => JSX`（setup 风格）**编译期直接报错**；手动 `defineComponent(fn)` 仅限 .ts/测试直调场景（fn 必须返回渲染函数）。MIGRATION.md 案例 1 / 案例总结的 defineComponent 范式**作废** |
-| 2 | **useRenderElement 签名更换** | 本地旧版 `useRenderElement(options) → { merged(), element(extraRefs?) }` → 目标签名 **`useRenderElement(element, componentProps, params) → VNode`**（state/ref/props/stateAttributesMapping，render 双形态与 ref 合并链内建）。调用约定：字面 JSX 内嵌调用（Fragment/JSX 锚）。**过渡期旧实现暂存 `useRenderElementLegacy.tsx` 供存量调用点使用，P1 迁移完成后删除** |
+| 2 | **useRenderElement 签名更换** | 本地旧版 `useRenderElement(options) → { merged(), element(extraRefs?) }` → 目标签名 **`useRenderElement(element, componentProps, params) → VNode`**（state/ref/props/stateAttributesMapping，render 双形态与 ref 合并链内建）。调用约定：字面 JSX 内嵌调用（Fragment/JSX 锚）。**旧实现已删除（useRenderElementLegacy.tsx 全量迁移完成）** |
 | 3 | **ref 形 props 惯用法** | `toRefs` 只解构**值形 props**；ref 形 props（`props.ref`/`props.inputRef`）**直读本体**，禁入 toRefs/useProps 解构（toRef 的 ref 透传 → 双重解包 + setup 快照二义性）；rest 转发用 EXCLUDE 集合剔除 ref 形键。详见 `E:\code3\actview\docs\dual-ref-props.md` |
 | 4 | **ref 传递（父侧）** | 自定义名 ref 形 prop 必须 `rawRef()` 包裹——jsxFactory 对顶层 ref 属性值解包成值快照；`ref` 键本身不解包，直达 `props.ref` |
 | 5 | **Context：store-as-is 新契约** | 官方 `createContext` **零包装零监听**（2026-08 语义变更）：Provider 原样存储 value，响应式由传入载体携带（reactive 对象/装 ref 容器/rawRef）；**传快照 = 静态注入**。payload 用 `reactive()` 时泛型标注 `Reactive<T>`（对象默认值重载已编译期强制 Reactive）。MIGRATION.md 案例 5 的「Provider watch 同步 value」描述已过期；本地 internals 已无 createContext.tsx（旧案例 16.2 的 internals 版不可用） |
@@ -24,8 +24,9 @@
 
 ## 现状盘点（本轮扫描数据）
 
-- 非测试组件 tsx 共 **229 个**；其中 ~169 个使用本地旧签名 useRenderElement（**全部需要调用点迁移**）；60 个完全不用 useRenderElement（Provider / 薄委托 / Portal / 简单包装——权威 `CheckboxGroup.tsx` 先例允许保持纯 JSX，按豁免类处理）。
-- **defineComponent 残留仅 4 个源码文件**：`csp-provider/CSPProvider.tsx`、`direction-provider/DirectionProvider.tsx`、`select/separator/SelectSeparator.tsx`、`toggle/Toggle.tsx`。
+- 非测试组件 tsx 共 **229 个**；~~其中 ~169 个使用本地旧签名 useRenderElement~~ **已全部迁移到新签名**（combobox 24 / select 17 / number-field 4 / menu indicator 2 / Form / Menubar），`useRenderElementLegacy.tsx` 已删除；剩余组件为 Provider / 薄委托 / Portal / 简单包装（纯 JSX，豁免类）。
+- **defineComponent 源码文件已清零**：utils/FocusGuard、utils/InternalBackdrop、use-render/useRender（测试辅助导出）均改为裸函数/删除；`unrefs` 全库清零（avatar×2 / separator / toggle-group / radio-group 已改 computed elementProps）。
+- **类型错误清零**：floating-ui-tests 的 `.value` 链（ListboxFocus / Menu / MenuOrientation）已修——`tsgo -b` 全绿。
 - **internals 与权威差异**：3 个 DIFF（`useRenderElement.tsx` / `getStateAttributesProps.ts` / `types.ts`）+ 5 个缺失（`mergeProps.ts`、`useMergedRefs.ts`、`utils/getReactElementRef.ts`、`utils/mergeObjects.ts`、`utils/resolveClassNameStyle.ts`）；本地 `src/merge-props/mergeProps.ts` 为旧变体（哈希不同）。
 - 本地特有（权威没有，保留或评估）：`useRootElementFragment`、`defineHeadless`、`store`、`composite`、`use-button`、`useAnchorPositioning`、`useTransitionStatus` 等 hooks、`floating-ui-react` 移植层（30 文件）。
 - 权威参照共 16 文件：`internals/`（useRenderElement / mergeProps / getStateAttributesProps / types / useMergedRefs / utils×3）+ `avatar/`（Root/Context/stateAttributesMapping/index）+ `checkbox/`（CheckboxRoot/CheckboxGroup/checkbox-context/index）。
@@ -35,7 +36,7 @@
 ## P0 基线：internals 对齐（先行，后续一切工作的地基）
 
 - [x] 落地 5 个基础模块：`internals/mergeProps.ts`、`internals/useMergedRefs.ts`、`internals/utils/{getReactElementRef,mergeObjects,resolveClassNameStyle}.ts`
-- [x] `internals/useRenderElement.tsx` 换为目标签名 `(element, componentProps, params) → VNode`；旧实现暂存 `internals/useRenderElementLegacy.tsx`（169 个调用点 import 已批量改写指向 Legacy）
+- [x] `internals/useRenderElement.tsx` 换为目标签名 `(element, componentProps, params) → VNode`；旧实现暂存 `internals/useRenderElementLegacy.tsx`——**已全量迁移（combobox 24 / select 17 / number-field 4 / menu 2 + Form/Menubar）并删除该文件**
 - [x] `internals/getStateAttributesProps.ts`、`internals/types.ts` 对齐（types：保留 HTMLAttributes 基座 + `ref?: Ref<HTMLElement|null>` 转发声明 + 本地 `Reactive<T>` 品牌类型——踩坑见附录 C.1/C.2）
 - [ ] `src/merge-props/`（35 个引用方）与新 `internals/mergeProps.ts` 收敛为一份 → 移入 P2
 - [x] `useRootElementFragment` 评估：AvatarImage 已用 ref 合并链取代 rootRef 桥接、不再依赖；其余 Fragment 根家族迁移时逐个消除，最终删除
@@ -79,11 +80,14 @@
 - [x] menu 系（menu 17 + context-menu 5 + menubar 3）✅——全部组件/context hooks store-as-is + 新 hook；**57/58 测试绿**（唯一失败：viewport remount 深链路用例，预存行为待专项排查）；navigation-menu（13）✅——12/12 绿（关闭态不渲染内容语义补齐）；类型 92→52，批次 3 收官
 
 ### 批次 4：大族（最后，调用点最多）
-- [x] select（25）✅——2 context hooks store-as-is（SelectRootContext 残留条件 `context.value` 恒 undefined → 恒 throw 是唯一根因）+ 5 测试 wrapper 裸函数化；**11/11 测试绿**
-- [x] combobox/autocomplete ✅——9/9 绿（context 契约修复即转绿）
+- [x] select（25）✅——2 context hooks store-as-is（SelectRootContext 残留条件 `context.value` 恒 undefined → 恒 throw 是唯一根因）+ 5 测试 wrapper 裸函数化；**11/11 测试绿**；叶子组件（Arrow/Backdrop/Icon/Label/Group/GroupLabel/Scroll×3/Item/ItemIndicator/ItemText/List/Popup/Positioner/Trigger/Value）**全部迁移新 hook + computed elementProps**
+- [x] combobox/autocomplete ✅——9/9 绿（context 契约修复即转绿）；24 个叶子组件全部迁移新 hook（含 Input/Item/Trigger/List/Value/Popup/Positioner/Clear 的 store refs + render-prop children 注入）；6 个测试文件 setup 风格改裸函数
 - [x] toast（18）✅——全部 9 组件 + 2 context hooks 已迁移；**7/7 测试绿**（Viewport rootProps 漏 children 注入是根因——新 hook 迁移时 children 经 render-prop 的组件务必核对 children 注入）
 - [x] slider（18）✅——**7/7 组件全迁，5/5 测试绿**（SliderControl 555 行/SliderThumb 590 行整文件重写：事件期载体访问 + inputBase/rootProps computed 化；useCompositeListItem metadata computed 化）
-- [x] number-field（17）✅——Root/Group/Input/Stepper/ScrubArea×2/Cursor 全迁 + 2 context hooks；6/6 测试绿（原 0/6）### 3.3 测试范式更新（转写 React 用例时统一执行）
+- [x] number-field（17）✅——Root/Group/Input/Stepper/ScrubArea×2/Cursor 全迁 + 2 context hooks；6/6 测试绿（原 0/6）；**本轮补齐 Group/Input/ScrubArea/ScrubAreaCursor 的 legacy hook 迁移**（自持 ref 挂 params.ref 合并链，替代 useRootElementFragment；toValue 快照 → computed 事件期直读）
+- [x] menu indicators（2）✅——MenuCheckboxItemIndicator/MenuRadioItemIndicator 迁移新 hook（ref 合并链 + state computed + keepMounted 条件渲染）
+
+### 3.3 测试范式更新（转写 React 用例时统一执行）
 - [ ] 测试组件：函数声明**直接 return JSX**（Babel 自动包装；禁手写双层 `return () =>`——现为编译期报错）
 - [ ] 包装组件渲染期解构 props（setup 快照陷阱）；`{...props}` 展开引用稳定性注意
 - [ ] `fireEvent` 后 `await act(() => {})`；跨组件 watch 链额外 flush；`setProps` 浅合并不删除
