@@ -1,12 +1,13 @@
-import { toRefs, unrefs } from 'actview';
+import {computed, ref, toRefs} from 'actview';
+import type { Ref } from 'actview';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { valueToPercent } from '@/utils/valueToPercent';
 import { useIsHydrating } from '@/utils/useIsHydrating';
 import { useSliderRootContext } from '../root/SliderRootContext';
 import { sliderStateAttributesMapping } from '../root/stateAttributesMapping';
 import type { SliderRootState } from '../root/SliderRoot';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
-import { useRootElementFragment } from '@/internals/useRootElementFragment';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useMergedRefs } from '@/internals/useMergedRefs';
 
 function getIndicatorStyles(
   vertical: boolean,
@@ -52,61 +53,82 @@ function getIndicatorStyles(
  */
 export function SliderIndicator(componentProps: SliderIndicator.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  // Fragment 根（`<>{element()}</>`）下 actview 内置 useRootElement 的
-  // subTree.el 恒 null——用 Fragment 兼容版本。
-  const rootRef = useRootElementFragment();
+  // 自持 ref：经 params.ref 合并链透传（不用 useRootElementFragment）。
+  const rootRef = ref(null as HTMLElement | null);
 
-  const rootContextRef = useSliderRootContext();
+  // context 载体直取（store-as-is）：getter 字段渲染期属性访问即追踪。
+  const rootContext = useSliderRootContext();
 
   const isHydrating = useIsHydrating();
 
-  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
 
-  const {element} = useRenderElement({
-    props: () => {
-      const {indicatorPosition, inset, max, min, orientation, renderBeforeHydration, state, values} =
-        rootContextRef.value;
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
+  });
 
-      const vertical = orientation === 'vertical';
-      const range = values.length > 1;
+  const state = computed<SliderRootState>(() => rootContext.state);
 
-      const resolvedStyle =
-        typeof style?.value === 'function' ? style.value(state) : style?.value;
+  // 根元素 props：透传 → indicator 定位样式。
+  const rootProps = computed<Record<string, any>>(() => {
+    const {indicatorPosition, inset, max, min, orientation, renderBeforeHydration, values} =
+      rootContext;
 
-      const merged: any = {
-        ...unrefs(elementProps),
-        style: Object.assign(
-          {},
-          getIndicatorStyles(
-            vertical,
-            range,
-            inset,
-            inset ? indicatorPosition[0] : valueToPercent(values[0], min, max),
-            inset ? indicatorPosition[1] : valueToPercent(values[values.length - 1], min, max),
-            inset && renderBeforeHydration && isHydrating,
-          ),
-          resolvedStyle,
+    const vertical = orientation === 'vertical';
+    const range = values.length > 1;
+
+    const resolvedStyle =
+      typeof style?.value === 'function' ? style.value(state.value) : style?.value;
+
+    return {
+      ...elementProps.value,
+      style: Object.assign(
+        {},
+        getIndicatorStyles(
+          vertical,
+          range,
+          inset,
+          inset ? indicatorPosition[0] : valueToPercent(values[0], min, max),
+          inset ? indicatorPosition[1] : valueToPercent(values[values.length - 1], min, max),
+          inset && renderBeforeHydration && isHydrating,
         ),
-      };
-      return [merged];
-    },
-    state: () => rootContextRef.value.state,
-    stateAttributesMapping: sliderStateAttributesMapping as any,
-    className,
-    render,
-    refs: () => [rootRef as any],
-    children,
-    defaultTag: 'div',
+        resolvedStyle,
+      ),
+    };
   });
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  return <>{element()}</>;
+  return (
+    <>
+      {useRenderElement(
+        'div',
+        {
+          className: className?.value,
+          render: render?.value,
+          style: style?.value,
+        },
+        {
+          state: state.value,
+          stateAttributesMapping: sliderStateAttributesMapping,
+          ref: useMergedRefs(rootRef, componentProps.ref as any),
+          props: rootProps.value,
+        },
+      )}
+    </>
+  );
 }
 
 export interface SliderIndicatorState extends SliderRootState {}
 
-export interface SliderIndicatorProps extends BaseUIComponentProps<'div', SliderIndicatorState> {}
+export interface SliderIndicatorProps
+  extends BaseUIComponentProps<'div', SliderIndicatorState> {}
 
 export namespace SliderIndicator {
   export type State = SliderIndicatorState;

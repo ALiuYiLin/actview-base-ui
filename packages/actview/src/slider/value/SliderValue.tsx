@@ -1,11 +1,12 @@
-import { toRefs, toValue, unrefs } from 'actview';
+import {computed, ref, toRefs} from 'actview';
+import type { Ref } from 'actview';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { formatNumber } from '@/utils/formatNumber';
 import { useSliderRootContext } from '../root/SliderRootContext';
 import { sliderStateAttributesMapping } from '../root/stateAttributesMapping';
 import type { SliderRootState } from '../root/SliderRoot';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
-import { useRootElementFragment } from '@/internals/useRootElementFragment';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useMergedRefs } from '@/internals/useMergedRefs';
 
 /**
  * Displays the current value of the slider.
@@ -15,59 +16,73 @@ import { useRootElementFragment } from '@/internals/useRootElementFragment';
  */
 export function SliderValue(componentProps: SliderValue.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  // Fragment 根（`<>{element()}</>`）下 actview 内置 useRootElement 的
-  // subTree.el 恒 null——用 Fragment 兼容版本。
-  const rootRef = useRootElementFragment();
+  // 自持 ref：经 params.ref 合并链透传（不用 useRootElementFragment）。
+  const rootRef = ref(null as HTMLElement | null);
 
-  const rootContextRef = useSliderRootContext();
+  // context 载体直取（store-as-is）：getter 字段渲染期属性访问即追踪。
+  const rootContext = useSliderRootContext();
 
-  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
+  // 值形 props toRefs 活引用；children 单独排除（render prop）。
+  const { className, render, style, children: childrenRef, ...elementRefs } = toRefs(
+    componentProps,
+  ) as Record<string, Ref<any>>;
 
-  const {element} = useRenderElement({
-    props: () => {
-      const {thumbMap, state, values, format, locale} = rootContextRef.value;
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
+  });
 
-      const ariaLive = toValue(componentProps['aria-live']) ?? 'off';
+  const state = computed<SliderValueState>(() => rootContext.state);
 
-      const outputFor =
-        Array.from(thumbMap.values(), ({inputId}) => inputId)
-          .join(' ')
-          .trim() || undefined;
+  // ⚠️ 不解构 getter 载体（解构会捕获快照）——computed 内属性访问。
+  const formattedValues = computed(() =>
+    rootContext.values.map((v: number) => formatNumber(v, rootContext.locale, rootContext.format)),
+  );
 
-      const formattedValues = values.map((v) => formatNumber(v, locale, format));
+  // 根元素 props：aria-live/htmlFor → 透传；children 为 render-prop 渲染结果
+  // 或格式化值 join。
+  const rootProps = computed<Record<string, any>>(() => {
+    const ariaLive = componentProps['aria-live'] ?? 'off';
 
-      const defaultDisplayValue = formattedValues.join(' – ');
+    const outputFor =
+      Array.from(rootContext.thumbMap.values(), ({inputId}) => inputId)
+        .join(' ')
+        .trim() || undefined;
 
-      const merged: any = {
-        // off by default because it will keep announcing when the slider is being dragged
-        // and also when the value is changing (but not yet committed)
-        'aria-live': ariaLive,
-        htmlFor: outputFor,
-        ...unrefs(elementProps),
-      };
-      return [merged];
-    },
-    state: () => rootContextRef.value.state,
-    stateAttributesMapping: sliderStateAttributesMapping as any,
-    className,
-    style,
-    render,
-    refs: () => [rootRef as any],
-    // children：render-prop（(formattedValues, values) => any）渲染期求值
-    children: () => {
-      const {values, format, locale} = rootContextRef.value;
-      const formattedValues = values.map((v) => formatNumber(v, locale, format));
-      const childrenValue = children?.value;
-      return typeof childrenValue === 'function'
-        ? (childrenValue as any)(formattedValues, values)
-        : formattedValues.join(' – ');
-    },
-    defaultTag: 'output',
+    return {
+      // off by default because it will keep announcing when the slider is being dragged
+      // and also when the value is changing (but not yet committed)
+      'aria-live': ariaLive,
+      htmlFor: outputFor,
+      ...elementProps.value,
+      children:
+        typeof childrenRef?.value === 'function'
+          ? (childrenRef.value as any)(formattedValues.value, rootContext.values)
+          : formattedValues.value.join(' – '),
+    };
   });
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  return <>{element()}</>;
+  return (
+    <>
+      {useRenderElement(
+        'output',
+        {
+          className: className?.value,
+          render: render?.value,
+          style: style?.value,
+        },
+        {
+          state: state.value,
+          stateAttributesMapping: sliderStateAttributesMapping,
+          ref: useMergedRefs(rootRef, componentProps.ref as any),
+          props: rootProps.value,
+        },
+      )}
+    </>
+  );
 }
 
 export interface SliderValueState extends SliderRootState {}

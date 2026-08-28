@@ -1,12 +1,13 @@
-import { toRefs, toValue, unrefs } from 'actview';
+import {computed, ref, toRefs} from 'actview';
+import type { Ref } from 'actview';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { useSliderRootContext } from '../root/SliderRootContext';
 import { sliderStateAttributesMapping } from '../root/stateAttributesMapping';
 import { useLabel, focusElementWithVisible } from '@/internals/labelable-provider/useLabel';
 import { ownerDocument } from '@/utils/owner';
 import type { SliderRootState } from '../root/SliderRoot';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
-import { useRootElementFragment } from '@/internals/useRootElementFragment';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useMergedRefs } from '@/internals/useMergedRefs';
 
 function isHTMLElement(value: unknown): value is HTMLElement {
   return value instanceof HTMLElement;
@@ -20,16 +21,16 @@ function isHTMLElement(value: unknown): value is HTMLElement {
  */
 export function SliderLabel(componentProps: SliderLabel.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  // Fragment 根（`<>{element()}</>`）下 actview 内置 useRootElement 的
-  // subTree.el 恒 null——用 Fragment 兼容版本。
-  const rootRef = useRootElementFragment();
+  // 自持 ref：经 params.ref 合并链透传（不用 useRootElementFragment）。
+  const rootRef = ref(null as HTMLElement | null);
 
-  const rootContextRef = useSliderRootContext();
+  // context 载体直取（store-as-is）。
+  const rootContext = useSliderRootContext();
 
   // useLabel 必须在 setup 调用（useRegisteredLabelId 含 watch/computed/
   // onUnmounted——渲染期调用会每次渲染累积副作用）。
   // setLabelId/controlRef 是 Root 的稳定引用（setup 定义一次），setup 快照安全。
-  const {setLabelId, controlRef, rootLabelId} = rootContextRef.value;
+  const {setLabelId, controlRef, rootLabelId} = rootContext;
 
   function focusControl(event: MouseEvent, controlId: string | undefined) {
     if (controlId) {
@@ -53,35 +54,53 @@ export function SliderLabel(componentProps: SliderLabel.Props) {
     focusControl,
   });
 
-  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
 
-  const {element} = useRenderElement({
-    props: () => {
-      // Keep label id derived from the root and ignore runtime `id` overrides from untyped consumers.
-      const elementPropsWithoutId = {...unrefs(elementProps)} as any;
-      delete elementPropsWithoutId.id;
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
+  });
 
-      return [labelProps, elementPropsWithoutId];
-    },
-    state: () => rootContextRef.value.state,
-    stateAttributesMapping: sliderStateAttributesMapping as any,
-    className,
-    style,
-    render,
-    refs: () => [rootRef as any],
-    children,
-    defaultTag: 'div',
+  const state = computed<SliderRootState>(() => rootContext.state);
+
+  // 根元素 props：labelProps（id/hover 处理器）→ 透传（剔除运行时 id 覆盖）。
+  const rootProps = computed<Record<string, any>>(() => {
+    // Keep label id derived from the root and ignore runtime `id` overrides from untyped consumers.
+    const elementPropsWithoutId = {...elementProps.value} as any;
+    delete elementPropsWithoutId.id;
+    return {...labelProps, ...elementPropsWithoutId};
   });
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  return <>{element()}</>;
+  return (
+    <>
+      {useRenderElement(
+        'div',
+        {
+          className: className?.value,
+          render: render?.value,
+          style: style?.value,
+        },
+        {
+          state: state.value,
+          stateAttributesMapping: sliderStateAttributesMapping,
+          ref: useMergedRefs(rootRef, componentProps.ref as any),
+          props: rootProps.value,
+        },
+      )}
+    </>
+  );
 }
 
-export type SliderLabelState = SliderRootState;
+export interface SliderLabelState extends SliderRootState {}
 
-export interface SliderLabelProps
-  extends Omit<BaseUIComponentProps<'div', SliderLabel.State>, 'id'> {}
+export interface SliderLabelProps extends BaseUIComponentProps<'div', SliderLabelState> {}
 
 export namespace SliderLabel {
   export type State = SliderLabelState;
