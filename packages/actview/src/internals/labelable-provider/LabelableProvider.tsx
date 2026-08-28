@@ -1,9 +1,9 @@
-import {computed, defineComponent, ref, toValue, shallowRef} from 'actview';
+import {computed, ref, shallowRef} from 'actview';
 import type { HTMLProps } from '@/internals/types';
 import { useBaseUiId } from '@/internals/useBaseUiId';
 import { LabelableContext, useLabelableContext } from './LabelableContext';
 
-export const LabelableProvider = defineComponent(function (props: LabelableProvider.Props) {
+export function LabelableProvider(props: LabelableProvider.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
   const defaultId = useBaseUiId();
 
@@ -21,7 +21,7 @@ export const LabelableProvider = defineComponent(function (props: LabelableProvi
 
   const registrationsRef = shallowRef(new Map<symbol, string | null>());
 
-  const {messageIds: parentMessageIds} = toValue(useLabelableContext());
+  const {messageIds: parentMessageIds} = useLabelableContext();
 
   const registerControlId = (source: symbol, nextId: string | null | undefined) => {
     const registrations = registrationsRef.value;
@@ -77,7 +77,7 @@ export const LabelableProvider = defineComponent(function (props: LabelableProvi
     const ids = externalProps['aria-describedby']
       ? String(externalProps['aria-describedby']).split(' ')
       : [];
-    ids.push(...toValue(parentMessageIds), ...messageIdsState.value);
+    ids.push(...parentMessageIds.value, ...messageIdsState.value);
 
     return {
       ...externalProps,
@@ -96,12 +96,12 @@ export const LabelableProvider = defineComponent(function (props: LabelableProvi
     getDescriptionProps,
   };
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const children = props.children;
-    return <LabelableContext.Provider value={contextValue}>{children}</LabelableContext.Provider>;
-  };
-}) as unknown as (props: LabelableProvider.Props) => JSX.Element;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  // children 渲染期直读（props 代理，每次渲染最新）。
+  return (
+    <LabelableContext.Provider value={contextValue}>{props.children}</LabelableContext.Provider>
+  );
+}
 
 export interface LabelableProviderState {}
 

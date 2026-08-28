@@ -124,8 +124,8 @@ export function NumberFieldInput(componentProps: NumberFieldInput.Props) {
 
       const {disabled, readOnly, required, value, inputValue} = state;
 
-      const {validationMode, setTouched, setFocused, invalid, validation} = fieldContextRef.value;
-      const {labelId} = labelableContextRef.value;
+      const {validationMode, setTouched, setFocused, invalid, validation} = fieldContextRef;
+      const {labelId} = labelableContextRef;
 
       const inputProps: any = {
         id,

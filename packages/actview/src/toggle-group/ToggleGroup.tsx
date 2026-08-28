@@ -1,15 +1,13 @@
-import { computed, toRefs, toValue, unrefs, watch } from 'actview';
-import type { ComputedRef } from 'actview';
+import { computed, ref, toRefs, unrefs, watch } from 'actview';
 import { useControlled } from '@/utils/useControlled';
 import { EMPTY_ARRAY } from '@/utils/empty';
-import type { BaseUIComponentProps, HTMLProps, Orientation } from '@/internals/types';
+import type { BaseUIComponentProps, Orientation } from '@/internals/types';
 import { CompositeRoot } from '@/internals/composite/root/CompositeRoot';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
-import { useRootElementFragment } from '@/internals/useRootElementFragment';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useMergedRefs } from '@/internals/useMergedRefs';
 import { ToggleGroupContext } from './ToggleGroupContext';
 import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import { REASONS } from '@/internals/reasons';
-import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
 import type { StateAttributesMapping } from '@/internals/getStateAttributesProps';
 import { useToolbarRootContext } from '@/toolbar/root/ToolbarRootContext';
 import { useToolbarGroupContext } from '@/toolbar/group/ToolbarGroupContext';
@@ -20,21 +18,21 @@ import { useToolbarGroupContext } from '@/toolbar/group/ToolbarGroupContext';
  * Documentation: [Base UI Toggle Group](https://base-ui.com/react/components/toggle-group)
  *
  * 裸函数组件写法（插件转换）：函数体 = setup（执行一次），最后 return JSX
- * 作为渲染模板——JSX 里 refs 自动解包（solid 风格编译）。
+ * 作为渲染模板。
  */
 export function ToggleGroup<Value extends string>(props: ToggleGroup.Props<Value>) {
-  // ============ setup（只执行一次）：toRefs 解构——props 全部响应式 refs ============
-  // 根元素引用（render 函数分支透传 + 用户 ref 转发）
-  const rootRef = useRootElementFragment();
-  // 用户 props.ref 转发（rootRef 变化时同步——对齐 React forwardedRef 语义）
+  // ============ setup（只执行一次）：一次性初始化 ============
+  // 自持 ref：toolbar 分支经 params.ref、CompositeRoot 分支经 refs 选项透传；
+  // 用户 props.ref 经 watch 桥接（rootRef 提交后同步）。
+  const rootRef = ref<HTMLElement | null>(null);
   watch(
     rootRef,
     (el) => {
-      const ref = (props as any).ref;
-      if (typeof ref === 'function') {
-        ref(el);
-      } else if (ref) {
-        ref.value = el;
+      const userRef = (props as any).ref;
+      if (typeof userRef === 'function') {
+        userRef(el);
+      } else if (userRef) {
+        userRef.value = el;
       }
     },
     {flush: 'post', immediate: true},
@@ -44,7 +42,6 @@ export function ToggleGroup<Value extends string>(props: ToggleGroup.Props<Value
     className,
     render,
     style,
-    children,
     defaultValue,
     value,
     disabled,
@@ -55,8 +52,8 @@ export function ToggleGroup<Value extends string>(props: ToggleGroup.Props<Value
     ...elementProps
   } = toRefs(props);
 
-  const toolbarContextRef = useToolbarRootContext(true);
-  const toolbarGroupContextRef = useToolbarGroupContext();
+  const toolbarContext = useToolbarRootContext(true);
+  const toolbarGroupContext = useToolbarGroupContext();
 
   // 用 raw prop 区分"省略 value"与"空数组默认值"。
   const isValueInitialized = computed(
@@ -65,8 +62,8 @@ export function ToggleGroup<Value extends string>(props: ToggleGroup.Props<Value
 
   const disabledState = computed(
     () =>
-      (toolbarContextRef.value?.disabled ?? false) ||
-      (toolbarGroupContextRef.value?.disabled ?? false) ||
+      (toolbarContext?.disabled ?? false) ||
+      (toolbarGroupContext?.disabled ?? false) ||
       (disabled?.value ?? false),
   );
 
@@ -85,7 +82,7 @@ export function ToggleGroup<Value extends string>(props: ToggleGroup.Props<Value
     nextPressed: boolean,
     eventDetails: BaseUIChangeEventDetails<typeof REASONS.none>,
   ) => {
-    const currentGroupValue = (toValue(groupValue) ?? []).slice();
+    const currentGroupValue = (groupValue.value ?? []).slice();
     let newGroupValue: Value[];
     if (multipleState.value) {
       newGroupValue = currentGroupValue.slice();
@@ -113,48 +110,62 @@ export function ToggleGroup<Value extends string>(props: ToggleGroup.Props<Value
     orientation: orientationState.value,
   }));
 
-  const contextValue = computed<ToggleGroupContext<Value>>(() => ({
-    disabled: disabledState.value,
+  // store-as-is 载体：身份稳定的 getter 对象（provide 只在 Provider setup 执行
+  // 一次，computed 新对象会冻结快照）——字段渲染期求值，消费端读字段即追踪。
+  const contextValue: ToggleGroupContext<Value> = {
+    get disabled() {
+      return disabledState.value;
+    },
     setGroupValue,
-    value: groupValue as unknown as ComputedRef<readonly Value[]>,
-    isValueInitialized: isValueInitialized.value,
-  }));
+    get value() {
+      return groupValue.value ?? [];
+    },
+    get isValueInitialized() {
+      return isValueInitialized.value;
+    },
+  };
 
   const defaultProps: HTMLProps = {role: 'group'};
 
-  // 合并 + 渲染统一工具（含 className/style 函数形式、render prop 分支）。
-  const {merged, element: toolbarElement} = useRenderElement({
-    props: () => [defaultProps, unrefs(elementProps)],
-    state: stateValue,
-    stateAttributesMapping: toggleGroupStateAttributesMapping,
-    className,
-    style,
-    render,
-    children,
-  });
-
   // ============ render（最后 return JSX——插件转换为渲染函数）============
   return (
-    <ToggleGroupContext.Provider value={contextValue.value}>
-      {toolbarContextRef.value ? (
-        toolbarElement()
-      ) : (
-        <CompositeRoot
-          render={render as any}
-          className={className as any}
-          style={style as any}
-          state={stateValue.value as any}
-          refs={[rootRef as any]}
-          props={[defaultProps, unrefs(elementProps)]}
-          stateAttributesMapping={toggleGroupStateAttributesMapping}
-          loopFocus={loopFocus?.value ?? true}
-          enableHomeAndEndKeys
-          orientation={orientationState.value}
-          refToRender
-        >
-          {children?.value}
-        </CompositeRoot>
-      )}
+    <ToggleGroupContext.Provider value={contextValue}>
+      {(() => {
+        if (toolbarContext) {
+          // Toolbar 内：直接渲染 group 元素（Toolbar.Group 包裹时无 CompositeRoot）
+          return useRenderElement(
+            'div',
+            {
+              className: className?.value,
+              render: render?.value,
+              style: style?.value,
+            },
+            {
+              state: stateValue.value,
+              ref: useMergedRefs(rootRef, (props as any).ref),
+              props: [defaultProps, unrefs(elementProps)],
+            },
+          );
+        }
+
+        return (
+          <CompositeRoot
+            render={render as any}
+            className={className as any}
+            style={style as any}
+            state={stateValue.value as any}
+            refs={[rootRef as any]}
+            props={[defaultProps, unrefs(elementProps)]}
+            stateAttributesMapping={toggleGroupStateAttributesMapping}
+            loopFocus={loopFocus?.value ?? true}
+            enableHomeAndEndKeys
+            orientation={orientationState.value}
+            refToRender
+          >
+            {props.children}
+          </CompositeRoot>
+        );
+      })()}
     </ToggleGroupContext.Provider>
   );
 }

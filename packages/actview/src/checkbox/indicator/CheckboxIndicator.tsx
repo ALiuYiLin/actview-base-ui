@@ -1,4 +1,5 @@
-import { computed, ref, toRefs, unrefs } from 'actview';
+import { computed, ref, toRefs } from 'actview';
+import type { Ref } from 'actview';
 import { useCheckboxRootContext } from '../root/CheckboxRootContext';
 import { getCheckboxStateAttributesMapping } from '../utils/getCheckboxStateAttributesMapping';
 import type { CheckboxRootState } from '../root/CheckboxRoot';
@@ -42,11 +43,38 @@ export function CheckboxIndicator(componentProps: CheckboxIndicator.Props) {
   });
 
   // ============ setup：值形 props toRefs 活引用；ref 形 props 直读本體 ============
-  const { className, render, style, ...elementProps } = toRefs(componentProps);
+  const {
+    className,
+    render,
+    style,
+    keepMounted: _keepMounted,
+    ...elementRefs
+  } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
+
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
+  });
+  const state = computed<CheckboxIndicatorState>(() => ({
+    ...rootState,
+    transitionStatus: transitionStatus.value,
+  }));
+  const stateAttributes = computed(() => {
+    // state attrs 依赖渲染期 state（mapping 动态）——按当前 state 构建映射。
+    const mapping: StateAttributesMapping<CheckboxIndicatorState> = {
+      ...getCheckboxStateAttributesMapping(state.value),
+      ...transitionStatusMapping,
+    };
+    return getStateAttributesProps(state.value, mapping);
+  });
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  // 条件在渲染期求值；state attrs 依赖渲染期 state（mapping 动态）——整次
-  // useRenderElement 调用逐渲染求值，mapping 在 props getter 内按当前 state 构建。
+  // 条件在渲染期求值（表达式内 .value 直读）。
   return (
     <>
       {keepMounted.value || mounted.value
@@ -58,28 +86,9 @@ export function CheckboxIndicator(componentProps: CheckboxIndicator.Props) {
               style: style?.value,
             },
             {
-              state: {
-                ...rootState,
-                transitionStatus: transitionStatus.value,
-              },
+              state: state.value,
               ref: rootRef,
-              props: [
-                (prev: any) => {
-                  const stateValue: CheckboxIndicatorState = {
-                    ...rootState,
-                    transitionStatus: transitionStatus.value,
-                  };
-                  const mapping: StateAttributesMapping<CheckboxIndicatorState> = {
-                    ...getCheckboxStateAttributesMapping(stateValue),
-                    ...transitionStatusMapping,
-                  };
-                  return {
-                    ...prev,
-                    ...unrefs(elementProps),
-                    ...getStateAttributesProps(stateValue, mapping),
-                  };
-                },
-              ],
+              props: {...elementProps.value, ...stateAttributes.value},
             },
           )
         : null}

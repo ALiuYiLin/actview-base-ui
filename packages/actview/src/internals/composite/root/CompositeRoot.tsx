@@ -1,10 +1,12 @@
-import { defineComponent, rawRef, toValue, computed } from 'actview';
+import { computed, toRefs } from 'actview';
+import { rawRef } from 'actview';
 import type { CompositeMetadata } from '@/internals/composite/list/CompositeList';
 import { CompositeList } from '@/internals/composite/list/CompositeList';
 import { useCompositeRoot } from './useCompositeRoot';
 import { CompositeRootContext } from './CompositeRootContext';
 import type { BaseUIComponentProps } from '@/internals/types';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useMergedRefs } from '@/internals/useMergedRefs';
 import type { ModifierKey } from '@/internals/composite/composite';
 import type { CompositeGridNavigator } from './gridNavigation';
 import { useDirection } from '@/internals/direction-context/DirectionContext';
@@ -14,9 +16,8 @@ import type { Ref } from 'actview';
 export function CompositeRoot<Metadata extends {}, State extends Record<string, any>>(
   componentProps: CompositeRoot.Props<Metadata, State>,
 ) {
-  // ============ setup（只执行一次）：一次性初始化 ============
+  // ============ setup（只执行一次）：一次性初始化（配置 props 快照语义）============
   const {
-    refs = [],
     highlightedIndex: highlightedIndexProp,
     onHighlightedIndexChange: onHighlightedIndexChangeProp,
     orientation,
@@ -26,7 +27,7 @@ export function CompositeRoot<Metadata extends {}, State extends Record<string, 
     enableHomeAndEndKeys,
     onMapChange: onMapChangeProp,
     stopEventPropagation = true,
-    rootRef,
+    rootRef: rootRefProp,
     disabledIndices,
     modifierKeys,
     highlightItemOnHover = false,
@@ -46,95 +47,93 @@ export function CompositeRoot<Metadata extends {}, State extends Record<string, 
     loopFocus,
     onLoop,
     orientation,
-    highlightedIndex: toValue(highlightedIndexProp),
+    highlightedIndex: highlightedIndexProp,
     onHighlightedIndexChange: onHighlightedIndexChangeProp as any,
-    rootRef,
+    rootRef: rootRefProp,
     stopEventPropagation,
     enableHomeAndEndKeys,
     direction,
-    disabledIndices: toValue(disabledIndices),
-    modifierKeys: toValue(modifierKeys),
+    disabledIndices,
+    modifierKeys,
   });
 
-  // contextValue 用 computed：highlightedIndex 是 computed ref——internal 变化
-  // （键盘导航）时消费方（CompositeItem 的 tabIndex/onFocus）拿到实时值。
-  // （setup 快照值 → context 永远初始值 → roving tabindex 不更新。）
-  const contextValue = computed<CompositeRootContext>(() => ({
-    highlightedIndex: highlightedIndex.value,
+  // store-as-is 载体：身份稳定 getter 对象（highlightedIndex 实时——键盘导航时
+  // CompositeItem 的 tabIndex/onFocus 拿到实时值；provide 只跑一次，每次渲染
+  // 新对象会冻结快照）。
+  const contextValue: CompositeRootContext = {
+    get highlightedIndex() {
+      return highlightedIndex.value;
+    },
     onHighlightedIndexChange,
     highlightItemOnHover,
     relayKeyboardEvent,
-  }));
-
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  // state/stateAttributesMapping 渲染期解构（setup 解构是快照——state 更新
-  // 后 data-* 不会重算）。
-  return () => {
-    const {
-      render,
-      className,
-      style,
-      props = [],
-      tag = 'div',
-      children,
-      state: stateProp,
-      stateAttributesMapping: stateAttributesMappingProp,
-      refToRender,
-      refs: refsProp,
-      highlightedIndex: _hi,
-      onHighlightedIndexChange: _ohic,
-      orientation: _o,
-      grid: _g,
-      loopFocus: _lf,
-      onLoop: _ol,
-      enableHomeAndEndKeys: _ehek,
-      onMapChange: _omc,
-      onKeyDown: _okd,
-      stopEventPropagation: _sep,
-      rootRef: _rr,
-      disabledIndices: _di,
-      modifierKeys: _mk,
-      highlightItemOnHover: _hioh,
-      ...elementProps
-    } = componentProps;
-
-    const stateValue = toValue(stateProp) as State;
-
-    const {element} = useRenderElement({
-      props: () => [...props, elementProps, defaultProps],
-      state: stateValue,
-      stateAttributesMapping: stateAttributesMappingProp ?? {},
-      className: () => className,
-      style: () => style,
-      render: () => render,
-      refs: () => refsProp ?? [],
-      children: () => children,
-      defaultTag: () => tag,
-      // 原实现 render 函数形式不带 ref（与全库其他组件不同），保持默认
-      // 行为；个别组件（如 ToggleGroup 对齐 React 契约）传 `refToRender`
-      // 开启 render 函数分支的 ref 传递。
-      refToRender: refToRender === undefined ? false : refToRender,
-    });
-
-    return (
-      <CompositeRootContext.Provider value={contextValue.value as any}>
-        <CompositeList
-          elementsRef={rawRef(elementsRef)}
-          onMapChange={(newMap: Map<Element, CompositeMetadata<Metadata>>) => {
-            onMapChangeProp?.(newMap);
-            onMapChangeUnwrapped(newMap);
-          }}
-        >
-          {/* extraRefs 传递 defaultProps.ref（useCompositeRoot 的 mergedRef，设置
-              rootRef）：useRenderElement 的 JSX `ref={mergedRefs}` 只合并 refs
-              数组，defaultProps.ref 会被覆盖丢失 → rootRef.value 永远 null →
-              键盘导航提前 return。extraRefs 不参与 render 分支的单一 ref 判断，
-              不影响 render prop 的 ref 形态。 */}
-          {element((defaultProps as any).ref ? [(defaultProps as any).ref] : undefined)}
-        </CompositeList>
-      </CompositeRootContext.Provider>
-    );
   };
+
+  // 值形 props toRefs 活引用；composite 专用键全部解构排除（children 不排除、
+  // 随 elementRefs 流入渲染元素）。
+  const {
+    render,
+    className,
+    style,
+    props: propsRef,
+    tag: tagRef,
+    state: stateRef,
+    stateAttributesMapping: mappingRef,
+    refs: refsRef,
+    refToRender: _refToRender,
+    onKeyDown: _onKeyDown,
+    stopEventPropagation: _sep,
+    rootRef: _rootRef,
+    disabledIndices: _di,
+    modifierKeys: _mk,
+    highlightItemOnHover: _hioh,
+    highlightedIndex: _hi,
+    onHighlightedIndexChange: _ohic,
+    orientation: _o,
+    grid: _g,
+    loopFocus: _lf,
+    onLoop: _ol,
+    enableHomeAndEndKeys: _ehek,
+    onMapChange: _omc,
+    ...elementRefs
+  } = toRefs(componentProps) as Record<string, Ref<any>>;
+
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
+  });
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  // 新签名 hook：ref 合并链内建（refs 选项 + defaultProps.ref 全部广播）——
+  // 原 extraRefs/refToRender 特判由合并链统一承担。
+  return (
+    <CompositeRootContext.Provider value={contextValue}>
+      <CompositeList
+        elementsRef={rawRef(elementsRef)}
+        onMapChange={(newMap: Map<Element, CompositeMetadata<Metadata>>) => {
+          onMapChangeProp?.(newMap);
+          onMapChangeUnwrapped(newMap);
+        }}
+      >
+        {useRenderElement(
+          tagRef?.value ?? 'div',
+          {
+            className: className?.value,
+            render: render?.value,
+            style: style?.value,
+          },
+          {
+            state: stateRef?.value as State | undefined,
+            stateAttributesMapping: mappingRef?.value,
+            ref: useMergedRefs(...(refsRef?.value ?? []), (defaultProps as any).ref ?? undefined),
+            props: [...(propsRef?.value ?? []), elementProps.value, defaultProps],
+          },
+        )}
+      </CompositeList>
+    </CompositeRootContext.Provider>
+  );
 }
 
 export interface CompositeRootState {}
@@ -168,8 +167,9 @@ export interface CompositeRootProps<Metadata, State extends Record<string, any>>
   modifierKeys?: ModifierKey[] | undefined;
   highlightItemOnHover?: boolean | undefined;
   /**
-   * 是否向 render 函数形式传递 `ref`（mergedRefs / 单 Ref 对象）。
-   * 默认 `false`（原实现行为）；对齐 React 契约的组件（如 ToggleGroup）传 `true`。
+   * 是否向 render 函数形式传递 `ref`。
+   * 新签名 hook 的 ref 合并链恒向 render 函数传递合并链 ref——此 prop 保留
+   * 兼容旧调用方（ToggleGroup），运行时为 no-op。
    */
   refToRender?: boolean | undefined;
 }

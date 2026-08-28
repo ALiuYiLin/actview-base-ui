@@ -12,10 +12,10 @@ export const MenuCheckboxItemContext = createContext<MenuCheckboxItemContextValu
 
 export function useMenuCheckboxItemContext() {
   const context = MenuCheckboxItemContext.use();
-  if (context.value === undefined) {
+  if (context === undefined) {
     throw new Error(
       'Base UI: MenuCheckboxItemContext is missing. MenuCheckboxItem parts must be placed within <Menu.CheckboxItem>.',
     );
   }
-  return context.value;
+  return context;
 }

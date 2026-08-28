@@ -1,23 +1,28 @@
-import { defineComponent, toValue } from 'actview';
-import { DirectionContext, type TextDirection } from '@/internals/direction-context/DirectionContext';
+import { DirectionContext } from '@/internals/direction-context/DirectionContext';
+import type { TextDirection } from '@/internals/direction-context/DirectionContext';
 
 /**
  * Enables RTL behavior for Base UI components.
  *
  * Documentation: [Base UI Direction Provider](https://base-ui.com/react/utils/direction-provider)
  */
-export const DirectionProvider = defineComponent(function (
-  componentProps: DirectionProvider.Props,
-) {
-  // Provider 组件（createContext 内置）：value prop 变化时 watch 同步 state
-  return () => (
-    <DirectionContext.Provider
-      value={{direction: toValue(componentProps.direction) ?? 'ltr'}}
-    >
+export function DirectionProvider(componentProps: DirectionProvider.Props) {
+  // store-as-is 载体：身份稳定 getter 对象（字段渲染期求值——消费端读字段
+  // 即追踪，direction 动态变化实时生效）。
+  const contextValue: DirectionContext = {
+    get direction(): TextDirection {
+      return componentProps.direction ?? 'ltr';
+    },
+  };
+
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  // children 渲染期直读（props 代理，每次渲染最新）。
+  return (
+    <DirectionContext.Provider value={contextValue}>
       {componentProps.children}
     </DirectionContext.Provider>
   );
-}) as unknown as (props: DirectionProvider.Props) => JSX.Element;
+}
 
 export interface DirectionProviderState {}
 

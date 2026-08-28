@@ -1,11 +1,10 @@
 import { createContext } from 'actview';
-import type { Ref } from 'actview';
-import type { ComputedRef } from 'actview';
 import type { BaseUIChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import type { BaseUIEventReasons } from '@/internals/reasons';
 
 export interface ToggleGroupContext<Value> {
-  value: ComputedRef<readonly Value[]>;
+  /** 当前按下的 value 数组（getter 载体直出数组，消费端直读即追踪） */
+  value: readonly Value[];
   setGroupValue: (
     newValue: Value,
     nextPressed: boolean,
@@ -21,6 +20,7 @@ export interface ToggleGroupContext<Value> {
 
 export const ToggleGroupContext = createContext<ToggleGroupContext<any> | undefined>(undefined);
 
-export function useToggleGroupContext<Value>(): Ref<ToggleGroupContext<Value> | undefined> {
+export function useToggleGroupContext<Value>(): ToggleGroupContext<Value> | undefined {
+  // store-as-is：原样返回注入的载体（无 Provider 时 undefined）。
   return ToggleGroupContext.use();
 }

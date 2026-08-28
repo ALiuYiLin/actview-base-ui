@@ -1,21 +1,25 @@
-import { defineComponent, toValue } from 'actview';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /** A separator between select items. Renders a `<div>` element. */
-export const SelectSeparator = defineComponent(function SelectSeparator(
-  props: SelectSeparator.Props,
-) {
-  const children = toValue(props.children);
-  return () => {
-    const {render, className, style, ...elementProps} = props as any;
-    const merged: any = {...elementProps};
-    if (render) {
-      if (typeof render === 'function') return render({...merged} as any);
-      const Tag = render.type as any;
-      return <Tag {...render.props} {...merged} />;
-    }
-    return <div {...merged}>{children}</div>;
-  };
-});
+export function SelectSeparator(props: SelectSeparator.Props) {
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  // children 不解构、随 elementProps 流入渲染元素。
+  return (
+    <>
+      {(() => {
+        const {render, className, style, ...elementProps} = props as any;
+        return useRenderElement(
+          'div',
+          {className, render, style},
+          {
+            ref: (props as any).ref,
+            props: [elementProps],
+          },
+        );
+      })()}
+    </>
+  );
+}
 
 export interface SelectSeparatorProps {
   children?: any;

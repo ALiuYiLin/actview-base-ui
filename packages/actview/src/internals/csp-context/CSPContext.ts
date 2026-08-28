@@ -20,5 +20,5 @@ const DEFAULT_CSP_CONTEXT_VALUE: CSPContextValue = {
  */
 export function useCSPContext(): ComputedRef<CSPContextValue> {
   const context = CSPContext.use();
-  return computed(() => context.value ?? DEFAULT_CSP_CONTEXT_VALUE);
+  return computed(() => context ?? DEFAULT_CSP_CONTEXT_VALUE);
 }

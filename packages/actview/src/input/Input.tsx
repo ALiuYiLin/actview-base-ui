@@ -1,4 +1,3 @@
-import { defineComponent } from 'actview';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { Field, type FieldControlState } from '@/field';
 

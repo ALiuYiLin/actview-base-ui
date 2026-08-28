@@ -1,4 +1,4 @@
-import {defineComponent, onUnmounted, ref} from 'actview';
+import {onUnmounted, ref} from 'actview';
 import type { CompositeListContextValue, CompositeListRegistration } from './CompositeListContext';
 import { CompositeListContext } from './CompositeListContext';
 import type { Ref } from 'actview';
@@ -19,7 +19,7 @@ interface CompositeListItem<Metadata> {
  * 省略 MutationObserver 重排监听——Accordion 场景的 item 静态排序，
  * 注册/注销时同步 flush 重建索引即可。)
  */
-export const CompositeList = defineComponent(function (componentProps: CompositeList.Props<any>) {
+export function CompositeList(componentProps: CompositeList.Props<any>) {
   // ============ setup（只执行一次）：一次性初始化 ============
   const listeners = new Set<Function>();
   const map = new Map<Element, CompositeListRegistration<any>>();
@@ -131,12 +131,14 @@ export const CompositeList = defineComponent(function (componentProps: Composite
     nextIndexRef,
   };
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const children = componentProps.children;
-    return <CompositeListContext.Provider value={contextValue}>{children}</CompositeListContext.Provider>;
-  };
-}) as unknown as (props: CompositeList.Props<any>) => JSX.Element;
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  // children 渲染期直读（props 代理，每次渲染最新）。
+  return (
+    <CompositeListContext.Provider value={contextValue}>
+      {componentProps.children}
+    </CompositeListContext.Provider>
+  );
+}
 
 function getCompositeListSnapshot<Metadata>(
   map: Map<Element, CompositeListRegistration<Metadata>>,

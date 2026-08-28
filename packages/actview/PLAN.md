@@ -154,4 +154,12 @@
 6. **plugin-babel 2.0.0 硬拒绝测试组件 setup 风格**（`return () => JSX` 编译期报错）→ 全库 **56 个测试文件**需改写（P3.3 前置）；AvatarFallback.test.tsx 已改（defineComponent 包装→裸函数、ref 容器→reactive 载体、内联组件提升到 describe 层）。
 7. **core 1.3 store-as-is 运行时债（进行中）**：框架 `createContext.use()` 直返注入载体（不再包 ref）——全库 ~150 处 `context.value` 链读取失效。**checkbox 依赖链已全部适配**（field-root-context / form-context / labelable-provider / field-item / field-register-control / composite-root / fieldset-root 的 use hook 直返载体；Provider payload 改**身份稳定 getter 载体**——provide 只在 Provider setup 执行一次，每次渲染新对象会冻结快照，这是 store-as-is 下 Provider 的标准写法）。其余家族随迁移逐个适配；`toValue` 与 `useRootElement`/`useRootElementFragment` 一并淘汰（props 直读、自持 ref 挂 params.ref 合并链）。
 8. **pnpm 11.17.0 自管切换在本环境损坏**（store 链接缺失）→ 用 `node_modules/.bin` 直呼二进制：tsgo 用根 `node_modules/.bin/tsgo.CMD -b packages/actview/tsconfig.json`，测试用 `packages/actview` 下 `vitest.cmd run`（需 `VITEST_ENV=jsdom`）。
-9. **conformance/测试基建已组件函数化（禁用 createElement/cloneVNode）**：`createElement`/`cloneVNode` 是 core 内部设计的方法，测试一律用组件函数表达——① 动态原生标签用内置 `<component is={Tag}>`（变量字符串实测可用，属性/ref 全透传）；② 「改写目标组件 props」用 Host 组件函数 `function Host() { return <Target {...element.props} {...extra} />; }` 并**返回真 vnode `<Host />`**（family render 包装器契约是 `render(node.type, {...node.props})` 或注入 children，传裸函数会拿到 undefined.type）；③ `createElement(...)` 返回值不是字面 JSX，Babel 不包装 → 必须套字面 Fragment 锚。floating-ui 测试批次（FloatingFocusManager.test 等 5 处）随批次 3 前的适配一并转换。
+9. **conformance/测试基建已组件函数化（禁用 createElement/cloneVNode）**：`createElement`/`cloneVNode` 是 core 内部设计的方法，测试一律用组件函数表达——① 动态原生标签用内置 `<component is={Tag}>`（变量字符串实测可用，属性/ref 全透传）；② 「改写目标组件 props」用 Host 组件函数并**返回真 vnode `<Host />`**（family render 包装器契约是 `render(node.type, {...node.props})` 或注入 children，传裸函数会拿到 undefined.type）；③ `createElement(...)` 返回值不是字面 JSX，Babel 不包装 → 必须套字面 Fragment 锚。floating-ui 测试批次（FloatingFocusManager.test 等 5 处）随批次 3 前的适配一并转换。
+10. **【最高优先】组件唯一合法写法 = avatar 标准（`function App() { return JSX }`），defineComponent 全库禁用**：
+    - 渲染槽是**纯表达式**——Babel 只包 `return <JSX>`，无语句位；IIFE 禁止；
+    - 解构在 setup：`toRefs(props)` 活引用（渲染期读 `.value` 即实时）；ref 形 props（ref/inputRef）不入 toRefs、直读本體；框架消费键/状态键解构排除，children 不排除（随 elementRefs 流入渲染元素）；
+    - 数据构造在 setup 级 `computed`（`.value` 在 JSX 内读 → 归渲染 effect 追踪；依赖未变引用稳定缓存）；
+    - handler = setup 闭包读 computed/refs（事件触发时拿实时值）；
+    - Provider payload = 身份稳定 getter 载体（provide 只在 Provider setup 执行一次，新对象冻结快照）；
+    - 动态原生标签用 `<component is={Tag}>`；`toValue` / `createElement` / `cloneVNode` / `useRootElement`(-Fragment) 全禁；
+    - 违例形态（均已清零）：IIFE、渲染闭包 `return () => JSX`（plugin-babel 2.0 编译期拒绝）、手动 defineComponent 包装。

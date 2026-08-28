@@ -1,4 +1,3 @@
-import { computed, defineComponent } from 'actview';
 import { CSPContext, type CSPContextValue } from '@/internals/csp-context/CSPContext';
 
 /**
@@ -7,19 +6,24 @@ import { CSPContext, type CSPContextValue } from '@/internals/csp-context/CSPCon
  *
  * Documentation: [Base UI CSP Provider](https://base-ui.com/react/utils/csp-provider)
  */
-export const CSPProvider = defineComponent(function (componentProps: CSPProvider.Props) {
-  // contextValue 随 props 变化重建（computed 惰性：依赖变化才产生新引用，
-  // 官方 Provider 的 value watch-synced 只在引用变化时同步 state）
-  const contextValue = computed<CSPContextValue>(() => ({
-    nonce: componentProps.nonce,
-    disableStyleElements: componentProps.disableStyleElements,
-  }));
+export function CSPProvider(componentProps: CSPProvider.Props) {
+  // store-as-is 载体：身份稳定 getter 对象（字段渲染期求值——消费端读字段
+  // 即追踪，nonce/disableStyleElements 动态变化实时生效）。
+  const contextValue: CSPContextValue = {
+    get nonce() {
+      return componentProps.nonce;
+    },
+    get disableStyleElements() {
+      return componentProps.disableStyleElements;
+    },
+  };
 
-  // children 在 render 里读（setup 解构会拿到首次渲染的旧 VNode 引用）
-  return () => (
-    <CSPContext.Provider value={contextValue.value}>{componentProps.children}</CSPContext.Provider>
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  // children 渲染期直读（props 代理，每次渲染最新）。
+  return (
+    <CSPContext.Provider value={contextValue}>{componentProps.children}</CSPContext.Provider>
   );
-}) as unknown as (props: CSPProvider.Props) => JSX.Element;
+}
 
 export interface CSPProviderState {}
 

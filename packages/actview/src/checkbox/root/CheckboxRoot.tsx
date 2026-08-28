@@ -1,4 +1,4 @@
-import { computed, onUnmounted, ref, watch } from 'actview';
+import { computed, onUnmounted, ref, toRefs, watch } from 'actview';
 import { EMPTY_OBJECT } from '@/internals/empty';
 import { useControlled } from '@/utils/useControlled';
 import { visuallyHidden, visuallyHiddenInput } from '@/utils/visuallyHidden';
@@ -219,8 +219,10 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
     }
   });
 
-  // ---- group props / state：setup 级 computed（读取即追踪，身份稳定供
-  //      Provider 载体与渲染两处消费）----
+  // ---- 渲染期求值：setup 级 computed（.value 读取发生在 JSX 内 → 归渲染
+  //      effect；依赖未变走缓存，引用稳定）----
+
+  // group props：parent/group 上下文方法每次求值（对齐 React 版每次 render 调用）
   const groupProps = computed<any>(() => {
     if (!isGroupedWithParent) {
       return {};
@@ -259,9 +261,8 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
     };
   });
 
-  // store-as-is 载体：身份稳定的 getter 对象（provide 只在 Provider setup 执行
-  // 一次，每次渲染新对象会冻结快照）——字段经 getter 路由到 stateValue computed，
-  // 消费端（Indicator 等）读字段即追踪。
+  // store-as-is 载体：身份稳定 getter 对象（字段路由到 stateValue computed，
+  // 消费端 CheckboxIndicator 读字段即追踪；provide 只跑一次，新对象会冻结快照）。
   const rootStateContext: CheckboxRootContext = {
     get checked() {
       return stateValue.value.checked;
@@ -295,232 +296,254 @@ export function CheckboxRoot(componentProps: CheckboxRoot.Props) {
     },
   };
 
+  // 值形 props toRefs 活引用；ref 形 props（ref/inputRef）与 state 驱动键
+  // （checked/indeterminate/readOnly/required）解构排除——前者直读本體、
+  // 后者由 state computed 承担；children 不解构、随 elementRefs 流入。
+  const {
+    className,
+    render,
+    style,
+    id: _id,
+    checked: _checked,
+    indeterminate: _indeterminate,
+    readOnly: _readOnly,
+    required: _required,
+    inputRef: _inputRef,
+    ref: _forwardRef,
+    ...elementRefs
+  } = toRefs(componentProps) as Record<string, Ref<any>>;
+
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
+  });
+
+  const otherGroupProps = computed(() => {
+    const {checked: _gc, indeterminate: _gi, onCheckedChange: _gon, ...rest} = groupProps.value;
+    return rest;
+  });
+
+  const stateAttributes = computed(() => {
+    const mapping = getCheckboxStateAttributesMapping(stateValue.value);
+    return getStateAttributes(stateValue.value, mapping);
+  });
+
+  // 事件 handler：setup 闭包读 computed/refs——事件触发时拿到实时值。
+  const handleInputClick = (event: any) => {
+    // The click dispatched from the root's `onClick` is an implementation detail
+    // and must not reach ancestors, which already receive the original click.
+    event.stopPropagation();
+
+    // actview 的 onChange 对 input 监听 'input' 事件（文本输入语义）；
+    // checkbox 的激活由原生 click 表达（click 切换 checked 并触发
+    // change，不触发 input）——这里在 click 时执行 React 版 onChange 的逻辑。
+    if (event.defaultPrevented) {
+      return;
+    }
+
+    if (stateValue.value.readOnly) {
+      event.preventDefault();
+      return;
+    }
+
+    const nextChecked = event.currentTarget.checked;
+    const details = createChangeEventDetails(REASONS.none, event);
+
+    onCheckedChange?.(nextChecked, details);
+
+    if (details.isCanceled) {
+      return;
+    }
+
+    groupProps.value.onCheckedChange?.(nextChecked, details);
+
+    if (details.isCanceled) {
+      return;
+    }
+
+    setCheckedState(nextChecked);
+
+    if (
+      value !== undefined &&
+      groupContext !== undefined &&
+      !parent &&
+      !isGroupedWithParent
+    ) {
+      const currentGroupValue = groupContext.value ?? [];
+      const nextGroupValue = nextChecked
+        ? [...currentGroupValue, value]
+        : currentGroupValue.filter((item) => item !== value);
+
+      groupContext.setValue(nextGroupValue, details);
+    }
+  };
+
+  const handleInputFocus = () => {
+    controlRef.value?.focus();
+  };
+
+  const handleRootFocus = () => {
+    if (!disabled.value) {
+      setFocused(true);
+    }
+  };
+
+  const handleRootBlur = () => {
+    const inputEl = inputRef.value;
+    if (!inputEl) {
+      return;
+    }
+
+    setTouched(true);
+    setFocused(false);
+
+    if (validationMode.value === 'onBlur') {
+      validation.commit(groupContext ? groupValue : inputEl.checked);
+    }
+  };
+
+  const handleRootKeyDown = (event: any) => {
+    if (event.key !== 'Enter') {
+      return;
+    }
+
+    // Let consumer `preventDefault()` handlers opt out while defensively stopping
+    // any remaining Base UI Enter handling from treating the checkbox as a button.
+    event.preventBaseUIHandler();
+
+    if (event.defaultPrevented) {
+      return;
+    }
+
+    const formToSubmit = inputRef.value?.form ?? null;
+    const currentTarget = event.currentTarget;
+    const nativeEvent = event;
+    const originalPreventDefault = event.preventDefault;
+    const originalNativePreventDefault = nativeEvent.preventDefault;
+    let preventDefaultCalledAfterPropagation = false;
+
+    event.preventDefault = () => {
+      preventDefaultCalledAfterPropagation = true;
+      originalPreventDefault.call(event);
+    };
+    nativeEvent.preventDefault = () => {
+      preventDefaultCalledAfterPropagation = true;
+      originalNativePreventDefault.call(nativeEvent);
+    };
+
+    // Enter should not activate/toggle the checkbox. Cancel the native button behavior
+    // without setting React's synthetic `defaultPrevented`, so ancestor React handlers
+    // can still opt out by calling `preventDefault()` during propagation.
+    originalNativePreventDefault.call(nativeEvent);
+
+    ownerWindow(currentTarget).queueMicrotask(() => {
+      event.preventDefault = originalPreventDefault;
+      nativeEvent.preventDefault = originalNativePreventDefault;
+
+      if (!preventDefaultCalledAfterPropagation) {
+        getDefaultFormSubmitter(formToSubmit)?.click();
+      }
+    });
+  };
+
+  const handleRootClick = (event: MouseEvent) => {
+    if (stateValue.value.readOnly || disabled.value) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const input = inputRef.value;
+    if (!input) {
+      return;
+    }
+
+    dispatchClickWithModifiers(input, event);
+  };
+
+  // hidden input props：mergePropsN 链（getValidationProps 消费 prev——getter 放最后）
+  const inputProps = computed(() =>
+    mergePropsN<any>([
+      {
+        checked: checked.value,
+        disabled: disabled.value,
+        form,
+        // parent checkboxes unset `name` to be excluded from form submission
+        name: parent ? undefined : name,
+        // Set `id` to stop Chrome warning about an unassociated input.
+        // When using a native button, the `id` is applied to the button instead.
+        id: nativeButton ? undefined : controlId,
+        required: stateValue.value.required,
+        ref: mergedInputRef,
+        style: name ? visuallyHiddenInput : visuallyHidden,
+        tabIndex: -1,
+        type: 'checkbox',
+        'aria-hidden': true,
+        onClick: handleInputClick,
+        onFocus: handleInputFocus,
+      },
+      valueProp !== undefined
+        ? {value: (groupContext ? checked.value && valueProp : valueProp) || ''}
+        : EMPTY_OBJECT,
+      getDescriptionProps,
+      (props: any) => validation.getValidationProps(disabled.value, props),
+    ]),
+  );
+
+  // 根元素 props：core（aria/handlers）→ 透传 → group 透传 → state data-* →
+  // getButtonProps 链（disabled 拦截）→ description → validation。
+  const rootProps = computed(() =>
+    mergePropsN<any>([
+      {
+        id: rootId,
+        role: 'checkbox',
+        'aria-checked': stateValue.value.indeterminate ? 'mixed' : stateValue.value.checked,
+        'aria-readonly': stateValue.value.readOnly || undefined,
+        'aria-required': stateValue.value.required || undefined,
+        'aria-labelledby': ariaLabelledBy,
+        [PARENT_CHECKBOX as string]: parent ? '' : undefined,
+        onFocus: handleRootFocus,
+        onBlur: handleRootBlur,
+        onKeyDown: handleRootKeyDown,
+        onClick: handleRootClick,
+      },
+      elementProps.value,
+      otherGroupProps.value,
+      stateAttributes.value,
+      (prev: any) => getButtonProps(prev),
+      (prev: any) => getDescriptionProps(prev),
+      (prev: any) => validation.getValidationProps(disabled.value, prev),
+    ]),
+  );
+
   // ============ render（最后 return JSX——插件转换为渲染函数）============
   return (
-    <>
-      <CheckboxRootContext.Provider value={rootStateContext}>
-        {(() => {
-          // id 由 rootId（暴露元素）与 controlId（hidden input）管理——透传的
-          // 自定义 `id` 会覆盖 rootId（React 版语义：custom id 落到 hidden input）。
-          const {className, render, style, id: _id, ...elementProps} = componentProps as any;
-
-          // group props 每次渲染重新获取（computed：依赖变化时重算）
-          const currentGroupProps = groupProps.value;
-          const groupOnChange = currentGroupProps.onCheckedChange;
-          const {checked: _gc, indeterminate: _gi, onCheckedChange: _gon, ...otherGroupProps} =
-            currentGroupProps;
-
-          const current = stateValue.value;
-          const computedChecked = current.checked;
-          const computedIndeterminate = current.indeterminate;
-          const readOnlyValue = current.readOnly;
-          const requiredValue = current.required;
-
-          const inputProps = mergePropsN<any>([
-            {
-              checked: checked.value,
-              disabled: disabled.value,
-              form,
-              // parent checkboxes unset `name` to be excluded from form submission
-              name: parent ? undefined : name,
-              // Set `id` to stop Chrome warning about an unassociated input.
-              // When using a native button, the `id` is applied to the button instead.
-              id: nativeButton ? undefined : controlId,
-              required: requiredValue,
-              ref: mergedInputRef,
-              style: name ? visuallyHiddenInput : visuallyHidden,
-              tabIndex: -1,
-              type: 'checkbox',
-              'aria-hidden': true,
-              onClick(event: any) {
-                // The click dispatched from the root's `onClick` is an implementation detail
-                // and must not reach ancestors, which already receive the original click.
-                event.stopPropagation();
-
-                // actview 的 onChange 对 input 监听 'input' 事件（文本输入语义）；
-                // checkbox 的激活由原生 click 表达（click 切换 checked 并触发
-                // change，不触发 input）——这里在 click 时执行 React 版 onChange 的逻辑。
-                if (event.defaultPrevented) {
-                  return;
-                }
-
-                if (readOnlyValue) {
-                  event.preventDefault();
-                  return;
-                }
-
-                const nextChecked = event.currentTarget.checked;
-                const details = createChangeEventDetails(REASONS.none, event);
-
-                onCheckedChange?.(nextChecked, details);
-
-                if (details.isCanceled) {
-                  return;
-                }
-
-                groupOnChange?.(nextChecked, details);
-
-                if (details.isCanceled) {
-                  return;
-                }
-
-                setCheckedState(nextChecked);
-
-                if (
-                  value !== undefined &&
-                  groupContext !== undefined &&
-                  !parent &&
-                  !isGroupedWithParent
-                ) {
-                  const currentGroupValue = groupContext.value ?? [];
-                  const nextGroupValue = nextChecked
-                    ? [...currentGroupValue, value]
-                    : currentGroupValue.filter((item) => item !== value);
-
-                  groupContext.setValue(nextGroupValue, details);
-                }
-              },
-              onFocus() {
-                controlRef.value?.focus();
-              },
-            },
-            valueProp !== undefined
-              ? {value: (groupContext ? checked.value && valueProp : valueProp) || ''}
-              : EMPTY_OBJECT,
-            getDescriptionProps,
-            (props: any) => validation.getValidationProps(disabled.value, props),
-          ]);
-
-          const stateAttributesMapping = getCheckboxStateAttributesMapping(current);
-          const stateAttributes = getStateAttributes(current, stateAttributesMapping);
-
-          const merged: any = {};
-          Object.assign(
-            merged,
-            {
-              id: rootId,
-              role: 'checkbox',
-              'aria-checked': computedIndeterminate ? 'mixed' : computedChecked,
-              'aria-readonly': readOnlyValue || undefined,
-              'aria-required': requiredValue || undefined,
-              'aria-labelledby': ariaLabelledBy,
-              [PARENT_CHECKBOX as string]: parent ? '' : undefined,
-              onFocus() {
-                if (!disabled.value) {
-                  setFocused(true);
-                }
-              },
-              onBlur() {
-                const inputEl = inputRef.value;
-                if (!inputEl) {
-                  return;
-                }
-
-                setTouched(true);
-                setFocused(false);
-
-                if (validationMode.value === 'onBlur') {
-                  validation.commit(groupContext ? groupValue : inputEl.checked);
-                }
-              },
-              onKeyDown(event: any) {
-                if (event.key !== 'Enter') {
-                  return;
-                }
-
-                // Let consumer `preventDefault()` handlers opt out while defensively stopping
-                // any remaining Base UI Enter handling from treating the checkbox as a button.
-                event.preventBaseUIHandler();
-
-                if (event.defaultPrevented) {
-                  return;
-                }
-
-                const formToSubmit = inputRef.value?.form ?? null;
-                const currentTarget = event.currentTarget;
-                const nativeEvent = event;
-                const originalPreventDefault = event.preventDefault;
-                const originalNativePreventDefault = nativeEvent.preventDefault;
-                let preventDefaultCalledAfterPropagation = false;
-
-                event.preventDefault = () => {
-                  preventDefaultCalledAfterPropagation = true;
-                  originalPreventDefault.call(event);
-                };
-                nativeEvent.preventDefault = () => {
-                  preventDefaultCalledAfterPropagation = true;
-                  originalNativePreventDefault.call(nativeEvent);
-                };
-
-                // Enter should not activate/toggle the checkbox. Cancel the native button behavior
-                // without setting React's synthetic `defaultPrevented`, so ancestor React handlers
-                // can still opt out by calling `preventDefault()` during propagation.
-                originalNativePreventDefault.call(nativeEvent);
-
-                ownerWindow(currentTarget).queueMicrotask(() => {
-                  event.preventDefault = originalPreventDefault;
-                  nativeEvent.preventDefault = originalNativePreventDefault;
-
-                  if (!preventDefaultCalledAfterPropagation) {
-                    getDefaultFormSubmitter(formToSubmit)?.click();
-                  }
-                });
-              },
-              onClick(event: MouseEvent) {
-                if (readOnlyValue || disabled.value) {
-                  return;
-                }
-
-                event.preventDefault();
-
-                const input = inputRef.value;
-                if (!input) {
-                  return;
-                }
-
-                dispatchClickWithModifiers(input, event);
-              },
-            },
-            elementProps,
-            otherGroupProps,
-            stateAttributes,
-          );
-
-          return (
-            <CheckboxRootContext.Provider value={rootStateContext}>
-              {useRenderElement(
-                'span',
-                {
-                  className: className?.value,
-                  render: render?.value,
-                  style: style?.value,
-                },
-                {
-                  state: current,
-                  ref: useMergedRefs(rootRef, componentProps.ref),
-                  props: [
-                    merged,
-                    (prev: any) => getButtonProps(prev),
-                    (prev: any) => getDescriptionProps(prev),
-                    (prev: any) => validation.getValidationProps(disabled.value, prev),
-                  ],
-                },
-              )}
-              {!checked.value && !groupContext && name && !parent && uncheckedValue !== undefined && (
-                <input
-                  type="hidden"
-                  form={form}
-                  name={name}
-                  value={uncheckedValue}
-                  disabled={disabled.value}
-                />
-              )}
-              <input {...inputProps} />
-            </CheckboxRootContext.Provider>
-          );
-        })()}
-      </CheckboxRootContext.Provider>
-    </>
+    <CheckboxRootContext.Provider value={rootStateContext}>
+      {useRenderElement(
+        'span',
+        {
+          className: className?.value,
+          render: render?.value,
+          style: style?.value,
+        },
+        {
+          state: stateValue.value,
+          ref: useMergedRefs(rootRef, buttonRef, componentProps.ref),
+          props: rootProps.value,
+        },
+      )}
+      {!checked.value && !groupContext && name && !parent && uncheckedValue !== undefined && (
+        <input
+          type="hidden"
+          form={form}
+          name={name}
+          value={uncheckedValue}
+          disabled={disabled.value}
+        />
+      )}
+      <input {...inputProps.value} />
+    </CheckboxRootContext.Provider>
   );
 }
 

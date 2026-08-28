@@ -1,4 +1,4 @@
-import { computed, ref, toRefs, unrefs } from 'actview';
+import { computed, ref, toRefs } from 'actview';
 import { useControlled } from '@/utils/useControlled';
 import { EMPTY_ARRAY } from '@/internals/noop';
 import { areArraysEqual } from '@/utils/areArraysEqual';
@@ -10,6 +10,7 @@ import { useFieldRootContext } from '@/internals/field-root-context/FieldRootCon
 import { useRegisterFieldControl } from '@/internals/field-register-control/useRegisterFieldControl';
 import { useLabelableContext } from '@/internals/labelable-provider/LabelableContext';
 import { useLabelableId } from '@/internals/labelable-provider/useLabelableId';
+import type { Ref } from 'actview';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { getStateAttributesProps } from '@/internals/getStateAttributesProps';
 import { fieldValidityMapping } from '@/internals/field-constants/constants';
@@ -146,7 +147,7 @@ export function CheckboxGroup(componentProps: CheckboxGroup.Props) {
       return componentProps.allValues;
     },
     get value() {
-      return value.value;
+      return value.value ?? [];
     },
     setValue,
     parent,
@@ -157,8 +158,41 @@ export function CheckboxGroup(componentProps: CheckboxGroup.Props) {
     registerControlId,
   };
 
-  // ============ setup：值形 props toRefs 活引用；ref 形 props 直读本體 ============
-  const { className, render, style, ...elementProps } = toRefs(componentProps);
+  // 值形 props toRefs 活引用；id 走 setup 快照（rootProps 里消费）；children
+  // 不解构、随 elementRefs 流入渲染元素。
+  const {
+    className,
+    render,
+    style,
+    id: _id,
+    ...elementRefs
+  } = toRefs(componentProps) as Record<string, Ref<any>>;
+
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
+  });
+
+  const state = computed<CheckboxGroupState>(() => ({
+    ...fieldState.value,
+    disabled: fieldDisabled.value || (componentProps.disabled ?? false),
+  }));
+
+  const stateAttributes = computed(() =>
+    getStateAttributesProps(state.value, fieldValidityMapping),
+  );
+
+  const rootProps = computed(() =>
+    getDescriptionProps({
+      id: idProp,
+      role: 'group',
+      'aria-labelledby': labelId.value,
+      ...elementProps.value,
+      ...stateAttributes.value,
+    }),
+  );
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
   return (
@@ -171,24 +205,9 @@ export function CheckboxGroup(componentProps: CheckboxGroup.Props) {
           style: style?.value,
         },
         {
-          state: {
-            ...fieldState.value,
-            disabled: fieldDisabled.value || (componentProps.disabled ?? false),
-          },
+          state: state.value,
           ref: rootRef,
-          props: [
-            {id: idProp, role: 'group', 'aria-labelledby': labelId.value},
-            unrefs(elementProps),
-            (prev: any) => {
-              const stateValue: CheckboxGroupState = {
-                ...fieldState.value,
-                disabled: fieldDisabled.value || (componentProps.disabled ?? false),
-              };
-              const stateAttributes = getStateAttributesProps(stateValue, fieldValidityMapping);
-              const merged: any = {...prev, ...stateAttributes};
-              return getDescriptionProps(merged);
-            },
-          ],
+          props: rootProps.value,
         },
       )}
     </CheckboxGroupContext.Provider>

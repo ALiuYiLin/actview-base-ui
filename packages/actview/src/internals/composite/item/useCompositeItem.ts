@@ -18,7 +18,7 @@ export function useCompositeItem<Metadata>(params: UseCompositeItemParameters<Me
 
   // render 期 getter：highlightedIndex 变化时重新求值（对齐 React 每次 render）
   const compositeProps = (_previousProps?: Record<string, any>) => {
-    const contextValue = rootContext.value;
+    const contextValue = rootContext;
     const isHighlighted = contextValue?.highlightedIndex === index.value;
 
     return {

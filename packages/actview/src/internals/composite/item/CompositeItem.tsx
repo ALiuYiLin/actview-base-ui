@@ -1,49 +1,60 @@
-import { defineComponent, toValue } from 'actview';
+import { computed, toRefs } from 'actview';
 import { useCompositeItem } from './useCompositeItem';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useMergedRefs } from '@/internals/useMergedRefs';
+import type { Ref } from 'actview';
 import type { StateAttributesMapping } from '@/internals/getStateAttributesProps';
 import type { BaseUIComponentProps } from '@/internals/types';
-import type { Ref } from 'actview';
 
 export function CompositeItem<Metadata, State extends Record<string, any>>(
   componentProps: CompositeItem.Props<Metadata, State>,
 ) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  // state/stateAttributesMapping 在 render 期从 componentProps 解构（setup
-  // 解构是快照——state 更新后 data-* 不会重算，PD-15）。
-  const {metadata, tag = 'div'} = componentProps;
+  // state/stateAttributesMapping 渲染期经 toRefs 活引用读取（setup 解构是
+  // 快照——state 更新后 data-* 不会重算，PD-15）。
+  const { metadata, tag = 'div' } = componentProps;
 
-  const {compositeProps, compositeRef} = useCompositeItem({metadata});
+  const { compositeProps, compositeRef } = useCompositeItem({ metadata });
 
-  // ============ render（每次渲染执行）：渲染期解构 props（PD-15） ============
-  return () => {
-    const {
-      render,
-      className,
-      style,
-      props = [],
-      refs = [],
-      children,
-      state: stateProp,
-      stateAttributesMapping: stateAttributesMappingProp,
-      ...elementProps
-    } = componentProps;
+  // 值形 props toRefs 活引用；refs 选项（ref 数组）随 toRefs 活引用透传；
+  // children 不解构、随 elementRefs 流入渲染元素。
+  const {
+    render,
+    className,
+    style,
+    props: propsRef,
+    refs: refsRef,
+    state: stateRef,
+    stateAttributesMapping: mappingRef,
+    ...elementRefs
+  } = toRefs(componentProps) as Record<string, Ref<any>>;
 
-    const stateValue = toValue(stateProp) as State;
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
+  });
 
-    const {element} = useRenderElement({
-      props: () => [compositeProps, ...props, elementProps],
-      state: stateValue,
-      stateAttributesMapping: stateAttributesMappingProp ?? {},
-      className: () => className,
-      style: () => style,
-      render: () => render,
-      refs: () => [compositeRef, ...refs],
-      children: () => children,
-      defaultTag: () => tag,
-    });
-    return element();
-  };
+  // ============ render（最后 return JSX——插件转换为渲染函数）============
+  return (
+    <>
+      {useRenderElement(
+        tag,
+        {
+          className: className?.value,
+          render: render?.value,
+          style: style?.value,
+        },
+        {
+          state: stateRef?.value as State | undefined,
+          stateAttributesMapping: mappingRef?.value,
+          ref: useMergedRefs(compositeRef, ...(refsRef?.value ?? [])),
+          props: [compositeProps, ...(propsRef?.value ?? []), elementProps.value],
+        },
+      )}
+    </>
+  );
 }
 
 export interface CompositeItemState {}
