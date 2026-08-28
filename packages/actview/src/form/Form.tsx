@@ -1,4 +1,5 @@
-import {ref, toValue, useRootElement, watch, shallowRef, toRefs, unrefs} from 'actview';
+import {computed, ref, watch, shallowRef, toRefs} from 'actview';
+import type { Ref } from 'actview';
 import {
   createGenericEventDetails,
   type BaseUIGenericEventDetails,
@@ -9,8 +10,8 @@ import { FormContext } from '@/internals/form-context/FormContext';
 import type { FormContext as FormContextValue } from '@/internals/form-context/FormContext';
 import { useValueChanged } from '@/internals/useValueChanged';
 import { EMPTY_OBJECT } from '@/internals/empty';
-import type { Ref } from 'actview';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useMergedRefs } from '@/internals/useMergedRefs';
 
 /**
  * A native form element with consolidated error handling.
@@ -20,18 +21,17 @@ import { useRenderElement } from '@/internals/useRenderElementLegacy';
  */
 export function Form(componentProps: Form.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  // Provider 根（`<FormContext.Provider>`），无 Fragment 根问题。
-  const rootRef = useRootElement();
+  // 自持 ref：经 params.ref 合并链透传（不用 useRootElement）。
+  const rootRef = ref(null as HTMLFormElement | null);
 
   const formRef = shallowRef({fields: new Map<string, any>()});
   const elementRef = ref(null as HTMLFormElement | null);
   const submittedRef = ref(false);
   const submitAttemptedRef = ref(false);
 
-  const validationMode = toValue(componentProps.validationMode) ?? 'onSubmit';
-  const externalErrors = toValue(componentProps.errors);
+  const validationMode = componentProps.validationMode ?? 'onSubmit';
+
   const onSubmit = componentProps.onSubmit;
-  const onFormSubmit = componentProps.onFormSubmit;
 
   const focusFirstInvalid = () => {
     // A field can be invalid without a focusable control (for example a checkbox group whose
@@ -63,6 +63,7 @@ export function Form(componentProps: Form.Props) {
     return hasInvalid;
   };
 
+  const externalErrors = componentProps.errors;
   const errorsState = ref<any>(externalErrors);
 
   useValueChanged(() => externalErrors, () => {
@@ -97,7 +98,7 @@ export function Form(componentProps: Form.Props) {
 
   // React 版 useImperativeHandle 等价物：actionsRef 就绪后写入
   watch(
-    () => toValue(componentProps.actionsRef),
+    () => componentProps.actionsRef,
     (actionsRefObj) => {
       if (actionsRefObj) {
         (actionsRefObj as any).value = {validate};
@@ -129,58 +130,70 @@ export function Form(componentProps: Form.Props) {
     submitAttemptedRef,
   };
 
-  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
 
-  const {element} = useRenderElement({
-    props: () => [
-      {
-        noValidate: true,
-        onSubmit(event: Event) {
-          submitAttemptedRef.value = true;
-
-          // Async validation isn't supported to stop the submit event.
-          formRef.value.fields.forEach((field) => {
-            field.validate();
-          });
-
-          if (focusFirstInvalid()) {
-            event.preventDefault();
-            return;
-          }
-
-          submittedRef.value = true;
-          onSubmit?.(event as any);
-
-          if (onFormSubmit) {
-            event.preventDefault();
-
-            const formValues = {} as Record<string, any>;
-            formRef.value.fields.forEach((field) => {
-              if (field.name) {
-                formValues[field.name] = field.getValue();
-              }
-            });
-
-            onFormSubmit(formValues, createGenericEventDetails(REASONS.none, event as any));
-          }
-        },
-      },
-      unrefs(elementProps),
-    ],
-    state: () => ({}),
-    className,
-    style,
-    render,
-    refs: () => [rootRef as any],
-    children,
-    defaultTag: 'form',
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
   });
+
+  // 根元素 props：noValidate + submit 流程 → 透传。
+  const rootProps = computed<Record<string, any>>(() => ({
+    noValidate: true,
+    onSubmit(event: Event) {
+      submitAttemptedRef.value = true;
+
+      // Async validation isn't supported to stop the submit event.
+      formRef.value.fields.forEach((field) => {
+        field.validate();
+      });
+
+      if (focusFirstInvalid()) {
+        event.preventDefault();
+        return;
+      }
+
+      submittedRef.value = true;
+      componentProps.onSubmit?.(event as any);
+
+      const onFormSubmit = componentProps.onFormSubmit;
+      if (onFormSubmit) {
+        event.preventDefault();
+
+        const formValues = {} as Record<string, any>;
+        formRef.value.fields.forEach((field) => {
+          if (field.name) {
+            formValues[field.name] = field.getValue();
+          }
+        });
+
+        onFormSubmit(formValues, createGenericEventDetails(REASONS.none, event as any));
+      }
+    },
+    ...elementProps.value,
+  }));
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
   return (
     <FormContext.Provider value={contextValue}>
-      {element()}
+      {useRenderElement(
+        'form',
+        {
+          className: className?.value,
+          render: render?.value,
+          style: style?.value,
+        },
+        {
+          ref: useMergedRefs(rootRef, componentProps.ref as any),
+          props: rootProps.value,
+        },
+      )}
     </FormContext.Provider>
   );
 }
@@ -204,7 +217,7 @@ export interface FormProps<FormValues extends Record<string, any> = Record<strin
    *
    * - `onSubmit` (default): validates the field when the form is submitted, afterwards fields will re-validate on change.
    * - `onBlur`: validates a field when it loses focus.
-   * - `onChange`: validates the field on every change to its value.
+   * - `onChange`: triggers validation on every change to the control value.
    *
    * @default 'onSubmit'
    */

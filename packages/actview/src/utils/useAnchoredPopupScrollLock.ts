@@ -25,12 +25,12 @@ export function useAnchoredPopupScrollLock(
   const enabledValue = computed(() => toValue(enabled));
   const touchOpenValue = computed(() => toValue(touchOpen));
   const positionerElementValue = computed(() =>
-    positionerElement != null && typeof positionerElement === 'object'
+    positionerElement != null && 'value' in positionerElement
       ? positionerElement.value
       : positionerElement,
   );
   const referenceElementValue = computed(() =>
-    referenceElement != null && typeof referenceElement === 'object'
+    referenceElement != null && 'value' in referenceElement
       ? referenceElement.value
       : referenceElement,
   );
