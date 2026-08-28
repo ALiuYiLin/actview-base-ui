@@ -1,9 +1,8 @@
-import { toRefs, unrefs } from 'actview';
+import { computed, toRefs } from 'actview';
+import type { Ref } from 'actview';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { useMeterRootContext } from '../root/MeterRootContext';
-import type { MeterRootState } from '../root/MeterRoot';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
-import { useRootElementFragment } from '@/internals/useRootElementFragment';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * Contains the meter indicator.
@@ -13,30 +12,41 @@ import { useRootElementFragment } from '@/internals/useRootElementFragment';
  */
 export function MeterTrack(componentProps: MeterTrack.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  // Fragment 根（`<>{element()}</>`）下 actview 内置 useRootElement 的
-  // subTree.el 恒 null——用 Fragment 兼容版本。
-  const rootRef = useRootElementFragment();
+  // 消费 context 以保持存在性检查（React 版 useRenderElement 无 state）。
+  const rootContext = useMeterRootContext();
+  void rootContext;
 
-  // 消费 context 以保持存在性检查（React 版 useRenderElement 无 state）
-  const rootContextRef = useMeterRootContext();
-  void rootContextRef;
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { render, className, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
 
-  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  const {render, className, style, children, ...elementProps} = toRefs(componentProps);
-
-  const {element} = useRenderElement({
-    props: () => [{...unrefs(elementProps)}],
-    state: () => ({}),
-    className,
-    style,
-    render,
-    refs: () => [rootRef as any],
-    children,
-    defaultTag: 'div',
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
   });
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  return <>{element()}</>;
+  return (
+    <>
+      {useRenderElement(
+        'div',
+        {
+          className: className?.value,
+          render: render?.value,
+          style: style?.value,
+        },
+        {
+          state: {},
+          ref: componentProps.ref,
+          props: elementProps.value,
+        },
+      )}
+    </>
+  );
 }
 
 export interface MeterTrackState extends MeterRootState {}
