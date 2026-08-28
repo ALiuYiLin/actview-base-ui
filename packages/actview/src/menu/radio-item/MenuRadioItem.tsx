@@ -54,7 +54,7 @@ export function MenuRadioItem(componentProps: MenuRadioItem.Props) {
 
   const {getItemProps, itemRef} = useMenuItem({
     closeOnClick: componentProps.closeOnClick ?? false,
-    disabled,
+    disabled: disabled.value,
     highlighted: false, // data-highlighted 由 rootProps computed 计算
     id,
     store,
@@ -169,4 +169,36 @@ export interface MenuRadioItemState {
    * Whether the item is selected.
    */
   checked: boolean;
+}
+
+export interface MenuRadioItemProps {
+  children?: any;
+  /**
+   * Overrides the text label to use when the item is matched during keyboard text navigation.
+   */
+  label?: string | undefined;
+  /**
+   * @ignore
+   */
+  id?: string | undefined;
+  /**
+   * Whether the component should ignore user interaction.
+   * @default false
+   */
+  disabled?: boolean | undefined;
+  /**
+   * Whether to close the menu when the item is clicked.
+   * @default false
+   */
+  closeOnClick?: boolean | undefined;
+  /**
+   * The value of the radio item that is used to identify it within its group.
+   */
+  value?: any;
+  [key: string]: any;
+}
+
+export namespace MenuRadioItem {
+  export type Props = MenuRadioItemProps;
+  export type State = MenuRadioItemState;
 }

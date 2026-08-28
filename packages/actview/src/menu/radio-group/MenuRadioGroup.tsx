@@ -130,3 +130,8 @@ export interface MenuRadioGroupState {
    */
   disabled: boolean;
 }
+
+export namespace MenuRadioGroup {
+  export type Props = MenuRadioGroupProps;
+  export type State = MenuRadioGroupState;
+}

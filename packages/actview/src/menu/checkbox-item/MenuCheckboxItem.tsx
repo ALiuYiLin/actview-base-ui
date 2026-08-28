@@ -52,7 +52,7 @@ export function MenuCheckboxItem(componentProps: MenuCheckboxItem.Props) {
 
   const {getItemProps, itemRef} = useMenuItem({
     closeOnClick: componentProps.closeOnClick ?? false,
-    disabled,
+    disabled: disabled.value,
     highlighted: false, // data-highlighted 由 rootProps computed 计算
     id,
     store,
@@ -167,4 +167,47 @@ export interface MenuCheckboxItemState {
    * Whether the item is checked.
    */
   checked: boolean;
+}
+
+export interface MenuCheckboxItemProps {
+  children?: any;
+  /**
+   * Whether the component should ignore user interaction.
+   * @default false
+   */
+  disabled?: boolean | undefined;
+  /**
+   * Overrides the text label to use when the item is matched during keyboard text navigation.
+   */
+  label?: string | undefined;
+  /**
+   * @ignore
+   */
+  id?: string | undefined;
+  /**
+   * Whether to close the menu when the item is clicked.
+   * @default false
+   */
+  closeOnClick?: boolean | undefined;
+  /**
+   * Whether the checkbox item is currently checked.
+   * To render an uncontrolled checkbox item, use the `defaultChecked` prop instead.
+   */
+  checked?: boolean | undefined;
+  /**
+   * Whether the checkbox item is initially checked.
+   * To render a controlled checkbox item, use the `checked` prop instead.
+   * @default false
+   */
+  defaultChecked?: boolean | undefined;
+  /**
+   * Event handler called when the item is checked or unchecked.
+   */
+  onCheckedChange?: ((checked: boolean, eventDetails: any) => void) | undefined;
+  [key: string]: any;
+}
+
+export namespace MenuCheckboxItem {
+  export type Props = MenuCheckboxItemProps;
+  export type State = MenuCheckboxItemState;
 }

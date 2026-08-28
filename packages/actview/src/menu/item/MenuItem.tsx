@@ -42,7 +42,7 @@ export function MenuItem(componentProps: MenuItem.Props) {
 
   const {getItemProps, itemRef} = useMenuItem({
     closeOnClick: closeOnClick.value,
-    disabled,
+    disabled: disabled.value,
     highlighted: false, // data-highlighted 由 rootProps computed 按 activeIndex 计算
     id,
     store,
