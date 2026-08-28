@@ -8,5 +8,5 @@ export function useSelectRootContext(optional = true): any {
   if (context.value === undefined && !optional) {
     throw new Error('Base UI: <Select.Root> is missing.');
   }
-  return context.value;
+  return context;
 }

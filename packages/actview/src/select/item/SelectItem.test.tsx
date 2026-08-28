@@ -8,7 +8,7 @@ async function settle() {
 
 function BasicSelect(props: any = {}) {
   const {rootProps = {}} = props;
-  return () => (
+  return (
     <Select.Root {...rootProps}>
       <Select.Trigger>
         <Select.Value placeholder="Choose..." />
