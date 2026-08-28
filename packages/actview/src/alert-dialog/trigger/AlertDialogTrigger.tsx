@@ -1,4 +1,5 @@
-import { ref, toValue } from 'actview';
+import { computed, ref, toRefs } from 'actview';
+import type { Ref } from 'actview';
 import { useDialogRootContext } from '@/dialog/root/DialogRootContext';
 import type { BaseUIComponentProps, NativeButtonProps } from '@/internals/types';
 import { triggerOpenStateMapping } from '@/utils/popupStateMapping';
@@ -9,6 +10,9 @@ import { DialogHandle } from '@/dialog/store/DialogHandle';
 import { useClick } from '@/floating-ui-react';
 import { useButton } from '@/internals/use-button/useButton';
 import { useTriggerFocusGuards } from '@/utils/popups/useTriggerFocusGuards';
+import { FocusGuard } from '@/utils/FocusGuard';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useMergedRefs } from '@/internals/useMergedRefs';
 
 /**
  * A button that opens the AlertDialog.
@@ -17,10 +21,19 @@ import { useTriggerFocusGuards } from '@/utils/popups/useTriggerFocusGuards';
  * Documentation: [Base UI AlertDialog](https://base-ui.com/react/components/AlertDialog)
  */
 export function AlertDialogTrigger(componentProps: AlertDialogTrigger.Props) {
-  const {disabled = false, nativeButton = true, handle} = componentProps as any;
+  // ============ setup（只执行一次）：一次性初始化 ============
+  // 渲染期/事件期消费的 props：computed 直读（setup 快照会停留在首渲染）。
+  const disabled = computed(() => componentProps.disabled ?? false);
+  const nativeButton = computed(() => componentProps.nativeButton ?? true);
 
-  const DialogHandleStore = usePopupHandleStore(handle as any);
-  const handleStore = DialogHandleStore.value;
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
+
+  const alertDialogHandleStore = usePopupHandleStore(componentProps.handle as any);
+  const handleStore = alertDialogHandleStore.value;
   const rootStore = useDialogRootContext(true);
 
   const store: any = handleStore ?? rootStore;
@@ -31,7 +44,7 @@ export function AlertDialogTrigger(componentProps: AlertDialogTrigger.Props) {
     );
   }
 
-  const thisTriggerId = useBaseUiId((componentProps as any).id);
+  const thisTriggerId = useBaseUiId(componentProps.id);
   const triggerElementRef = ref<HTMLElement | null>(null);
 
   const {registerTrigger, isMountedByThisTrigger} = useTriggerDataForwarding(
@@ -44,101 +57,87 @@ export function AlertDialogTrigger(componentProps: AlertDialogTrigger.Props) {
   const floatingContext = store.useState('floatingRootContext');
   const isOpenedByThisTrigger = store.useState('isOpenedByTrigger', thisTriggerId as any);
 
-  const click = useClick(floatingContext.value, {enabled: !disabled, event: 'mousedown'});
+  const click = useClick(floatingContext.value, {enabled: !disabled.value, event: 'mousedown'});
 
   const {getButtonProps, buttonRef} = useButton({
     disabled,
-    native: nativeButton,
+    native: nativeButton.value,
   });
 
-  const state: AlertDialogTriggerState = {
-    disabled,
+  const {preFocusGuardRef, handlePreFocusGuardFocus, handleFocusTargetFocus} =
+    useTriggerFocusGuards(store, triggerElementRef);
+
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
+  });
+
+  // 根元素 props：click 处理器 → id/aria → 透传 → getButtonProps → open/
+  // disabled state data-*。
+  const rootProps = computed<Record<string, any>>(() => {
+    const merged: any = mergePropsN<any>([
+      click.reference ?? {},
+      {
+        id: thisTriggerId,
+        'aria-haspopup': 'dialog' as const,
+      },
+      elementProps.value,
+      getButtonProps,
+    ]);
+    const openAttr = triggerOpenStateMapping.open(isOpenedByThisTrigger.value);
+    if (openAttr) {
+      Object.assign(merged, openAttr);
+    }
+    if (disabled.value) {
+      merged['data-disabled'] = '';
+    } else {
+      delete merged['data-disabled'];
+    }
+    return merged;
+  });
+
+  const state = computed(() => ({
+    disabled: disabled.value,
     open: isOpenedByThisTrigger.value,
-  };
-
-  const {preFocusGuardRef, handlePreFocusGuardFocus, handleFocusTargetFocus} = useTriggerFocusGuards(
-    store,
-    triggerElementRef,
-  );
-
-  const propsList = [
-    click.reference ?? {},
-    {
-      id: thisTriggerId,
-      'aria-haspopup': 'AlertDialog' as const,
-    },
-    componentProps,
-    getButtonProps,
-  ];
-
-  const refs = [
-    (el: HTMLElement | null) => {
-      triggerElementRef.value = el;
-    },
-    buttonRef,
-    registerTrigger,
-  ] as any[];
+  }));
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  // 渲染期逻辑（merged/openAttr）在 IIFE 中执行（PD-15）
+  // actview 渲染无法原地 patch 结构切换，始终使用稳定的 div 包裹结构。
   return (
-    <>
-      {(() => {
-        const {render, className, style, ...elementProps} = componentProps as any;
-        const children = componentProps.children;
-
-        const merged: any = mergePropsN<any>([...propsList]);
-        const openAttr = triggerOpenStateMapping.open(isOpenedByThisTrigger.value);
-        if (openAttr) {
-          Object.assign(merged, openAttr);
-        }
-        if (disabled) {
-          merged['data-disabled'] = '';
-        } else {
-          delete merged['data-disabled'];
-        }
-
-        const element = (
-          <button {...merged} ref={mergeRefs(refs)}>
-            {children}
-          </button>
-        );
-
-        // actview 渲染无法原地 patch 结构切换，始终使用稳定的 div 包裹结构。
-        return (
-          <div key={`${thisTriggerId}-guards`}>
-            <FocusGuard
-              ref={(el: any) => (preFocusGuardRef.value = el)}
-              onFocus={handlePreFocusGuardFocus}
-            />
-            {element}
-            <FocusGuard
-              ref={(el: any) => (store.context.triggerFocusTargetRef.value = el)}
-              onFocus={handleFocusTargetFocus}
-            />
-          </div>
-        );
-      })()}
-    </>
+    <div key={`${thisTriggerId}-guards`}>
+      <FocusGuard
+        ref={(el: any) => (preFocusGuardRef.value = el)}
+        onFocus={handlePreFocusGuardFocus}
+      />
+      {useRenderElement(
+        'button',
+        {
+          className: className?.value,
+          render: render?.value,
+          style: style?.value,
+        },
+        {
+          state: state.value,
+          ref: useMergedRefs(
+            (el: HTMLElement | null) => {
+              triggerElementRef.value = el;
+            },
+            buttonRef as any,
+            registerTrigger as any,
+            componentProps.ref as any,
+          ),
+          props: rootProps.value,
+        },
+      )}
+      <FocusGuard
+        ref={(el: any) => (store.context.triggerFocusTargetRef.value = el)}
+        onFocus={handleFocusTargetFocus}
+      />
+    </div>
   );
 }
-
-function mergeRefs(refs: any[]) {
-  return (el: HTMLElement | null) => {
-    for (const r of refs) {
-      if (!r) continue;
-      if (typeof r === 'function') {
-        r(el);
-      } else if (r.value !== undefined) {
-        r.value = el;
-      } else {
-        r.value = el;
-      }
-    }
-  };
-}
-
-import { FocusGuard } from '@/utils/FocusGuard';
 
 export interface AlertDialogTriggerState {
   /**
