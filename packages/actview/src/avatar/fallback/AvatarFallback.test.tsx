@@ -1,27 +1,26 @@
 import { expect, vi } from 'vitest';
-import { defineComponent, nextTick, ref } from '@actview/core';
+import { nextTick, reactive, ref } from '@actview/core';
 import { Avatar } from '@/avatar';
 import { AvatarRootContext } from '@/avatar/root/AvatarRootContext';
+import type { AvatarRootContext as AvatarRootContextValue, ImageLoadingStatus } from '@/avatar/root/AvatarRoot';
 import { waitFor, screen } from '#test-utils/rtl';
 import { describeConformance, createRenderer } from '#test-utils';
 import { isJSDOM } from '@actview/floating-ui/utils';
 
 // React 版用 vi.mock(useImageLoadingStatus) + <Avatar.Image /> 驱动状态；
-// actview 版直接注入 AvatarRootContext（AccordionHeader 测试范式），不依赖
-// 尚未迁移的 Avatar.Image——status 可独立驱动 Fallback 的全部逻辑。
+// actview 版直接注入 AvatarRootContext（reactive 载体，store-as-is 契约），
+// 不依赖尚未迁移的 Avatar.Image——status 可独立驱动 Fallback 的全部逻辑。
 function renderFallbackWithStatus(
-  status: 'idle' | 'loading' | 'loaded' | 'error',
+  status: ImageLoadingStatus,
   fallback: any = <Avatar.Fallback data-testid="fallback">AC</Avatar.Fallback>,
 ) {
-  const Wrapper = defineComponent(function () {
-    const ctx = {
-      imageLoadingStatus: ref(status),
-      setImageLoadingStatus: () => {},
-    };
-    return () => (
-      <AvatarRootContext.Provider value={ctx}>{fallback}</AvatarRootContext.Provider>
-    );
+  const ctx = reactive<AvatarRootContextValue>({
+    imageLoadingStatus: status,
+    setImageLoadingStatus() {},
   });
+  function Wrapper() {
+    return <AvatarRootContext.Provider value={ctx}>{fallback}</AvatarRootContext.Provider>;
+  }
   return Wrapper;
 }
 
@@ -58,29 +57,26 @@ describe('<Avatar.Fallback />', () => {
 
   it.skipIf(!isJSDOM())('shows the fallback when a loaded image is unmounted', async () => {
     // React 版语义：Avatar.Image 卸载时 setImageLoadingStatus('idle')（useIsoLayoutEffect
-    // cleanup）→ Root 状态变化 → Fallback 显示。actview 版用 status ref 模拟同一行为。
+    // cleanup）→ Root 状态变化 → Fallback 显示。reactive 载体 + 统一写入口模拟同一行为。
     function Test() {
       const showImage = ref(true);
-      const status = ref<'idle' | 'loaded'>('loaded');
-      const setImageLoadingStatus = (s: 'idle' | 'loaded') => {
-        status.value = s;
-      };
-      return () => (
+      const ctx = reactive<AvatarRootContextValue>({
+        imageLoadingStatus: 'loaded',
+        setImageLoadingStatus(s: ImageLoadingStatus) {
+          ctx.imageLoadingStatus = s;
+        },
+      });
+      return (
         <div>
           <button
             onClick={() => {
               showImage.value = false;
-              setImageLoadingStatus('idle');
+              ctx.setImageLoadingStatus('idle');
             }}
           >
             Hide image
           </button>
-          <AvatarRootContext.Provider
-            value={{
-              imageLoadingStatus: status as any,
-              setImageLoadingStatus: setImageLoadingStatus as any,
-            }}
-          >
+          <AvatarRootContext.Provider value={ctx}>
             {showImage.value && <span data-testid="image">img</span>}
             <Avatar.Fallback data-testid="fallback">AC</Avatar.Fallback>
           </AvatarRootContext.Provider>
@@ -125,22 +121,21 @@ describe('<Avatar.Fallback />', () => {
       expect(screen.queryByText('AC')).not.toBe(null);
     });
 
+    function DelayTest(props: { delay?: number }) {
+      const ctx = reactive<AvatarRootContextValue>({
+        imageLoadingStatus: 'error',
+        setImageLoadingStatus() {},
+      });
+      return (
+        <AvatarRootContext.Provider value={ctx}>
+          <Avatar.Fallback delay={props.delay}>AC</Avatar.Fallback>
+        </AvatarRootContext.Provider>
+      );
+    }
+
     it('shows the fallback when delay changes to 0', async () => {
       vi.useFakeTimers();
-      const Test = defineComponent(function (props: { delay?: number }) {
-        return () => (
-          <AvatarRootContext.Provider
-            value={{
-              imageLoadingStatus: ref('error'),
-              setImageLoadingStatus: () => {},
-            }}
-          >
-            <Avatar.Fallback delay={props.delay}>AC</Avatar.Fallback>
-          </AvatarRootContext.Provider>
-        );
-      });
-
-      const { setProps } = await render(Test, { delay: 100 });
+      const { setProps } = await render(DelayTest, { delay: 100 });
 
       expect(screen.queryByText('AC')).toBe(null);
 
@@ -151,20 +146,7 @@ describe('<Avatar.Fallback />', () => {
 
     it('keeps the fallback visible when delay changes from undefined to a number', async () => {
       vi.useFakeTimers();
-      const Test = defineComponent(function (props: { delay?: number }) {
-        return () => (
-          <AvatarRootContext.Provider
-            value={{
-              imageLoadingStatus: ref('error'),
-              setImageLoadingStatus: () => {},
-            }}
-          >
-            <Avatar.Fallback delay={props.delay}>AC</Avatar.Fallback>
-          </AvatarRootContext.Provider>
-        );
-      });
-
-      const { setProps } = await render(Test, { delay: undefined });
+      const { setProps } = await render(DelayTest, { delay: undefined });
 
       expect(screen.queryByText('AC')).not.toBe(null);
 
@@ -175,20 +157,7 @@ describe('<Avatar.Fallback />', () => {
 
     it('keeps the fallback visible across a number -> undefined -> number delay change', async () => {
       vi.useFakeTimers();
-      const Test = defineComponent(function (props: { delay?: number }) {
-        return () => (
-          <AvatarRootContext.Provider
-            value={{
-              imageLoadingStatus: ref('error'),
-              setImageLoadingStatus: () => {},
-            }}
-          >
-            <Avatar.Fallback delay={props.delay}>AC</Avatar.Fallback>
-          </AvatarRootContext.Provider>
-        );
-      });
-
-      const { setProps } = await render(Test, { delay: 100 });
+      const { setProps } = await render(DelayTest, { delay: 100 });
 
       // Fallback is hidden until the delay elapses.
       expect(screen.queryByText('AC')).toBe(null);
@@ -208,15 +177,14 @@ describe('<Avatar.Fallback />', () => {
     async () => {
       function Test() {
         const showImage = ref(false);
-        return () => (
+        const ctx = reactive<AvatarRootContextValue>({
+          imageLoadingStatus: 'loading',
+          setImageLoadingStatus() {},
+        });
+        return (
           <div>
             <button onClick={() => (showImage.value = true)}>Show image</button>
-            <AvatarRootContext.Provider
-              value={{
-                imageLoadingStatus: ref('loading'),
-                setImageLoadingStatus: () => {},
-              }}
-            >
+            <AvatarRootContext.Provider value={ctx}>
               {showImage.value && <span data-testid="image">img</span>}
               <Avatar.Fallback data-testid="fallback">AC</Avatar.Fallback>
             </AvatarRootContext.Provider>

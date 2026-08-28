@@ -1,8 +1,8 @@
-import { ref, toRefs, unrefs, useRootElement } from 'actview';
+import { reactive, toRefs, unrefs } from 'actview';
 import type { BaseUIComponentProps } from '@/internals/types';
 import { AvatarRootContext } from './AvatarRootContext';
 import { avatarStateAttributesMapping } from './stateAttributesMapping';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * Displays a user's profile picture, initials, or fallback icon.
@@ -12,41 +12,39 @@ import { useRenderElement } from '@/internals/useRenderElementLegacy';
  */
 export function AvatarRoot(componentProps: AvatarRoot.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  // Provider 根（`<AvatarRootContext.Provider>`），无 Fragment 根问题。
-  const rootRef = useRootElement();
-  const imageLoadingStatus = ref<ImageLoadingStatus>('idle');
-
-  const setImageLoadingStatus = (status: ImageLoadingStatus) => {
-    imageLoadingStatus.value = status;
-  };
-
-  // 稳定引用（Provider watch value prop——对象本身不变，内部 Ref 响应式）
-  const contextValue: AvatarRootContext = {
-    imageLoadingStatus,
-    setImageLoadingStatus,
-  };
-
-  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
-
-  const stateFn = (): AvatarRootState => ({
-    imageLoadingStatus: imageLoadingStatus.value,
+  // context 载体：reactive 对象 + 统一写入口（方法内自引用载体自身，
+  // 读走 get 陷阱 track、写走 set 陷阱 trigger——Ref 本体不入载体）。
+  const contextValue = reactive<AvatarRootContext>({
+    imageLoadingStatus: 'idle' as ImageLoadingStatus,
+    setImageLoadingStatus(status: ImageLoadingStatus) {
+      contextValue.imageLoadingStatus = status;
+    },
   });
 
-  const {element} = useRenderElement({
-    props: () => [{...unrefs(elementProps)}],
-    state: stateFn,
-    stateAttributesMapping: avatarStateAttributesMapping as any,
-    className,
-    style,
-    render,
-    refs: () => [rootRef as any],
-    children,
-    defaultTag: 'span',
-  });
+  // ============ setup：值形 props toRefs 活引用；ref 形 props 直读本體 ============
+  const { className, render, style, ...elementProps } = toRefs(componentProps);
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  return <AvatarRootContext.Provider value={contextValue}>{element()}</AvatarRootContext.Provider>;
+  // 字面 JSX 是插件判定的锚；useRenderElement 调用在 JSX 内逐渲染求值。
+  // state 字面量逐渲染重建（读 reactive 字段即追踪）；children 留在
+  // elementProps 里随 props 流入渲染元素。
+  return (
+    <AvatarRootContext.Provider value={contextValue}>
+      {useRenderElement(
+        'span',
+        {
+          className: className?.value,
+          render: render?.value,
+          style: style?.value,
+        },
+        {
+          state: { imageLoadingStatus: contextValue.imageLoadingStatus },
+          ref: componentProps.ref,
+          props: [unrefs(elementProps)],
+        },
+      )}
+    </AvatarRootContext.Provider>
+  );
 }
 
 export type ImageLoadingStatus = 'idle' | 'loading' | 'loaded' | 'error';

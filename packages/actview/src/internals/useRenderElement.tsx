@@ -59,6 +59,7 @@ export interface UseRenderElementComponentProps<State> {
   className?: string | ((state: State) => string | undefined) | undefined
   render?: JSX.Element | ComponentRenderFn<HTMLProps, State> | undefined
   style?:
+    | string
     | Record<string, any>
     | ((state: State) => Record<string, any> | undefined)
     | undefined

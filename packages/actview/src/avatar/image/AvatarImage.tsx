@@ -8,8 +8,7 @@ import { useOpenChangeComplete } from '@/internals/useOpenChangeComplete';
 import { transitionStatusMapping } from '@/internals/stateAttributesMapping';
 import { type TransitionStatus, useTransitionStatus } from '@/internals/useTransitionStatus';
 import { useImageLoadingStatus } from './useImageLoadingStatus';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
-import { useRootElementFragment } from '@/internals/useRootElementFragment';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 const stateAttributesMapping: StateAttributesMapping<AvatarImageState> = {
   ...avatarStateAttributesMapping,
@@ -24,10 +23,8 @@ const stateAttributesMapping: StateAttributesMapping<AvatarImageState> = {
  */
 export function AvatarImage(componentProps: AvatarImage.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  // Fragment 根（`<>{element()}</>` + 条件）下 actview 内置 useRootElement 的
-  // subTree.el 恒 null——用 Fragment 兼容版本。
-  const rootRef = useRootElementFragment();
-  const {setImageLoadingStatus} = toValue(useAvatarRootContext());
+  // context 载体直取（store-as-is）：读字段即追踪，无 .value 链。
+  const { setImageLoadingStatus } = useAvatarRootContext();
   const imageLoadingStatus = useImageLoadingStatus(() => toValue(componentProps.src), {
     referrerPolicy: () => toValue(componentProps.referrerPolicy),
     crossOrigin: () => toValue(componentProps.crossOrigin),
@@ -38,17 +35,10 @@ export function AvatarImage(componentProps: AvatarImage.Props) {
   const isVisible = computed(() => imageLoadingStatus.value === 'loaded');
   const {mounted, transitionStatus, setMounted} = useTransitionStatus(isVisible);
 
+  // 组件内部自持 ref：useOpenChangeComplete 需要元素 ref。
+  // 与转发 props.ref 一起经 useRenderElement 的 ref 合并链（useMergedRefs）
+  // 广播写入——替代旧的 rootRef→imageRef watch 桥接。
   const imageRef = ref<HTMLImageElement | null>(null);
-
-  // rootRef 转发到 imageRef（useOpenChangeComplete 需要元素 ref；actview JSX
-  // ref 只能绑定一个——watch rootRef 同步，同 Button 的 buttonRef 模式）
-  watch(
-    rootRef,
-    (el) => {
-      imageRef.value = el as HTMLImageElement | null;
-    },
-    {flush: 'post', immediate: true},
-  );
 
   // imageLoadingStatus 变化 → onLoadingStatusChange + 同步 Root 状态
   watch(
@@ -77,31 +67,38 @@ export function AvatarImage(componentProps: AvatarImage.Props) {
     },
   });
 
-  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
-
-  const stateFn = (): AvatarImageState => ({
-    imageLoadingStatus: imageLoadingStatus.value,
-    transitionStatus: transitionStatus.value,
-  });
-
-  const {element} = useRenderElement({
-    props: () => {
-      const {onLoadingStatusChange: _onLoadingStatusChange, ...rest} = unrefs(elementProps);
-      return [{...rest}];
-    },
-    state: stateFn,
-    stateAttributesMapping: stateAttributesMapping as any,
-    className,
-    style,
-    render,
-    refs: () => [rootRef as any],
-    children,
-    defaultTag: 'img',
-  });
+  // ============ setup：值形 props toRefs 活引用；ref 形 props 直读本體 ============
+  const { className, render, style, ...elementProps } = toRefs(componentProps);
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  return <>{mounted.value ? element() : null}</>;
+  // 条件（mounted）在渲染期求值；getter 在 props 数组里逐渲染求值并消费 prev。
+  return (
+    <>
+      {mounted.value
+        ? useRenderElement(
+            'img',
+            {
+              className: className?.value,
+              render: render?.value,
+              style: style?.value,
+            },
+            {
+              state: {
+                imageLoadingStatus: imageLoadingStatus.value,
+                transitionStatus: transitionStatus.value,
+              },
+              ref: [componentProps.ref, imageRef],
+              props: [
+                (prev: any) => {
+                  const {onLoadingStatusChange: _onLoadingStatusChange, ...rest} = unrefs(elementProps);
+                  return {...prev, ...rest};
+                },
+              ],
+            },
+          )
+        : null}
+    </>
+  );
 }
 
 export interface AvatarImageState extends AvatarRootState {

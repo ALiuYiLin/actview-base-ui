@@ -3,8 +3,7 @@ import type { BaseUIComponentProps } from '@/internals/types';
 import { useAvatarRootContext } from '../root/AvatarRootContext';
 import type { AvatarRootState } from '../root/AvatarRoot';
 import { avatarStateAttributesMapping } from '../root/stateAttributesMapping';
-import { useRenderElement } from '@/internals/useRenderElementLegacy';
-import { useRootElementFragment } from '@/internals/useRootElementFragment';
+import { useRenderElement } from '@/internals/useRenderElement';
 
 /**
  * Rendered when the image fails to load or when no image is provided.
@@ -14,10 +13,7 @@ import { useRootElementFragment } from '@/internals/useRootElementFragment';
  */
 export function AvatarFallback(componentProps: AvatarFallback.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
-  // Fragment 根（`<>{element()}</>` + 条件）下 actview 内置 useRootElement 的
-  // subTree.el 恒 null——用 Fragment 兼容版本。
-  const rootRef = useRootElementFragment();
-  // setup 期读 context（AD-42）——返回 Ref，render 里 .value 取最新
+  // context 载体直取（store-as-is）：读 imageLoadingStatus 字段即追踪。
   const context = useAvatarRootContext();
 
   const delayPassed = ref(toValue(componentProps.delay) === 0);
@@ -60,35 +56,31 @@ export function AvatarFallback(componentProps: AvatarFallback.Props) {
   );
   onUnmounted(clearDelayTimeout);
 
-  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  const {className, render, style, children, ...elementProps} = toRefs(componentProps);
-
-  const stateFn = (): AvatarFallbackState => ({
-    imageLoadingStatus: context.value.imageLoadingStatus.value,
-  });
-
-  const {element} = useRenderElement({
-    props: () => [{...unrefs(elementProps)}],
-    state: stateFn,
-    stateAttributesMapping: avatarStateAttributesMapping as any,
-    className,
-    style,
-    render,
-    refs: () => [rootRef as any],
-    children,
-    defaultTag: 'span',
-  });
+  // ============ setup：值形 props toRefs 活引用；ref 形 props 直读本體 ============
+  const { className, render, style, ...elementProps } = toRefs(componentProps);
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  // 条件（delay/imageLoadingStatus）必须在渲染期求值（PD-15）——IIFE 内读取。
+  // 条件（delay/imageLoadingStatus）在渲染期求值——读 reactive 字段即追踪。
   return (
     <>
       {(() => {
         const delay = toValue(componentProps.delay) ?? 0;
-        const imageLoadingStatus = context.value.imageLoadingStatus.value;
+        const imageLoadingStatus = context.imageLoadingStatus;
         return imageLoadingStatus === 'loaded' || !(delay === 0 || delayPassed.value)
           ? null
-          : element();
+          : useRenderElement(
+              'span',
+              {
+                className: className?.value,
+                render: render?.value,
+                style: style?.value,
+              },
+              {
+                state: { imageLoadingStatus },
+                ref: componentProps.ref,
+                props: [unrefs(elementProps)],
+              },
+            );
       })()}
     </>
   );

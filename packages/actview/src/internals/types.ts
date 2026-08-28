@@ -4,6 +4,16 @@ import type { BaseUIEvent, ComponentRenderFn, HTMLProps, MaybeRefOrGetter } from
 
 export type { HTMLProps, ComponentRenderFn, BaseUIEvent, MaybeRefOrGetter };
 
+/**
+ * reactive() 的返回类型（正向品牌，对齐目标语义）：
+ * `T & { readonly '__v_isReactive'?: true }`——可选标记不破坏 assignability，
+ * 表达「工厂产出了什么」而非严格闸门。actview 1.3 聚合包未导出该类型，
+ * 本地自持（Context payload 标注用：声明「此载体是 reactive 代理」）。
+ */
+export type Reactive<T extends object> = T & {
+  readonly '__v_isReactive'?: true;
+};
+
 export interface FloatingUIOpenChangeDetails {
   open: boolean;
   reason: string;
