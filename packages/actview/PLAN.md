@@ -40,7 +40,7 @@
 - [ ] `src/merge-props/`（35 个引用方）与新 `internals/mergeProps.ts` 收敛为一份 → 移入 P2
 - [x] `useRootElementFragment` 评估：AvatarImage 已用 ref 合并链取代 rootRef 桥接、不再依赖；其余 Fragment 根家族迁移时逐个消除，最终删除
 - [x] 基准家族 avatar：store-as-is context（reactive 载体 + 统一写入口）+ 新 hook + ref 合并链——**61 通过 / 0 失败 / 3 跳过**（全绿；HEAD 同期 77 失败）
-- [ ] 基准家族 checkbox + checkbox-group（依赖 internals/field-root-context 等共享 internals 的 store-as-is 适配）
+- [x] 基准家族 checkbox + checkbox-group：**53 通过 / 0 失败**（HEAD 同期 53 全挂）——随迁移完成 `internals/field-root-context`、`labelable-provider`、`field-register-control`、`composite/root`、`fieldset/root` 等**共享 internals 的 store-as-is 适配**（`context.value` 链 → 直取载体，Provider payload 改身份稳定 getter 载体）；类型错误 217 → **196**（context 契约修复消化 21 个存量错误）
 - 验收：类型错误数 = 基线 217（core 1.3 store-as-is 存量债，家族迁移逐个消化）；avatar 测试无回归且大幅收敛 ✅
 
 ---
@@ -152,6 +152,6 @@
 4. **render 函数契约分歧**：目标 `(props, state)` 双参 vs 本地 `'../types'.ComponentRenderFn` 单参（state 并入 props）。hook 内 `as any` 调用运行时兼容；类型层对齐排 P2。
 5. **conformance ref-merge 用例已按裁决改造（组件函数形式），useRootElement 已实测摘除**：`render={<CustomRender ref={customRef} />}`——VNode 自带 ref 经 `getReactElementRef` 并入合并链；组件函数透传 `{...props}`（含合并链 ref）到根元素 → applyRef 广播写入。**AvatarRoot 已不依赖 useRootElement（实测 61/0/3 全绿）**。P1 迁移规则：① 库内部需要 DOM 时**自持 `ref()` 并入 params.ref 合并链**（随透传到达最终渲染元素，如 AvatarImage 的 imageRef），不用 useRootElement/useRootElementFragment；② 约定 render 覆盖必须透传 `{...props}`（含 ref），覆盖 ref 即放弃库内部 DOM 访问（conformance 用例注释已固化该契约）；③ 存量 ~90 处 useRootElement/useRootElementFragment 随各家族迁移自然消除（含 Fragment 根场景——自持 ref 挂合并链同样成立）。旧的「render 函数替换 props.ref」用例写法废弃。
 6. **plugin-babel 2.0.0 硬拒绝测试组件 setup 风格**（`return () => JSX` 编译期报错）→ 全库 **56 个测试文件**需改写（P3.3 前置）；AvatarFallback.test.tsx 已改（defineComponent 包装→裸函数、ref 容器→reactive 载体、内联组件提升到 describe 层）。
-7. **core 1.3 store-as-is 运行时债**：旧 context 消费（`.value` 链）在 1.3 下恒 undefined → `FieldRootContext/AvatarRootContext is missing` 类失败。家族迁移时逐个消除（avatar 已消化；checkbox 依赖的 internals/field-root-context 等共享 internals 在 checkbox 基准迁移时处理）。
+7. **core 1.3 store-as-is 运行时债（进行中）**：框架 `createContext.use()` 直返注入载体（不再包 ref）——全库 ~150 处 `context.value` 链读取失效。**checkbox 依赖链已全部适配**（field-root-context / form-context / labelable-provider / field-item / field-register-control / composite-root / fieldset-root 的 use hook 直返载体；Provider payload 改**身份稳定 getter 载体**——provide 只在 Provider setup 执行一次，每次渲染新对象会冻结快照，这是 store-as-is 下 Provider 的标准写法）。其余家族随迁移逐个适配；`toValue` 与 `useRootElement`/`useRootElementFragment` 一并淘汰（props 直读、自持 ref 挂 params.ref 合并链）。
 8. **pnpm 11.17.0 自管切换在本环境损坏**（store 链接缺失）→ 用 `node_modules/.bin` 直呼二进制：tsgo 用根 `node_modules/.bin/tsgo.CMD -b packages/actview/tsconfig.json`，测试用 `packages/actview` 下 `vitest.cmd run`（需 `VITEST_ENV=jsdom`）。
 9. **conformance/测试基建已组件函数化（禁用 createElement/cloneVNode）**：`createElement`/`cloneVNode` 是 core 内部设计的方法，测试一律用组件函数表达——① 动态原生标签用内置 `<component is={Tag}>`（变量字符串实测可用，属性/ref 全透传）；② 「改写目标组件 props」用 Host 组件函数 `function Host() { return <Target {...element.props} {...extra} />; }` 并**返回真 vnode `<Host />`**（family render 包装器契约是 `render(node.type, {...node.props})` 或注入 children，传裸函数会拿到 undefined.type）；③ `createElement(...)` 返回值不是字面 JSX，Babel 不包装 → 必须套字面 Fragment 锚。floating-ui 测试批次（FloatingFocusManager.test 等 5 处）随批次 3 前的适配一并转换。
