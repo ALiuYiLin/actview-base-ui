@@ -1,4 +1,4 @@
-import { toRefs, unrefs, toValue } from 'actview';
+import { toRefs, unrefs } from 'actview';
 import { mergePropsN } from '@/merge-props';
 import type { InteractionType } from '@/utils/useEnhancedClickHandler';
 import { FloatingFocusManager, useHoverFloatingInteraction } from '@/floating-ui-react';
@@ -28,8 +28,8 @@ export function MenuPopup(componentProps: MenuPopup.Props) {
 
   const {store} = useMenuRootContext();
   const positionerContext = useMenuPositionerContext();
-  const toolbarContextRef = useToolbarRootContext(true);
-  const {side, align} = positionerContext.value ?? {
+  const toolbarContext = useToolbarRootContext(true);
+  const {side, align} = positionerContext ?? {
     side: 'bottom' as const,
     align: 'start' as const,
   };
@@ -105,7 +105,7 @@ export function MenuPopup(componentProps: MenuPopup.Props) {
         popupProps.value,
         {
           onKeyDown(event: any) {
-            if (toolbarContextRef.value && COMPOSITE_KEYS.has(event.key)) {
+            if (toolbarContext && COMPOSITE_KEYS.has(event.key)) {
               event.stopPropagation();
             }
           },

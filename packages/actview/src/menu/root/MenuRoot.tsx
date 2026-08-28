@@ -1,4 +1,4 @@
-import { onUnmounted, ref, toValue, watch } from 'actview';
+import { computed, onUnmounted, ref, watch } from 'actview';
 import type { Ref } from 'actview';
 import { useTimeout } from '@/utils/useTimeout';
 import { useStableCallback } from '@/utils/useStableCallback';
@@ -51,22 +51,17 @@ import { useMenuSubmenuRootContext } from '../submenu-root/MenuSubmenuRootContex
  */
 export function MenuRoot<Payload>(props: MenuRoot.Props<Payload>) {
   // ============ setup（只执行一次） ============
-  const {
-    open: openProp,
-    onOpenChange,
-    onOpenChangeComplete,
-    defaultOpen = false,
-    disabled: disabledProp = false,
-    modal: modalProp,
-    loopFocus = true,
-    orientation = 'vertical',
-    actionsRef,
-    closeParentOnEsc = false,
-    handle,
-    triggerId: triggerIdProp,
-    defaultTriggerId: defaultTriggerIdProp = null,
-    highlightItemOnHover = true,
-  } = props;
+  // 渲染期/事件期消费的 props：computed 直读（setup 快照会停留在首渲染）；
+  // 回调类 props（onOpenChange 等）事件期直读 props。
+  const disabledComputed = computed(() => props.disabled ?? false);
+  const highlightItemOnHoverComputed = computed(() => props.highlightItemOnHover ?? true);
+  const modalComputed = computed(() => props.modal);
+
+  const defaultOpen = props.defaultOpen ?? false;
+  const loopFocus = props.loopFocus ?? true;
+  const orientation = props.orientation ?? 'vertical';
+  const closeParentOnEsc = props.closeParentOnEsc ?? false;
+  const defaultTriggerIdProp = props.defaultTriggerId ?? null;
 
   const contextMenuContext = useContextMenuRootContext(true);
   const parentMenuRootContext = useMenuRootContext(true);
@@ -108,13 +103,13 @@ export function MenuRoot<Payload>(props: MenuRoot.Props<Payload>) {
   const store = useMenuRootStore<Payload>(
     {
       open: defaultOpen,
-      openProp,
+      openProp: props.open,
       activeTriggerId: defaultTriggerIdProp,
-      triggerIdProp,
+      triggerIdProp: props.triggerId,
       parent: parentFromContext,
-      disabled: disabledProp,
-      highlightItemOnHover,
-      modal: parentFromContext.type === undefined ? modalProp : undefined,
+      disabled: disabledComputed.value,
+      highlightItemOnHover: highlightItemOnHoverComputed.value,
+      modal: parentFromContext.type === undefined ? props.modal : undefined,
       rootId,
     },
     floatingId,
@@ -127,7 +122,8 @@ export function MenuRoot<Payload>(props: MenuRoot.Props<Payload>) {
   store.useControlledProp('openProp', () => props.open);
   store.useControlledProp('triggerIdProp', () => props.triggerId);
 
-  store.useContextCallback('onOpenChangeComplete', onOpenChangeComplete);
+  store.useContextCallback('onOpenChangeComplete', (...args: any[]) =>
+    props.onOpenChangeComplete?.(...(args as [boolean])));
 
   const floatingTreeRoot = store.useState('floatingTreeRoot');
   const floatingNodeIdFromContext = useFloatingNodeId(floatingTreeRoot.value);
@@ -153,7 +149,7 @@ export function MenuRoot<Payload>(props: MenuRoot.Props<Payload>) {
   const nested = floatingParentNodeId != null;
 
   if (process.env.NODE_ENV !== 'production') {
-    if (parent.value.type !== undefined && modalProp !== undefined) {
+    if (parent.value.type !== undefined && props.modal !== undefined) {
       console.warn(
         'Base UI: The `modal` prop is not supported on nested menus. It will be ignored.',
       );
@@ -173,9 +169,9 @@ export function MenuRoot<Payload>(props: MenuRoot.Props<Payload>) {
   );
 
   store.useSyncedValues({
-    disabled: disabledProp,
-    highlightItemOnHover,
-    modal: parent.value.type === undefined ? modalProp : undefined,
+    disabled: disabledComputed,
+    highlightItemOnHover: highlightItemOnHoverComputed,
+    modal: computed(() => (parent.value.type === undefined ? props.modal : undefined)),
     rootId,
   } as any);
 
@@ -276,7 +272,7 @@ export function MenuRoot<Payload>(props: MenuRoot.Props<Payload>) {
         eventDetails.trigger = activeTriggerElement.value ?? undefined;
       }
 
-      onOpenChange?.(nextOpen, eventDetails as MenuRoot.ChangeEventDetails);
+      props.onOpenChange?.(nextOpen, eventDetails as MenuRoot.ChangeEventDetails);
 
       if (eventDetails.isCanceled) {
         return;
@@ -379,12 +375,22 @@ export function MenuRoot<Payload>(props: MenuRoot.Props<Payload>) {
     store.setOpen(false, createChangeEventDetails(REASONS.imperativeAction));
   };
 
-  if (actionsRef) {
-    actionsRef.value = {unmount: forceUnmount, close: handleImperativeClose};
-    onUnmounted(() => {
-      actionsRef && (actionsRef.value = null);
-    });
-  }
+  // actionsRef：ref 对象事件期直读（prop 变化时写入最新对象）。
+  watch(
+    () => props.actionsRef,
+    (actionsRefObj) => {
+      if (actionsRefObj) {
+        actionsRefObj.value = {unmount: forceUnmount, close: handleImperativeClose};
+      }
+    },
+    {immediate: true},
+  );
+  onUnmounted(() => {
+    const actionsRefObj = props.actionsRef;
+    if (actionsRefObj) {
+      actionsRefObj.value = null;
+    }
+  });
 
   let ctx: ContextMenuRootContext | undefined;
   if (parent.value.type === 'context-menu') {
@@ -440,7 +446,7 @@ export function MenuRoot<Payload>(props: MenuRoot.Props<Payload>) {
     onNavigate: setActiveIndex,
     openOnArrowKeyDown: parent.value.type !== 'context-menu',
     externalTree: nested ? floatingTreeRoot.value : undefined,
-    focusItemOnHover: highlightItemOnHover,
+    focusItemOnHover: highlightItemOnHoverComputed.value,
   });
 
   const onTyping = (nextTyping: boolean) => {
@@ -549,30 +555,31 @@ export function MenuRoot<Payload>(props: MenuRoot.Props<Payload>) {
   // ============ render（最后 return JSX——插件转换为渲染函数）============
   // PD-15：children 必须 render 期求值（setup 快照会让动态 children——
   // 如条件渲染的 Trigger——永远停留首次渲染）。render prop（({payload}) =>
-  // ...）不能经 toValue（会把函数当 getter 无参调用致 payload 解构报错）。
-  const renderChildren = () => {
+  // ...）直接函数调用。
+  const content = computed(() => {
     const rawChildren = props.children;
-    const children = typeof rawChildren === 'function' ? rawChildren : toValue(rawChildren);
-    return typeof children === 'function' ? children({payload: payload.value}) : children;
-  };
+    return typeof rawChildren === 'function' ? rawChildren({payload: payload.value}) : rawChildren;
+  });
 
-  if (parent.value.type === undefined || parent.value.type === 'context-menu') {
-    // set up a FloatingTree to provide the context to nested menus
-    return (
-      <FloatingTree externalTree={floatingTreeRoot.value}>
-        <MenuRootContext.Provider value={context as MenuRootContext}>
-          {handle && <PopupHandleAttachment handle={handle} store={store} />}
-          {renderChildren()}
-        </MenuRootContext.Provider>
-      </FloatingTree>
-    );
-  }
+  const provider = (
+    <>
+      <MenuRootContext.Provider value={context as MenuRootContext}>
+        {props.handle && <PopupHandleAttachment handle={props.handle} store={store} />}
+        {content.value}
+      </MenuRootContext.Provider>
+    </>
+  );
 
+  // set up a FloatingTree to provide the context to nested menus
+  // 条件在渲染期求值（表达式内 .value 直读，无 IIFE）。
   return (
-    <MenuRootContext.Provider value={context as MenuRootContext}>
-      {handle && <PopupHandleAttachment handle={handle} store={store} />}
-      {renderChildren()}
-    </MenuRootContext.Provider>
+    <>
+      {parent.value.type === undefined || parent.value.type === 'context-menu' ? (
+        <FloatingTree externalTree={floatingTreeRoot.value}>{provider}</FloatingTree>
+      ) : (
+        provider
+      )}
+    </>
   );
 }
 

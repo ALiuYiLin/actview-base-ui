@@ -79,14 +79,16 @@ export class ReactStore<
 
   /**
    * Synchronizes multiple external values into the store.
-   * (值可为 ref/computed——watch 源逐字段解包 `.value` 以建立追踪；纯对象
-   * 字面量在一次性 setup 下 identity 恒定，prop 变化永不同步。)
+   * (值可为 ref/computed——watch 源逐字段解包 `.value` 以建立追踪；回调内做
+   * 逐键 Object.is 比较，值未变时跳过 update，避免「新对象源→每 tick update
+   * →重渲染→再触发」的循环。)
    */
   public useSyncedValues<const Key extends keyof State>(statePart: Pick<State, Key>) {
     // eslint-disable-next-line consistent-this
     const store = this;
     const isRefLike = (v: unknown): v is {value: unknown} =>
       v != null && typeof v === 'object' && (v as any).__v_isRef === true;
+    let previous: Record<string, unknown> | null = null;
     watch(
       () => {
         const out: Record<string, unknown> = {};
@@ -97,6 +99,13 @@ export class ReactStore<
         return out;
       },
       (resolved) => {
+        if (
+          previous !== null &&
+          Object.keys(resolved).every((k) => Object.is(previous![k], resolved[k]))
+        ) {
+          return;
+        }
+        previous = resolved;
         store.update(resolved as unknown as Pick<State, Key>);
       },
       {flush: 'post', immediate: true},

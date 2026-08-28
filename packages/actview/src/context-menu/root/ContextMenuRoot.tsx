@@ -1,4 +1,4 @@
-import { ref, toValue } from 'actview';
+import { ref } from 'actview';
 import { useId } from '@/utils/useId';
 import { ContextMenuRootContext } from './ContextMenuRootContext';
 import { Menu } from '@/menu';
@@ -13,6 +13,7 @@ import type { MenuRoot } from '@/menu/root/MenuRoot';
  * Documentation: [Base UI Context Menu](https://base-ui.com/react/components/context-menu)
  */
 export function ContextMenuRoot(props: ContextMenuRoot.Props) {
+  // ============ setup（只执行一次）：一次性初始化 ============
   const anchorRef = ref({
     getBoundingClientRect() {
       return DOMRect.fromRect({width: 0, height: 0, x: 0, y: 0});
@@ -32,8 +33,12 @@ export function ContextMenuRoot(props: ContextMenuRoot.Props) {
   const initialCursorPointRef = ref(null as {x: number; y: number} | null);
   const id = useId();
 
+  // store-as-is 载体：身份稳定的 getter 对象——anchor 渲染期求值
+  // （setup 快照会让右键定位永远停在初始虚拟锚点）。
   const contextValue: ContextMenuRootContext = {
-    anchor: anchorRef.value,
+    get anchor() {
+      return anchorRef.value;
+    },
     setAnchor,
     actionsRef,
     backdropRef,
@@ -45,12 +50,11 @@ export function ContextMenuRoot(props: ContextMenuRoot.Props) {
   };
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  // PD-15：children/restProps 必须渲染期解构（setup 快照会让动态
-  // children——如条件渲染的 Trigger——永远停留首次渲染）。
+  // children 渲染期直读（setup 快照会让动态 children 永远停留首次渲染）。
   return (
     <ContextMenuRootContext.Provider value={contextValue}>
       <MenuRootContext.Provider value={undefined}>
-        <Menu.Root {...(props as any)}>{toValue((props as any).children)}</Menu.Root>
+        <Menu.Root {...(props as any)}>{props.children}</Menu.Root>
       </MenuRootContext.Provider>
     </ContextMenuRootContext.Provider>
   );

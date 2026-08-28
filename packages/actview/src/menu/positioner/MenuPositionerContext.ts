@@ -17,11 +17,10 @@ export const MenuPositionerContext = createContext<MenuPositionerContext | undef
   undefined,
 );
 
-export function useMenuPositionerContext(
-  optional?: boolean,
-): Ref<MenuPositionerContext | undefined> {
+export function useMenuPositionerContext(optional?: boolean): MenuPositionerContext | undefined {
+  // store-as-is：use() 原样返回注入的 getter 载体（无 Provider 时 undefined）。
   const context = MenuPositionerContext.use();
-  if (context.value === undefined && !optional) {
+  if (context === undefined && !optional) {
     throw new Error(
       'Base UI: MenuPositionerContext is missing. MenuPositioner parts must be placed within <Menu.Positioner>.',
     );

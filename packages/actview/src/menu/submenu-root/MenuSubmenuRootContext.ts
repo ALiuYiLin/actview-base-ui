@@ -10,6 +10,7 @@ export interface MenuSubmenuRootContext {
 }
 
 export function useMenuSubmenuRootContext(): MenuSubmenuRootContext | undefined {
+  // store-as-is：use() 原样返回注入载体。
   const context = MenuSubmenuRootContext.use();
-  return context.value;
+  return context;
 }

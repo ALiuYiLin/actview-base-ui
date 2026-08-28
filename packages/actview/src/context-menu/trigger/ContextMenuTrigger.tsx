@@ -1,4 +1,5 @@
-import { onUnmounted, ref, toValue, watch } from 'actview';
+import { computed, onUnmounted, ref, toRefs, watch } from 'actview';
+import type { Ref } from 'actview';
 import { useTimeout } from '@/utils/useTimeout';
 import { ownerDocument } from '@/internals/owner';
 import { addEventListener } from '@/internals/addEventListener';
@@ -10,6 +11,8 @@ import { createChangeEventDetails } from '@/internals/createBaseUIEventDetails';
 import { pressableTriggerOpenStateMapping } from '@/utils/popupStateMapping';
 import { REASONS } from '@/internals/reasons';
 import { findRootOwnerId } from '@/menu/utils/findRootOwnerId';
+import { useRenderElement } from '@/internals/useRenderElement';
+import { useMergedRefs } from '@/internals/useMergedRefs';
 
 const LONG_PRESS_DELAY = 500;
 
@@ -20,22 +23,15 @@ const LONG_PRESS_DELAY = 500;
  * Documentation: [Base UI Context Menu](https://base-ui.com/react/components/context-menu)
  */
 export function ContextMenuTrigger(componentProps: ContextMenuTrigger.Props) {
-  const {disabled: disabledProp = false} = componentProps as any;
+  // ============ setup（只执行一次）：一次性初始化 ============
+  // 渲染期/事件期消费的 props：computed 直读（setup 快照会停留在首渲染）。
+  const disabled = computed(() => componentProps.disabled ?? false);
 
-  const rootContext = useContextMenuRootContext(false);
+  // context 载体直取（store-as-is）：getter 字段事件期属性访问实时。
+  const rootContext = useContextMenuRootContext(false)!;
   const {store} = useMenuRootContext(false);
   const open = store.useState('open');
   const disabledState = store.useState('disabled');
-
-  // props 渲染期值用 watch 同步（setup 快照过时）
-  const disabledRef = ref(disabledProp);
-  watch(
-    () => disabledProp,
-    (v) => {
-      disabledRef.value = v;
-    },
-    {flush: 'post', immediate: true},
-  );
 
   const triggerRef = ref<HTMLDivElement | null>(null);
   const touchPositionRef = ref<{x: number; y: number} | null>(null);
@@ -44,6 +40,7 @@ export function ContextMenuTrigger(componentProps: ContextMenuTrigger.Props) {
   const allowMouseUpRef = ref(false);
   const mouseUpAbortControllerRef = ref(null as AbortController | null);
 
+  // 事件 handler：setup 闭包读 computed/refs——事件触发时拿到实时值。
   function handleLongPress(x: number, y: number, event: MouseEvent | TouchEvent) {
     const isTouchEvent = event.type.startsWith('touch');
 
@@ -72,7 +69,7 @@ export function ContextMenuTrigger(componentProps: ContextMenuTrigger.Props) {
   }
 
   function handleContextMenu(event: any) {
-    if (disabledRef.value || disabledState.value) {
+    if (disabled.value || disabledState.value) {
       return;
     }
     rootContext.allowMouseUpTriggerRef.value = true;
@@ -126,7 +123,7 @@ export function ContextMenuTrigger(componentProps: ContextMenuTrigger.Props) {
   }
 
   function handleTouchStart(event: any) {
-    if (disabledRef.value || disabledState.value) {
+    if (disabled.value || disabledState.value) {
       cancelLongPress();
       return;
     }
@@ -173,10 +170,10 @@ export function ContextMenuTrigger(componentProps: ContextMenuTrigger.Props) {
 
   // Prevent the native context menu from appearing inside the trigger or backdrops.
   watch(
-    () => [triggerRef.value, disabledRef.value, disabledState.value] as const,
+    () => [triggerRef.value, disabled.value, disabledState.value] as const,
     () => {
       docContextMenuCleanup.value?.();
-      if (disabledRef.value || disabledState.value || !triggerRef.value) {
+      if (disabled.value || disabledState.value || !triggerRef.value) {
         return;
       }
 
@@ -200,63 +197,63 @@ export function ContextMenuTrigger(componentProps: ContextMenuTrigger.Props) {
     docContextMenuCleanup.value?.();
   });
 
+  // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
+  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
+    string,
+    Ref<any>
+  >;
+
+  // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
+  });
+
+  const state = computed<ContextMenuTriggerState>(() => ({
+    open: open.value,
+  }));
+
+  // 根元素 props：长按/右键 handler → 透传 → open state data-*。
+  const rootProps = computed<Record<string, any>>(() => {
+    const merged: any = {
+      onContextMenu: handleContextMenu,
+      onTouchStart: handleTouchStart,
+      onTouchMove: handleTouchMove,
+      onTouchEnd: cancelLongPress,
+      onTouchCancel: cancelLongPress,
+      style: {
+        WebkitTouchCallout: 'none',
+        ...(style?.value ?? {}),
+      },
+      ...elementProps.value,
+    };
+
+    Object.assign(merged, pressableTriggerOpenStateMapping.open(open.value));
+    return merged;
+  });
+
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  // 渲染期逻辑（merged/refs）在 IIFE 中执行（PD-15）
   return (
     <>
-      {(() => {
-        const {render, className, style, ...elementProps} = componentProps as any;
-        const children = componentProps.children;
-
-        const state: ContextMenuTriggerState = {
-          open: open.value,
-        };
-
-        const merged: any = {
-          onContextMenu: handleContextMenu,
-          onTouchStart: handleTouchStart,
-          onTouchMove: handleTouchMove,
-          onTouchEnd: cancelLongPress,
-          onTouchCancel: cancelLongPress,
-          style: {
-            WebkitTouchCallout: 'none',
-            ...(style ?? {}),
-          },
-          ...elementProps,
-        };
-
-        Object.assign(merged, pressableTriggerOpenStateMapping.open(open.value));
-
-        const mergedRefs = (el: HTMLDivElement | null) => {
-          triggerRef.value = el;
-          if (typeof componentProps.ref === 'function') {
-            (componentProps.ref as any)(el);
-          } else if (componentProps.ref) {
-            (componentProps.ref as any).value = el;
-          }
-        };
-
-        if (render) {
-          if (typeof render === 'function') {
-            return render({...merged, ...state, ref: mergedRefs} as any);
-          }
-          const renderProps = render.props ?? {};
-          const {className: renderClassName, style: renderStyle, ...restRenderProps} = renderProps;
-          const Tag = render.type as any;
-          const mergedRenderProps = Object.assign({}, merged, restRenderProps);
-          mergedRenderProps.className =
-            typeof className === 'string' && typeof renderClassName === 'string'
-              ? `${className} ${renderClassName}`.trim()
-              : (className ?? renderClassName);
-          mergedRenderProps.style = Object.assign({}, merged.style, renderStyle);
-          return <Tag key={render.key} {...mergedRenderProps} ref={mergedRefs}>{children}</Tag>;
-        }
-        return (
-          <div {...merged} className={className} ref={mergedRefs}>
-            {children}
-          </div>
-        );
-      })()}
+      {useRenderElement(
+        'div',
+        {
+          className: className?.value,
+          render: render?.value,
+          style: style?.value,
+        },
+        {
+          state: state.value,
+          ref: useMergedRefs(
+            (el: HTMLDivElement | null) => {
+              triggerRef.value = el;
+            },
+            componentProps.ref as any,
+          ),
+          props: rootProps.value,
+        },
+      )}
     </>
   );
 }
