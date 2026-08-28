@@ -48,3 +48,6 @@ test-results/
 # Benchmark results
 test/performance/benchmarks/results.json
 
+
+# pnpm local store (created by failed version switch in this env)
+.pnpm-store/
