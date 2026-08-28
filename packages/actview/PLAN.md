@@ -61,9 +61,9 @@
 - [ ] csp-provider（4）、direction-provider（5）—— 无 DOM Provider（豁免类范式样板）
 
 ### 批次 2：中型族
+- [x] progress（12）✅、meter（13）✅、switch（8）✅、radio（8）+ radio-group（4）✅——store-as-is 适配 + 新 hook + 无 toValue/useRootElement
 - [ ] collapsible（14）、accordion（18）
-- [ ] progress（12）、meter（13）、switch（8）、radio（8）、radio-group（4）
-- [ ] tabs（13）、toolbar（12）、toggle 相关收尾
+- [ ] tabs（13）、toolbar（12）
 - [ ] fieldset（7）、otp-field（8）、scroll-area（16）、field（19）
 
 ### 批次 3：弹层族
