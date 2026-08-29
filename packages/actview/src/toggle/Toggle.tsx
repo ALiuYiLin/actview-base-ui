@@ -1,4 +1,5 @@
 import { computed, ref, toRefs } from 'actview';
+import type { Ref } from 'actview';
 import { useControlled } from '@/utils/useControlled';
 import { error } from '@/utils/error';
 import { useBaseUiId } from '@/internals/useBaseUiId';
@@ -66,31 +67,32 @@ export function Toggle<Value extends string>(componentProps: Toggle.Props<Value>
     return Boolean(pressedState.value);
   });
 
+  // setup：值形 props toRefs 活引用（渲染闭包内调用 toRefs 会在渲染 effect
+  // 注册响应式依赖——core 调度器报错）。组件自定义 props 剔除——否则泄漏。
+  const {
+    className,
+    render,
+    style,
+    value: _value,
+    pressed: _pressed,
+    defaultPressed: _defaultPressed,
+    disabled: _disabled,
+    nativeButton: _nativeButton,
+    onPressedChange: _onPressedChange,
+    ref: _ref,
+    ...elementRefs
+  } = toRefs(componentProps) as Record<string, Ref<any>>;
+
   // ============ render（最后 return JSX——插件转换为渲染函数）============
   return (
     <>
       {(() => {
-        // toRefs 活引用；组件自定义 props（value/pressed/defaultPressed/
-        // disabled/nativeButton/onPressedChange）剔除——否则泄漏到 DOM。
-        const {
-          className,
-          render,
-          style,
-          value: _value,
-          pressed: _pressed,
-          defaultPressed: _defaultPressed,
-          disabled: _disabled,
-          nativeButton: _nativeButton,
-          onPressedChange: _onPressedChange,
-          ...elementProps
-        } = toRefs(componentProps) as Record<string, any>;
+        // 渲染期展开 refs → 普通对象（透传 props 数组）。
+        const elementPropsValue: Record<string, any> = {};
+        for (const k in elementRefs) elementPropsValue[k] = elementRefs[k].value;
 
         const disabledValue = disabled.value;
         const pressedValue = pressed.value;
-
-        // 渲染期展开 refs → 普通对象（透传到 props 数组）。
-        const elementPropsValue: Record<string, any> = {};
-        for (const k in elementProps) elementPropsValue[k] = elementProps[k].value;
 
         const state: ToggleState = {
           disabled: disabledValue,
@@ -103,8 +105,11 @@ export function Toggle<Value extends string>(componentProps: Toggle.Props<Value>
         const props = [
           {
             'aria-pressed': pressedValue,
-            // React 契约：disabled 状态始终暴露 aria-disabled（'true'/'false'）
-            'aria-disabled': disabledValue ? 'true' : 'false',
+            // aria-disabled：group 内（CompositeItem）恒输出 'true'/'false'
+            // （React composite 路径）；普通 Toggle 不输出（React 参考）。
+            ...(groupContext
+              ? {'aria-disabled': disabledValue ? 'true' : 'false'}
+              : {}),
             onClick(event: any) {
               const nextPressed = !pressedValue;
               const details = createChangeEventDetails(REASONS.none, event);
@@ -141,9 +146,9 @@ export function Toggle<Value extends string>(componentProps: Toggle.Props<Value>
           return (
             <CompositeItem
               tag="button"
-              render={render as any}
-              className={className as any}
-              style={style as any}
+              render={render?.value as any}
+              className={className?.value as any}
+              style={style?.value as any}
               metadata={itemMetadata as any}
               state={state as any}
               refs={[buttonRef as any]}
@@ -156,9 +161,9 @@ export function Toggle<Value extends string>(componentProps: Toggle.Props<Value>
         return useRenderElement(
           'button',
           {
-            className,
-            render,
-            style,
+            className: className?.value,
+            render: render?.value,
+            style: style?.value,
           },
           {
             state,
