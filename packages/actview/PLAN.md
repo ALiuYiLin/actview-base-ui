@@ -195,3 +195,5 @@
 | M2-8 | Menu.GroupLabel 要求 Group 上下文 | **两端源码逐字一致**（无 Group 都抛同样错）——与仓库 React 参考一致 | 保持现状（用户期望与仓库基准矛盾） |
 | M2-9 | PreviewCard 默认 inert | 根因：actview PreviewCardPopup 无条件包 FloatingFocusManager → markOthers 给 root 打 data-base-ui-inert（React 参考非 modal 不用 FFM）；trigger 多 data-open（useRenderElement 无 stateAttributesMapping 时 state.open 默认产 data-open）；content 多 role=dialog | 已修（`87967f9d3`）：去掉 FFM 包装（对齐 React 直接渲染）；trigger 加 `stateAttributesMapping: triggerOpenStateMapping`；content 去 role。实测 `<PreviewCard defaultOpen>`：root 无 inert、`<a data-popup-open>`、content `data-base-ui-focusable` |
 | M2-10 | Menu.Separator 缺失 | React menu index 有 Separator（复用通用 Separator），actview 缺 | 已修：index.parts 导出 `Separator`（`@/separator/Separator`） |
+| M5 | positioner 缺 data-side/data-align | actview usePositioner 的 attributes 循环只处理 open/anchorHidden（React 输出 data-side/data-align） | 已修（`4543fd4b0`）：attributes 循环加 side/align 字符串输出 |
+| M6 | popup data-open/aria 多余 | **与 React 参考一致**：React 1.6.0/1.7.0 的 DialogPopup 均有 data-open（popupStateMapping.open）；aria-labelledby/describedby 无 Title 时不输出（有 Title 时输出，React 同） | 实测确认非差异（用户期望"无"与 React 参考矛盾，待确认） |
