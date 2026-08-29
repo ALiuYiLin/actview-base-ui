@@ -1,4 +1,4 @@
-import { computed, watch, ref } from 'actview';
+import { computed, watch, ref, toRefs } from 'actview';
 import { useTooltipRootContext } from '../root/TooltipRootContext';
 import { TooltipPositionerContext } from './TooltipPositionerContext';
 import {
@@ -114,12 +114,41 @@ export function TooltipPositioner(componentProps: TooltipPositioner.Props) {
     transitionStatus: transitionStatus.value as any,
   }));
 
+  // 值形 props toRefs 活引用；透传给 positioner 元素时剔除定位参数
+  // （M2-原语-5：不随 rest 泄漏 side/align/sideOffset/alignOffset 裸属性）。
+  const {
+    className: _positionerClassName,
+    render: _positionerRender,
+    style: _positionerStyle,
+    anchor: _anchor,
+    positionMethod: _positionMethod,
+    side: _side,
+    align: _align,
+    sideOffset: _sideOffset,
+    alignOffset: _alignOffset,
+    collisionBoundary: _collisionBoundary,
+    collisionPadding: _collisionPadding,
+    arrowPadding: _arrowPadding,
+    sticky: _sticky,
+    disableAnchorTracking: _disableAnchorTracking,
+    collisionAvoidance: _collisionAvoidance,
+    keepMounted: _keepMounted,
+    ...elementRefs
+  } = toRefs(componentProps) as Record<string, any>;
+
+  const elementProps = computed(() => {
+    const out: Record<string, any> = {};
+    for (const k in elementRefs) out[k] = elementRefs[k].value;
+    return out;
+  });
+
   const element = usePositioner(componentProps as any, state as any, {
     styles: positioner.positionerStyles,
     transitionStatus,
     refs: [store.useStateSetter('positionerElement')],
     hidden: () => !mounted.value,
     inert: () => !open.value,
+    props: elementProps.value,
   }) as any;
 
 

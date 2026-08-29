@@ -19,3 +19,5 @@ export { MenuRadioItemIndicator as RadioItemIndicator } from './radio-item-indic
 export { MenuCheckboxItem as CheckboxItem } from './checkbox-item/MenuCheckboxItem';
 export { MenuCheckboxItemIndicator as CheckboxItemIndicator } from './checkbox-item-indicator/MenuCheckboxItemIndicator';
 export { MenuViewport as Viewport } from './viewport/MenuViewport';
+// M2-原语-10：Menu.Separator（对齐 React 参考——复用通用 Separator）。
+export { Separator } from '@/separator/Separator';

@@ -23,7 +23,7 @@ export function usePositioner<State extends Record<string, any>>(
   {styles, transitionStatus, props, refs, hidden, inert = false}: UsePositionerOptions,
 ) {
   return () => {
-    const {render, className: classNameProp, style: styleProp, ...elementProps} = componentProps;
+    const {render, className: classNameProp, style: styleProp} = componentProps;
     const stateValue = toState(state);
 
     // className 支持 (state)=>string 函数形态（对齐 React 版 positioner）
@@ -52,12 +52,14 @@ export function usePositioner<State extends Record<string, any>>(
       hidden: toValue(hidden),
       ...(classNameValue !== undefined ? {className: classNameValue} : {}),
       style: {...style, ...(styleProp ?? {})},
-      ...elementProps,
       ...attributes,
     };
 
     Object.assign(merged, getDisabledMountTransitionStyles(toValue(transitionStatus)));
 
+    // 用户透传 props 经显式 props 参数传入（调用方构建 elementProps 时已剔除
+    // 组件自定义 props——M2-原语-5：不再自动展开 componentProps rest，避免
+    // side/align/sideOffset/alignOffset 裸属性泄漏到 DOM）。
     if (props) {
       Object.assign(merged, typeof props === 'function' ? props(merged) : props);
     }
