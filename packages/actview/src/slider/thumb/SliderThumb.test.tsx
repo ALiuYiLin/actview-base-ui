@@ -88,5 +88,32 @@ describe('<Slider.Thumb />', () => {
     expect(t0.style.zIndex).toBe('');
     expect(t1.style.zIndex).toBe('');
   });
+
+  it('hidden input renders value attribute + aria-valuenow/valuetext (React parity)', async () => {
+    await render(
+      Slider.Root,
+      {
+        defaultValue: [30, 70],
+        children: (
+          <Slider.Control>
+            <Slider.Thumb />
+            <Slider.Thumb />
+          </Slider.Control>
+        ),
+      },
+    );
+
+    const inputs = document.querySelectorAll('input[type="range"]');
+    expect(inputs.length).toBe(2);
+    const [i0, i1] = Array.from(inputs) as HTMLInputElement[];
+    // value attribute：React 对 input 的 value 渲染 attribute（core setProp 对齐）
+    expect(i0.getAttribute('value')).toBe('30');
+    expect(i1.getAttribute('value')).toBe('70');
+    // aria-valuenow / aria-valuetext：滑块值经 aria 承载（React 参考同款）
+    expect(i0.getAttribute('aria-valuenow')).toBe('30');
+    expect(i0.getAttribute('aria-valuetext')).toBe('30 start range');
+    expect(i1.getAttribute('aria-valuenow')).toBe('70');
+    expect(i1.getAttribute('aria-valuetext')).toBe('70 end range');
+  });
 });
 
