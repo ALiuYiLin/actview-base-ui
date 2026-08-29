@@ -89,6 +89,8 @@ export function SliderIndicator(componentProps: SliderIndicator.Props) {
 
     return {
       ...elementProps.value,
+      // prehydration script 定位用（React 参考有，迁移遗漏——C9）。
+      'data-base-ui-slider-indicator': renderBeforeHydration ? '' : undefined,
       style: Object.assign(
         {},
         getIndicatorStyles(

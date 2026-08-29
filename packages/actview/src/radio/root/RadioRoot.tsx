@@ -252,10 +252,10 @@ export function RadioRoot<Value>(componentProps: RadioRoot.Props<Value>) {
   };
 
   // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
-  const { render, className, style, ...elementRefs } = toRefs(componentProps) as Record<
-    string,
-    Ref<any>
-  >;
+  // ref 为 ref 形 props（直读本体）——剔除，否则对象泄漏进 elementProps。
+  const { render, className, style, ref: _ref, ...elementRefs } = toRefs(
+    componentProps,
+  ) as Record<string, Ref<any>>;
 
   const elementProps = computed(() => {
     const out: Record<string, any> = {};
@@ -280,7 +280,8 @@ export function RadioRoot<Value>(componentProps: RadioRoot.Props<Value>) {
 
   const isRadioGroup = groupContext !== undefined;
 
-  const refs = [rootRef as any, radioRef as any, buttonRef];
+  // 与 React 参考一致：refs 含转发 ref（group 分支 CompositeItem 经 useMergedRefs 合并）。
+  const refs = [rootRef as any, radioRef as any, buttonRef, componentProps.ref];
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
   // hidden input 两个分支都必须渲染（group 模式下为 CompositeItem 的兄弟节点）。
@@ -309,9 +310,9 @@ export function RadioRoot<Value>(componentProps: RadioRoot.Props<Value>) {
           <>
             <CompositeItem
               tag="span"
-              render={render}
-              className={className}
-              style={style}
+              render={render?.value as any}
+              className={className?.value as any}
+              style={style?.value as any}
               state={state.value}
               refs={refs}
               props={[
