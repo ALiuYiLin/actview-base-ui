@@ -1,6 +1,6 @@
 {
   "name": "@actview/base-ui",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "author": "MUI Team",
   "description": "Base UI is a library of headless ('unstyled') ActView components and low-level hooks. You gain complete control over your app's CSS and accessibility features.",
   "license": "MIT",
@@ -41,7 +41,7 @@
     "clsx": "2.1.1"
   },
   "peerDependencies": {
-    "@actview/core": "^1.4.1",
+    "@actview/core": "^1.4.2",
     "@actview/jsx": "^1.1.0",
     "actview": "^1.1.1"
   },
