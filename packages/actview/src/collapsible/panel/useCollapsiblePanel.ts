@@ -416,10 +416,10 @@ export function useCollapsiblePanel(
     ...(shouldPersistHiddenTransitionStyles.value
       ? {[CollapsiblePanelDataAttributes.startingStyle]: ''}
       : undefined),
-    // React 只支持 boolean hidden 属性，hiddenUntilFound 时靠 effect 强制
-    // setAttribute('until-found')；actview 渲染直接输出字符串值（渲染期读
-    // hiddenUntilFoundValue 保持响应），避免 setAttribute 被后续渲染覆盖。
-    hidden: (hidden.value ? (hiddenUntilFoundValue() ? 'until-found' : '') : undefined) as any,
+    // React 只支持 boolean hidden 属性：hidden=true → hidden attribute，
+    // hiddenUntilFound 时靠下方 effect 强制 setAttribute('until-found')。
+    // （core 1.4.0 起空字符串属性按移除处理——不能再输出 '' 表达 true。）
+    hidden: (hidden.value ? true : undefined) as any,
     id: idValue(),
   });
 

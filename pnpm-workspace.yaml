@@ -13,6 +13,9 @@ allowBuilds:
   unrs-resolver: true
 
 # Advisories in transitive dev-tooling dependencies that we can't reach through a direct bump,
+
+# 本地验证 core 1.4.0 的框架层修复（C2/C7/C11：style 序列化 undefined/px、
+# 布尔属性 attribute 输出）。发布前评估是否保留。
 # because the parent package pins the vulnerable version. None of these are reachable from the
 # published packages (`@base-ui/react`, `@base-ui/utils`), so the impact is limited to CI and
 # local development.
@@ -24,6 +27,9 @@ allowBuilds:
 #
 # Remove each entry once the parent dependency ships the fixed version on its own.
 overrides:
+  # 本地验证 core 1.4.0 的框架层修复（C2/C7/C11：style 序列化 undefined/px、
+  # 布尔属性 attribute 输出）。发布前评估是否保留。
+  '@actview/core': '1.4.0'
   # via lerna -> minimatch, eslint-plugin-* -> minimatch (GHSA-3jxr-9vmj-r5cp)
   brace-expansion@1: '1.1.18'
   brace-expansion@2: '2.1.4'
@@ -61,7 +67,7 @@ minimumReleaseAge: 4320
 minimumReleaseAgeExclude:
   - '@base-ui/*'
   - '@mui/internal-*'
-  - '@actview/core@1.1.0 || 1.2.0 || 1.3.0'
+  - '@actview/core@1.1.0 || 1.2.0 || 1.3.0 || 1.4.0'
   - '@actview/floating-ui@0.1.0 || 0.1.1'
   - '@actview/jsx@1.1.0'
   - '@actview/plugin-babel@1.0.7 || 2.0.0'

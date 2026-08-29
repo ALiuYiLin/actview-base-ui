@@ -32,10 +32,21 @@ export function PopoverTrigger(componentProps: PopoverTrigger.Props) {
   const nativeButton = computed(() => componentProps.nativeButton ?? true);
 
   // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
-  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
-    string,
-    Ref<any>
-  >;
+  // 组件自定义 props（disabled/nativeButton/handle/payload/openOnHover/delay/
+  // closeDelay）剔除——否则泄漏到 DOM（core 1.4.0 起 disabled 布尔属性会渲染）。
+  const {
+    className,
+    render,
+    style,
+    disabled: _disabled,
+    nativeButton: _nativeButton,
+    handle: _handle,
+    payload: _payload,
+    openOnHover: _openOnHover,
+    delay: _delay,
+    closeDelay: _closeDelay,
+    ...elementRefs
+  } = toRefs(componentProps) as Record<string, Ref<any>>;
 
   const rootStore = usePopoverRootContext(true);
   const handleStore = usePopupHandleStore(componentProps.handle);

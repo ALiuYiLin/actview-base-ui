@@ -270,6 +270,8 @@ describe('FloatingFocusManager', () => {
         );
         fireEvent.click(screen.getByTestId('reference'));
         await flushMicrotasks();
+        // core 1.4.1：autoFocus（camelCase）→ autofocus 布尔属性，FFM 初始
+        // 聚焦尊重 [autofocus] 元素（React 版 autoFocus 挂载即聚焦，等价语义）。
         expect(screen.getByTestId('input')).toHaveFocus();
       });
     });
