@@ -165,18 +165,18 @@
 |---|---|---|---|
 | C1 | CompositeItem 的 `tag`/`metadata` 泄漏到 DOM | A1：组件自定义 props 未从 toRefs 解构剔除 | 已修（`764c4a147`）|
 | C2 | style 序列化（数字补 px / undefined 过滤） | core `stringifyStyle` | 已随 core 1.4.0 修复 |
-| C3 | composite `highlightedIndex`（roving tabindex） | **已实现/误报**：toggle-group 探针 `false/0 | true/-1 | false/-1`——唯一 tabindex=0 与 React roving tabindex 一致；React Toggle 同样无 ACTIVE_COMPOSITE_ITEM；radio 侧经 `[ACTIVE_COMPOSITE_ITEM]: checked ? '' : undefined`（RadioRoot）已实现 | 无需改 |
+| C3 | composite `highlightedIndex`（roving tabindex） | **真 bug（已修）**：actview 的 CompositeList.register 同步逐元素 flush——首元素注册时 map 只有它自己，onMapChange 找不到 active item（选中项是第二个/非首项时），`hasSetDefaultIndexRef` 提前锁定 → highlightedIndex 停初始 0 → 选中项 tabindex=-1（选中首项碰巧正确）。React 版 flush 在 layout effect 批量执行，首次 onMapChange 时 map 已完整 | 已修（`7a2adaebb`）：onMapChange **命中才锁定**（找到 ACTIVE_COMPOSITE_ITEM 或 disabled 回退），首次 map 不全时不锁定、等下一次 map change 重查。回归：RadioGroup `defaultValue="b"`（第二个选中）→ 选中项 tabindex=0（与 React 参考实测一致）。**ToggleGroup**：实测 React 参考初始 pressed 项同为 tabindex=-1（Toggle 无 ACTIVE_COMPOSITE_ITEM，highlightedIndex 停 0）——actview 与 React 一致，非缺陷 |
 | C4 | SliderRoot 自定义 props（min/max/step/…）泄漏 | A2：toRefs 解构未剔除 | 已修（`764c4a147`）|
-| C5 | SliderThumb 隐藏 input ARIA / data-index | input ARIA **已实现**（隐藏 input 携带 aria-valuenow/valuetext/orientation，非缺陷）；`data-index` slider/tabs/accordion 与 React 一致输出，composite 项 data-index 由测试侧经 `useCompositeListItem` 驱动（actview 与 React 实现逐字等价，返回值形态 ComputedRef 属框架差异） | 非缺陷 |
+| C5 | SliderThumb 隐藏 input ARIA / data-index / z-index | data-index **已正常**（map 注册顺序 0/1）；input ARIA **已实现**（非缺陷）；**z-index 残留真 bug**：首帧 `index=-1`（internalIndex 未初始化）时 `active(-1)===index(-1)` 误判高亮输出 z-index:2，且 core style patch 只设新值不清理旧键 → 重算为 undefined 后残留（inset 模式实证） | 已修（`7a2adaebb` + core）：① SliderThumb zIndex 加 `index.value >= 0` 守卫（未初始化不高亮）；② core style patch 清理旧键（`E:\code3\actview` commit `8f94942`，随 core 1.4.2 发布）。回归：`SliderThumb.test.tsx` 双 thumb（center/inset）无交互时无 z-index + data-index 0/1 |
 | C6 | Toggle 无条件输出 `aria-disabled` | B 族：仅 group 内应输出（`groupContext ? disabled ? 'true':'false' : {}`） | 已修（`cf861fd66`）|
 | C7 | style 值 undefined 未过滤 | core `stringifyStyle` | 已随 core 1.4.0 修复 |
 | C8 | Toggle `pressed` 泄漏到 DOM | B 族：toRefs 解构未剔除 | 已修（`cf861fd66`）|
 | C9 | SliderIndicator 缺 `data-base-ui-slider-indicator`（prehydration script 定位） | D1：迁移遗漏（React 参考有） | 已修（`76efc4da5`）|
 | C10 | 横向 16 文件自定义 props 泄漏（accordion/collapsible/menu/dialog/drawer/field/number-field/switch/tabs/scroll-area/slider-thumb） | A5：统一 toRefs 剔除 | 已修（`764c4a147`）|
 | C11 | 布尔属性未输出为 attribute | core `setProp` | 已随 core 1.4.0 修复 |
-| C12 | `useLabelableId` 语义差异 | 与 React 参考（`packages/react/.../useLabelableId.ts:82`）**逐字一致** | 非缺陷 |
+| C12 | checkbox 隐藏 input 的 id | **非缺陷**：实测 base-ui 仓库 React 参考，单独 `<Checkbox defaultChecked>` 的隐藏 input **有**生成 id（React 测试 `CheckboxRoot.test.tsx:633/648` 明确断言 `input.id` 非空，controlId 逻辑与 actview 逐字一致）——用户期望"无 id"与仓库基准矛盾，经确认保持现状 | 非缺陷 |
 | C13 | Separator `orientation` 泄漏 | A4：toRefs 解构未剔除 | 已修（`764c4a147`）|
 | C14 | Toggle `ref/disabled/nativeButton/onPressedChange` 泄漏 | B 族：toRefs 解构未剔除 | 已修（`cf861fd66`）|
 | C15 | Slider.Thumb `className` 输出两份（0.1.3 引入） | rootProps 内手写 `out.className` + useRenderElement componentProps 双通道 → 出口 `mergeClassNames` 拼接同一 token 两次；全库仅 SliderThumb 有此写法（其余组件 className 只走 componentProps 通道） | 已修：删除 rootProps 内 className 块，className 单通道输出；新增 `SliderThumb.test.tsx` 回归（string + function 双形态） |
 
-**附加（golden 之外）**：core 1.4.0 引入的 `autoFocus` camelCase 布尔缺陷（FFM 用例暴露）随 core 1.4.1 修复（`E:\code3\actview` commit `3113969`）；RadioRoot group 分支 refs 补转发 ref 对齐 React 参考（`76efc4da5`）。
+**附加（golden 之外）**：core 1.4.0 引入的 `autoFocus` camelCase 布尔缺陷（FFM 用例暴露）随 core 1.4.1 修复（`E:\code3\actview` commit `3113969`）；RadioRoot group 分支 refs 补转发 ref 对齐 React 参考（`76efc4da5`）；core style patch 旧键残留缺陷随 core 1.4.2 修复（`E:\code3\actview` commit `8f94942`）。
