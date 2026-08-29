@@ -193,5 +193,5 @@
 | M2-6 | modal popup 多 aria-modal、缺 focusable | actview Dialog/Drawer popup 直接渲染 aria-modal（React 经 labelable 注入）；缺 `FOCUSABLE_POPUP_PROPS`（data-base-ui-focusable + tabIndex） | 已修：去 aria-modal + 5 个 popup（Dialog/Drawer/Popover/PreviewCard/Tooltip）加 FOCUSABLE_POPUP_PROPS |
 | M2-7 | PreviewCard.Trigger 默认标签 | actview 用 `'button'`，React 用 `'a'` | 已修：改 'a' + 去 useButton；测试查询改标签（无 href 的 a 无 link role） |
 | M2-8 | Menu.GroupLabel 要求 Group 上下文 | **两端源码逐字一致**（无 Group 都抛同样错）——与仓库 React 参考一致 | 保持现状（用户期望与仓库基准矛盾） |
-| M2-9 | PreviewCard 默认 inert | **实测无 inert**（modal 默认 false，与 React 一致） | 保持现状（与报告不符，场景差异） |
+| M2-9 | PreviewCard 默认 inert | 根因：actview PreviewCardPopup 无条件包 FloatingFocusManager → markOthers 给 root 打 data-base-ui-inert（React 参考非 modal 不用 FFM）；trigger 多 data-open（useRenderElement 无 stateAttributesMapping 时 state.open 默认产 data-open）；content 多 role=dialog | 已修（`87967f9d3`）：去掉 FFM 包装（对齐 React 直接渲染）；trigger 加 `stateAttributesMapping: triggerOpenStateMapping`；content 去 role。实测 `<PreviewCard defaultOpen>`：root 无 inert、`<a data-popup-open>`、content `data-base-ui-focusable` |
 | M2-10 | Menu.Separator 缺失 | React menu index 有 Separator（复用通用 Separator），actview 缺 | 已修：index.parts 导出 `Separator`（`@/separator/Separator`） |
