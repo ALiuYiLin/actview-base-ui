@@ -180,3 +180,18 @@
 | C15 | Slider.Thumb `className` 输出两份（0.1.3 引入） | rootProps 内手写 `out.className` + useRenderElement componentProps 双通道 → 出口 `mergeClassNames` 拼接同一 token 两次；全库仅 SliderThumb 有此写法（其余组件 className 只走 componentProps 通道） | 已修：删除 rootProps 内 className 块，className 单通道输出；新增 `SliderThumb.test.tsx` 回归（string + function 双形态） |
 
 **附加（golden 之外）**：core 1.4.0 引入的 `autoFocus` camelCase 布尔缺陷（FFM 用例暴露）随 core 1.4.1 修复（`E:\code3\actview` commit `3113969`）；RadioRoot group 分支 refs 补转发 ref 对齐 React 参考（`76efc4da5`）；core style patch 旧键残留缺陷随 core 1.4.2 修复（`E:\code3\actview` commit `8f94942`）。
+
+## M2 浮层原语差异（0.1.6 vs React 参考）——修复记录
+
+| # | 差异 | 根因 | 处置 |
+|---|---|---|---|
+| M2-1 | modal 容器多一层 div | actview Trigger 用稳定 div 包装（注释自述"渲染无法原地 patch 结构切换"）——实际是 `useRenderElement` 提取到 const 变成 setup 快照；内联 JSX + 恒 Fragment + guards 条件渲染即可 | 已修（`360570059`/`0f773fdca`）：Popover/Menu 用恒 Fragment + 条件 guards（button 位置恒定 index 1，不重建）；Dialog/Drawer/AlertDialog 直接渲染 button（React 参考无 guards——modal guards 在 popup 的 FFM） |
+| M2-2 | focus guard 样式 | actview FocusGuard 自定义 absolute/1px 样式（未用公共 `utils/visuallyHidden`） | 已修（`1b6697877`）：改用 `visuallyHidden`（fixed + 布局值）；FloatingPortal owner span 对齐 `ownerVisuallyHidden` |
+| M2-3 | overlay 多 position/inset + portal presentation div | actview Dialog/Drawer backdrop style 多 `position: fixed; inset: 0`（React 只有 userSelect）；portal 首 presentation div 两端都有（InternalBackdrop，非差异） | 已修：backdrop 去 position/inset |
+| M2-4 | tooltip trigger 缺标识 + 多 tabindex | actview 缺 `TOOLTIP_TRIGGER_IDENTIFIER`；用 useButton（React 不用）→ tabindex=0 泄漏 | 已修：加 `data-base-ui-tooltip-trigger`/`data-trigger-disabled`，去 useButton |
+| M2-5 | positioner 裸属性泄漏 + style 差异 | actview usePositioner 展开 `...elementProps`（componentProps rest）→ side/align/sideOffset/alignOffset 裸属性泄漏（React 不展开 rest，props 显式传） | 已修（`e79d5c3f1`）：usePositioner 去 rest 展开；4 个 positioner 调用方 toRefs 剔除定位参数 + 显式传 props |
+| M2-6 | modal popup 多 aria-modal、缺 focusable | actview Dialog/Drawer popup 直接渲染 aria-modal（React 经 labelable 注入）；缺 `FOCUSABLE_POPUP_PROPS`（data-base-ui-focusable + tabIndex） | 已修：去 aria-modal + 5 个 popup（Dialog/Drawer/Popover/PreviewCard/Tooltip）加 FOCUSABLE_POPUP_PROPS |
+| M2-7 | PreviewCard.Trigger 默认标签 | actview 用 `'button'`，React 用 `'a'` | 已修：改 'a' + 去 useButton；测试查询改标签（无 href 的 a 无 link role） |
+| M2-8 | Menu.GroupLabel 要求 Group 上下文 | **两端源码逐字一致**（无 Group 都抛同样错）——与仓库 React 参考一致 | 保持现状（用户期望与仓库基准矛盾） |
+| M2-9 | PreviewCard 默认 inert | **实测无 inert**（modal 默认 false，与 React 一致） | 保持现状（与报告不符，场景差异） |
+| M2-10 | Menu.Separator 缺失 | React menu index 有 Separator（复用通用 Separator），actview 缺 | 已修：index.parts 导出 `Separator`（`@/separator/Separator`） |
