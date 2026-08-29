@@ -27,6 +27,7 @@
 - 非测试组件 tsx 共 **229 个**；~~其中 ~169 个使用本地旧签名 useRenderElement~~ **已全部迁移到新签名**（combobox 24 / select 17 / number-field 4 / menu indicator 2 / Form / Menubar），`useRenderElementLegacy.tsx` 已删除；剩余组件为 Provider / 薄委托 / Portal / 简单包装（纯 JSX，豁免类）。
 - **defineComponent 源码文件已清零**：utils/FocusGuard、utils/InternalBackdrop、use-render/useRender（测试辅助导出）均改为裸函数/删除；`unrefs` 全库清零（avatar×2 / separator / toggle-group / radio-group 已改 computed elementProps）。
 - **类型错误清零**：floating-ui-tests 的 `.value` 链（ListboxFocus / Menu / MenuOrientation）已修——`tsgo -b` 全绿。
+- **全量测试全绿**：**1141 passed / 45 skipped（153/153 文件）**——menu 系 89/89（MenuRoot provider 内联修复 render-prop payload 追踪）、floating-ui-tests 131/131（依赖仓库 getter 载体适配）。
 - **internals 与权威差异**：3 个 DIFF（`useRenderElement.tsx` / `getStateAttributesProps.ts` / `types.ts`）+ 5 个缺失（`mergeProps.ts`、`useMergedRefs.ts`、`utils/getReactElementRef.ts`、`utils/mergeObjects.ts`、`utils/resolveClassNameStyle.ts`）；本地 `src/merge-props/mergeProps.ts` 为旧变体（哈希不同）。
 - 本地特有（权威没有，保留或评估）：`useRootElementFragment`、`defineHeadless`、`store`、`composite`、`use-button`、`useAnchorPositioning`、`useTransitionStatus` 等 hooks、`floating-ui-react` 移植层（30 文件）。
 - 权威参照共 16 文件：`internals/`（useRenderElement / mergeProps / getStateAttributesProps / types / useMergedRefs / utils×3）+ `avatar/`（Root/Context/stateAttributesMapping/index）+ `checkbox/`（CheckboxRoot/CheckboxGroup/checkbox-context/index）。
@@ -70,14 +71,14 @@
 - [x] otp-field（8）✅——Root context 改 getter 载体（autoComplete 补齐）；Root/Input 全迁；setup 风格测试改裸函数组件
 
 ### 批次 3：弹层族
-- [x] floating-ui-react 适配层（4 文件）✅——FloatingTree/Node/Portal/FocusManager 裸函数化 + store-as-is；**依赖仓库 E:\code3\floating-ui 的 FloatingTree context hooks 已适配（独立 commit）**——发布 dist 旧契约是弹层族全体崩溃根因
+- [x] floating-ui-react 适配层（4 文件）✅——FloatingTree/Node/Portal/FocusManager 裸函数化 + store-as-is；**依赖仓库 E:\code3\floating-ui 已完整适配 store-as-is**（FloatingTree context hooks 独立 commit；本轮 FloatingPortal/FloatingFocusManager/FloatingList 改 getter 载体 + payload 直读——**floating-ui-tests 131/131 全绿**）；**全量测试 1141/1141 全绿（153/153 文件）**
 - [x] tooltip（16）✅——Root/Trigger/Popup/Portal/Positioner/Arrow/Viewport/Provider 全迁；**45/45 测试绿（原 0/45）**；useAnchorPositioning 返回字段 computed 化（flip/shift 后 side/align 实时）；ReactStore.useSyncedValues 支持 ref；usePositioner 补 className 合并
 - [x] popover（18）✅——Root/Trigger/Popup/Portal/Positioner/Arrow/Backdrop/Close/Title/Description/Viewport 全迁；**73/73 测试绿（原 0/50）**；useAnchoredPopupScrollLock 参数 ref 化；setup 风格测试改裸函数
 - [x] preview-card（15）✅——Root/Trigger/Popup/Positioner/Arrow/Backdrop/Viewport/Portal + 3 context 全迁；7/7 测试绿
 - [x] dialog（16）✅——Root/Trigger/Popup/Portal/Backdrop/Close/Title/Description/Viewport + 2 context 全迁；**69/69 测试绿（原 0/63）**
 - [x] alert-dialog（5）✅——Root/Trigger 全迁（复用 DialogRootContext/store）；6/6 测试绿
 - [x] drawer（15）✅——Root/Trigger/Popup/Portal/Backdrop/Close/Title/Description/Content/Viewport/Provider + context 全迁；8/8 测试绿；useDrawerPortalContext 更名对齐
-- [x] menu 系（menu 17 + context-menu 5 + menubar 3）✅——全部组件/context hooks store-as-is + 新 hook；**57/58 测试绿**（唯一失败：viewport remount 深链路用例，预存行为待专项排查）；navigation-menu（13）✅——12/12 绿（关闭态不渲染内容语义补齐）；类型 92→52，批次 3 收官
+- [x] menu 系（menu 17 + context-menu 5 + menubar 3）✅——全部组件/context hooks store-as-is + 新 hook；**89/89 测试全绿**（此前唯一失败 viewport remount 深链路用例已修复：MenuRoot 的 provider 变量在 setup 期构建冻结 content.value 快照 → 内联进渲染函数后 render-prop children 实时追踪 store payload；ContextMenuTrigger abort 用例同步转绿）；navigation-menu（13）✅——12/12 绿（关闭态不渲染内容语义补齐）；类型 92→52，批次 3 收官
 
 ### 批次 4：大族（最后，调用点最多）
 - [x] select（25）✅——2 context hooks store-as-is（SelectRootContext 残留条件 `context.value` 恒 undefined → 恒 throw 是唯一根因）+ 5 测试 wrapper 裸函数化；**11/11 测试绿**；叶子组件（Arrow/Backdrop/Icon/Label/Group/GroupLabel/Scroll×3/Item/ItemIndicator/ItemText/List/Popup/Positioner/Trigger/Value）**全部迁移新 hook + computed elementProps**
