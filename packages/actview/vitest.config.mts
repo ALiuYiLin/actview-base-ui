@@ -4,8 +4,27 @@ import actviewScopedPlugin from '@actview/plugin-scoped';
 import { playwright } from '@vitest/browser-playwright';
 import path from 'path';
 
+// actview 组件转换只应作用于本仓库源码与测试文件。node_modules 的第三方
+// .js/.ts 库（如 vitest 的 @vitest/expect dist）会被大写开头的普通函数
+// （JestExtendPlugin 等工厂）误判为组件并触发 setup 风格报错——拦截跳过。
+function scopedActviewPlugin() {
+  const inner = actviewPlugin();
+  const originalTransform = inner.transform.bind(inner);
+  return {
+    ...inner,
+    transform(code: string, id: string) {
+      const cleanId = id.split('?')[0];
+      const normalized = cleanId.replace(/\\/g, '/');
+      if (normalized.includes('/node_modules/')) {
+        return null;
+      }
+      return originalTransform(code, id);
+    },
+  };
+}
+
 export default defineProject({
-  plugins: [actviewPlugin(), ...actviewScopedPlugin()],
+  plugins: [scopedActviewPlugin(), ...actviewScopedPlugin()],
   resolve: {
     dedupe: ['@actview/core', '@actview/jsx'],
     alias: {
