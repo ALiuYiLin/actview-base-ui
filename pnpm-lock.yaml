@@ -5,7 +5,6 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  '@actview/core': 1.4.0
   brace-expansion@1: 1.1.18
   brace-expansion@2: 2.1.4
   brace-expansion@5: 5.0.9
@@ -337,11 +336,11 @@ importers:
         specifier: workspace:*
         version: link:../actview-utils
       '@actview/core':
-        specifier: 1.4.0
-        version: 1.4.0
+        specifier: ^1.4.1
+        version: 1.4.1
       '@actview/floating-ui':
-        specifier: ^0.1.1
-        version: 0.1.1
+        specifier: ^0.1.2
+        version: 0.1.2
       '@actview/jsx':
         specifier: ^1.1.0
         version: 1.1.0
@@ -353,7 +352,7 @@ importers:
         version: 0.2.12
       actview:
         specifier: ^1.1.1
-        version: 1.1.1(@actview/core@1.4.0)(@actview/jsx@1.1.0)
+        version: 1.1.1(@actview/core@1.4.1)(@actview/jsx@1.1.0)
       clsx:
         specifier: 2.1.1
         version: 2.1.1
@@ -366,7 +365,7 @@ importers:
         version: 1.1.2(@babel/core@8.0.1)(@babel/generator@8.0.0)(vite@8.0.16(@types/node@22.18.13)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.47.1)(tsx@4.21.0)(yaml@2.9.0))
       '@actview/testing':
         specifier: 0.1.1
-        version: 0.1.1(@actview/core@1.4.0)
+        version: 0.1.1(@actview/core@1.4.1)
       '@testing-library/dom':
         specifier: ^10.4.0
         version: 10.4.1
@@ -383,7 +382,7 @@ importers:
   packages/actview-utils:
     dependencies:
       '@actview/core':
-        specifier: 1.4.0
+        specifier: ^1.1.0
         version: 1.4.0
       '@actview/jsx':
         specifier: ^1.1.0
@@ -702,8 +701,11 @@ packages:
   '@actview/core@1.4.0':
     resolution: {integrity: sha512-GWlQa0tqTbvpDuK3vITV8uxstziuJbsXKCanFRu0BsdbQfPGBT/aSf4v8JK2MD5/12vO0iWMozATcNHXAlrbJw==}
 
-  '@actview/floating-ui@0.1.1':
-    resolution: {integrity: sha512-vnzDjTsY2+K5Loda03PnShqPpHTQBpAR+2A7QlXlz74k8Q483y5AN0XoYBDdzNbPyfZzuU6PjwxEoX17K+1+mg==}
+  '@actview/core@1.4.1':
+    resolution: {integrity: sha512-f0UB+IvDexB7nb3IoLF7kVgGHQhkTmNeEdAND2/RVtId6wxjQqByf501c9cdOzI85Rsdzrf7JmL6bJB6dFLoiQ==}
+
+  '@actview/floating-ui@0.1.2':
+    resolution: {integrity: sha512-6rnjQQ9V9jAM5aYEv0L5pPaz/8WT/qU2bHrEGNvYgFLQ2P+CXSNMzG2suEzaYaZ6Ita74bVoFGpTLhrBXuokkg==}
 
   '@actview/jsx@1.1.0':
     resolution: {integrity: sha512-qhieLhp5xcL+A/wE5mnDS0vnl4ilm6C8KohzZE1mNZEePy2iI1TV093op8vDbQeY97wQPZJRC/78RX2bTDd37w==}
@@ -745,7 +747,7 @@ packages:
   '@actview/testing@0.1.1':
     resolution: {integrity: sha512-2mgyjUAH1vnKHgpemICeZfS5dz6DYiRsozdcMd4sGgkHj/+3N3Q14Tow3vhZp3Z68fJ4EBG67zaEcgwNJsYUIQ==}
     peerDependencies:
-      '@actview/core': 1.4.0
+      '@actview/core': ^1.1.0
 
   '@adobe/css-tools@4.4.4':
     resolution: {integrity: sha512-Elp+iwUx5rN5+Y8xLt5/GRoG20WGoDCQ/1Fb+1LiGtvwbDavuSk0jhD/eZdckHAuzcDzccnkv+rEjyWfRx18gg==}
@@ -4669,7 +4671,7 @@ packages:
   actview@1.1.1:
     resolution: {integrity: sha512-s8/e/1ZOdWTzEHY/d2n5903+gTVVJIuVJwGVTPgJu8Mhva4G4wds/0W8zvCdQRNzFiOWaLBbB4X3q5FuHKG+pA==}
     peerDependencies:
-      '@actview/core': 1.4.0
+      '@actview/core': ^1.1.0
       '@actview/jsx': ^1.1.0
 
   add-stream@1.0.0:
@@ -9869,9 +9871,11 @@ snapshots:
 
   '@actview/core@1.4.0': {}
 
-  '@actview/floating-ui@0.1.1':
+  '@actview/core@1.4.1': {}
+
+  '@actview/floating-ui@0.1.2':
     dependencies:
-      '@actview/core': 1.4.0
+      '@actview/core': 1.4.1
       '@actview/jsx': 1.1.0
       '@floating-ui/dom': 1.8.0
       '@floating-ui/utils': 0.2.12
@@ -9928,6 +9932,10 @@ snapshots:
   '@actview/testing@0.1.1(@actview/core@1.4.0)':
     dependencies:
       '@actview/core': 1.4.0
+
+  '@actview/testing@0.1.1(@actview/core@1.4.1)':
+    dependencies:
+      '@actview/core': 1.4.1
 
   '@adobe/css-tools@4.4.4': {}
 
@@ -14258,6 +14266,11 @@ snapshots:
   actview@1.1.1(@actview/core@1.4.0)(@actview/jsx@1.1.0):
     dependencies:
       '@actview/core': 1.4.0
+      '@actview/jsx': 1.1.0
+
+  actview@1.1.1(@actview/core@1.4.1)(@actview/jsx@1.1.0):
+    dependencies:
+      '@actview/core': 1.4.1
       '@actview/jsx': 1.1.0
 
   add-stream@1.0.0: {}
