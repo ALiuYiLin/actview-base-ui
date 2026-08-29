@@ -152,3 +152,30 @@
     - Provider payload = 身份稳定 getter 载体（provide 只在 Provider setup 执行一次，新对象冻结快照）；
     - 动态原生标签用 `<component is={Tag}>`；`toValue` / `createElement` / `cloneVNode` / `useRootElement`(-Fragment) 全禁；
     - 违例形态（均已清零）：IIFE、渲染闭包 `return () => JSX`（plugin-babel 2.0 编译期拒绝）、手动 defineComponent 包装。
+11. **测试命令入口（golden 修复轮教训）**：`--project @actview/base-ui` 项目过滤器只存在于**仓库根**的 vitest workspace（`vitest.config.mts` 的 `projects` glob 把各包 config 收编为项目，项目名 = 包名）；在 `packages/actview` 内执行会报 `No projects matched the filter`（exit 1 且无测试输出，易误判为失败）。actview 单项目全量：根目录 `VITEST_ENV=jsdom node_modules/.bin/vitest.cmd run --project @actview/base-ui`。
+
+---
+
+## 附录 D：golden 差异清单（C1–C14）执行记录
+
+> React 参考 vs actview 移植的差异清单（用户提供，C1–C15）。根因族修复顺序 A → B → D → C。C15 内容见会话记录，未在本仓库留档。
+
+| # | 差异（组件/区域） | 根因定位 | 处置 |
+|---|---|---|---|
+| C1 | CompositeItem 的 `tag`/`metadata` 泄漏到 DOM | A1：组件自定义 props 未从 toRefs 解构剔除 | 已修（`764c4a147`）|
+| C2 | style 序列化（数字补 px / undefined 过滤） | core `stringifyStyle` | 已随 core 1.4.0 修复 |
+| C3 | composite `highlightedIndex`（roving tabindex） | **已实现/误报**：toggle-group 探针 `false/0 | true/-1 | false/-1`——唯一 tabindex=0 与 React roving tabindex 一致；React Toggle 同样无 ACTIVE_COMPOSITE_ITEM；radio 侧经 `[ACTIVE_COMPOSITE_ITEM]: checked ? '' : undefined`（RadioRoot）已实现 | 无需改 |
+| C4 | SliderRoot 自定义 props（min/max/step/…）泄漏 | A2：toRefs 解构未剔除 | 已修（`764c4a147`）|
+| C5 | SliderThumb 隐藏 input ARIA / data-index | input ARIA **已实现**（隐藏 input 携带 aria-valuenow/valuetext/orientation，非缺陷）；`data-index` slider/tabs/accordion 与 React 一致输出，composite 项 data-index 由测试侧经 `useCompositeListItem` 驱动（actview 与 React 实现逐字等价，返回值形态 ComputedRef 属框架差异） | 非缺陷 |
+| C6 | Toggle 无条件输出 `aria-disabled` | B 族：仅 group 内应输出（`groupContext ? disabled ? 'true':'false' : {}`） | 已修（`cf861fd66`）|
+| C7 | style 值 undefined 未过滤 | core `stringifyStyle` | 已随 core 1.4.0 修复 |
+| C8 | Toggle `pressed` 泄漏到 DOM | B 族：toRefs 解构未剔除 | 已修（`cf861fd66`）|
+| C9 | SliderIndicator 缺 `data-base-ui-slider-indicator`（prehydration script 定位） | D1：迁移遗漏（React 参考有） | 已修（`76efc4da5`）|
+| C10 | 横向 16 文件自定义 props 泄漏（accordion/collapsible/menu/dialog/drawer/field/number-field/switch/tabs/scroll-area/slider-thumb） | A5：统一 toRefs 剔除 | 已修（`764c4a147`）|
+| C11 | 布尔属性未输出为 attribute | core `setProp` | 已随 core 1.4.0 修复 |
+| C12 | `useLabelableId` 语义差异 | 与 React 参考（`packages/react/.../useLabelableId.ts:82`）**逐字一致** | 非缺陷 |
+| C13 | Separator `orientation` 泄漏 | A4：toRefs 解构未剔除 | 已修（`764c4a147`）|
+| C14 | Toggle `ref/disabled/nativeButton/onPressedChange` 泄漏 | B 族：toRefs 解构未剔除 | 已修（`cf861fd66`）|
+| C15 | —（内容在会话记录，未留档） | — | 待核对 |
+
+**附加（golden 之外）**：core 1.4.0 引入的 `autoFocus` camelCase 布尔缺陷（FFM 用例暴露）随 core 1.4.1 修复（`E:\code3\actview` commit `3113969`）；RadioRoot group 分支 refs 补转发 ref 对齐 React 参考（`76efc4da5`）。
