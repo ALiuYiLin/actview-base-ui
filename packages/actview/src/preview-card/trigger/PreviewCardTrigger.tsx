@@ -106,6 +106,10 @@ export function PreviewCardTrigger(componentProps: PreviewCardTrigger.Props) {
             open: isOpenedByThisTrigger.value,
             disabled: disabled.value,
           },
+          // 对齐 React 参考：显式 stateAttributesMapping 防默认 data-open
+          // 产出（getStateAttributesProps 无 mapping 时 state.open→data-open，
+          // M2-原语-9：React 只输出 data-popup-open）。
+          stateAttributesMapping: triggerOpenStateMapping,
           ref: useMergedRefs(triggerElementRef, componentProps.ref as any),
           props: rootProps.value,
         },

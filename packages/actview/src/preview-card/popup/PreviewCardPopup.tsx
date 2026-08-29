@@ -107,7 +107,8 @@ export function PreviewCardPopup(componentProps: PreviewCardPopup.Props) {
       popupProps.value,
       {
         id: floatingId?.value,
-        role: 'dialog',
+        // 对齐 React 参考：PreviewCard content 无 role="dialog"（hover-card 非
+        // 对话框语义，M2-原语-9）。
         'aria-labelledby': titleId.value,
         'aria-describedby': descriptionId.value,
       },
@@ -122,20 +123,11 @@ export function PreviewCardPopup(componentProps: PreviewCardPopup.Props) {
   });
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  const FocusManager = FloatingFocusManager as any;
+  // 对齐 React 参考：PreviewCard（hover-card）非 modal，popup 不包
+  // FloatingFocusManager——否则 markOthers 会给 root 打 data-base-ui-inert
+  // （M2-原语-9：React 参考 root 无 inert）。
   return (
-    <FocusManager
-      context={floatingContext.value as any}
-      openInteractionType={openMethod.value as any}
-      modal={focusManagerModal}
-      disabled={!mounted.value || openReason.value === REASONS.triggerHover}
-      initialFocus={(componentProps.initialFocus === undefined ? true : componentProps.initialFocus) as any}
-      returnFocus={componentProps.finalFocus === undefined ? true : componentProps.finalFocus}
-      restoreFocus="popup"
-      previousFocusableElement={activeTriggerElement.value as HTMLElement | null}
-      nextFocusableElement={store.context.triggerFocusTargetRef}
-      beforeContentFocusGuardRef={store.context.beforeContentFocusGuardRef}
-    >
+    <>
       {useRenderElement(
         'div',
         {
@@ -156,7 +148,7 @@ export function PreviewCardPopup(componentProps: PreviewCardPopup.Props) {
           props: rootProps.value,
         },
       )}
-    </FocusManager>
+    </>
   );
 }
 
