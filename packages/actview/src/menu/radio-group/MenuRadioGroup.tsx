@@ -19,10 +19,18 @@ export function MenuRadioGroup(componentProps: MenuRadioGroup.Props) {
   const ariaLabelledByProp = computed(() => componentProps['aria-labelledby']);
 
   // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
-  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
-    string,
-    Ref<any>
-  >;
+  // 组件自定义 props（value/defaultValue/onValueChange/disabled）剔除——
+  // 否则泄漏到 DOM（对齐 React）。
+  const {
+    className,
+    render,
+    style,
+    value: _value,
+    defaultValue: _defaultValue,
+    onValueChange: _onValueChange,
+    disabled: _disabled,
+    ...elementRefs
+  } = toRefs(componentProps) as Record<string, Ref<any>>;
 
   const labelId = ref<string | undefined>(undefined);
 

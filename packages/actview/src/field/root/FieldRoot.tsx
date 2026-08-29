@@ -192,7 +192,7 @@ function FieldRootInner(componentProps: FieldRoot.Props) {
 
   // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
   // 组件自定义 props（disabled/name/validate/validationMode/validationDebounceTime/
-  // invalid）剔除——否则泄漏到 DOM。
+  // invalid/actionsRef）剔除——否则泄漏到 DOM（actionsRef 为 ref 形 props）。
   const {
     className,
     render,
@@ -203,6 +203,7 @@ function FieldRootInner(componentProps: FieldRoot.Props) {
     validationMode: _validationMode,
     validationDebounceTime: _validationDebounceTime,
     invalid: _invalid,
+    actionsRef: _actionsRef,
     ...elementRefs
   } = toRefs(componentProps) as Record<string, Ref<any>>;
 

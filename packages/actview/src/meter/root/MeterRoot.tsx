@@ -54,10 +54,21 @@ export function MeterRoot(componentProps: MeterRoot.Props) {
   });
 
   // 值形 props toRefs 活引用；children 不解构（追加隐藏 NVDA 朗读 span 后作为
-  // 元素 children）。
-  const { render, className, children: childrenRef, style, ...elementRefs } = toRefs(
-    componentProps,
-  ) as Record<string, Ref<any>>;
+  // 元素 children）。组件自定义 props（format/getAriaValueText/locale/max/min/
+  // value）剔除——否则泄漏到 DOM（对齐 React）。
+  const {
+    render,
+    className,
+    children: childrenRef,
+    style,
+    format: _format,
+    getAriaValueText: _getAriaValueText,
+    locale: _locale,
+    max: _max,
+    min: _min,
+    value: _value,
+    ...elementRefs
+  } = toRefs(componentProps) as Record<string, Ref<any>>;
 
   const elementProps = computed(() => {
     const out: Record<string, any> = {};

@@ -22,10 +22,22 @@ export function NavigationMenuRoot(componentProps: NavigationMenuRoot.Props) {
   const disabled = computed(() => componentProps.disabled ?? false);
 
   // 值形 props toRefs 活引用；children 单独排除（render prop 需函数调用后
-  // 作为 children 覆盖注入）。
-  const { className, render, style, children: childrenRef, ...elementRefs } = toRefs(
-    componentProps,
-  ) as Record<string, Ref<any>>;
+  // 作为 children 覆盖注入）。组件自定义 props（value/defaultValue/
+  // onValueChange/orientation/modal/disabled）剔除——否则泄漏到 DOM
+  // （对齐 React）。
+  const {
+    className,
+    render,
+    style,
+    children: childrenRef,
+    value: _value,
+    defaultValue: _defaultValue,
+    onValueChange: _onValueChange,
+    orientation: _orientation,
+    modal: _modal,
+    disabled: _disabled,
+    ...elementRefs
+  } = toRefs(componentProps) as Record<string, Ref<any>>;
 
   const [valueState, setValueState] = useControlled<any>({
     controlled: () => componentProps.value,

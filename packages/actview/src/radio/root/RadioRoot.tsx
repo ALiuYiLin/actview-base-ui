@@ -252,10 +252,24 @@ export function RadioRoot<Value>(componentProps: RadioRoot.Props<Value>) {
   };
 
   // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
-  // ref 为 ref 形 props（直读本体）——剔除，否则对象泄漏进 elementProps。
-  const { render, className, style, ref: _ref, ...elementRefs } = toRefs(
-    componentProps,
-  ) as Record<string, Ref<any>>;
+  // ref/inputRef 为 ref 形 props（直读本体）——剔除，否则对象泄漏进 elementProps；
+  // 其余为组件自定义 props（value/disabled/readOnly/required/nativeButton/
+  // aria-labelledby/id 由 rootPropsBase 提供）——剔除，否则泄漏到 DOM（对齐 React）。
+  const {
+    render,
+    className,
+    style,
+    ref: _ref,
+    value: _value,
+    disabled: _disabled,
+    readOnly: _readOnly,
+    required: _required,
+    inputRef: _inputRef,
+    nativeButton: _nativeButton,
+    'aria-labelledby': _ariaLabelledBy,
+    id: _id,
+    ...elementRefs
+  } = toRefs(componentProps) as Record<string, Ref<any>>;
 
   const elementProps = computed(() => {
     const out: Record<string, any> = {};

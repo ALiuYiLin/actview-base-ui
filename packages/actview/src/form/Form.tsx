@@ -131,10 +131,20 @@ export function Form(componentProps: Form.Props) {
   };
 
   // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
-  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
-    string,
-    Ref<any>
-  >;
+  // 组件自定义 props（validationMode/errors/onSubmit/onFormSubmit/actionsRef）剔除
+  // ——否则泄漏到 DOM，且 onSubmit 会经 elementProps 覆盖 rootProps 的框架 submit
+  // 流程（validation + preventDefault 被绕过，对齐 React）。
+  const {
+    className,
+    render,
+    style,
+    validationMode: _validationMode,
+    errors: _errors,
+    onSubmit: _onSubmit,
+    onFormSubmit: _onFormSubmit,
+    actionsRef: _actionsRef,
+    ...elementRefs
+  } = toRefs(componentProps) as Record<string, Ref<any>>;
 
   // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
   const elementProps = computed(() => {

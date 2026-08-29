@@ -68,9 +68,21 @@ export function ProgressRoot(componentProps: ProgressRoot.Props) {
   });
 
   // 值形 props toRefs 活引用；children 单独引用（追加隐藏 NVDA 朗读 span）。
-  const { render, className, style, children: childrenRef, ...elementRefs } = toRefs(
-    componentProps,
-  ) as Record<string, Ref<any>>;
+  // 组件自定义 props（format/getAriaValueText/locale/max/min/value）剔除——
+  // 否则泄漏到 DOM（对齐 React）。
+  const {
+    render,
+    className,
+    style,
+    children: childrenRef,
+    format: _format,
+    getAriaValueText: _getAriaValueText,
+    locale: _locale,
+    max: _max,
+    min: _min,
+    value: _value,
+    ...elementRefs
+  } = toRefs(componentProps) as Record<string, Ref<any>>;
 
   // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
   const elementProps = computed(() => {

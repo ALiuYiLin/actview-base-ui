@@ -121,12 +121,27 @@ export function SwitchRoot(componentProps: SwitchRoot.Props) {
   );
 
   // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
-  // 组件自定义 props（defaultChecked）剔除——否则泄漏到 DOM。
+  // 组件自定义 props（checked/defaultChecked/aria-labelledby/form/id/inputRef/
+  // name/nativeButton/onCheckedChange/readOnly/required/disabled/uncheckedValue/
+  // value）剔除——否则泄漏到 DOM（对齐 React）。
   const {
     className,
     render,
     style,
+    checked: _checked,
     defaultChecked: _defaultChecked,
+    'aria-labelledby': _ariaLabelledBy,
+    form: _form,
+    id: _id,
+    inputRef: _inputRef,
+    name: _name,
+    nativeButton: _nativeButton,
+    onCheckedChange: _onCheckedChange,
+    readOnly: _readOnly,
+    required: _required,
+    disabled: _disabled,
+    uncheckedValue: _uncheckedValue,
+    value: _value,
     ...elementRefs
   } = toRefs(componentProps) as Record<string, Ref<any>>;
 

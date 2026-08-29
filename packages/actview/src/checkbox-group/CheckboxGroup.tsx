@@ -158,12 +158,18 @@ export function CheckboxGroup(componentProps: CheckboxGroup.Props) {
   };
 
   // 值形 props toRefs 活引用；id 走 setup 快照（rootProps 里消费）；children
-  // 不解构、随 elementRefs 流入渲染元素。
+  // 不解构、随 elementRefs 流入渲染元素。组件自定义 props（value/defaultValue/
+  // onValueChange/allValues/disabled）剔除——否则泄漏到 DOM（对齐 React）。
   const {
     className,
     render,
     style,
     id: _id,
+    value: _value,
+    defaultValue: _defaultValue,
+    onValueChange: _onValueChange,
+    allValues: _allValues,
+    disabled: _disabled,
     ...elementRefs
   } = toRefs(componentProps) as Record<string, Ref<any>>;
 

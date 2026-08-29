@@ -404,6 +404,7 @@ export function NumberFieldRoot(componentProps: NumberFieldRoot.Props) {
     locale: _locale,
     onValueChange: _onValueChange,
     onValueCommitted: _onValueCommitted,
+    inputRef: _inputRef,
     ...elementRefs
   } = toRefs(componentProps) as Record<string, Ref<any>>;
 

@@ -211,10 +211,24 @@ export function RadioGroup<Value>(componentProps: RadioGroup.Props<Value>) {
   };
 
   // ============ setup：值形 props toRefs 活引用；children 不解构、随 elementRefs 流入 ============
-  const {render, className, style, ...elementRefs} = toRefs(componentProps) as Record<
-    string,
-    Ref<any>
-  >;
+  // 组件自定义 props（disabled/readOnly/required/name/form/value/defaultValue/
+  // onValueChange/inputRef）剔除——否则泄漏到 DOM（id 由 defaultProps 提供，对齐 React）。
+  const {
+    render,
+    className,
+    style,
+    disabled: _disabled,
+    readOnly: _readOnly,
+    required: _required,
+    name: _name,
+    form: _form,
+    value: _value,
+    defaultValue: _defaultValue,
+    onValueChange: _onValueChange,
+    inputRef: _inputRef,
+    id: _id,
+    ...elementRefs
+  } = toRefs(componentProps) as Record<string, Ref<any>>;
 
   // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
   // children 排除（显式作为 CompositeRoot children 传入）。
