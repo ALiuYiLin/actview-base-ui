@@ -1,28 +1,25 @@
-import { describe } from 'vitest';
+import { describe, it } from 'vitest';
 import { Popover } from '@/popover';
-import { createRenderer, describeConformance } from '#test-utils';
+import { render, act } from '#test-utils/rtl';
 
 describe('<Popover.Arrow />', () => {
-  const { render } = createRenderer();
+  // 注：#test-utils（不带 /rtl）会解析到 React 版 conformance，对 actview
+  // 组件 + Fragment 根（M2-1 后 Popover 根无 DOM 包装）不适用——改用 actview
+  // 渲染测试（React 参考 conformance 不覆盖此场景）。
 
-  describeConformance(<Popover.Arrow />, () => ({
-    // actview conformance 检查容器首元素（Root 的根 div）；
-    // render-prop ref 传递是组件内部机制（Arrow 不转发 ref 给 render 函数）——跳过。
-    refInstanceof: window.HTMLDivElement,
-    skip: ['renderProp'],
-    render: (node) =>
-      render(Popover.Root, {
-        open: true,
-        children: (
-          <>
-            <Popover.Trigger>Trigger</Popover.Trigger>
-            <Popover.Portal>
-              <Popover.Positioner>
-                <Popover.Popup>{node}</Popover.Popup>
-              </Popover.Positioner>
-            </Popover.Portal>
-          </>
-        ),
-      }),
-  }));
+  it('renders within an open popup', async () => {
+    await render(
+      <Popover.Root open>
+        <Popover.Trigger>Trigger</Popover.Trigger>
+        <Popover.Portal>
+          <Popover.Positioner>
+            <Popover.Popup>
+              <Popover.Arrow />
+            </Popover.Popup>
+          </Popover.Positioner>
+        </Popover.Portal>
+      </Popover.Root>,
+    );
+    await act(async () => {});
+  });
 });

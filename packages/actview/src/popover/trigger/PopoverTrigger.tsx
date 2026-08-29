@@ -62,6 +62,7 @@ export function PopoverTrigger(componentProps: PopoverTrigger.Props) {
   const floatingContext = store.useState('floatingRootContext');
   const isOpenedByThisTrigger = store.useState('isOpenedByTrigger', thisTriggerId);
   const popupId = store.useState('triggerPopupId', thisTriggerId);
+  const focusManagerModal = store.useState('focusManagerModal');
 
   const triggerElementRef = ref<HTMLElement | null>(null);
 
@@ -171,13 +172,19 @@ export function PopoverTrigger(componentProps: PopoverTrigger.Props) {
   }));
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  // actview 渲染无法原地 patch 结构切换，始终使用稳定的 div 包裹结构。
+  // 对齐 React 参考：modal 且由本 trigger 挂载时渲染 focus guards（去稳定 div
+  // 包装，M2-原语-1）。useRenderElement 必须内联在 JSX 内（渲染期求值——
+  // 提取到 const 会变成 setup 快照，属性不再更新）。
+  const showGuards = () => isMountedByThisTrigger.value && !focusManagerModal.value;
+
   return (
-    <div key={`${thisTriggerId}-guards`}>
-      <FocusGuard
-        ref={(el: any) => (preFocusGuardRef.value = el)}
-        onFocus={handlePreFocusGuardFocus}
-      />
+    <>
+      {showGuards() ? (
+        <FocusGuard
+          ref={(el: any) => (preFocusGuardRef.value = el)}
+          onFocus={handlePreFocusGuardFocus}
+        />
+      ) : null}
       {useRenderElement(
         'button',
         {
@@ -198,11 +205,13 @@ export function PopoverTrigger(componentProps: PopoverTrigger.Props) {
           props: rootProps.value,
         },
       )}
-      <FocusGuard
-        ref={(el: any) => (store.context.triggerFocusTargetRef.value = el)}
-        onFocus={handleFocusTargetFocus}
-      />
-    </div>
+      {showGuards() ? (
+        <FocusGuard
+          ref={(el: any) => (store.context.triggerFocusTargetRef.value = el)}
+          onFocus={handleFocusTargetFocus}
+        />
+      ) : null}
+    </>
   );
 }
 
