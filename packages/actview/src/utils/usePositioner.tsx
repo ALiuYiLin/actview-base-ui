@@ -38,12 +38,17 @@ export function usePositioner<State extends Record<string, any>>(
 
     const attributes: Record<string, string> = {};
     const mapping: any = popupStateMapping;
-    for (const key of ['open', 'anchorHidden'] as const) {
+    // open/anchorHidden 布尔；side/align 字符串（对齐 React：positioner 输出
+    // data-side/data-align，M5——之前 attributes 循环漏了这两个，tooltip/
+    // popover/hover-card 用例失败根因）。
+    for (const key of ['open', 'anchorHidden', 'side', 'align'] as const) {
       const value = stateValue[key];
       if (value === true) {
         attributes[`data-${key}`] = '';
       } else if (key === 'open' && !value) {
         attributes['data-closed'] = '';
+      } else if (value != null && value !== false && value !== '') {
+        attributes[`data-${key}`] = String(value);
       }
     }
 
