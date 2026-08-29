@@ -339,8 +339,8 @@ importers:
         specifier: ^1.3.0
         version: 1.3.0
       '@actview/floating-ui':
-        specifier: ^0.1.0
-        version: 0.1.0
+        specifier: ^0.1.1
+        version: 0.1.1
       '@actview/jsx':
         specifier: ^1.1.0
         version: 1.1.0
@@ -704,8 +704,8 @@ packages:
   '@actview/core@1.3.0':
     resolution: {integrity: sha512-bgCqpcVe5AL8WGgdZg45xsCwR9K8KMZ0W9R5bsuzLopK7GLh+hzzKMixqi7dhjOoU+c7dkuA4GiAPxfQPflQkQ==}
 
-  '@actview/floating-ui@0.1.0':
-    resolution: {integrity: sha512-1STulP8r9kAGK0XA0Rv5xHWIrhVqsn/UPFTGs9wowvzHzhejh0osgG1EkZkiIrMiWIoueuSoM7aqFCZx5IaPYA==}
+  '@actview/floating-ui@0.1.1':
+    resolution: {integrity: sha512-vnzDjTsY2+K5Loda03PnShqPpHTQBpAR+2A7QlXlz74k8Q483y5AN0XoYBDdzNbPyfZzuU6PjwxEoX17K+1+mg==}
 
   '@actview/jsx@1.1.0':
     resolution: {integrity: sha512-qhieLhp5xcL+A/wE5mnDS0vnl4ilm6C8KohzZE1mNZEePy2iI1TV093op8vDbQeY97wQPZJRC/78RX2bTDd37w==}
@@ -9873,9 +9873,9 @@ snapshots:
 
   '@actview/core@1.3.0': {}
 
-  '@actview/floating-ui@0.1.0':
+  '@actview/floating-ui@0.1.1':
     dependencies:
-      '@actview/core': 1.1.0
+      '@actview/core': 1.3.0
       '@actview/jsx': 1.1.0
       '@floating-ui/dom': 1.8.0
       '@floating-ui/utils': 0.2.12

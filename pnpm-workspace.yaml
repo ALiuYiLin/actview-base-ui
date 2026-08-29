@@ -62,7 +62,7 @@ minimumReleaseAgeExclude:
   - '@base-ui/*'
   - '@mui/internal-*'
   - '@actview/core@1.1.0 || 1.2.0 || 1.3.0'
-  - '@actview/floating-ui@0.1.0'
+  - '@actview/floating-ui@0.1.0 || 0.1.1'
   - '@actview/jsx@1.1.0'
   - '@actview/plugin-babel@1.0.7 || 2.0.0'
   - '@actview/plugin-scoped@1.0.5 || 1.0.6'
