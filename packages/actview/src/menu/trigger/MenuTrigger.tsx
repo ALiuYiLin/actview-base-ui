@@ -263,16 +263,18 @@ export function MenuTrigger(componentProps: MenuTrigger.Props) {
   });
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  // actview 渲染无法原地 patch div↔button 结构切换（open 时包裹 guards、
-  // 关闭时不包裹会导致 button 元素重建，domReference 变 disconnected），
-  // 因此始终使用稳定的 div 包裹结构。
+  // 对齐 React 参考：打开且由本 trigger 挂载时渲染 focus guards。用恒
+  // Fragment + guards 条件渲染：button 位置恒定（index 1），guards 出现/
+  // 消失不触发 button 重建（domReference 保持 connected；M2-原语-1）。
   if (!isInMenubar) {
     return (
-      <div key={`${thisTriggerId}-guards`}>
-        <FocusGuard
-          ref={(el: any) => (preFocusGuardRef.value = el)}
-          onFocus={handlePreFocusGuardFocus}
-        />
+      <>
+        {isOpenedByThisTrigger.value ? (
+          <FocusGuard
+            ref={(el: any) => (preFocusGuardRef.value = el)}
+            onFocus={handlePreFocusGuardFocus}
+          />
+        ) : null}
         {useRenderElement(
           'button',
           {
@@ -293,11 +295,13 @@ export function MenuTrigger(componentProps: MenuTrigger.Props) {
             props: rootProps.value,
           },
         )}
-        <FocusGuard
-          ref={(el: any) => (store.context.triggerFocusTargetRef.value = el)}
-          onFocus={handleFocusTargetFocus}
-        />
-      </div>
+        {isOpenedByThisTrigger.value ? (
+          <FocusGuard
+            ref={(el: any) => (store.context.triggerFocusTargetRef.value = el)}
+            onFocus={handleFocusTargetFocus}
+          />
+        ) : null}
+      </>
     );
   }
 

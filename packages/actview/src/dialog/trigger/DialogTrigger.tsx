@@ -9,8 +9,6 @@ import { useBaseUiId } from '@/internals/useBaseUiId';
 import { DialogHandle } from '../store/DialogHandle';
 import { useClick } from '@/floating-ui-react';
 import { useButton } from '@/internals/use-button/useButton';
-import { useTriggerFocusGuards } from '@/utils/popups/useTriggerFocusGuards';
-import { FocusGuard } from '@/utils/FocusGuard';
 import { useRenderElement } from '@/internals/useRenderElement';
 import { useMergedRefs } from '@/internals/useMergedRefs';
 
@@ -64,9 +62,6 @@ export function DialogTrigger(componentProps: DialogTrigger.Props) {
     native: nativeButton.value,
   });
 
-  const {preFocusGuardRef, handlePreFocusGuardFocus, handleFocusTargetFocus} =
-    useTriggerFocusGuards(store, triggerElementRef);
-
   // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
   const elementProps = computed(() => {
     const out: Record<string, any> = {};
@@ -104,13 +99,11 @@ export function DialogTrigger(componentProps: DialogTrigger.Props) {
   }));
 
   // ============ render（最后 return JSX——插件转换为渲染函数）============
-  // actview 渲染无法原地 patch 结构切换，始终使用稳定的 div 包裹结构。
+  // 对齐 React 参考：Dialog.Trigger 直接渲染 button，无 focus guards 包装
+  // （modal 的 guards 由 popup 的 FloatingFocusManager 提供；去稳定 div，
+  // M2-原语-1）。
   return (
-    <div key={`${thisTriggerId}-guards`}>
-      <FocusGuard
-        ref={(el: any) => (preFocusGuardRef.value = el)}
-        onFocus={handlePreFocusGuardFocus}
-      />
+    <>
       {useRenderElement(
         'button',
         {
@@ -131,11 +124,7 @@ export function DialogTrigger(componentProps: DialogTrigger.Props) {
           props: rootProps.value,
         },
       )}
-      <FocusGuard
-        ref={(el: any) => (store.context.triggerFocusTargetRef.value = el)}
-        onFocus={handleFocusTargetFocus}
-      />
-    </div>
+    </>
   );
 }
 
