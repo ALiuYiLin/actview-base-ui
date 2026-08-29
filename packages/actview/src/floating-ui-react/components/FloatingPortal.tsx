@@ -41,17 +41,13 @@ export const usePortalContext = () => FloatingPortalContext.use();
 
 const attr = createAttribute('portal');
 
-const visuallyHiddenStyle = {
-  position: 'absolute',
-  width: '1px',
-  height: '1px',
-  margin: '-1px',
-  padding: '0',
-  border: '0',
-  clip: 'rect(0 0 0 0)',
+// aria-owns owner 元素的隐藏样式（对齐 React 参考 internals/constants 的
+// ownerVisuallyHidden：fixed + clipPath，非 absolute/1px 变体——M2-原语-2）。
+const ownerVisuallyHidden = {
   clipPath: 'inset(50%)',
-  overflow: 'hidden',
-  whiteSpace: 'nowrap',
+  position: 'fixed',
+  top: 0,
+  left: 0,
 } as const;
 
 /**
@@ -239,7 +235,7 @@ export function FloatingPortal(componentProps: FloatingPortal.Props<any>) {
           <span
             role={portalOwnerRole.value}
             aria-owns={portalNodeId}
-            style={visuallyHiddenStyle as any}
+            style={ownerVisuallyHidden as any}
           />
         )}
         {shouldRenderGuards() && portalNode.value && (

@@ -124,7 +124,7 @@ describe('<AlertDialog.Root />', () => {
     expect(screen.queryByTestId('popup')).toBe(null);
   });
 
-  it('sets aria-modal on the popup when modal', async () => {
+  it('renders the popup with focusable marker when modal', async () => {
     await render(
       <AlertDialog.Root defaultOpen>
         <AlertDialog.Trigger>Open</AlertDialog.Trigger>
@@ -138,6 +138,8 @@ describe('<AlertDialog.Root />', () => {
     await settle();
     await settle();
 
-    expect(screen.getByTestId('popup')).toHaveAttribute('aria-modal', 'true');
+    // React 参考不渲染 aria-modal（M2-原语-6）——断言 focusable 标记。
+    expect(screen.getByTestId('popup')).not.toHaveAttribute('aria-modal');
+    expect(screen.getByTestId('popup')).toHaveAttribute('data-base-ui-focusable');
   });
 });

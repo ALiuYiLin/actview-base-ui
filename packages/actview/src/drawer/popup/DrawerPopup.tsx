@@ -11,6 +11,7 @@ import type { TransitionStatus } from '@/internals/useTransitionStatus';
 import type { Ref } from 'actview';
 import { useRenderElement } from '@/internals/useRenderElement';
 import { useMergedRefs } from '@/internals/useMergedRefs';
+import { FOCUSABLE_POPUP_PROPS } from '@/utils/popups';
 
 /**
  * A container for the Drawer contents.
@@ -110,9 +111,7 @@ export function DrawerPopup(componentProps: DrawerPopup.Props) {
         id: floatingId?.value,
         'aria-labelledby': titleElementId.value,
         'aria-describedby': descriptionElementId.value,
-        'aria-modal': modal.value !== false ? 'true' : undefined,
         role: role.value,
-        tabIndex: -1,
         hidden: !mounted.value,
         onKeyDown(event: any) {
           if (COMPOSITE_KEYS.has(event.key)) {
@@ -123,6 +122,9 @@ export function DrawerPopup(componentProps: DrawerPopup.Props) {
           '--nested-drawers': nestedOpenDrawerCount.value,
         },
       },
+      // data-base-ui-focusable + tabIndex:-1（对齐 React FOCUSABLE_POPUP_PROPS；
+      // 去掉 aria-modal——M2-原语-6）。
+      FOCUSABLE_POPUP_PROPS,
       getDisabledMountTransitionStyles(transitionStatus.value),
       elementProps.value,
     ]);

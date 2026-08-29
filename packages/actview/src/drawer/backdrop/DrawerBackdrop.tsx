@@ -52,9 +52,8 @@ export function DrawerBackdrop(componentProps: DrawerBackdrop.Props) {
     return {
       role: 'presentation',
       hidden: !mounted.value,
+      // 对齐 React 参考：组件 backdrop 仅 userSelect（M2-原语-3）。
       style: {
-        position: 'fixed',
-        inset: 0,
         userSelect: 'none',
         WebkitUserSelect: 'none',
         ...(elementProps.value.style ?? {}),

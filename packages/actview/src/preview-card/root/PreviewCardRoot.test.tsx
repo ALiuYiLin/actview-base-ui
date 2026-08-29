@@ -10,7 +10,9 @@ function TestPreviewCard(props: any = {}) {
   const {triggerProps = {}, rootProps = {}} = props;
   return (
     <PreviewCard.Root {...rootProps}>
-      <PreviewCard.Trigger {...triggerProps}>Trigger</PreviewCard.Trigger>
+      {/* href="#" 使 <a> 可聚焦（对齐 React 参考测试用法；组件本身无 href 时
+          不可 Tab 聚焦——M2-原语-7）。 */}
+      <PreviewCard.Trigger href="#" {...triggerProps}>Trigger</PreviewCard.Trigger>
       <PreviewCard.Portal>
         <PreviewCard.Positioner>
           <PreviewCard.Popup data-testid="popup">Preview content</PreviewCard.Popup>
@@ -27,7 +29,8 @@ describe('<PreviewCard.Root />', () => {
 
     expect(screen.queryByTestId('popup')).toBe(null);
 
-    const trigger = screen.getByRole('button', {name: 'Trigger'});
+    // PreviewCard.Trigger 默认渲染 <a>（无 href，M2-原语-7）
+    const trigger = document.querySelector('a') as HTMLElement;
     fireEvent.mouseEnter(trigger);
     await settle();
     await settle();
@@ -46,7 +49,8 @@ describe('<PreviewCard.Root />', () => {
     await render(<TestPreviewCard />);
     await settle();
 
-    const trigger = screen.getByRole('button', {name: 'Trigger'});
+    // PreviewCard.Trigger 默认渲染 <a>（无 href，M2-原语-7）
+    const trigger = document.querySelector('a') as HTMLElement;
     trigger.focus();
     await settle();
     await settle();
@@ -58,7 +62,7 @@ describe('<PreviewCard.Root />', () => {
     await render(<TestPreviewCard rootProps={{disabled: true}} />);
     await settle();
 
-    fireEvent.mouseEnter(screen.getByRole('button', {name: 'Trigger'}));
+    fireEvent.mouseEnter(document.querySelector('a') as HTMLElement);
     await settle();
     await settle();
 
@@ -79,7 +83,7 @@ describe('<PreviewCard.Root />', () => {
     await render(<TestPreviewCard rootProps={{onOpenChange}} />);
     await settle();
 
-    fireEvent.mouseEnter(screen.getByRole('button', {name: 'Trigger'}));
+    fireEvent.mouseEnter(document.querySelector('a') as HTMLElement);
     await settle();
     await settle();
 

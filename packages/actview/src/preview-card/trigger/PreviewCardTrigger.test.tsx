@@ -25,7 +25,8 @@ describe('<PreviewCard.Trigger />', () => {
     await render(<TestPreviewCard />);
     await settle();
 
-    fireEvent.click(screen.getByRole('button', {name: 'Trigger'}));
+    // PreviewCard.Trigger 默认渲染 <a>（无 href → 无 link role，M2-原语-7）。
+    fireEvent.click(document.querySelector('a')!);
     await settle();
     await settle();
 

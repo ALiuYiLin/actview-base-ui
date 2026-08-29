@@ -141,7 +141,10 @@ describe('<Dialog.Root />', () => {
     const popup = screen.getByTestId('popup');
     expect(popup).toHaveAttribute('role', 'dialog');
     expect(popup).toHaveAttribute('data-open');
-    expect(popup).toHaveAttribute('aria-modal', 'true');
+    // React 参考不渲染 aria-modal（经 labelable 系统注入）——对齐后断言
+    // data-base-ui-focusable（M2-原语-6）。
+    expect(popup).not.toHaveAttribute('aria-modal');
+    expect(popup).toHaveAttribute('data-base-ui-focusable');
   });
 
   it('renders a backdrop with role presentation', async () => {

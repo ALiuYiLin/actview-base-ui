@@ -10,6 +10,7 @@ import { getDisabledMountTransitionStyles } from '@/internals/getDisabledMountTr
 import { mergePropsN } from '@/merge-props';
 import { useRenderElement } from '@/internals/useRenderElement';
 import { useMergedRefs } from '@/internals/useMergedRefs';
+import { FOCUSABLE_POPUP_PROPS } from '@/utils/popups';
 
 /**
  * A container for the tooltip contents.
@@ -86,9 +87,9 @@ export function TooltipPopup(componentProps: TooltipPopup.Props) {
     }
 
     const merged: any = mergePropsN<any>([
-      {
-        tabIndex: -1,
-      },
+      // data-base-ui-focusable + tabIndex:-1（对齐 React FOCUSABLE_POPUP_PROPS，
+      // M2-原语-6）。
+      FOCUSABLE_POPUP_PROPS,
       popupProps.value,
       getDisabledMountTransitionStyles(transitionStatus.value),
       elementProps.value,

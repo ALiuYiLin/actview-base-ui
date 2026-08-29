@@ -57,9 +57,9 @@ export function DialogBackdrop(componentProps: DialogBackdrop.Props) {
     return {
       role: 'presentation',
       hidden: !mounted.value,
+      // 对齐 React 参考：组件 backdrop 仅 userSelect（覆盖定位由消费方/内部
+      // InternalBackdrop 承担——M2-原语-3，勿加 position/inset）。
       style: {
-        position: 'fixed',
-        inset: 0,
         userSelect: 'none',
         WebkitUserSelect: 'none',
         ...(elementProps.value.style ?? {}),

@@ -8,9 +8,11 @@ import { usePopupHandleStore, useTriggerDataForwarding } from '@/utils/popups';
 import { useBaseUiId } from '@/internals/useBaseUiId';
 import { TooltipHandle } from '../store/TooltipHandle';
 import { useHoverReferenceInteraction, useFocus } from '@/floating-ui-react';
-import { useButton } from '@/internals/use-button/useButton';
 import { useRenderElement } from '@/internals/useRenderElement';
 import { useMergedRefs } from '@/internals/useMergedRefs';
+
+// 对齐 React 参考：trigger 标识（浮层交互/外部查询用，M2-原语-4）。
+const TOOLTIP_TRIGGER_IDENTIFIER = 'data-base-ui-tooltip-trigger';
 
 /**
  * An element to attach the tooltip to.
@@ -22,7 +24,6 @@ export function TooltipTrigger(componentProps: TooltipTrigger.Props) {
   // ============ setup（只执行一次）：一次性初始化 ============
   // 渲染期/事件期消费的 props：computed 直读（setup 快照会停留在首渲染）。
   const disabled = computed(() => componentProps.disabled ?? false);
-  const nativeButton = computed(() => componentProps.nativeButton ?? true);
 
   const tooltipHandleStore = usePopupHandleStore(componentProps.handle as any);
   const handleStore = tooltipHandleStore.value;
@@ -66,11 +67,6 @@ export function TooltipTrigger(componentProps: TooltipTrigger.Props) {
     enabled: !disabled.value,
   }).reference;
 
-  const {getButtonProps, buttonRef} = useButton({
-    disabled,
-    native: nativeButton.value,
-  });
-
   // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
   const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
     string,
@@ -84,24 +80,26 @@ export function TooltipTrigger(componentProps: TooltipTrigger.Props) {
     return out;
   });
 
-  // 根元素 props：hover/focus 处理器 → id → 透传 → getButtonProps → open
-  // state data-*（保持原 propsList 语义）。
+  // 根元素 props：hover/focus 处理器 → id → 透传 → open state data-*。
+  // 对齐 React 参考：不用 useButton（button 的 type 由 useRenderElement 提供），
+  // 避免多出 tabindex="0"（M2-原语-4）。
   const rootProps = computed<Record<string, any>>(() => {
     const merged: any = mergePropsN([
       hoverProps ?? {},
       focusProps ?? {},
       {id: thisTriggerId},
       elementProps.value,
-      getButtonProps,
     ]);
     const openAttr = triggerOpenStateMapping.open(isOpenedByThisTrigger.value);
     if (openAttr) {
       Object.assign(merged, openAttr);
     }
     if (disabled.value) {
-      merged['data-disabled'] = '';
+      merged['data-trigger-disabled'] = '';
+      merged[TOOLTIP_TRIGGER_IDENTIFIER] = undefined;
     } else {
-      delete merged['data-disabled'];
+      delete merged['data-trigger-disabled'];
+      merged[TOOLTIP_TRIGGER_IDENTIFIER] = '';
     }
     return merged;
   });
@@ -117,7 +115,7 @@ export function TooltipTrigger(componentProps: TooltipTrigger.Props) {
           style: style?.value,
         },
         {
-          ref: useMergedRefs(triggerElementRef, buttonRef, componentProps.ref as any),
+          ref: useMergedRefs(triggerElementRef, componentProps.ref as any),
           props: rootProps.value,
         },
       )}

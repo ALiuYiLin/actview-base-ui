@@ -13,6 +13,7 @@ import { getDisabledMountTransitionStyles } from '@/internals/getDisabledMountTr
 import { mergePropsN } from '@/merge-props';
 import { useRenderElement } from '@/internals/useRenderElement';
 import { useMergedRefs } from '@/internals/useMergedRefs';
+import { FOCUSABLE_POPUP_PROPS } from '@/utils/popups';
 
 /**
  * A container for the popover contents.
@@ -107,10 +108,12 @@ export function PopoverPopup(componentProps: PopoverPopup.Props) {
       {
         id: floatingId?.value,
         role: 'dialog',
-        tabIndex: -1,
         'aria-labelledby': titleId.value,
         'aria-describedby': descriptionId.value,
       },
+      // data-base-ui-focusable + tabIndex:-1（对齐 React FOCUSABLE_POPUP_PROPS，
+      // M2-原语-6）。
+      FOCUSABLE_POPUP_PROPS,
       getDisabledMountTransitionStyles(transitionStatus.value),
       elementProps.value,
     ]);
