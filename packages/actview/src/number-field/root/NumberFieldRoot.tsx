@@ -379,10 +379,33 @@ export function NumberFieldRoot(componentProps: NumberFieldRoot.Props) {
 
   // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
   // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
-  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
-    string,
-    Ref<any>
-  >;
+  // 组件自定义 props（配置/受控值/回调）全部剔除——否则泄漏到根元素 DOM。
+  const {
+    className,
+    render,
+    style,
+    id: _id,
+    min: _min,
+    max: _max,
+    step: _step,
+    smallStep: _smallStep,
+    largeStep: _largeStep,
+    required: _required,
+    disabled: _disabled,
+    readOnly: _readOnly,
+    name: _name,
+    form: _form,
+    value: _value,
+    defaultValue: _defaultValue,
+    allowOutOfRange: _allowOutOfRange,
+    allowWheelScrub: _allowWheelScrub,
+    snapOnStep: _snapOnStep,
+    format: _format,
+    locale: _locale,
+    onValueChange: _onValueChange,
+    onValueCommitted: _onValueCommitted,
+    ...elementRefs
+  } = toRefs(componentProps) as Record<string, Ref<any>>;
 
   // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
   const elementProps = computed(() => {

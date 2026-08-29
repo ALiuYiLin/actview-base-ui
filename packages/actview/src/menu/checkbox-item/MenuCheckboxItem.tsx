@@ -26,10 +26,20 @@ export function MenuCheckboxItem(componentProps: MenuCheckboxItem.Props) {
   const nativeButton = computed(() => componentProps.nativeButton ?? false);
 
   // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
-  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
-    string,
-    Ref<any>
-  >;
+  // 组件自定义 props 剔除——否则泄漏到 DOM。
+  const {
+    className,
+    render,
+    style,
+    label: _label,
+    nativeButton: _nativeButton,
+    disabled: _disabled,
+    closeOnClick: _closeOnClick,
+    defaultChecked: _defaultChecked,
+    checked: _checked,
+    onCheckedChange: _onCheckedChange,
+    ...elementRefs
+  } = toRefs(componentProps) as Record<string, Ref<any>>;
 
   const listItem = useCompositeListItem({guess: true, label});
   const menuPositionerContext = useMenuPositionerContext(true);

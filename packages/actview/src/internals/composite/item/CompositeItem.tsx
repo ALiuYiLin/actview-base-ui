@@ -17,7 +17,9 @@ export function CompositeItem<Metadata, State extends Record<string, any>>(
   const { compositeProps, compositeRef } = useCompositeItem({ metadata });
 
   // 值形 props toRefs 活引用；refs 选项（ref 数组）随 toRefs 活引用透传；
-  // children 不解构、随 elementRefs 流入渲染元素。
+  // children 不解构、随 elementRefs 流入渲染元素。tag/metadata 为组件自定义
+  // props（tag 已作为 hook 第一参、metadata 已传 useCompositeItem）——剔除，
+  // 否则泄漏到 DOM。
   const {
     render,
     className,
@@ -26,6 +28,8 @@ export function CompositeItem<Metadata, State extends Record<string, any>>(
     refs: refsRef,
     state: stateRef,
     stateAttributesMapping: mappingRef,
+    tag: _tag,
+    metadata: _metadata,
     ...elementRefs
   } = toRefs(componentProps) as Record<string, Ref<any>>;
 

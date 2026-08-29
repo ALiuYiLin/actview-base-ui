@@ -1,4 +1,4 @@
-import { computed, ref } from 'actview';
+import { computed, ref, toRefs } from 'actview';
 import { useControlled } from '@/utils/useControlled';
 import { error } from '@/utils/error';
 import { useBaseUiId } from '@/internals/useBaseUiId';
@@ -70,10 +70,27 @@ export function Toggle<Value extends string>(componentProps: Toggle.Props<Value>
   return (
     <>
       {(() => {
-        const {className, render, style, ...elementProps} = componentProps;
+        // toRefs 活引用；组件自定义 props（value/pressed/defaultPressed/
+        // disabled/nativeButton/onPressedChange）剔除——否则泄漏到 DOM。
+        const {
+          className,
+          render,
+          style,
+          value: _value,
+          pressed: _pressed,
+          defaultPressed: _defaultPressed,
+          disabled: _disabled,
+          nativeButton: _nativeButton,
+          onPressedChange: _onPressedChange,
+          ...elementProps
+        } = toRefs(componentProps) as Record<string, any>;
 
         const disabledValue = disabled.value;
         const pressedValue = pressed.value;
+
+        // 渲染期展开 refs → 普通对象（透传到 props 数组）。
+        const elementPropsValue: Record<string, any> = {};
+        for (const k in elementProps) elementPropsValue[k] = elementProps[k].value;
 
         const state: ToggleState = {
           disabled: disabledValue,
@@ -112,7 +129,7 @@ export function Toggle<Value extends string>(componentProps: Toggle.Props<Value>
               setPressedState(nextPressed);
             },
           },
-          elementProps,
+          elementPropsValue,
           getButtonPropsBound,
         ];
 

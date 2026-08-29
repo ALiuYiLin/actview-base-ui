@@ -47,10 +47,17 @@ export function CollapsibleRoot(componentProps: CollapsibleRoot.Props) {
   };
 
   // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
-  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
-    string,
-    Ref<any>
-  >;
+  // 组件自定义 props（open/defaultOpen/onOpenChange/disabled）剔除——否则泄漏。
+  const {
+    className,
+    render,
+    style,
+    open: _open,
+    defaultOpen: _defaultOpen,
+    onOpenChange: _onOpenChange,
+    disabled: _disabled,
+    ...elementRefs
+  } = toRefs(componentProps) as Record<string, Ref<any>>;
 
   // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
   const elementProps = computed(() => {

@@ -102,10 +102,22 @@ export function AccordionRoot<Value = any>(componentProps: AccordionRoot.Props<V
   };
 
   // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
-  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
-    string,
-    Ref<any>
-  >;
+  // 组件自定义 props（配置/受控值/回调）全部剔除——否则泄漏到 DOM。
+  const {
+    className,
+    render,
+    style,
+    value: _value,
+    defaultValue: _defaultValue,
+    disabled: _disabled,
+    orientation: _orientation,
+    hiddenUntilFound: _hiddenUntilFound,
+    keepMounted: _keepMounted,
+    loopFocus: _loopFocus,
+    multiple: _multiple,
+    onValueChange: _onValueChange,
+    ...elementRefs
+  } = toRefs(componentProps) as Record<string, Ref<any>>;
 
   // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
   const elementProps = computed(() => {

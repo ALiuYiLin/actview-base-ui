@@ -36,10 +36,19 @@ export function MenuSubmenuTrigger(componentProps: MenuSubmenuTrigger.Props) {
   );
 
   // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
-  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
-    string,
-    Ref<any>
-  >;
+  // 组件自定义 props 剔除——否则泄漏到 DOM。
+  const {
+    className,
+    render,
+    style,
+    label: _label,
+    delay: _delay,
+    closeDelay: _closeDelay,
+    openOnHover: _openOnHover,
+    disabled: _disabled,
+    nativeButton: _nativeButton,
+    ...elementRefs
+  } = toRefs(componentProps) as Record<string, Ref<any>>;
 
   const submenuRootContext = useMenuSubmenuRootContext();
   if (!submenuRootContext?.parentMenu) {

@@ -11,10 +11,11 @@ import { useRenderElement } from '@/internals/useRenderElement';
  */
 export function Separator(componentProps: Separator.Props) {
   // ============ setup：值形 props toRefs 活引用；ref 形 props 直读本體 ============
-  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
-    string,
-    Ref<any>
-  >;
+  // orientation 为组件自定义 props（消费为 aria-orientation/data-orientation，
+  // 不透传）——剔除，否则泄漏为 orientation="horizontal"。
+  const { className, render, style, orientation: _orientation, ...elementRefs } = toRefs(
+    componentProps,
+  ) as Record<string, Ref<any>>;
 
   // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
   const elementProps = computed(() => {

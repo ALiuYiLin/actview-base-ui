@@ -227,10 +227,18 @@ export function SliderThumb(componentProps: SliderThumb.Props) {
 
   // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
   // 值形 props toRefs 活引用；children 不解构（input 子元素在 rootProps 注入）。
-  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
-    string,
-    Ref<any>
-  >;
+  // index/getAriaLabel/getAriaValueText/inputRef 为组件自定义 props——剔除，
+  // 否则泄漏到 DOM（index 会输出 data-index 之外的裸 index 属性）。
+  const {
+    className,
+    render,
+    style,
+    index: _index,
+    getAriaLabel: _getAriaLabel,
+    getAriaValueText: _getAriaValueText,
+    inputRef: _inputRef,
+    ...elementRefs
+  } = toRefs(componentProps) as Record<string, Ref<any>>;
 
   const elementProps = computed(() => {
     const out: Record<string, any> = {};

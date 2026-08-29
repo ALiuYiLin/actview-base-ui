@@ -268,12 +268,32 @@ export function SliderRoot<Value extends number | readonly number[]>(
   );
 
   // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
-  // ============ setup：toRefs 解构（渲染期读取保持实时——PD-15） ============
   // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
-  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
-    string,
-    Ref<any>
-  >;
+  // 组件自定义 props（配置/回调/受控值）全部剔除——否则泄漏到 DOM
+  // （core 1.4.0 起布尔/数字属性会渲染 attribute）。
+  const {
+    className,
+    render,
+    style,
+    min: _min,
+    max: _max,
+    largeStep: _largeStep,
+    step: _step,
+    minStepsBetweenValues: _minStepsBetweenValues,
+    orientation: _orientation,
+    thumbCollisionBehavior: _thumbCollisionBehavior,
+    thumbAlignment: _thumbAlignment,
+    defaultValue: _defaultValue,
+    disabled: _disabled,
+    format: _format,
+    locale: _locale,
+    form: _form,
+    name: _name,
+    value: _value,
+    onValueChange: _onValueChange,
+    onValueCommitted: _onValueCommitted,
+    ...elementRefs
+  } = toRefs(componentProps) as Record<string, Ref<any>>;
 
   // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
   const elementProps = computed(() => {

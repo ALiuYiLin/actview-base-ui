@@ -21,10 +21,17 @@ export function MenuLinkItem(componentProps: MenuLinkItem.Props) {
   const linkRef = ref(null as HTMLAnchorElement | null);
 
   // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
-  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
-    string,
-    Ref<any>
-  >;
+  // 组件自定义 props（label/closeOnClick/disabled/nativeButton）剔除。
+  const {
+    className,
+    render,
+    style,
+    label: _label,
+    closeOnClick: _closeOnClick,
+    disabled: _disabled,
+    nativeButton: _nativeButton,
+    ...elementRefs
+  } = toRefs(componentProps) as Record<string, Ref<any>>;
 
   const listItem = useCompositeListItem({guess: true, label: componentProps.label});
   const menuPositionerContext = useMenuPositionerContext(true);

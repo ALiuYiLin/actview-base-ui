@@ -121,10 +121,14 @@ export function SwitchRoot(componentProps: SwitchRoot.Props) {
   );
 
   // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
-  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
-    string,
-    Ref<any>
-  >;
+  // 组件自定义 props（defaultChecked）剔除——否则泄漏到 DOM。
+  const {
+    className,
+    render,
+    style,
+    defaultChecked: _defaultChecked,
+    ...elementRefs
+  } = toRefs(componentProps) as Record<string, Ref<any>>;
 
   const elementProps = computed(() => {
     const out: Record<string, any> = {};

@@ -42,10 +42,10 @@ export function FieldLabel(componentProps: FieldLabel.Props) {
   });
 
   // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
-  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
-    string,
-    Ref<any>
-  >;
+  // nativeLabel 为组件自定义 props（决定 label 语义）——剔除，否则泄漏。
+  const { className, render, style, nativeLabel: _nativeLabel, ...elementRefs } = toRefs(
+    componentProps,
+  ) as Record<string, Ref<any>>;
 
   // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
   const elementProps = computed(() => {

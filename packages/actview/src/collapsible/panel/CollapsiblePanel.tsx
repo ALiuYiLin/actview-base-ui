@@ -89,10 +89,15 @@ export function CollapsiblePanel(componentProps: CollapsiblePanel.Props) {
 
   // ---- 渲染期求值：computed（.value 读取发生在 JSX 内 → 归渲染 effect）----
   // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
-  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
-    string,
-    Ref<any>
-  >;
+  // hiddenUntilFound/keepMounted 为组件自定义 props——剔除，否则泄漏。
+  const {
+    className,
+    render,
+    style,
+    hiddenUntilFound: _hiddenUntilFound,
+    keepMounted: _keepMounted,
+    ...elementRefs
+  } = toRefs(componentProps) as Record<string, Ref<any>>;
 
   const elementProps = computed(() => {
     const out: Record<string, any> = {};

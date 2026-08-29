@@ -25,10 +25,14 @@ export function DialogPopup(componentProps: DialogPopup.Props) {
   useDialogPortalContext();
 
   // 值形 props toRefs 活引用；children 不解构、随 elementRefs 流入渲染元素。
-  const { className, render, style, ...elementRefs } = toRefs(componentProps) as Record<
-    string,
-    Ref<any>
-  >;
+  // finalFocus 为组件自定义 props——剔除，否则泄漏到 DOM。
+  const {
+    className,
+    render,
+    style,
+    finalFocus: _finalFocus,
+    ...elementRefs
+  } = toRefs(componentProps) as Record<string, Ref<any>>;
 
   const descriptionElementId = store.useState('descriptionElementId');
   const floatingRootContext = store.useState('floatingRootContext');
