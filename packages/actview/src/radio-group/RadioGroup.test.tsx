@@ -76,4 +76,26 @@ describe('<RadioGroup />', () => {
     expect(group).toHaveAttribute('aria-readonly', 'true');
     expect(input).toHaveAttribute('name', 'group-name');
   });
+
+  it('roving tabindex: the checked item is the tab stop (golden C3)', async () => {
+    const {Radio} = await import('@/radio');
+    await render(RadioGroup, {
+      defaultValue: 'b',
+      children: (
+        <>
+          <Radio.Root value="a" />
+          <Radio.Root value="b" />
+        </>
+      ),
+    });
+
+    const items = document.querySelectorAll('[role="radio"]');
+    expect(items.length).toBe(2);
+    const a = items[0] as HTMLElement;
+    const b = items[1] as HTMLElement;
+    expect(a).toHaveAttribute('aria-checked', 'false');
+    expect(a).toHaveAttribute('tabindex', '-1');
+    expect(b).toHaveAttribute('aria-checked', 'true');
+    expect(b).toHaveAttribute('tabindex', '0');
+  });
 });

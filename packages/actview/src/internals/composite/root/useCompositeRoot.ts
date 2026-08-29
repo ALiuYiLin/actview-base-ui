@@ -135,8 +135,12 @@ export function useCompositeRoot(params: UseCompositeRootParameters) {
       return;
     }
 
-    hasSetDefaultIndexRef.value = true;
-
+    // 首次（未锁定）：找 ACTIVE_COMPOSITE_ITEM 作为默认 tab stop。
+    // 注意：actview 的 CompositeList.register 是同步逐元素 flush——首个元素
+    // 注册时 map 可能只有它自己，active 项（如第二个 radio）尚未注册，此时
+    // 找不到不算数、不锁定（React 版 flush 在 layout effect 批量执行，map
+    // 首次 onMapChange 时已完整）。命中才锁定，否则等下一次 map change 重查
+    // （golden C3：defaultValue 选中第二个 item 时 tabindex 必须落在选中项）。
     const sortedElements = Array.from(map.keys()) as Array<HTMLElement | null>;
     const activeItem =
       sortedElements.find((compositeElement) =>
@@ -145,10 +149,12 @@ export function useCompositeRoot(params: UseCompositeRootParameters) {
     const activeIndex = activeItem ? (map.get(activeItem)?.index ?? -1) : -1;
 
     if (activeIndex !== -1) {
+      hasSetDefaultIndexRef.value = true;
       onHighlightedIndexChange(activeIndex);
     } else if (isListIndexDisabled(sortedElements, highlightedIndex.value, disabledIndices)) {
       const firstEnabledIndex = findNonDisabledListIndex(sortedElements, {disabledIndices});
       if (!isIndexOutOfListBounds(sortedElements, firstEnabledIndex)) {
+        hasSetDefaultIndexRef.value = true;
         onHighlightedIndexChange(firstEnabledIndex);
       }
     }

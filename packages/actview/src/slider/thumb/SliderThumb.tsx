@@ -249,11 +249,13 @@ export function SliderThumb(componentProps: SliderThumb.Props) {
   const state = computed<SliderThumbState>(() => rootContext.state);
 
   const zIndex = computed<number | undefined>(() => {
+    // index 未初始化（-1）时不高亮：首帧 internalIndex 尚未从 map 就位，
+    // active(-1) === index(-1) 会误判为高亮输出 z-index（DOM 残留，golden C5）。
     if (range.value) {
-      if (rootContext.active === index.value) {
+      if (index.value >= 0 && rootContext.active === index.value) {
         return 2;
       }
-      if (safeLastUsedThumbIndex.value === index.value) {
+      if (index.value >= 0 && safeLastUsedThumbIndex.value === index.value) {
         return 1;
       }
       return undefined;
