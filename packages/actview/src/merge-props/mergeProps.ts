@@ -250,11 +250,17 @@ function isEventObject(event: unknown): event is Event {
   return event != null && typeof event === 'object';
 }
 
-/** 浅合并两个对象（对齐 @base-ui/utils/mergeObjects 的 style 合并语义）。 */
+/** 浅合并两个对象（对齐 @base-ui/utils/mergeObjects 的 style 合并语义）。
+ *  style 允许字符串形态（cssText，如 `style="border: 1px solid #ddd"`）——
+ *  字符串无法按 key 浅合并，直接整体覆盖（右侧优先；否则 `{...a, ...'str'}`
+ *  展开成数字索引键，core setProp 写 `el.style['0']` 抛 Indexed setter 错误）。 */
 function mergeObjects(
-  a: Record<string, any> | undefined,
-  b: Record<string, any> | undefined,
-): Record<string, any> | undefined {
+  a: Record<string, any> | string | undefined,
+  b: Record<string, any> | string | undefined,
+): Record<string, any> | string | undefined {
+  if (typeof a === 'string' || typeof b === 'string') {
+    return b ?? a;
+  }
   if (!a) {
     return b;
   }

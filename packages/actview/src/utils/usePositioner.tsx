@@ -52,11 +52,18 @@ export function usePositioner<State extends Record<string, any>>(
       }
     }
 
+    // style 支持字符串形态（cssText）：字符串无法与对象浅合并，直接整体覆盖
+    // （否则 `{...a, ...'str'}` 展开数字索引键，core setProp 抛错）。
+    const mergedStyle: any =
+      typeof styleProp === 'string'
+        ? styleProp
+        : {...style, ...(styleProp ?? {})};
+
     const merged: any = {
       role: 'presentation',
       hidden: toValue(hidden),
       ...(classNameValue !== undefined ? {className: classNameValue} : {}),
-      style: {...style, ...(styleProp ?? {})},
+      style: mergedStyle,
       ...attributes,
     };
 
