@@ -158,7 +158,7 @@
 
 ## 附录 D：golden 差异清单（C1–C14）执行记录
 
-> React 参考 vs actview 移植的差异清单（用户提供，C1–C15）。根因族修复顺序 A → B → D → C。C15 内容见会话记录，未在本仓库留档。
+> React 参考 vs actview 移植的差异清单（用户提供，C1–C15）。根因族修复顺序 A → B → D → C。
 
 | # | 差异（组件/区域） | 根因定位 | 处置 |
 |---|---|---|---|
@@ -176,6 +176,6 @@
 | C12 | `useLabelableId` 语义差异 | 与 React 参考（`packages/react/.../useLabelableId.ts:82`）**逐字一致** | 非缺陷 |
 | C13 | Separator `orientation` 泄漏 | A4：toRefs 解构未剔除 | 已修（`764c4a147`）|
 | C14 | Toggle `ref/disabled/nativeButton/onPressedChange` 泄漏 | B 族：toRefs 解构未剔除 | 已修（`cf861fd66`）|
-| C15 | —（内容在会话记录，未留档） | — | 待核对 |
+| C15 | Slider.Thumb `className` 输出两份（0.1.3 引入） | rootProps 内手写 `out.className` + useRenderElement componentProps 双通道 → 出口 `mergeClassNames` 拼接同一 token 两次；全库仅 SliderThumb 有此写法（其余组件 className 只走 componentProps 通道） | 已修：删除 rootProps 内 className 块，className 单通道输出；新增 `SliderThumb.test.tsx` 回归（string + function 双形态） |
 
 **附加（golden 之外）**：core 1.4.0 引入的 `autoFocus` camelCase 布尔缺陷（FFM 用例暴露）随 core 1.4.1 修复（`E:\code3\actview` commit `3113969`）；RadioRoot group 分支 refs 补转发 ref 对齐 React 参考（`76efc4da5`）。

@@ -482,14 +482,10 @@ export function SliderThumb(componentProps: SliderThumb.Props) {
     const validationProps = rootContext.validation.getValidationProps(disabled.value, out);
     Object.assign(out, validationProps);
 
-    if (typeof className?.value === 'function') {
-      out.className = (className.value as any)(stateValue);
-    } else if (className?.value !== undefined) {
-      out.className = className.value;
-    }
-    if (typeof style?.value === 'function') {
-      out.style = Object.assign({}, thumbStyle.value, (style.value as any)(stateValue));
-    }
+    // className/style 不经 rootProps——useRenderElement 的 componentProps 已解析
+    // （resolveClassName/resolveStyle 处理 string/function 并合并到出口 props）。
+    // 若在此再写 out.className，出口处 mergeClassNames 会把同一 token 拼接两份
+    // （golden C15：React 参考只输出一份）。
 
     out.children = (
       <>
