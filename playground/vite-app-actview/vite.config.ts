@@ -56,10 +56,12 @@ export default defineConfig({
       '@actview/base-ui-utils': path.resolve(MONOREPO, 'packages', 'actview-utils', 'src', 'index.ts'),
       // @actview/floating-ui 走源码（vite 转译）——与 floating-ui/actview 测试一致。
       '@actview/floating-ui': path.resolve('E:/code3/floating-ui/packages/actview/src/index.ts'),
+      "@actview/core": path.resolve('E:/code3/actview/packages/core/src/index.ts'),
+      "actview": path.resolve('E:/code3/actview/packages/actview/src/index.ts'),
     },
   },
   optimizeDeps: {
-    exclude: ['@actview/base-ui', '@actview/base-ui-utils', '@actview/floating-ui'],
+    exclude: ['@actview/base-ui', '@actview/base-ui-utils', '@actview/floating-ui','actview','@actview/core'],
   },
   server: {
     fs: {

@@ -1050,22 +1050,12 @@ describe('FloatingFocusManager', () => {
 
         await userEvent.tab();
 
-        // actview 环境适配（与上游一致）：jsdom 的 tabbable 跳过带
-        // data-floating-ui-inert 的 last（markOthers 标记），userEvent.tab
-        // 把焦点落到 body（focusout 不冒泡经过 floating）。手动 focus last +
-        // 在 floating 上触发 focusout(relatedTarget=last)，对齐 React 版
-        // 「tab 出关闭」语义。
-        act(() => screen.getByTestId('last').focus());
-        fireEvent.focusOut(screen.getByTestId('floating'), {
-          relatedTarget: screen.getByTestId('last'),
-        });
-        await flushMicrotasks();
-
         // Wait for the setTimeout that wraps onOpenChange(false).
-        await new Promise((resolve) => setTimeout(resolve));
-        await flushMicrotasks();
+        await act(() => new Promise((resolve) => setTimeout(resolve)));
 
         // Focus leaving the floating element closes it.
+        // （对齐 React 版 880-901：tab 出浮层即触发 focus-out 关闭，
+        //   无需手动 focusout 适配——本地 core 1.4.4 修复渲染后行为一致。）
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 
         expect(screen.getByTestId('last')).toHaveFocus();
@@ -1150,18 +1140,9 @@ describe('FloatingFocusManager', () => {
         await new Promise((resolve) => setTimeout(resolve));
         await flushMicrotasks();
 
-        // actview 环境适配（与上游一致）：jsdom 的 tabbable 跳过带
-        // data-floating-ui-inert 的 last（markOthers 标记），userEvent.tab
-        // 把焦点落到 body（focusout 不经过 floating，无法触发 focus-out
-        // 关闭）；手动 focus last + 在 floating 上触发
-        // focusout(relatedTarget=last)，验证「点击嵌套 trigger 不抑制下一次
-        // focus-out 关闭」语义。
-        act(() => screen.getByTestId('last').focus());
-        fireEvent.focusOut(screen.getByTestId('floating'), {
-          relatedTarget: screen.getByTestId('last'),
-        });
-        await flushMicrotasks();
-
+        // Focus leaving the floating element closes it.
+        // （对齐 React 版 928-968：tab 出浮层即触发 focus-out 关闭，
+        //   无需手动 focusout 适配——本地 core 1.4.4 修复渲染后行为一致。）
         expect(screen.queryByTestId('floating')).not.toBeInTheDocument();
         expect(screen.getByTestId('last')).toHaveFocus();
       });
