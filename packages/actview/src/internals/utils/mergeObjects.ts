@@ -17,7 +17,7 @@ export function mergeObjects<A extends object | string | undefined, B extends ob
     return b;
   }
   if (a || b) {
-    return { ...a, ...b };
+    return { ...(a as object), ...(b as object) };
   }
   return undefined;
 }

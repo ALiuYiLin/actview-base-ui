@@ -41,6 +41,42 @@ export const usePortalContext = () => FloatingPortalContext.use();
 
 const attr = createAttribute('portal');
 
+// 不透传到 portal node 的内部 key（对齐 React useFloatingPortalNode 的
+// elementProps：排除 render/className/style/children/container/portalOwnerRole
+// 后透传；className/style 由 useRenderElement 处理——这里直接应用到 node，
+// 其余 data-*/aria-* 等 setAttribute）。
+const PORTAL_INTERNAL_KEYS = new Set([
+  'children',
+  'container',
+  'portalOwnerRole',
+  'keepMounted',
+  'ref',
+  'key',
+  'render',
+]);
+
+/** 把透传 props 应用到 portal node（对齐 React useFloatingPortalNode 的
+ *  useRenderElement('div', componentProps, {props: [{id, attr}, elementProps]})）。
+ *  字符串 style 整体作为 cssText（不逐键合并），对象 style 浅合并到 node.style。 */
+function applyPortalNodeProps(node: HTMLElement, props: Record<string, any>) {
+  for (const key of Object.keys(props)) {
+    if (PORTAL_INTERNAL_KEYS.has(key)) continue;
+    const value = props[key];
+    if (value == null) continue;
+    if (key === 'className') {
+      node.className = String(value);
+    } else if (key === 'style') {
+      if (typeof value === 'string') {
+        node.setAttribute('style', value);
+      } else if (typeof value === 'object') {
+        Object.assign(node.style, value);
+      }
+    } else {
+      node.setAttribute(key, String(value));
+    }
+  }
+}
+
 // aria-owns owner 元素的隐藏样式（对齐 React 参考 internals/constants 的
 // ownerVisuallyHidden：fixed + clipPath，非 absolute/1px 变体——M2-原语-2）。
 const ownerVisuallyHidden = {
@@ -95,6 +131,9 @@ export function FloatingPortal(componentProps: FloatingPortal.Props<any>) {
         const node = document.createElement('div');
         node.id = portalNodeId ?? '';
         node.setAttribute(attr, '');
+        // 透传 componentProps（data-slot/className/style 等，排除内部 key）——
+        // 对齐 React useFloatingPortalNode 的 elementProps 展开（M2 残留-2）。
+        applyPortalNodeProps(node, componentProps as any);
         resolvedContainer.appendChild(node);
         portalNode.value = node;
       } else if (portalNode.value.parentElement !== resolvedContainer) {
