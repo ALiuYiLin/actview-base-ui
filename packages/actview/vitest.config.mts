@@ -28,6 +28,27 @@ export default defineProject({
   resolve: {
     dedupe: ['@actview/core', '@actview/jsx'],
     alias: {
+      // @actview/* 全包强制解析到本地源码（E:\code3\actview）——
+      // 否则 pnpm store 的 @actview/testing（render 引擎）内部 import
+      // '@actview/core' 会解析到 npm dist（1.4.4），floating-ui 源码会解析到
+      // 其 node_modules 里的 npm 1.4.1，形成多 core 实例（provide 断链、
+      // props 更新失效等）。alias 优先级高于一切，保证单实例。
+      // 注意：string alias 为前缀匹配，子路径条目必须先于根条目声明。
+      '@actview/jsx/jsx-dev-runtime': path.resolve(
+        'E:/code3/actview/packages/jsx/src/jsx-dev-runtime.ts',
+      ),
+      '@actview/jsx/jsx-runtime': path.resolve(
+        'E:/code3/actview/packages/jsx/src/jsx-runtime.ts',
+      ),
+      '@actview/jsx': path.resolve(
+        'E:/code3/actview/packages/jsx/src/index.ts',
+      ),
+      '@actview/core': path.resolve(
+        'E:/code3/actview/packages/core/src/index.ts',
+      ),
+      '@actview/testing': path.resolve(
+        'E:/code3/actview/packages/testing/src/index.ts',
+      ),
       '@': path.resolve(__dirname, 'src'),
       '#': path.resolve(__dirname),
       // @floating-ui/actview 走源码（vite 转译）——与 floating-ui/actview
